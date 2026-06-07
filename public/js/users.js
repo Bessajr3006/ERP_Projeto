@@ -740,11 +740,17 @@
                 const response = await api(endpoint, { method, body: JSON.stringify(payload) });
                 const savedUser = response?.data || null;
                 const selectedDefaultPage = payload.default_page || null;
-                if (savedUser && (savedUser.default_page || null) !== selectedDefaultPage) {
-                    throw new Error('A página inicial após login não foi gravada. Verifique se a migração do campo default_page foi aplicada no banco.');
-                }
+                const defaultPageNotSaved = Boolean(
+                    savedUser
+                    && (savedUser.default_page || null) !== selectedDefaultPage
+                );
                 closeModal();
-                UI.showAlert('alertMessage', `Usuário ${isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
+                if (defaultPageNotSaved) {
+                    UI.showAlert('alertMessage', 'Perfil salvo, mas a página inicial após login não foi aplicada neste ambiente. Verifique a migration do campo default_page no banco da nuvem.', 'error');
+                }
+                else {
+                    UI.showAlert('alertMessage', `Usuário ${isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
+                }
                 await loadData();
                 renderTable();
                 renderGrid();

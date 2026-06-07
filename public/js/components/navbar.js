@@ -425,6 +425,9 @@ async function loadUserGreeting() {
                     if (moduleName === 'finance_vision') {
                         return 'finance-vision';
                     }
+                    if (moduleName === 'stock_types') {
+                        return 'stock-types';
+                    }
                     return moduleName;
                 };
                 // Obter lista de permissões onde can_view é true
@@ -440,6 +443,7 @@ async function loadUserGreeting() {
                     ...activePerms,
                     ...fallbackPerms,
                 ]));
+                const hasStockTypesAccess = effectivePerms.includes('stock_types') || effectivePerms.includes('categories');
                 // Aplicar as regras na Navbar visível
                 const allLinks = document.querySelectorAll('a[href^="/pages/"]');
                 allLinks.forEach(a => {
@@ -465,7 +469,10 @@ async function loadUserGreeting() {
                     // Mantemos apenas um bypass de segurança para o super_admin não ficar trancado.
                     const isSuperAdminBypass = (role === 'super_admin' || role === 'admin')
                         && (moduleName === 'tasks' || moduleName === 'roles' || moduleName === 'accounting' || moduleName === 'organizer' || moduleName === 'users' || moduleName === 'company' || moduleName === 'email-config' || moduleName === 'email' || moduleName === 'ajuste' || moduleName === 'service_types' || moduleName === 'services' || moduleName === 'service_launches' || moduleName === 'service_tax_municipal' || moduleName === 'service_tax_federal');
-                    if (!effectivePerms.includes(moduleName) && !isSuperAdminBypass) {
+                    const hasModuleAccess = moduleName === 'stock_types'
+                        ? hasStockTypesAccess
+                        : effectivePerms.includes(moduleName);
+                    if (!hasModuleAccess && !isSuperAdminBypass) {
                         a.style.setProperty('display', 'none', 'important');
                     }
                 });
@@ -523,7 +530,10 @@ async function loadUserGreeting() {
                 const currentModule = normalizeModule(document.body?.dataset?.requiredModule || currentFile);
                 const isBypassed = (role === 'super_admin' || role === 'admin')
                     && (currentModule === 'tasks' || currentModule === 'roles' || currentModule === 'accounting' || currentModule === 'organizer' || currentModule === 'users' || currentModule === 'company' || currentModule === 'email-config' || currentModule === 'email' || currentModule === 'ajuste' || currentModule === 'service_types' || currentModule === 'services' || currentModule === 'service_launches');
-                if (currentModule && currentFile !== 'roles' && !effectivePerms.includes(currentModule) && !isBypassed) {
+                const hasCurrentModuleAccess = currentModule === 'stock_types'
+                    ? hasStockTypesAccess
+                    : effectivePerms.includes(currentModule);
+                if (currentModule && currentFile !== 'roles' && !hasCurrentModuleAccess && !isBypassed) {
                     // Usuário tentou acessar/está em uma página que não tem permissão!
                     if (effectivePerms.includes('dashboard')) {
                         window.location.href = '/pages/dashboard.html';

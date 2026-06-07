@@ -95,6 +95,7 @@
                 links: [
                     { id: 'products', label: 'Produtos' },
                     { id: 'categories', label: 'Categoria' },
+                    { id: 'stock_types', label: 'Tipo de Estoque' },
                     { id: 'manufacturers', label: 'Fabricante' },
                     { id: 'taxes', label: 'Tributo' },
                     { id: 'prices', label: 'Tabela de Preço' },
@@ -183,7 +184,18 @@
                     || link.id === 'service_tax_municipal'
                     || link.id === 'service_tax_federal'
                 );
-                const hasPermission = state.currentPermissions.some(p => p.module === link.id && p.can_view) || isAdminServiceTypesDefault;
+                const hasPermission = state.currentPermissions.some((p) => {
+                    if (!p.can_view) {
+                        return false;
+                    }
+
+                    // Compatibilidade com base antiga em nuvem: Tipo de Estoque era acoplado a "categories".
+                    if (link.id === 'stock_types') {
+                        return p.module === 'stock_types' || p.module === 'categories';
+                    }
+
+                    return p.module === link.id;
+                }) || isAdminServiceTypesDefault;
                 const canEdit = canEditTargetRole(roleId);
                 const disabledAtt = !canEdit
                     ? 'disabled title="Permissões protegidas"'

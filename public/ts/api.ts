@@ -585,19 +585,409 @@ const UI = {
 // ==========================================
 function initTheme() {
     const htmlDecl = document.documentElement;
-    // Padrão atualizado para "dark", a pedido do usuário
+    // Tema pode ser: dark | light | system
     const currentTheme = localStorage.getItem('theme') || 'dark';
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    if (currentTheme === 'dark') {
+    if (currentTheme === 'dark' || (currentTheme === 'system' && prefersDark)) {
         htmlDecl.classList.add('dark');
     } else {
         htmlDecl.classList.remove('dark');
     }
 }
 
+const LAYOUT_ALIGN_KEY = 'layout_align';
+const NAV_ALIGN_KEY = 'nav_align';
+const LAYOUT_WIDTH_KEY = 'layout_width';
+const NAV_WIDTH_KEY = 'nav_width';
+const NAV_COLOR_KEY = 'nav_color';
+const FOOTER_COLOR_KEY = 'footer_color';
+const FORM_PATTERN_KEY = 'form_pattern_preferences';
+const THEME_TOGGLE_VISIBLE_KEY = 'theme_toggle_visible';
+
+async function syncUiPreferencesFromServer() {
+    if (!Auth.isAuthenticated()) {
+        return;
+    }
+
+    try {
+        const response = await api('/ui-preferences', {
+            method: 'GET',
+            cache: 'no-store',
+        });
+
+        const data = response?.data;
+        if (!data || typeof data !== 'object') {
+            return;
+        }
+
+        if (data.theme === 'light' || data.theme === 'dark' || data.theme === 'system') {
+            localStorage.setItem('theme', data.theme);
+        }
+
+        if (data.layout_align === 'left' || data.layout_align === 'center' || data.layout_align === 'right' || data.layout_align === 'responsive') {
+            localStorage.setItem(LAYOUT_ALIGN_KEY, data.layout_align);
+        }
+
+        if (data.nav_align === 'left' || data.nav_align === 'center' || data.nav_align === 'right' || data.nav_align === 'responsive') {
+            localStorage.setItem(NAV_ALIGN_KEY, data.nav_align);
+        }
+
+        if (data.layout_width === 'system' || data.layout_width === 'max-w-5xl' || data.layout_width === 'max-w-6xl' || data.layout_width === 'max-w-7xl' || data.layout_width === 'max-w-screen-2xl') {
+            localStorage.setItem(LAYOUT_WIDTH_KEY, data.layout_width);
+        }
+
+        if (data.nav_width === 'system' || data.nav_width === 'max-w-5xl' || data.nav_width === 'max-w-6xl' || data.nav_width === 'max-w-7xl' || data.nav_width === 'max-w-screen-2xl') {
+            localStorage.setItem(NAV_WIDTH_KEY, data.nav_width);
+        }
+
+        if (typeof data.nav_color === 'string' && /^#[0-9a-fA-F]{6}$/.test(data.nav_color)) {
+            localStorage.setItem(NAV_COLOR_KEY, data.nav_color.toLowerCase());
+        }
+
+        if (typeof data.footer_color === 'string' && /^#[0-9a-fA-F]{6}$/.test(data.footer_color)) {
+            localStorage.setItem(FOOTER_COLOR_KEY, data.footer_color.toLowerCase());
+        }
+
+        if (typeof data.theme_toggle_visible === 'boolean') {
+            localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, data.theme_toggle_visible ? 'show' : 'hide');
+        }
+
+        if (
+            Object.prototype.hasOwnProperty.call(data, 'form_company_name')
+            || Object.prototype.hasOwnProperty.call(data, 'form_profile')
+            || Object.prototype.hasOwnProperty.call(data, 'form_accent')
+            || Object.prototype.hasOwnProperty.call(data, 'form_header_size')
+        ) {
+            const formPattern = {
+                empresa: String(data.form_company_name || ''),
+                perfil: String(data.form_profile || 'padrao').toLowerCase(),
+                cor: String(data.form_accent || 'brand').toLowerCase(),
+                cabecalho: String(data.form_header_size || 'medio').toLowerCase(),
+            };
+            localStorage.setItem(FORM_PATTERN_KEY, JSON.stringify(formPattern));
+        }
+    }
+    catch (_error) {
+        // Mantem o fallback local quando a API nao estiver disponivel.
+    }
+}
+
+function getThemeToggleVisibilityPreference() {
+    const raw = String(localStorage.getItem(THEME_TOGGLE_VISIBLE_KEY) || '').trim().toLowerCase();
+    if (raw === 'hide') {
+        return 'hide';
+    }
+    if (raw !== 'show') {
+        localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, 'show');
+    }
+    return 'show';
+}
+
+function applyThemeToggleVisibilityPreference() {
+    const btn = document.getElementById('themeToggleBtn');
+    if (!btn) return;
+
+    const mode = getThemeToggleVisibilityPreference();
+    if (mode === 'hide') {
+        btn.classList.add('hidden');
+        btn.setAttribute('aria-hidden', 'true');
+    } else {
+        btn.classList.remove('hidden');
+        btn.removeAttribute('aria-hidden');
+    }
+}
+
+function getLayoutAlignPreference() {
+    const align = localStorage.getItem(LAYOUT_ALIGN_KEY);
+    if (align === 'left' || align === 'center' || align === 'right' || align === 'responsive') {
+        return align;
+    }
+    return 'responsive';
+}
+
+function applyLayoutAlignPreference() {
+    const htmlDecl = document.documentElement;
+    const body = document.body;
+    if (!htmlDecl || !body) return;
+
+    const align = getLayoutAlignPreference();
+    const isDesktop = window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
+    const resolvedAlign = align === 'responsive' ? (isDesktop ? 'left' : 'center') : align;
+
+    htmlDecl.setAttribute('data-layout-align', align);
+
+    const targets = document.querySelectorAll<HTMLElement>('main.max-w-5xl, main.max-w-6xl, main.max-w-7xl, main.max-w-screen-2xl');
+    targets.forEach((el) => {
+        el.style.removeProperty('margin-left');
+        el.style.removeProperty('margin-right');
+        if (resolvedAlign === 'left') {
+            el.style.marginLeft = '0';
+            el.style.marginRight = 'auto';
+            return;
+        }
+        if (resolvedAlign === 'right') {
+            el.style.marginLeft = 'auto';
+            el.style.marginRight = '0';
+            return;
+        }
+        el.style.marginLeft = 'auto';
+        el.style.marginRight = 'auto';
+    });
+}
+
+function getNavAlignPreference() {
+    const align = localStorage.getItem(NAV_ALIGN_KEY);
+    if (align === 'left' || align === 'center' || align === 'right' || align === 'responsive') {
+        return align;
+    }
+    const fallback = getLayoutAlignPreference();
+    localStorage.setItem(NAV_ALIGN_KEY, fallback);
+    return fallback;
+}
+
+function applyNavAlignPreference() {
+    const navInner = document.getElementById('globalNavInnerContainer');
+    if (!navInner) return;
+
+    const align = getNavAlignPreference();
+    const isDesktop = window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
+    const resolvedAlign = align === 'responsive' ? (isDesktop ? 'left' : 'center') : align;
+
+    navInner.classList.remove('mx-auto', 'mx-0', 'ml-auto', 'mr-0');
+    navInner.style.removeProperty('margin-left');
+    navInner.style.removeProperty('margin-right');
+    if (resolvedAlign === 'left') {
+        navInner.style.setProperty('margin-left', '0', 'important');
+        navInner.style.setProperty('margin-right', 'auto', 'important');
+        return;
+    }
+    if (resolvedAlign === 'right') {
+        navInner.style.setProperty('margin-left', 'auto', 'important');
+        navInner.style.setProperty('margin-right', '0', 'important');
+        return;
+    }
+    navInner.style.setProperty('margin-left', 'auto', 'important');
+    navInner.style.setProperty('margin-right', 'auto', 'important');
+}
+
+function getLayoutWidthPreference() {
+    const width = localStorage.getItem(LAYOUT_WIDTH_KEY);
+    if (!width) {
+        localStorage.setItem(LAYOUT_WIDTH_KEY, 'system');
+        return 'system';
+    }
+    if (width === 'system' || width === 'max-w-5xl' || width === 'max-w-6xl' || width === 'max-w-7xl' || width === 'max-w-screen-2xl') {
+        return width;
+    }
+    localStorage.setItem(LAYOUT_WIDTH_KEY, 'system');
+    return 'system';
+}
+
+function applyLayoutWidthPreference() {
+    const widthPreference = getLayoutWidthPreference();
+    const widthClass = widthPreference === 'system' ? 'max-w-7xl' : widthPreference;
+    const targets = document.querySelectorAll('main.w-full');
+    targets.forEach((el) => {
+        el.classList.remove('max-w-5xl', 'max-w-6xl', 'max-w-7xl', 'max-w-screen-2xl');
+        el.classList.add(widthClass);
+    });
+}
+
+function getNavWidthPreference() {
+    const width = localStorage.getItem(NAV_WIDTH_KEY);
+    if (width === 'system' || width === 'max-w-5xl' || width === 'max-w-6xl' || width === 'max-w-7xl' || width === 'max-w-screen-2xl') {
+        return width;
+    }
+    const fallback = getLayoutWidthPreference();
+    localStorage.setItem(NAV_WIDTH_KEY, fallback);
+    return fallback;
+}
+
+function applyNavWidthPreference() {
+    const navInner = document.getElementById('globalNavInnerContainer');
+    if (!navInner) return;
+
+    const widthPreference = getNavWidthPreference();
+    const widthClass = widthPreference === 'system' ? 'max-w-7xl' : widthPreference;
+    navInner.classList.remove('max-w-5xl', 'max-w-6xl', 'max-w-7xl', 'max-w-screen-2xl');
+    navInner.classList.add(widthClass);
+}
+
+function getNavColorPreference() {
+    const navColor = localStorage.getItem(NAV_COLOR_KEY);
+    const LEGACY = {
+        brand: '#1e3a8a',
+        slate: '#0f172a',
+        emerald: '#064e3b',
+        rose: '#881337',
+    };
+
+    const normalizeHex = (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        if (LEGACY[raw]) {
+            return LEGACY[raw];
+        }
+        if (/^#([0-9a-f]{6})$/.test(raw)) {
+            return raw;
+        }
+        return '#0f172a';
+    };
+
+    const normalized = normalizeHex(navColor);
+    if (normalized !== navColor) {
+        localStorage.setItem(NAV_COLOR_KEY, normalized);
+    }
+    return normalized;
+}
+
+function applyNavColorPreference() {
+    const navRoot = document.getElementById('globalNavRoot');
+    if (!navRoot) return;
+
+    const color = getNavColorPreference();
+    const hexToRgba = (hex, alpha = 1) => {
+        const n = parseInt(hex.slice(1), 16);
+        const r = (n >> 16) & 0xff;
+        const g = (n >> 8) & 0xff;
+        const b = n & 0xff;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    const shadeHex = (hex, delta) => {
+        const n = parseInt(hex.slice(1), 16);
+        const r = Math.min(255, Math.max(0, (n >> 16) + delta));
+        const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + delta));
+        const b = Math.min(255, Math.max(0, (n & 0xff) + delta));
+        return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+    };
+
+    navRoot.style.backgroundColor = hexToRgba(color, 0.9);
+    navRoot.style.borderColor = shadeHex(color, -18);
+}
+
+function getFooterColorPreference() {
+    const footerColor = localStorage.getItem(FOOTER_COLOR_KEY);
+    const LEGACY = {
+        brand: '#1e3a8a',
+        slate: '#0f172a',
+        emerald: '#064e3b',
+        rose: '#881337',
+    };
+
+    const normalizeHex = (value) => {
+        const raw = String(value || '').trim().toLowerCase();
+        if (LEGACY[raw]) {
+            return LEGACY[raw];
+        }
+        if (/^#([0-9a-f]{6})$/.test(raw)) {
+            return raw;
+        }
+        return '#0f172a';
+    };
+
+    const normalized = normalizeHex(footerColor);
+    if (normalized !== footerColor) {
+        localStorage.setItem(FOOTER_COLOR_KEY, normalized);
+    }
+    return normalized;
+}
+
+function applyFooterColorPreference() {
+    const footerRoot = document.getElementById('globalFooterRoot');
+    if (!footerRoot) return;
+
+    const footerBrandText = document.getElementById('footerBrandText');
+    const footerBrandDot = document.getElementById('footerBrandDot');
+    const footerCompanyInfo = document.getElementById('footerCompanyInfo');
+    const footerCopyright = document.getElementById('footerCopyright');
+
+    const color = getFooterColorPreference();
+    const hexToRgba = (hex, alpha = 1) => {
+        const n = parseInt(hex.slice(1), 16);
+        const r = (n >> 16) & 0xff;
+        const g = (n >> 8) & 0xff;
+        const b = n & 0xff;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    const shadeHex = (hex, delta) => {
+        const n = parseInt(hex.slice(1), 16);
+        const r = Math.min(255, Math.max(0, (n >> 16) + delta));
+        const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + delta));
+        const b = Math.min(255, Math.max(0, (n & 0xff) + delta));
+        return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+    };
+    const getLuminance = (hex) => {
+        const n = parseInt(hex.slice(1), 16);
+        const r = (n >> 16) & 0xff;
+        const g = (n >> 8) & 0xff;
+        const b = n & 0xff;
+        return (0.299 * r) + (0.587 * g) + (0.114 * b);
+    };
+
+    footerRoot.style.backgroundColor = hexToRgba(color, 0.9);
+    footerRoot.style.borderColor = shadeHex(color, -18);
+
+    const isDarkBg = getLuminance(color) < 150;
+    const primaryText = isDarkBg ? '#f8fafc' : '#0f172a';
+    const secondaryText = isDarkBg ? '#e2e8f0' : '#1e293b';
+    const mutedText = isDarkBg ? '#cbd5e1' : '#334155';
+
+    if (footerBrandText) {
+        footerBrandText.style.color = primaryText;
+    }
+    if (footerBrandDot) {
+        footerBrandDot.style.backgroundColor = primaryText;
+    }
+    if (footerCompanyInfo) {
+        footerCompanyInfo.style.color = secondaryText;
+        const infoBadge = footerCompanyInfo.querySelector('span');
+        if (infoBadge) {
+            infoBadge.style.backgroundColor = hexToRgba(color, isDarkBg ? 0.22 : 0.14);
+            infoBadge.style.borderColor = shadeHex(color, isDarkBg ? 24 : -12);
+            infoBadge.style.color = secondaryText;
+        }
+    }
+    if (footerCopyright) {
+        footerCopyright.style.color = mutedText;
+    }
+}
+
+window.addEventListener('resize', () => {
+    if (getLayoutAlignPreference() === 'responsive') {
+        applyLayoutAlignPreference();
+    }
+    if (getNavAlignPreference() === 'responsive') {
+        applyNavAlignPreference();
+    }
+});
+
 
 // Run init immediately on load to prevent blinding flash
 initTheme();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+        await syncUiPreferencesFromServer();
+        initTheme();
+        applyLayoutWidthPreference();
+        applyNavWidthPreference();
+        applyLayoutAlignPreference();
+        applyNavAlignPreference();
+        applyNavColorPreference();
+        applyFooterColorPreference();
+        applyThemeToggleVisibilityPreference();
+    });
+} else {
+    syncUiPreferencesFromServer().finally(() => {
+        initTheme();
+        applyLayoutWidthPreference();
+        applyNavWidthPreference();
+        applyLayoutAlignPreference();
+        applyNavAlignPreference();
+        applyNavColorPreference();
+        applyFooterColorPreference();
+        applyThemeToggleVisibilityPreference();
+    });
+}
 
 // Expor helpers no escopo global (vários módulos públicos usam window.*)
 window.Auth = Auth;
@@ -605,4 +995,11 @@ window.api = api;
 window.UI = UI;
 window.CacheManager = CacheManager;
 window.SyncManager = SyncManager;
+(window as any).applyGlobalLayoutAlign = applyLayoutAlignPreference;
+(window as any).applyGlobalNavAlign = applyNavAlignPreference;
+(window as any).applyGlobalLayoutWidth = applyLayoutWidthPreference;
+(window as any).applyGlobalNavWidth = applyNavWidthPreference;
+(window as any).applyGlobalNavColor = applyNavColorPreference;
+(window as any).applyGlobalFooterColor = applyFooterColorPreference;
+(window as any).applyGlobalThemeToggleVisibility = applyThemeToggleVisibilityPreference;
 

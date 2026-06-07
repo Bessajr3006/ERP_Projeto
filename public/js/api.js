@@ -567,7 +567,6 @@ function initTheme() {
         htmlDecl.classList.remove('dark');
     }
 }
-
 const LAYOUT_ALIGN_KEY = 'layout_align';
 const NAV_ALIGN_KEY = 'nav_align';
 const LAYOUT_WIDTH_KEY = 'layout_width';
@@ -576,61 +575,47 @@ const NAV_COLOR_KEY = 'nav_color';
 const FOOTER_COLOR_KEY = 'footer_color';
 const FORM_PATTERN_KEY = 'form_pattern_preferences';
 const THEME_TOGGLE_VISIBLE_KEY = 'theme_toggle_visible';
-
 async function syncUiPreferencesFromServer() {
     if (!Auth.isAuthenticated()) {
         return;
     }
-
     try {
         const response = await api('/ui-preferences', {
             method: 'GET',
             cache: 'no-store',
         });
-
         const data = response?.data;
         if (!data || typeof data !== 'object') {
             return;
         }
-
         if (data.theme === 'light' || data.theme === 'dark' || data.theme === 'system') {
             localStorage.setItem('theme', data.theme);
         }
-
         if (data.layout_align === 'left' || data.layout_align === 'center' || data.layout_align === 'right' || data.layout_align === 'responsive') {
             localStorage.setItem(LAYOUT_ALIGN_KEY, data.layout_align);
         }
-
         if (data.nav_align === 'left' || data.nav_align === 'center' || data.nav_align === 'right' || data.nav_align === 'responsive') {
             localStorage.setItem(NAV_ALIGN_KEY, data.nav_align);
         }
-
         if (data.layout_width === 'system' || data.layout_width === 'max-w-5xl' || data.layout_width === 'max-w-6xl' || data.layout_width === 'max-w-7xl' || data.layout_width === 'max-w-screen-2xl') {
             localStorage.setItem(LAYOUT_WIDTH_KEY, data.layout_width);
         }
-
         if (data.nav_width === 'system' || data.nav_width === 'max-w-5xl' || data.nav_width === 'max-w-6xl' || data.nav_width === 'max-w-7xl' || data.nav_width === 'max-w-screen-2xl') {
             localStorage.setItem(NAV_WIDTH_KEY, data.nav_width);
         }
-
         if (typeof data.nav_color === 'string' && /^#[0-9a-fA-F]{6}$/.test(data.nav_color)) {
             localStorage.setItem(NAV_COLOR_KEY, data.nav_color.toLowerCase());
         }
-
         if (typeof data.footer_color === 'string' && /^#[0-9a-fA-F]{6}$/.test(data.footer_color)) {
             localStorage.setItem(FOOTER_COLOR_KEY, data.footer_color.toLowerCase());
         }
-
         if (typeof data.theme_toggle_visible === 'boolean') {
             localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, data.theme_toggle_visible ? 'show' : 'hide');
         }
-
-        if (
-            Object.prototype.hasOwnProperty.call(data, 'form_company_name')
+        if (Object.prototype.hasOwnProperty.call(data, 'form_company_name')
             || Object.prototype.hasOwnProperty.call(data, 'form_profile')
             || Object.prototype.hasOwnProperty.call(data, 'form_accent')
-            || Object.prototype.hasOwnProperty.call(data, 'form_header_size')
-        ) {
+            || Object.prototype.hasOwnProperty.call(data, 'form_header_size')) {
             const formPattern = {
                 empresa: String(data.form_company_name || ''),
                 perfil: String(data.form_profile || 'padrao').toLowerCase(),
@@ -644,7 +629,6 @@ async function syncUiPreferencesFromServer() {
         // Mantem o fallback local quando a API nao estiver disponivel.
     }
 }
-
 function getThemeToggleVisibilityPreference() {
     const raw = String(localStorage.getItem(THEME_TOGGLE_VISIBLE_KEY) || '').trim().toLowerCase();
     if (raw === 'hide') {
@@ -655,12 +639,10 @@ function getThemeToggleVisibilityPreference() {
     }
     return 'show';
 }
-
 function applyThemeToggleVisibilityPreference() {
     const btn = document.getElementById('themeToggleBtn');
     if (!btn)
         return;
-
     const mode = getThemeToggleVisibilityPreference();
     if (mode === 'hide') {
         btn.classList.add('hidden');
@@ -671,7 +653,6 @@ function applyThemeToggleVisibilityPreference() {
         btn.removeAttribute('aria-hidden');
     }
 }
-
 function getLayoutAlignPreference() {
     const align = localStorage.getItem(LAYOUT_ALIGN_KEY);
     if (align === 'left' || align === 'center' || align === 'right' || align === 'responsive') {
@@ -679,19 +660,15 @@ function getLayoutAlignPreference() {
     }
     return 'responsive';
 }
-
 function applyLayoutAlignPreference() {
     const htmlDecl = document.documentElement;
     const body = document.body;
     if (!htmlDecl || !body)
         return;
-
     const align = getLayoutAlignPreference();
     const isDesktop = window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
     const resolvedAlign = align === 'responsive' ? (isDesktop ? 'left' : 'center') : align;
-
     htmlDecl.setAttribute('data-layout-align', align);
-
     const targets = document.querySelectorAll('main.max-w-5xl, main.max-w-6xl, main.max-w-7xl, main.max-w-screen-2xl');
     targets.forEach((el) => {
         el.style.removeProperty('margin-left');
@@ -710,7 +687,6 @@ function applyLayoutAlignPreference() {
         el.style.marginRight = 'auto';
     });
 }
-
 function getNavAlignPreference() {
     const align = localStorage.getItem(NAV_ALIGN_KEY);
     if (align === 'left' || align === 'center' || align === 'right' || align === 'responsive') {
@@ -720,16 +696,13 @@ function getNavAlignPreference() {
     localStorage.setItem(NAV_ALIGN_KEY, fallback);
     return fallback;
 }
-
 function applyNavAlignPreference() {
     const navInner = document.getElementById('globalNavInnerContainer');
     if (!navInner)
         return;
-
     const align = getNavAlignPreference();
     const isDesktop = window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
     const resolvedAlign = align === 'responsive' ? (isDesktop ? 'left' : 'center') : align;
-
     navInner.classList.remove('mx-auto', 'mx-0', 'ml-auto', 'mr-0');
     navInner.style.removeProperty('margin-left');
     navInner.style.removeProperty('margin-right');
@@ -746,7 +719,6 @@ function applyNavAlignPreference() {
     navInner.style.setProperty('margin-left', 'auto', 'important');
     navInner.style.setProperty('margin-right', 'auto', 'important');
 }
-
 function getLayoutWidthPreference() {
     const width = localStorage.getItem(LAYOUT_WIDTH_KEY);
     if (!width) {
@@ -759,7 +731,6 @@ function getLayoutWidthPreference() {
     localStorage.setItem(LAYOUT_WIDTH_KEY, 'system');
     return 'system';
 }
-
 function applyLayoutWidthPreference() {
     const widthPreference = getLayoutWidthPreference();
     const widthClass = widthPreference === 'system' ? 'max-w-7xl' : widthPreference;
@@ -769,7 +740,6 @@ function applyLayoutWidthPreference() {
         el.classList.add(widthClass);
     });
 }
-
 function getNavWidthPreference() {
     const width = localStorage.getItem(NAV_WIDTH_KEY);
     if (width === 'system' || width === 'max-w-5xl' || width === 'max-w-6xl' || width === 'max-w-7xl' || width === 'max-w-screen-2xl') {
@@ -779,18 +749,15 @@ function getNavWidthPreference() {
     localStorage.setItem(NAV_WIDTH_KEY, fallback);
     return fallback;
 }
-
 function applyNavWidthPreference() {
     const navInner = document.getElementById('globalNavInnerContainer');
     if (!navInner)
         return;
-
     const widthPreference = getNavWidthPreference();
     const widthClass = widthPreference === 'system' ? 'max-w-7xl' : widthPreference;
     navInner.classList.remove('max-w-5xl', 'max-w-6xl', 'max-w-7xl', 'max-w-screen-2xl');
     navInner.classList.add(widthClass);
 }
-
 function getNavColorPreference() {
     const navColor = localStorage.getItem(NAV_COLOR_KEY);
     const LEGACY = {
@@ -799,7 +766,6 @@ function getNavColorPreference() {
         emerald: '#064e3b',
         rose: '#881337',
     };
-
     const normalizeHex = (value) => {
         const raw = String(value || '').trim().toLowerCase();
         if (LEGACY[raw]) {
@@ -810,19 +776,16 @@ function getNavColorPreference() {
         }
         return '#0f172a';
     };
-
     const normalized = normalizeHex(navColor);
     if (normalized !== navColor) {
         localStorage.setItem(NAV_COLOR_KEY, normalized);
     }
     return normalized;
 }
-
 function applyNavColorPreference() {
     const navRoot = document.getElementById('globalNavRoot');
     if (!navRoot)
         return;
-
     const color = getNavColorPreference();
     const hexToRgba = (hex, alpha = 1) => {
         const n = parseInt(hex.slice(1), 16);
@@ -838,11 +801,9 @@ function applyNavColorPreference() {
         const b = Math.min(255, Math.max(0, (n & 0xff) + delta));
         return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
     };
-
     navRoot.style.backgroundColor = hexToRgba(color, 0.9);
     navRoot.style.borderColor = shadeHex(color, -18);
 }
-
 function getFooterColorPreference() {
     const footerColor = localStorage.getItem(FOOTER_COLOR_KEY);
     const LEGACY = {
@@ -851,7 +812,6 @@ function getFooterColorPreference() {
         emerald: '#064e3b',
         rose: '#881337',
     };
-
     const normalizeHex = (value) => {
         const raw = String(value || '').trim().toLowerCase();
         if (LEGACY[raw]) {
@@ -862,24 +822,20 @@ function getFooterColorPreference() {
         }
         return '#0f172a';
     };
-
     const normalized = normalizeHex(footerColor);
     if (normalized !== footerColor) {
         localStorage.setItem(FOOTER_COLOR_KEY, normalized);
     }
     return normalized;
 }
-
 function applyFooterColorPreference() {
     const footerRoot = document.getElementById('globalFooterRoot');
     if (!footerRoot)
         return;
-
     const footerBrandText = document.getElementById('footerBrandText');
     const footerBrandDot = document.getElementById('footerBrandDot');
     const footerCompanyInfo = document.getElementById('footerCompanyInfo');
     const footerCopyright = document.getElementById('footerCopyright');
-
     const color = getFooterColorPreference();
     const hexToRgba = (hex, alpha = 1) => {
         const n = parseInt(hex.slice(1), 16);
@@ -902,16 +858,12 @@ function applyFooterColorPreference() {
         const b = n & 0xff;
         return (0.299 * r) + (0.587 * g) + (0.114 * b);
     };
-
     footerRoot.style.backgroundColor = hexToRgba(color, 0.9);
     footerRoot.style.borderColor = shadeHex(color, -18);
-
-    // Mantém o título KEYSTONE ERP legível com qualquer cor de footer.
     const isDarkBg = getLuminance(color) < 150;
     const primaryText = isDarkBg ? '#f8fafc' : '#0f172a';
     const secondaryText = isDarkBg ? '#e2e8f0' : '#1e293b';
     const mutedText = isDarkBg ? '#cbd5e1' : '#334155';
-
     if (footerBrandText) {
         footerBrandText.style.color = primaryText;
     }
@@ -931,7 +883,6 @@ function applyFooterColorPreference() {
         footerCopyright.style.color = mutedText;
     }
 }
-
 window.addEventListener('resize', () => {
     if (getLayoutAlignPreference() === 'responsive') {
         applyLayoutAlignPreference();

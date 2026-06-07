@@ -49,6 +49,7 @@
     defaultCategoryPublicId: string | null;
     allowPrintWithoutConfirmation: boolean;
     cart: CartItem[];
+    cardQty: Record<string, number>;
     discount: number;
     saleData: { customerId: string; deliveryAddress: string };
     payments: Record<PaymentMethodId, number>;
@@ -73,6 +74,7 @@
       defaultCategoryPublicId: null,
       allowPrintWithoutConfirmation: false,
       cart: [],
+      cardQty: {},
       discount: 0,
       saleData: { customerId: '', deliveryAddress: '' },
       payments: { cash: 0, pix: 0, credit: 0, debit: 0, boleto: 0 },
@@ -94,6 +96,12 @@
         return Number(product.promotional_price);
       }
       return Number(product?.selling_price || 0);
+    };
+
+    const hasValidCategory = (product: Product): boolean => {
+      if (!product) return false;
+      const categoryId = product.category_id;
+      return categoryId !== null && categoryId !== undefined && String(categoryId).trim() !== '';
     };
 
     const getCartSubtotal = (): number =>
@@ -282,7 +290,7 @@
                                     <span class="font-bold dark:text-gray-200">${method.name}</span>
                                     <div class="relative w-48">
                                         <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500 font-bold">R$</div>
-                                        <input type="number" step="0.01" value="${state.payments[method.id] || ''}" data-method="${
+                                        <input id="payment-${method.id}" name="payment_${method.id}" type="number" step="0.01" value="${state.payments[method.id] || ''}" data-method="${
                                           method.id
                                         }" class="payment-input w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-right font-bold focus:ring-brand-500 dark:text-white">
                                     </div>
@@ -331,7 +339,7 @@
     function renderProductGrid(): string {
       if (state.loading) return '<div class="text-center py-8">Carregando catálogo...</div>';
 
-      let filtered = state.products;
+      let filtered = state.products.filter(hasValidCategory);
       if (state.activeCategory !== 'all') {
         filtered = filtered.filter((p) => String(p.category_id) === String(state.activeCategory));
       }
@@ -381,6 +389,17 @@
                                   }</div>`
                                 : ''
                             }
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2">
+                            <div class="flex items-center select-none rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700">
+                                <button type="button" class="card-qty-minus w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 text-lg font-bold leading-none" data-id="${p.public_id}">−</button>
+                                <span class="card-qty-display w-7 text-center text-sm font-bold text-gray-800 dark:text-white pointer-events-none" data-id="${p.public_id}">${state.cardQty[p.public_id] || 0}</span>
+                                <button type="button" class="card-qty-plus w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 text-lg font-bold leading-none" data-id="${p.public_id}">+</button>
+                            </div>
+                            <button type="button" class="card-add-btn flex-1 h-8 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold rounded-lg transition-all relative" data-id="${p.public_id}">
+                                Adicionar
+                                ${state.cardQty[p.public_id] > 0 ? `<span class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center border-2 border-white">${state.cardQty[p.public_id]}</span>` : ''}
+                            </button>
                         </div>
                     </div>
                 `
@@ -551,10 +570,48 @@
 
     function attachGridListeners(): void {
       document.querySelectorAll<HTMLElement>('.product-card').forEach((card) => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', (e: MouseEvent) => {
+          // Não adicionar ao clicar nos controles de quantidade.
+          if ((e.target as Element | null)?.closest('.card-qty-minus, .card-qty-plus, .card-add-btn')) return;
           const id = card.dataset.id;
           const p = state.products.find((x) => x.public_id === id);
-          if (p) addToCart(p);
+          if (p) addToCart(p, state.cardQty[p.public_id] || 1);
+        });
+      });
+
+      document.querySelectorAll<HTMLElement>('.card-qty-minus').forEach((btn) => {
+        btn.addEventListener('click', (e: MouseEvent) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          if (!id) return;
+          state.cardQty[id] = Math.max(0, (state.cardQty[id] || 0) - 1);
+          const grid = document.getElementById('productGrid');
+          if (grid) grid.innerHTML = renderProductGrid();
+          attachGridListeners();
+        });
+      });
+
+      document.querySelectorAll<HTMLElement>('.card-qty-plus').forEach((btn) => {
+        btn.addEventListener('click', (e: MouseEvent) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          if (!id) return;
+          state.cardQty[id] = (state.cardQty[id] || 0) + 1;
+          const grid = document.getElementById('productGrid');
+          if (grid) grid.innerHTML = renderProductGrid();
+          attachGridListeners();
+        });
+      });
+
+      document.querySelectorAll<HTMLElement>('.card-add-btn').forEach((btn) => {
+        btn.addEventListener('click', (e: MouseEvent) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const p = state.products.find((x) => x.public_id === id);
+          if (p) {
+            const qty = state.cardQty[id || ''] || 1;
+            addToCart(p, qty);
+          }
         });
       });
     }
@@ -569,13 +626,14 @@
     }
 
     // --- Actions ---
-    function addToCart(product: Product): void {
+    function addToCart(product: Product, qty = 1): void {
       const existing = state.cart.find((c) => c.product.public_id === product.public_id);
       if (existing) {
-        existing.quantity++;
+        existing.quantity += qty;
       } else {
-        state.cart.push({ product, quantity: 1 });
+        state.cart.push({ product, quantity: qty });
       }
+      state.cardQty[product.public_id] = 0;
       render();
     }
 
@@ -623,7 +681,7 @@
       const term = state.searchQuery.toLowerCase().trim();
       if (!term) return;
       const exact = state.products.find(
-        (p) => (!!p.ean && p.ean.toLowerCase() === term) || (!!p.sku && p.sku.toLowerCase() === term)
+        (p) => hasValidCategory(p) && ((!!p.ean && p.ean.toLowerCase() === term) || (!!p.sku && p.sku.toLowerCase() === term))
       );
       if (exact) {
         addToCart(exact);

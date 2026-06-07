@@ -9,6 +9,8 @@ import {
 } from '../types/Entity';
 import { StorageService } from '../utils/storageService';
 
+type ColumnExistsRow = RowDataPacket & { column_count: number };
+
 const BASE_ENTITY_FIELDS = [
     'name', 'cnpj_cpf', 'email', 'phone', 'zipcode', 'street',
     'number', 'complement', 'neighborhood', 'city', 'state',
@@ -32,7 +34,50 @@ function getEntityLabel(table: EntityTable): string {
 }
 
 export class EntityRepository {
+    private static customerSchemaReady = false;
+
+    private static async customerColumnExists(columnName: string): Promise<boolean> {
+        const [rows] = await pool.query<ColumnExistsRow[]>(
+            `SELECT COUNT(*) AS column_count
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'customers'
+               AND COLUMN_NAME = ?`,
+            [columnName]
+        );
+
+        return Number(rows[0]?.column_count || 0) > 0;
+    }
+
+    private static async addCustomerColumnIfMissing(columnName: string, definition: string): Promise<void> {
+        if (await this.customerColumnExists(columnName)) {
+            return;
+        }
+
+        await pool.query(`ALTER TABLE customers ADD COLUMN ${definition}`);
+    }
+
+    private static async ensureCustomerSchema(): Promise<void> {
+        if (this.customerSchemaReady) {
+            return;
+        }
+
+        await this.addCustomerColumnIfMissing('seller_user_id', `seller_user_id INT DEFAULT NULL AFTER phone`);
+        await this.addCustomerColumnIfMissing('vencimento_dia', `vencimento_dia TINYINT DEFAULT NULL COMMENT 'Dia do mes para vencimento (1-31)' AFTER phone`);
+        await this.addCustomerColumnIfMissing('limite', `limite DECIMAL(15, 2) NOT NULL DEFAULT 0.00 COMMENT 'Limite de credito' AFTER vencimento_dia`);
+
+        this.customerSchemaReady = true;
+    }
+
+    private static async ensureSchemaForTable(table: EntityTable): Promise<void> {
+        if (table === 'customers') {
+            await this.ensureCustomerSchema();
+        }
+    }
+
     static async resolveCustomerSellerId(companyId: number, sellerPublicId: string | null | undefined): Promise<number | null | undefined> {
+        await this.ensureCustomerSchema();
+
         if (sellerPublicId === undefined) return undefined;
         const normalizedSellerPublicId = String(sellerPublicId || '').trim();
         if (!normalizedSellerPublicId) return null;
@@ -53,6 +98,8 @@ export class EntityRepository {
     }
 
     static async getById(table: EntityTable, id: number, companyId: number): Promise<Entity> {
+        await this.ensureSchemaForTable(table);
+
         const tableAlias = table === 'customers' ? 'c' : 'e';
         const label = getEntityLabel(table);
         const [rows] = await pool.query<RowDataPacket[]>(
@@ -64,6 +111,8 @@ export class EntityRepository {
     }
 
     static async getByPublicId(table: EntityTable, publicId: string, companyId: number): Promise<Entity> {
+        await this.ensureSchemaForTable(table);
+
         const tableAlias = table === 'customers' ? 'c' : 'e';
         const label = getEntityLabel(table);
         const [rows] = await pool.query<RowDataPacket[]>(
@@ -75,6 +124,8 @@ export class EntityRepository {
     }
 
     static async getCustomerByDocument(companyId: number, cnpjCpf: string): Promise<Entity | null> {
+        await this.ensureCustomerSchema();
+
         const [rows] = await pool.query<RowDataPacket[]>(
             this.buildSelectQuery('customers', 'WHERE c.cnpj_cpf = ? AND c.company_id = ?', 'LIMIT 1'),
             [cnpjCpf, companyId]
@@ -84,6 +135,8 @@ export class EntityRepository {
     }
 
     static async assertUniqueDocument(table: EntityTable, cnpjCpf: string, companyId: number, excludeId?: number): Promise<void> {
+        await this.ensureSchemaForTable(table);
+
         const label = getEntityLabel(table);
         const sql = excludeId
             ? `SELECT id FROM ${table} WHERE cnpj_cpf = ? AND company_id = ? AND id != ? LIMIT 1`
@@ -94,6 +147,8 @@ export class EntityRepository {
     }
 
     static async create(table: EntityTable, companyId: number, data: CreateEntityData): Promise<Entity> {
+        await this.ensureSchemaForTable(table);
+
         if (data.cnpj_cpf) await this.assertUniqueDocument(table, data.cnpj_cpf, companyId);
 
         const publicId = randomUUID();
@@ -136,6 +191,8 @@ export class EntityRepository {
     }
 
     static async list(table: EntityTable, companyId: number): Promise<Entity[]> {
+        await this.ensureSchemaForTable(table);
+
         const tableAlias = table === 'customers' ? 'c' : 'e';
         const [rows] = await pool.query<RowDataPacket[]>(
             this.buildSelectQuery(table, `WHERE ${tableAlias}.company_id = ?`, `ORDER BY ${tableAlias}.name ASC`),
@@ -145,6 +202,8 @@ export class EntityRepository {
     }
 
     static async update(table: EntityTable, publicId: string, companyId: number, data: UpdateEntityData): Promise<Entity> {
+        await this.ensureSchemaForTable(table);
+
         const label = getEntityLabel(table);
         const [currentRows] = await pool.query<RowDataPacket[]>(
             `SELECT id, cnpj_cpf, certificate_url, social_contract_url, cnpj_document_url FROM ${table} WHERE public_id = ? AND company_id = ? LIMIT 1`,
@@ -211,6 +270,8 @@ export class EntityRepository {
     }
 
     static async delete(table: EntityTable, publicId: string, companyId: number): Promise<void> {
+        await this.ensureSchemaForTable(table);
+
         await this.getByPublicId(table, publicId, companyId);
         const label = getEntityLabel(table);
         const [result] = await pool.query<ResultSetHeader>(

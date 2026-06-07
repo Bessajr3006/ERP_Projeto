@@ -72,16 +72,26 @@
             {
                 groupName: 'Principal',
                 links: [
-                    { id: 'dashboard', label: 'Dashboard' },
                     { id: 'sales', label: 'PDV / Vendas' },
+                    { id: 'service_launches', label: 'Lançamento de Serviço' },
                     { id: 'restaurant', label: 'Restaurante' }
+                ]
+            },
+            {
+                groupName: 'Visão',
+                links: [
+                    { id: 'dashboard', label: 'Visão Geral' },
+                    { id: 'finance_vision', label: 'Visão Financeiro' },
+                    { id: 'stock_vision', label: 'Visão Estoque' },
+                    { id: 'whatsapp-info', label: 'Visão Whatsapp' }
                 ]
             },
             {
                 groupName: 'Pedido',
                 links: [
                     { id: 'picking', label: 'Separação' },
-                    { id: 'nota', label: 'Nota' }
+                    { id: 'nota', label: 'Nota' },
+                    { id: 'notas_vendidas', label: 'Notas Vendidas' }
                 ]
             },
             {
@@ -89,10 +99,27 @@
                 links: [
                     { id: 'products', label: 'Produtos' },
                     { id: 'categories', label: 'Categoria' },
+                    { id: 'stock_types', label: 'Tipo de Estoque' },
                     { id: 'manufacturers', label: 'Fabricante' },
                     { id: 'taxes', label: 'Tributo' },
                     { id: 'prices', label: 'Tabela de Preço' },
                     { id: 'measures', label: 'Medida' }
+                ]
+            },
+            {
+                groupName: 'Serviço',
+                links: [
+                    { id: 'service_types', label: 'Tipo de Serviço' },
+                    { id: 'services', label: 'Serviço' },
+                    { id: 'service_tax_municipal', label: 'Tributação Municipal' },
+                    { id: 'service_tax_federal', label: 'Tributação Federal' }
+                ]
+            },
+            {
+                groupName: 'Pedido_Compra',
+                links: [
+                    { id: 'purchases', label: 'Compra' },
+                    { id: 'manifestation', label: 'Manifesto' }
                 ]
             },
             {
@@ -102,8 +129,7 @@
                     { id: 'revenues', label: 'Receita' },
                     { id: 'finance_categories', label: 'Categoria (Finanças)' },
                     { id: 'banks', label: 'Bancos' },
-                    { id: 'statements', label: 'Extrato' },
-                    { id: 'purchases', label: 'Compras' }
+                    { id: 'statements', label: 'Extrato' }
                 ]
             },
             {
@@ -141,7 +167,7 @@
                     { id: 'users', label: 'Usuário' },
                     { id: 'tasks', label: 'Tarefas' },
                     { id: 'organizer', label: 'Organizador' },
-                    { id: 'whatsapp-info', label: 'Visão Whatsapp' },
+                    { id: 'ajuste', label: 'Ajuste' },
                     { id: 'whatsapp', label: 'WhatsApp' },
                     { id: 'email', label: 'E-mail' },
                     { id: 'swagger', label: 'Swagger' }
@@ -156,7 +182,25 @@
                 <h5 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 opacity-70">${group.groupName}</h5>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-6">
                     ${group.links.map(link => {
-                        const hasPermission = state.currentPermissions.some(p => p.module === link.id && p.can_view);
+                        const isAdminServiceTypesDefault = roleId === 'admin' && (
+                            link.id === 'service_types'
+                            || link.id === 'services'
+                            || link.id === 'service_launches'
+                            || link.id === 'service_tax_municipal'
+                            || link.id === 'service_tax_federal'
+                        );
+                        const hasPermission = state.currentPermissions.some((p) => {
+                            if (!p.can_view) {
+                                return false;
+                            }
+
+                            // Compatibilidade com base antiga em nuvem: Tipo de Estoque era acoplado a "categories".
+                            if (link.id === 'stock_types') {
+                                return p.module === 'stock_types' || p.module === 'categories';
+                            }
+
+                            return p.module === link.id;
+                        }) || isAdminServiceTypesDefault;
 
                         const canEdit = canEditTargetRole(roleId);
                         const disabledAtt = !canEdit
@@ -195,6 +239,33 @@
         
         container.innerHTML = html;
         container.classList.remove('grid', 'grid-cols-1', 'sm:grid-cols-2', 'md:grid-cols-3', 'gap-4');
+    }
+
+    function setBulkPermissionButtonsState(roleId) {
+        const canEdit = canEditTargetRole(roleId);
+        const enableAllBtn = getById('btnEnableAllModules');
+        const disableAllBtn = getById('btnDisableAllModules');
+
+        [enableAllBtn, disableAllBtn].forEach((btn) => {
+            if (!btn) return;
+            btn.disabled = !canEdit;
+            btn.classList.toggle('opacity-60', !canEdit);
+            btn.classList.toggle('cursor-not-allowed', !canEdit);
+        });
+    }
+
+    function setAllModulesChecked(checked) {
+        const roleId = getById('entityRole')?.value || '';
+        if (!canEditTargetRole(roleId)) {
+            showAlert('alertMessage', 'Acesso negado para alterar as permissões deste perfil.', 'error');
+            return;
+        }
+
+        qsa('.module-checkbox').forEach((checkbox) => {
+            if (!checkbox.disabled) {
+                checkbox.checked = checked;
+            }
+        });
     }
 
     function closeNewRoleModal() {
@@ -245,8 +316,8 @@
         getById('newRoleModalBackdrop')?.addEventListener('click', closeNewRoleModal);
 
         getById('btnNewRole')?.addEventListener('click', () => {
-             getById('newRoleModal').classList.remove('hidden');
-             getById('newRoleName').focus();
+            getById('newRoleModal').classList.remove('hidden');
+            getById('newRoleName').focus();
         });
 
         getById('newRoleForm')?.addEventListener('submit', async (e) => {
@@ -281,6 +352,14 @@
                 btn.disabled = false;
                 btn.textContent = 'Criar';
             }
+        });
+
+        getById('btnEnableAllModules')?.addEventListener('click', () => {
+            setAllModulesChecked(true);
+        });
+
+        getById('btnDisableAllModules')?.addEventListener('click', () => {
+            setAllModulesChecked(false);
         });
 
         getById('entityForm')?.addEventListener('submit', async (e) => {
@@ -404,6 +483,7 @@
                 }
 
                 renderModuleCheckboxes(roleId);
+                setBulkPermissionButtonsState(roleId);
 
                 const saveBtn = getById('saveBtn');
                 const canEdit = canEditTargetRole(roleId);

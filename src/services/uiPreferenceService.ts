@@ -36,6 +36,7 @@ export interface UiPreferenceInput {
 }
 
 type UiPreferenceRow = RowDataPacket & Omit<UiPreference, 'theme_toggle_visible'> & { theme_toggle_visible: number | boolean };
+type ColumnExistsRow = RowDataPacket & { column_count: number };
 
 function mapPreferenceRow(row: UiPreferenceRow): UiPreference {
     return {
@@ -46,6 +47,27 @@ function mapPreferenceRow(row: UiPreferenceRow): UiPreference {
 
 export class UiPreferenceService {
     private static schemaReady = false;
+
+    private static async columnExists(columnName: string): Promise<boolean> {
+        const [rows] = await pool.query<ColumnExistsRow[]>(
+            `SELECT COUNT(*) AS column_count
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'ui_preferences'
+               AND COLUMN_NAME = ?`,
+            [columnName]
+        );
+
+        return Number(rows[0]?.column_count || 0) > 0;
+    }
+
+    private static async addColumnIfMissing(columnName: string, definition: string): Promise<void> {
+        if (await UiPreferenceService.columnExists(columnName)) {
+            return;
+        }
+
+        await pool.query(`ALTER TABLE ui_preferences ADD COLUMN ${definition}`);
+    }
 
     private static async ensureSchema(): Promise<void> {
         if (UiPreferenceService.schemaReady) {
@@ -78,13 +100,13 @@ export class UiPreferenceService {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
         );
 
-        await pool.query(`ALTER TABLE ui_preferences ADD COLUMN IF NOT EXISTS form_company_name VARCHAR(150) DEFAULT NULL`);
-        await pool.query(`ALTER TABLE ui_preferences ADD COLUMN IF NOT EXISTS nav_align VARCHAR(20) NOT NULL DEFAULT 'responsive'`);
-        await pool.query(`ALTER TABLE ui_preferences ADD COLUMN IF NOT EXISTS nav_width VARCHAR(30) NOT NULL DEFAULT 'system'`);
-        await pool.query(`ALTER TABLE ui_preferences ADD COLUMN IF NOT EXISTS form_profile VARCHAR(20) NOT NULL DEFAULT 'padrao'`);
-        await pool.query(`ALTER TABLE ui_preferences ADD COLUMN IF NOT EXISTS form_accent VARCHAR(30) NOT NULL DEFAULT 'brand'`);
-        await pool.query(`ALTER TABLE ui_preferences ADD COLUMN IF NOT EXISTS form_header_size VARCHAR(20) NOT NULL DEFAULT 'medio'`);
-        await pool.query(`ALTER TABLE ui_preferences ADD COLUMN IF NOT EXISTS theme_toggle_visible TINYINT(1) NOT NULL DEFAULT 1`);
+        await UiPreferenceService.addColumnIfMissing('form_company_name', `form_company_name VARCHAR(150) DEFAULT NULL AFTER footer_color`);
+        await UiPreferenceService.addColumnIfMissing('nav_align', `nav_align VARCHAR(20) NOT NULL DEFAULT 'responsive' AFTER layout_align`);
+        await UiPreferenceService.addColumnIfMissing('nav_width', `nav_width VARCHAR(30) NOT NULL DEFAULT 'system' AFTER layout_width`);
+        await UiPreferenceService.addColumnIfMissing('form_profile', `form_profile VARCHAR(20) NOT NULL DEFAULT 'padrao' AFTER form_company_name`);
+        await UiPreferenceService.addColumnIfMissing('form_accent', `form_accent VARCHAR(30) NOT NULL DEFAULT 'brand' AFTER form_profile`);
+        await UiPreferenceService.addColumnIfMissing('form_header_size', `form_header_size VARCHAR(20) NOT NULL DEFAULT 'medio' AFTER form_accent`);
+        await UiPreferenceService.addColumnIfMissing('theme_toggle_visible', `theme_toggle_visible TINYINT(1) NOT NULL DEFAULT 1 AFTER form_header_size`);
 
         UiPreferenceService.schemaReady = true;
     }

@@ -1065,7 +1065,6 @@
                     </button>
                     <div class="hidden space-y-1" id="mobileUserSubmenu">
                         <button type="button" id="logoutBtnUserSubmenuMobile"
-                            onclick="try{if(window.Auth&&typeof window.Auth.clearToken==='function'){window.Auth.clearToken();}localStorage.removeItem('erp_token');sessionStorage.removeItem('erp_token');window.location.replace('/');}catch(_e){window.location.href='/';}return false;"
                             class="w-full flex pl-7 pr-4 items-center justify-start py-2 text-base font-medium text-red-400 hover:bg-brand-800 hover:text-red-300">
                             <svg class="h-5 w-5 mr-3 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>

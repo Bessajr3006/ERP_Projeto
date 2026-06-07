@@ -1,0 +1,4 @@
+-- 12_tax_rules_ncm_cest.sql
+ALTER TABLE tax_rules
+ADD COLUMN ncm VARCHAR(8) DEFAULT NULL AFTER name,
+ADD COLUMN cest VARCHAR(7) DEFAULT NULL AFTER ncm;

@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  cartilha_app:
+    build: .
+    container_name: cartilha_app
+    restart: always
+    depends_on:
+      cartilha_db:
+        condition: service_healthy
+    environment:
+      PORT: "5001"
+      FLASK_DEBUG: "false"
+      DB_HOST: cartilha_db
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: "30mariafn@"
+      DB_NAME: cartilha
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MASTER_EMAIL: ${MASTER_EMAIL:-master}
+      MASTER_PASSWORD: ${MASTER_PASSWORD:-master123}
+      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-usuario}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-usuario123}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+    networks:
+      - traefik
+      - cartilha_internal
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.cartilha.rule: "Host(`cartilha.aporttec.com`)"
+      traefik.http.routers.cartilha.entrypoints: "websecure"
+      traefik.http.routers.cartilha.tls.certresolver: "myresolver"
+      traefik.http.services.cartilha.loadbalancer.server.port: "5001"
+      traefik.http.routers.cartilha.priority: "50"
+      traefik.docker.network: traefik
+
+  cartilha_db:
+    image: mariadb:10.11
+    container_name: cartilha_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "30mariafn@"
+      MYSQL_DATABASE: cartilha
+    volumes:
+      - cartilha_db:/var/lib/mysql
+    networks:
+      - cartilha_internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p30mariafn@"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  cartilha_phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: cartilha_phpmyadmin
+    restart: always
+    depends_on:
+      - cartilha_db
+    environment:
+      PMA_HOST: cartilha_db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: "30mariafn@"
+      PMA_ABSOLUTE_URI: https://phpmyadmin.cartilha.aporttec.com/
+      UPLOAD_LIMIT: 64M
+    networks:
+      - traefik
+      - cartilha_internal
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.cartilha-pma.rule: "Host(`phpmyadmin.cartilha.aporttec.com`)"
+      traefik.http.routers.cartilha-pma.entrypoints: "websecure"
+      traefik.http.routers.cartilha-pma.tls.certresolver: "myresolver"
+      traefik.http.services.cartilha-pma.loadbalancer.server.port: "80"
+      traefik.docker.network: traefik
+
+networks:
+  traefik:
+    external: true
+  cartilha_internal:
+    driver: bridge
+
+volumes:
+  cartilha_db:

@@ -1,0 +1,28 @@
+{
+    "css.lint.unknownAtRules": "ignore",
+    "css.lint.propertyIgnoredDueToDisplay": "ignore",
+    "files.associations": {
+        "*.sql": "sql"
+    },
+    "mssql.intelliSense.enableIntelliSense": false,
+    "mssql.intelliSense.enableErrorChecking": false,
+
+    // ── Terminal: adiciona .node/bin e node_modules/.bin ao PATH ──────────────
+    "terminal.integrated.env.osx": {
+        "PATH": "${workspaceFolder}/.node/bin:${workspaceFolder}/node_modules/.bin:${env:PATH}"
+    },
+    "terminal.integrated.env.linux": {
+        "PATH": "${workspaceFolder}/.node/bin:${workspaceFolder}/node_modules/.bin:${env:PATH}"
+    },
+    "terminal.integrated.env.windows": {
+        "PATH": "${workspaceFolder}\\.node\\bin;${workspaceFolder}\\node_modules\\.bin;${env:PATH}"
+    },
+
+    // ── Explorer: mostra node_modules e .node ─────────────────────────────────
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/node_modules": false,
+        "**/.node": false
+    }
+}

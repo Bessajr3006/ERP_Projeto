@@ -1,0 +1,97 @@
+{
+  "folders": [
+    { "name": "Projeto ERP Bessa", "path": "." }
+  ],
+  "settings": {
+    "js/ts.tsdk.path": "node_modules/typescript/lib",
+    "css.lint.unknownAtRules": "ignore",
+    "css.lint.propertyIgnoredDueToDisplay": "ignore",
+    "mssql.intelliSense.enableIntelliSense": false,
+    "mssql.intelliSense.enableErrorChecking": false,
+    "terminal.integrated.env.osx": {
+      "PATH": "${workspaceFolder}/.node/bin:${workspaceFolder}/node_modules/.bin:${env:PATH}"
+    },
+    "terminal.integrated.env.linux": {
+      "PATH": "${workspaceFolder}/.node/bin:${workspaceFolder}/node_modules/.bin:${env:PATH}"
+    },
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true,
+      "**/dist": true,
+      "**/coverage": true,
+      "**/node_modules": false,
+      "**/.node": false
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.node": true,
+      "**/dist": true,
+      "**/coverage": true
+    },
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/.node/**": true,
+      "**/dist/**": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "bradlc.vscode-tailwindcss",
+      "rangav.vscode-thunder-client",
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "API: debug server (Local Node)",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "${workspaceFolder}/.node/bin/node",
+        "runtimeArgs": ["--import", "tsx"],
+        "args": ["src/server.ts"],
+        "cwd": "${workspaceFolder}",
+        "console": "integratedTerminal",
+        "internalConsoleOptions": "neverOpen",
+        "skipFiles": ["<node_internals>/**"],
+        "env": { "NODE_ENV": "development" }
+      },
+      {
+        "name": "Frontend: open app",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:3020/",
+        "webRoot": "${workspaceFolder}/public"
+      }
+    ],
+    "compounds": [
+      {
+        "name": "App: API + Frontend",
+        "configurations": ["API: debug server (Local Node)", "Frontend: open app"]
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "dev",
+        "type": "shell",
+        "command": "source activate.sh && npm run dev",
+        "isBackground": true,
+        "group": { "kind": "build", "isDefault": true },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated" }
+      },
+      {
+        "label": "build",
+        "type": "shell",
+        "command": "source activate.sh && npm run build",
+        "group": "build",
+        "problemMatcher": "$tsc"
+      }
+    ]
+  }
+}

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Balancete de Verificação</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+<body data-required-module="balancete" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto">
+        <!-- ── HEADER ────────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-5 flex flex-wrap justify-between items-center gap-3 shrink-0">
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight">Balancete de Verificação</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                 <button id="btnPrint" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                     Imprimir
+                 </button>
+            </div>
+        </div>
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm border font-medium"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <!-- ── FILTERS ───────────────────────────────────────────── -->
+            <div class="mb-3 shrink-0">
+                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
+                    <button type="button" id="toggleFilterBtn" class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors rounded-xl">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                        </div>
+                        <svg id="filterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="filterBody" class="overflow-hidden">
+                        <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                            <form id="filterForm">
+                                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                                    <div>
+                                        <label for="filterStartDate" class="block text-[10px] font-bold text-gray-500 uppercase">Data Início</label>
+                                        <input type="date" id="filterStartDate" name="filterStartDate" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                    <div>
+                                        <label for="filterEndDate" class="block text-[10px] font-bold text-gray-500 uppercase">Data Fim</label>
+                                        <input type="date" id="filterEndDate" name="filterEndDate" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-4 h-8.5 px-2">
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <span class="select-none font-medium text-xs text-gray-600 dark:text-gray-300 mr-2">Ocultar Zeradas</span>
+                                            <input type="checkbox" id="filterHideZeros" class="sr-only peer" checked title="Ocultar contas zeradas" aria-label="Ocultar contas zeradas">
+                                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 dark:peer-focus:ring-brand-800 rounded-full peer dark:bg-slate-700 peer-checked:bg-brand-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                                        </label>
+
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <span class="select-none font-medium text-xs text-gray-600 dark:text-gray-300 mr-2">Resumido</span>
+                                            <input type="checkbox" id="filterOnlySynthetic" class="sr-only peer" title="Mostrar somente contas sintéticas" aria-label="Mostrar somente contas sintéticas">
+                                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 dark:peer-focus:ring-brand-800 rounded-full peer dark:bg-slate-700 peer-checked:bg-brand-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex flex-wrap justify-end gap-2">
+                                    <button type="button" id="btnClearFiltersKeepDate" class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none transition-colors">Limpar sem Data</button>
+                                    <button type="button" id="btnClearFilters" class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none transition-colors">Limpar Filtros</button>
+                                    <button type="submit" id="btnApplyFilters" class="px-5 py-1.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">Gerar Balancete de Verificação</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── TABLE ─────────────────────────────────────────────── -->
+            <div id="balanceteSection" class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-gray-200 dark:border-slate-700 flex-col flex-1 min-h-0 overflow-hidden relative hidden">
+                
+                <div id="loadingOverlay" class="absolute inset-0 bg-slate-900/10 dark:bg-slate-900/50 backdrop-blur-sm z-50 items-center justify-center rounded-t-xl hidden">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-2xl flex flex-col items-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 dark:border-brand-400"></div>
+                        <p class="mt-4 text-sm font-medium text-gray-900 dark:text-white">Gerando Balancete...</p>
+                    </div>
+                </div>
+
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50 dark:bg-slate-800">
+                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <span class="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
+                        Saldos das Contas
+                    </h3>
+                </div>
+                
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
+                        <thead class="bg-gray-200 dark:bg-slate-900/60 border-y border-gray-300 dark:border-slate-700 sticky top-0 z-20">
+                            <tr>
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-left text-[11px] font-extrabold text-gray-800 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-[35%]">
+                                    Descrição da Conta
+                                </th>
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[11px] font-extrabold text-gray-800 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-[16%]">
+                                    Saldo Anterior
+                                </th>
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[11px] font-extrabold text-gray-800 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-[16%]">
+                                    Débitos
+                                </th>
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[11px] font-extrabold text-gray-800 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-[16%]">
+                                    Créditos
+                                </th>
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[11px] font-extrabold text-gray-800 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-[17%]">
+                                    Saldo Atual
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="balanceteTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
+                            <!-- Gerado via Javascript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ── FOOTER TOTALS ───────────────────────────────────────── -->
+            <div id="footerTotals" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-6 py-4 rounded-b-xl shadow-sm flex-col sm:flex-row sm:items-center justify-between transition-colors hidden">
+                <div class="flex items-center gap-3 mb-4 sm:mb-0">
+                    <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+                        <svg class="text-blue-600 dark:text-blue-400 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                            Totais Fechados
+                        </span>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            Movimentação do Período
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 sm:gap-8 items-center justify-end w-full sm:w-auto">
+                    <div class="text-right">
+                        <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">Total Débitos</span>
+                        <span id="footerSumDb" class="block text-xl font-black text-blue-600 dark:text-blue-400">
+                            R$ 0,00
+                        </span>
+                    </div>
+                    <div class="text-right pr-2">
+                        <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">Total Créditos</span>
+                        <span id="footerSumCr" class="block text-xl font-black text-orange-600 dark:text-orange-400">
+                            R$ 0,00
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/balancete.js"></script>
+    <script src="/js/components/navbar.js"></script>
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

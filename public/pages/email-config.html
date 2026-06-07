@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Caixa de E-mail</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden" data-required-module="email-config">
+    <div id="app-navbar"></div>
+
+    <main class="flex flex-col flex-1 min-h-0 overflow-y-auto max-w-3xl mx-auto w-full sm:px-6 lg:px-8 py-6 px-4">
+
+        <!-- Cabeçalho -->
+        <div class="flex items-center gap-3 mb-6">
+            <svg class="w-6 h-6 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Caixa de E-mail</h1>
+        </div>
+
+        <!-- Alerta -->
+        <div id="alertMessage" class="hidden mb-4 rounded-lg px-4 py-3 text-sm"></div>
+
+        <!-- Formulário -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <form id="emailConfigForm" novalidate>
+
+                <fieldset class="mb-6">
+                    <legend class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Servidor SMTP</legend>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <!-- Host -->
+                        <div class="sm:col-span-2">
+                            <label for="smtpHost" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Servidor (Host) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="smtpHost" name="smtp_host" placeholder="smtp.gmail.com"
+                                class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+
+                        <!-- Porta -->
+                        <div>
+                            <label for="smtpPort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Porta <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" id="smtpPort" name="smtp_port" value="587" min="1" max="65535"
+                                class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+
+                    <!-- SSL/TLS -->
+                    <div class="mt-4 flex items-center gap-3">
+                        <input type="checkbox" id="smtpSecure" name="smtp_secure"
+                            class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                        <label for="smtpSecure" class="text-sm text-gray-700 dark:text-gray-300">
+                            Usar SSL/TLS (porta 465)
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="mb-6">
+                    <legend class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Autenticação</legend>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Usuário -->
+                        <div>
+                            <label for="smtpUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Usuário / E-mail <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" id="smtpUser" name="smtp_user" placeholder="seuemail@exemplo.com"
+                                autocomplete="username"
+                                class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+
+                        <!-- Senha -->
+                        <div>
+                            <label for="smtpPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Senha
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="smtpPassword" name="smtp_password"
+                                    autocomplete="new-password"
+                                    placeholder="Deixe em branco para manter a atual"
+                                    class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <button type="button" id="togglePassword"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                    title="Mostrar/ocultar senha">
+                                    <svg id="eyeIcon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <p id="hasPasswordHint" class="hidden mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Senha salva. Deixe em branco para não alterar.
+                            </p>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="mb-6">
+                    <legend class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Remetente</legend>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Nome -->
+                        <div>
+                            <label for="senderName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Nome do Remetente <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="senderName" name="sender_name" placeholder="Minha Empresa"
+                                class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+
+                        <!-- E-mail remetente -->
+                        <div>
+                            <label for="senderEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                E-mail do Remetente <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" id="senderEmail" name="sender_email" placeholder="noreply@minhaempresa.com.br"
+                                class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Ativo -->
+                <div class="mb-6 flex items-center gap-3">
+                    <input type="checkbox" id="isActive" name="is_active" checked
+                        class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                    <label for="isActive" class="text-sm text-gray-700 dark:text-gray-300">
+                        Configuração ativa
+                    </label>
+                </div>
+
+                <!-- Botões -->
+                <div class="flex items-center gap-3 pt-2 border-t border-gray-100 dark:border-slate-700">
+                    <button type="submit" id="saveBtn"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors disabled:opacity-60">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Salvar
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/email-config.js"></script>
+    <script src="/js/components/navbar.js"></script>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

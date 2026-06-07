@@ -1,0 +1,2 @@
+ALTER TABLE companies
+ADD COLUMN IF NOT EXISTS logo_base64 LONGTEXT DEFAULT NULL AFTER logo_filename;

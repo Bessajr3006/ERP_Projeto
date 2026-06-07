@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Clientes</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+    <script src="/vendor/forge.min.js"></script>
+</head>
+
+<body data-required-module="customers" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <!-- Cabeçalho fixo: sempre visível em lista e card -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Clientes</h3>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="btnBulkDeleteCustomers" title="Excluir em Lote"
+                        class="hidden items-center justify-center gap-1.5 rounded-lg border border-amber-300 dark:border-amber-600 px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-sm font-medium text-amber-700 dark:text-amber-300 shadow-sm hover:bg-amber-100 dark:hover:bg-amber-900/50 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Excluir em Lote (<span id="bulkCustomersCount">0</span>)
+                    </button>
+                    <button type="button" id="btnOpenSolidconCustomersModal" title="Importar Solidcon"
+                        class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        Solidcon
+                    </button>
+                    <button type="button" id="btnOpenModal" title="Novo Cliente"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="customersSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-3 py-3 text-left w-12">
+                                    <input type="checkbox" id="selectAll" name="selectAll" title="Selecionar todos os clientes" aria-label="Selecionar todos os clientes"
+                                        class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Nome / Razão Social</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Documento</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Contato</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Vencimento</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Limite</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Vendedor</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTable"
+                            class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Solidcon Customers Modal -->
+    <div id="solidconCustomersModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="solidcon-customers-modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="solidconCustomersModalBackdrop"></div>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                            <h3 id="solidcon-customers-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Importar Clientes Solidcon</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Busque o JSON pela URL configurada ou cole o payload para importar clientes.</p>
+                        </div>
+                        <button type="button" id="btnCloseSolidconCustomersModal" title="Fechar"
+                            class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                            <span class="sr-only">Fechar</span>
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-md border border-gray-200 dark:border-slate-700">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                            <div class="flex-1">
+                                <label for="solidconCustomerUrlSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL Solidcon</label>
+                                <select id="solidconCustomerUrlSelect" name="solidconCustomerUrlSelect" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <option value="1">Solidcon URL 1</option>
+                                    <option value="2">Solidcon URL 2</option>
+                                    <option value="3">Solidcon URL 3</option>
+                                    <option value="4">Solidcon URL 4</option>
+                                    <option value="5">Solidcon URL 5</option>
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Configure as URLs na tela Minha Empresa &gt; API/Solidcon.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="btnFetchSolidconCustomers" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+                                    Buscar JSON
+                                </button>
+                                <button type="button" id="btnImportSolidconCustomers" class="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-3 py-2 bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+                                    Importar JSON
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="solidconCustomersJsonInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payload JSON</label>
+                            <textarea id="solidconCustomersJsonInput" name="solidconCustomersJsonInput" rows="6" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Cole aqui o JSON ou clique em &quot;Buscar JSON&quot;"></textarea>
+                        </div>
+                        <div id="solidconCustomersStatus" class="hidden mt-3 text-sm rounded-md px-3 py-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="entityModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="modalBackdrop"></div>
+            <div
+                class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <form id="entityForm" action="#" method="POST" novalidate>
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="lg:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
+                                    id="modalTitle">Novo Cliente</h3>
+                                <div class="mt-4 border-b border-gray-200 dark:border-slate-700">
+                                    <nav class="-mb-px flex gap-4" role="tablist" aria-label="Abas do cliente">
+                                        <button type="button" id="customerInfoTabButton"
+                                            class="customer-modal-tab whitespace-nowrap border-b-2 border-brand-500 px-1 pb-2 text-sm font-medium text-brand-600 dark:text-brand-300"
+                                            role="tab"
+                                            data-customer-tab-target="customerInfoTab" aria-controls="customerInfoTab" aria-selected="true">
+                                            Dados
+                                        </button>
+                                        <button type="button" id="customerDetailsTabButton"
+                                            class="customer-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                            role="tab"
+                                            data-customer-tab-target="customerDetailsTab" aria-controls="customerDetailsTab" aria-selected="false">
+                                            Informações
+                                        </button>
+                                        <button type="button" id="customerOrderTabButton"
+                                            class="customer-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                            role="tab"
+                                            data-customer-tab-target="customerOrderTab" aria-controls="customerOrderTab" aria-selected="false">
+                                            Pedido
+                                        </button>
+                                    </nav>
+                                </div>
+                                <div id="customerInfoTab" class="customer-modal-tab-panel mt-4 space-y-4" role="tabpanel" aria-labelledby="customerInfoTabButton">
+                                    <input type="hidden" id="customerId" name="customerId" value="" data-bwignore="true" data-lpignore="true" placeholder="">
+
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div class="sm:col-span-2">
+                                            <label for="customerName"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Razão Social / Nome <span class="text-red-500">*</span></label>
+                                            <input type="text" id="customerName" name="customerName"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
+                                        <div>
+                                            <label for="customerEmail"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                            <input type="email" id="customerEmail" name="customerEmail" autocomplete="off"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
+                                        <div>
+                                            <label for="customerSellerParam"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Vendedor</label>
+                                            <select id="customerSellerParam" name="customerSellerParam"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                                <option value="">Nenhum</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
+                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Dados Comerciais</h4>
+                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="customerDocument"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF/CNPJ</label>
+                                                <div class="flex">
+                                                    <input type="text" id="customerDocument" name="customerDocument" placeholder="000.000.000-00"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                    <button type="button" id="btnSearchCnpj" class="mt-1 px-3 py-2 bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800 rounded-r-md font-medium text-sm hover:bg-brand-200 dark:hover:bg-brand-800/50 transition-colors">Buscar</button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label for="customerPhone"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
+                                                <input type="text" id="customerPhone" name="customerPhone"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
+                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Endereço</h4>
+                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="customerZipcode"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CEP</label>
+                                                <div class="relative">
+                                                    <input type="text" id="customerZipcode" name="customerZipcode" placeholder="00000-000"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                    <div id="customerCepLoading"
+                                                        class="hidden absolute inset-y-0 right-0 pr-3 items-center pointer-events-none">
+                                                        <svg class="animate-spin h-5 w-5 text-brand-500 mt-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label for="customerStreet"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Rua / Logradouro</label>
+                                                <input type="text" id="customerStreet" name="customerStreet"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="customerNumber"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número</label>
+                                                <input type="text" id="customerNumber" name="customerNumber"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="customerComplement"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complemento</label>
+                                                <input type="text" id="customerComplement" name="customerComplement"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="customerNeighborhood"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bairro</label>
+                                                <input type="text" id="customerNeighborhood" name="customerNeighborhood"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="customerCity"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cidade</label>
+                                                <input type="text" id="customerCity" name="customerCity"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="sm:col-span-2">
+                                                <label for="customerState"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado (UF)</label>
+                                                <select id="customerState" name="customerState"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                                    <option value="">Selecione...</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
+                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Documentos Fiscais</h4>
+                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div class="sm:col-span-2 bg-gray-50 dark:bg-slate-900/50 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                                                <label for="customerCertFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Certificado Digital A1 (.pfx)</label>
+                                                <input type="file" id="customerCertFile" name="customerCertFile" accept=".pfx,.p12" title="Selecionar certificado digital do cliente"
+                                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-brand-900/40 dark:file:text-brand-300 dark:text-gray-400" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                
+                                                <div class="mt-3 grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label for="customerCertPassword" class="block text-xs font-semibold text-gray-500 dark:text-gray-400">Senha do Certificado</label>
+                                                        <input type="password" id="customerCertPassword" name="customerCertPassword" autocomplete="new-password"
+                                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 sm:text-sm outline-none" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                    </div>
+                                                    <div>
+                                                        <label for="customerCertExpiration" class="block text-xs font-semibold text-gray-500 dark:text-gray-400">Data de Validade</label>
+                                                        <input type="date" id="customerCertExpiration" name="customerCertExpiration"
+                                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 sm:text-sm outline-none" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="sm:col-span-2">
+                                                <label for="customerCnpjFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cartão CNPJ / Docs Adicionais</label>
+                                                <input type="file" id="customerCnpjFile" name="customerCnpjFile" accept=".pdf,.png,.jpg" title="Selecionar cartão CNPJ ou documentos adicionais"
+                                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-gray-300 dark:text-gray-400" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                <p id="docSavedIndicator" class="text-xs text-green-600 mt-1 hidden">✔ Documento já salvo anteriormente.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div id="customerDetailsTab" class="customer-modal-tab-panel hidden mt-4 space-y-4" role="tabpanel" aria-labelledby="customerDetailsTabButton">
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label for="customerDueDay"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Dia de vencimento</label>
+                                            <input type="number" id="customerDueDay" name="customerDueDay" min="1" max="31" step="1"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="1 a 31">
+                                        </div>
+                                        <div>
+                                            <label for="customerCreditLimit"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Limite</label>
+                                            <input type="number" id="customerCreditLimit" name="customerCreditLimit" min="0" step="0.01"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="customerOrderTab" class="customer-modal-tab-panel hidden mt-4 space-y-4" role="tabpanel" aria-labelledby="customerOrderTabButton"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse dark:border-t dark:border-slate-700">
+                        <button type="submit" id="saveBtn"
+                            class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
+                            Salvar
+                        </button>
+                        <button type="button" id="btnCancelModal"
+                            class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/filter-panel.js"></script>
+    <script src="/js/components/crud-manager.js"></script>
+    <script src="/js/customers.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

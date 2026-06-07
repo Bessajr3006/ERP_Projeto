@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Plano de Contas</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body data-required-module="accounting" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Plano de Contas</h3>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
+                        <button type="button" id="btnListView" title="Visualização em Lista"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <button type="button" id="btnGridView" title="Visualização em Cards"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="batchActions" class="hidden">
+                        <button type="button" id="btnBatchDelete" class="inline-flex items-center justify-center rounded-lg border border-red-300 dark:border-red-900 p-2 bg-white dark:bg-slate-800 text-red-700 dark:text-red-400 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors" title="Excluir Selecionados">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                    <button type="button" id="btnImportAccounts" title="Importação"
+                        class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 p-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    </button>
+                    <button type="button" id="btnOpenModal" title="Nova Conta"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="accountsSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="bg-gray-50 dark:bg-slate-900 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left w-12 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <input type="checkbox" id="selectAll" name="selectAll" title="Selecionar todas as contas" aria-label="Selecionar todas as contas" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cód. Fácil</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Código</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome da Conta</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">D/C</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma conta contábil cadastrada.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="accountsGridSection" class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 content-start"><div class="col-span-full flex flex-col items-center justify-center py-12 gap-2">
+            <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <p class="text-sm text-gray-400 dark:text-gray-500">Nenhuma conta encontrada.</p>
+        </div></div><div id="accountsResultsFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4" role="status" aria-live="polite">
+                <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+                    </svg>
+                    <span data-grid-footer-count="" class="font-semibold text-gray-700 dark:text-gray-200">0</span>
+                    <span data-grid-footer-label="">conta(s) exibida(s)</span>
+                </span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="accountModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="modalBackdrop"></div>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <form id="accountForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modalTitle">Cadastrar Conta</h3>
+                            <div class="mt-4 space-y-4">
+                                <input type="hidden" id="accountPublicId" name="accountPublicId" value="" data-bwignore="true" data-lpignore="true" placeholder="">
+
+                                <div>
+                                    <label for="accountEasyCode" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código Fácil</label>
+                                    <input type="text" id="accountEasyCode" name="accountEasyCode" placeholder="Ex: 101" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+
+                                <div>
+                                    <label for="accountCode" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código (Contábil) <span class="text-red-500">*</span></label>
+                                    <input type="text" id="accountCode" name="accountCode" required placeholder="Ex: 1.01.01.01" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+
+                                <div>
+                                    <label for="accountName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome <span class="text-red-500">*</span></label>
+                                    <input type="text" id="accountName" name="accountName" required placeholder="Ex: Fornecedores Nacionais" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+
+                                <div>
+                                    <label for="accountType" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Conta <span class="text-red-500">*</span></label>
+                                    <select id="accountType" name="accountType" required class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                        <option value="analytic">Analítica (Recebe Lançamentos)</option>
+                                        <option value="synthetic">Sintética (Somatória / Agrupadora)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="accountNature" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Natureza <span class="text-red-500">*</span></label>
+                                    <select id="accountNature" name="accountNature" required class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                        <option value="debit">Devedora (Débito)</option>
+                                        <option value="credit">Credora (Crédito)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="accountStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                                    <select id="accountStatus" name="accountStatus" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                        <option value="active">Ativo</option>
+                                        <option value="inactive">Inativo</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse dark:border-t dark:border-slate-700">
+                        <button type="submit" id="saveBtn" class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">Salvar</button>
+                        <button type="button" id="btnCancelModal" class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="importModalBackdrop"></div>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="importModalTitle">Importar Plano de Contas (.CSV / .TXT)</h3>
+                    
+                    <!-- File Upload Section -->
+                    <div class="mt-4" id="importFileContainer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selecione o arquivo</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md hover:border-brand-500 dark:hover:border-brand-500 transition-colors">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600 dark:text-gray-400 justify-center">
+                                    <label for="importCsvFile" class="relative cursor-pointer bg-white dark:bg-slate-800 rounded-md font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500 focus-within:outline-none">
+                                        <span>Fazer Upload do Arquivo</span>
+                                        <input id="importCsvFile" name="importCsvFile" type="file" class="sr-only" accept=".csv,.txt" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">Formatos .CSV ou .TXT</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mapping Section -->
+                    <div id="importMappingContainer" class="mt-6 hidden">
+                        <div class="flex items-center mb-4">
+                            <input type="checkbox" id="hasHeaderCheckbox" class="h-4 w-4 text-brand-600 focus:ring-brand-500 dark:bg-slate-700 border-gray-300 dark:border-slate-600 rounded" data-bwignore="true" data-lpignore="true" placeholder="">
+                            <label for="hasHeaderCheckbox" class="ml-2 block text-sm text-gray-900 dark:text-gray-100">A primeira linha é cabeçalho (Ignorar ao importar)</label>
+                        </div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Mapeamento de Colunas</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Indique a qual coluna do seu arquivo corresponde a cada campo obrigatório do banco de dados.</p>
+                            <div class="space-y-3 max-h-60 overflow-y-auto pr-2" id="mappingRows">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                            
+                            <div class="mt-3 text-xs p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded border border-blue-100 dark:border-blue-800/30">
+                                <strong>Dica:</strong> Para o Tipo, o sistema espera "Sintética" ou "Analítica". Para Status, "Ativo" ou "Inativo".
+                            </div>
+                    </div>
+
+                    <!-- Progress Section (Hidden initially) -->
+                    <div id="importProgressContainer" class="hidden mt-6">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">Progresso da Importação</h4>
+                        <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 mb-2 overflow-hidden">
+                            <div id="importProgressBar" class="bg-brand-600 h-2.5 rounded-full transition-all duration-300 w-0"></div>
+                        </div>
+                        <p id="importProgressText" class="text-xs text-gray-500 dark:text-gray-400 text-center">Processando 0 de 0...</p>
+                        <div id="importErrors" class="hidden mt-3 max-h-32 overflow-y-auto text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/30">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse dark:border-t dark:border-slate-700">
+                    <button type="button" id="btnExecuteImport" disabled class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors sm:ml-3 sm:w-auto sm:text-sm">
+                        Iniciar Importação
+                    </button>
+                    <button type="button" id="btnCancelImportModal" class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/filter-panel.js"></script>
+    <script src="/js/components/crud-manager.js"></script>
+    <script src="/js/plan_of_accounts.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

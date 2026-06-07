@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Usuários</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Usuários</h3>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
+                        <button type="button" id="btnListView" title="Visualização em Lista"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <button type="button" id="btnGridView" title="Visualização em Cards"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <button type="button" id="btnNewUser" title="Novo Usuário"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="usersSection"
+                class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-end gap-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5">
+                            <svg class="w-4 h-4 text-gray-400 shrink-0 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input id="filterSearch" name="filterSearch" type="text" placeholder="Buscar por nome, e-mail..."
+                                class="bg-transparent border-none outline-none text-sm dark:text-gray-200 w-44">
+                        </div>
+                        <select id="filterRole" name="filterRole" aria-label="Filtrar por perfil"
+                            class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 px-3 py-1.5 rounded-lg text-sm dark:text-white outline-none">
+                            <option value="">Qualquer Perfil</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contato</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Perfil</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="usersGridSection"
+                class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 content-start">
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Usuário -->
+    <div id="userModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center lg:block sm:p-0">
+            <div id="userModalBackdrop" class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"></div>
+            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all dark:bg-slate-800 sm:my-8 sm:max-w-3xl sm:align-middle">
+                <form id="userForm" action="#" method="POST">
+
+                    <!-- Header com tabs -->
+                    <div class="border-b border-gray-200 bg-white px-4 pt-5 dark:border-slate-700 dark:bg-slate-800 sm:px-6">
+                        <h3 id="userModalTitle" class="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">Novo Usuário</h3>
+                        <ul id="userModalTabs" class="flex gap-4 mt-3 -mb-px">
+                            <li>
+                                <button type="button" data-tab="data"
+                                    class="tab-btn pb-3 border-b-2 border-brand-600 text-brand-600 font-medium px-1 text-sm">Dados Base</button>
+                            </li>
+                            <!-- aba WhatsApp inserida pelo JS ao editar -->
+                        </ul>
+                    </div>
+
+                    <!-- Aba: Dados Base -->
+                    <div id="tabData" class="bg-white px-4 py-5 dark:bg-slate-800 sm:p-6">
+                        <input type="hidden" id="userId" name="userId" value="" data-bwignore="true" data-lpignore="true">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="formFullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Completo <span class="text-red-500">*</span></label>
+                                <input type="text" id="formFullName" name="formFullName" required
+                                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                            </div>
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label for="formEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail <span class="text-red-500">*</span></label>
+                                    <input type="email" id="formEmail" name="formEmail" autocomplete="username" required
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+                                <div>
+                                    <label for="formPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
+                                    <input type="text" id="formPhone" name="formPhone"
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+                                <div>
+                                    <label for="formRole" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Perfil <span class="text-red-500">*</span></label>
+                                    <select id="formRole" name="formRole" required
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="formPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
+                                    <input type="password" id="formPassword" name="formPassword" autocomplete="new-password" placeholder="Mínimo 6 caracteres"
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="formDefaultPage" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Página inicial após login</label>
+                                <select id="formDefaultPage" name="formDefaultPage"
+                                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                    <option value="">Padrão (Dashboard)</option>
+                                    <option value="/pages/dashboard.html">Dashboard</option>
+                                    <option value="/pages/sales.html">Vendas</option>
+                                    <option value="/pages/purchases.html">Compras</option>
+                                    <option value="/pages/customers.html">Clientes</option>
+                                    <option value="/pages/suppliers.html">Fornecedores</option>
+                                    <option value="/pages/products.html">Produtos</option>
+                                    <option value="/pages/service.html">Serviço</option>
+                                    <option value="/pages/lancamento_servico.html">Lançamento de Serviço</option>
+                                    <option value="/pages/tributacao_municipal.html">Tributação Municipal</option>
+                                    <option value="/pages/tributacao_federal.html">Tributação Federal</option>
+                                    <option value="/pages/picking.html">Estoque</option>
+                                    <option value="/pages/tasks.html">Tarefas</option>
+                                    <option value="/pages/revenues.html">Receitas</option>
+                                    <option value="/pages/expenses.html">Despesas</option>
+                                    <option value="/pages/statements.html">Extrato</option>
+                                    <option value="/pages/finance_categories.html">Categorias Financeiras</option>
+                                    <option value="/pages/dre.html">DRE</option>
+                                    <option value="/pages/balancete.html">Balancete</option>
+                                    <option value="/pages/balanco.html">Balanço</option>
+                                    <option value="/pages/users.html">Usuários</option>
+                                    <option value="/pages/organizer.html">Organizador</option>
+                                    <option value="/pages/whatsapp.html">WhatsApp</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aba: WhatsApp (conteúdo dinâmico) -->
+                    <div id="tabWhatsapp" class="hidden bg-white px-4 py-5 dark:bg-slate-800 sm:p-6">
+                        <div id="whatsappContent" class="min-h-48 flex items-center justify-center text-gray-400 text-sm">
+                            Carregando sessão...
+                        </div>
+                    </div>
+
+                    <!-- Aba: E-mail -->
+                    <div id="tabEmail" class="hidden bg-white px-4 py-5 dark:bg-slate-800 sm:p-6">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Configure o servidor SMTP pessoal deste usuário para envio de e-mails.</p>
+
+                        <div id="emailConfigAlert" class="hidden mb-4 rounded-lg px-4 py-3 text-sm"></div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                            <div class="sm:col-span-2">
+                                <label for="userSmtpHost" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servidor (Host) <span class="text-red-500">*</span></label>
+                                <input type="text" id="userSmtpHost" name="userSmtpHost" form="userEmailConfigForm" placeholder="smtp.gmail.com"
+                                    class="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label for="userSmtpPort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Porta <span class="text-red-500">*</span></label>
+                                <input type="number" id="userSmtpPort" name="userSmtpPort" form="userEmailConfigForm" value="587" min="1" max="65535"
+                                    class="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <input type="checkbox" id="userSmtpSecure" name="userSmtpSecure" form="userEmailConfigForm" class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                            <label for="userSmtpSecure" class="text-sm text-gray-700 dark:text-gray-300">Usar SSL/TLS (porta 465)</label>
+                        </div>
+
+                        <div class="mt-6 mb-2">
+                            <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Configuração IMAP (recebimento)</h5>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Esses dados são usados para sincronizar mensagens antigas da caixa de entrada.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                            <div class="sm:col-span-2">
+                                <label for="userImapHost" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Servidor IMAP</label>
+                                <input type="text" id="userImapHost" name="userImapHost" form="userEmailConfigForm" placeholder="imap.gmail.com"
+                                    class="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label for="userImapPort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Porta IMAP</label>
+                                <input type="number" id="userImapPort" name="userImapPort" form="userEmailConfigForm" value="993" min="1" max="65535"
+                                    class="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <input type="checkbox" id="userImapSecure" name="userImapSecure" form="userEmailConfigForm" checked class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                            <label for="userImapSecure" class="text-sm text-gray-700 dark:text-gray-300">Usar conexão segura IMAP (SSL/TLS)</label>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="userSmtpUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Usuário / E-mail <span class="text-red-500">*</span></label>
+                                <input type="email" id="userSmtpUser" name="userSmtpUser" form="userEmailConfigForm" autocomplete="off" placeholder="seuemail@exemplo.com"
+                                    class="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label for="userSmtpPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Senha</label>
+                                <div class="relative">
+                                    <input type="password" id="userSmtpPassword" name="userSmtpPassword" form="userEmailConfigForm" autocomplete="new-password" placeholder="Deixe em branco para manter"
+                                        class="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                                    <button type="button" id="toggleUserSmtpPassword" title="Mostrar/ocultar senha"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Mostrar/ocultar senha">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p id="userHasPasswordHint" class="hidden mt-1 text-xs text-gray-500 dark:text-gray-400">Senha salva. Deixe em branco para não alterar.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="userSenderName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome do Remetente <span class="text-red-500">*</span></label>
+                                <input type="text" id="userSenderName" name="userSenderName" form="userEmailConfigForm" placeholder="Minha Empresa"
+                                    class="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label for="userSenderEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">E-mail do Remetente <span class="text-red-500">*</span></label>
+                                <input type="email" id="userSenderEmail" name="userSenderEmail" form="userEmailConfigForm" placeholder="noreply@empresa.com.br"
+                                    class="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3 mb-5">
+                            <input type="checkbox" id="userEmailIsActive" name="userEmailIsActive" form="userEmailConfigForm" checked class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                            <label for="userEmailIsActive" class="text-sm text-gray-700 dark:text-gray-300">Configuração ativa</label>
+                        </div>
+
+                        <button type="submit" id="saveUserEmailConfigBtn" form="userEmailConfigForm"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors disabled:opacity-60">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Salvar E-mail
+                        </button>
+                    </div>
+
+                    <!-- Rodapé -->
+                    <div id="userModalFooter" class="bg-gray-50 px-4 py-3 dark:border-t dark:border-slate-700 dark:bg-slate-800/80 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="submit" id="saveUserBtn"
+                            class="inline-flex w-full justify-center rounded-lg border border-transparent bg-brand-600 px-4 py-2 text-base font-medium text-white shadow-sm transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Salvar
+                        </button>
+                        <button type="button" id="btnCancelModal"
+                            class="mt-3 inline-flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 dark:hover:bg-slate-700 sm:mt-0 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+                <form id="userEmailConfigForm" action="#" method="POST"></form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/users.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>
+

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Empresas Cadastradas</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body data-required-module="company" data-super-admin-page="true"
+    class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 font-sans flex flex-col">
+
+    <div id="app-navbar"></div>
+
+    <main class="flex-1 w-full pt-4 pb-8 max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="px-4 sm:px-0 mb-6 flex flex-wrap justify-between items-center gap-3">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Empresas Cadastradas</h1>
+            </div>
+            <div class="flex items-center">
+                <div
+                    class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 mr-4 shadow-sm">
+                    <button type="button" id="btnListView" title="Visualização em Lista"
+                        class="flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1">
+                        <svg class="w-4 h-4 mr-1 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <button type="button" id="btnGridView" title="Visualização em Cards"
+                        class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1">
+                        <svg class="w-4 h-4 mr-1 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <button type="button" id="btnOpenCompanyModal"
+                    class="inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-brand-600 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                    Nova Empresa
+                </button>
+            </div>
+        </div>
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div id="companiesSection" class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="px-4 py-5 border-b border-gray-200 dark:border-slate-700">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Relação de Empresas</h3>
+                </div>
+                <div class="px-4 py-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/20">
+                    <div id="companiesResultsFooter" class="text-sm text-gray-500 dark:text-gray-400">Carregando relação de empresas...</div>
+                </div>
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th class="px-3 py-3 text-left w-12">
+                                    <input type="checkbox" id="selectAllCheckbox" name="selectAllCheckbox" title="Selecionar todas as empresas" aria-label="Selecionar todas as empresas"
+                                        class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Empresa</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">CNPJ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contato</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Localização</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companiesTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="companiesGridSection"
+                class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 content-start">
+            </div>
+        </div>
+    </main>
+
+    <div id="companyModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="companyModalTitle"
+        role="dialog" aria-modal="true">
+        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center lg:block sm:p-0">
+            <div id="companyModalBackdrop" class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity"
+                aria-hidden="true"></div>
+            <div
+                class="relative z-10 inline-block w-full transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all dark:bg-slate-800 sm:my-8 sm:max-w-3xl sm:align-middle">
+                <form id="companyForm" action="#" method="POST">
+                    <div class="border-b border-gray-200 bg-white px-4 pt-5 dark:border-slate-700 dark:bg-slate-800 sm:px-6">
+                        <div class="text-left">
+                            <h3 id="companyModalTitle" class="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">Nova Empresa</h3>
+                            <p id="companyModalStatus" class="mt-2 text-sm text-gray-500 dark:text-gray-400">Cadastre uma nova empresa para o ambiente global.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white px-4 py-5 dark:bg-slate-800 sm:p-6">
+                        <input type="hidden" id="companyId" name="companyId" value="" data-bwignore="true" data-lpignore="true" placeholder="">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="companyTradeName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Fantasia / Responsável <span class="text-red-500">*</span></label>
+                                <input type="text" id="companyTradeName" name="companyTradeName" required
+                                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label for="companyLegalName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Razão Social</label>
+                                    <input type="text" id="companyLegalName" name="companyLegalName"
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+                                <div>
+                                    <label for="companyCnpj" class="block text-sm font-medium text-gray-700 dark:text-gray-300">CNPJ</label>
+                                    <input type="text" id="companyCnpj" name="companyCnpj" placeholder="00.000.000/0000-00"
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                <div>
+                                    <label for="companyTaxRegime" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Regime Tributário</label>
+                                    <select id="companyTaxRegime" name="companyTaxRegime"
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                        <option value="">Selecione...</option>
+                                        <option value="MEI">MEI</option>
+                                        <option value="Simples Nacional">Simples Nacional</option>
+                                        <option value="Lucro Presumido">Lucro Presumido</option>
+                                        <option value="Lucro Real">Lucro Real</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="companyEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                    <input type="email" id="companyEmail" name="companyEmail"
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+                                <div>
+                                    <label for="companyPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
+                                    <input type="text" id="companyPhone" name="companyPhone"
+                                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                </div>
+                            </div>
+
+                            <!-- Seção Primeiro Usuário — visível apenas na criação -->
+                            <div id="initialUserSection" class="border-t border-brand-200 pt-4 dark:border-brand-800">
+                                <h4 class="text-sm font-semibold text-brand-700 dark:text-brand-300">Primeiro Usuário da Empresa</h4>
+                                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Este usuário será criado e vinculado à empresa automaticamente.</p>
+                                <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div class="sm:col-span-2">
+                                        <label for="initialUserName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome do usuário <span class="text-red-500">*</span></label>
+                                        <input type="text" id="initialUserName" name="initialUserName"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </div>
+                                    <div>
+                                        <label for="initialUserEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email do usuário <span class="text-red-500">*</span></label>
+                                        <input type="email" id="initialUserEmail" name="initialUserEmail"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </div>
+                                    <div>
+                                        <label for="initialUserPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha do usuário <span class="text-red-500">*</span></label>
+                                        <input type="password" id="initialUserPassword" name="initialUserPassword" autocomplete="new-password"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Mínimo 6 caracteres">
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <label for="initialUserRole" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Perfil do usuário <span class="text-red-500">*</span></label>
+                                        <select id="initialUserRole" name="initialUserRole"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                            <option value="admin">Administrador</option>
+                                            <option value="manager">Gerente</option>
+                                            <option value="financial">Financeiro</option>
+                                            <option value="operator">Operador</option>
+                                            <option value="seller">Vendedor</option>
+                                            <option value="accountant">Contador</option>
+                                            <option value="buyer">Comprador</option>
+                                            <option value="service_provider">Prestador de Serviço</option>
+                                            <option value="user">Usuário</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
+                                <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Endereço</h4>
+                                <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label for="companyZipcode" class="block text-sm font-medium text-gray-700 dark:text-gray-300">CEP</label>
+                                        <input type="text" id="companyZipcode" name="companyZipcode" placeholder="00000-000"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </div>
+                                    <div>
+                                        <label for="companyStreet" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Rua / Logradouro</label>
+                                        <input type="text" id="companyStreet" name="companyStreet"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </div>
+                                    <div>
+                                        <label for="companyNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número</label>
+                                        <input type="text" id="companyNumber" name="companyNumber"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </div>
+                                    <div>
+                                        <label for="companyComplement" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complemento</label>
+                                        <input type="text" id="companyComplement" name="companyComplement"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </div>
+                                    <div>
+                                        <label for="companyNeighborhood" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bairro</label>
+                                        <input type="text" id="companyNeighborhood" name="companyNeighborhood"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </div>
+                                    <div>
+                                        <label for="companyCity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cidade</label>
+                                        <input type="text" id="companyCity" name="companyCity"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <label for="companyState" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado (UF)</label>
+                                        <select id="companyState" name="companyState"
+                                            class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                            <option value="">Selecione...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 px-4 py-3 dark:border-t dark:border-slate-700 dark:bg-slate-800/80 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="submit" id="saveCompanyBtn"
+                            class="inline-flex w-full justify-center rounded-lg border border-transparent bg-brand-600 px-4 py-2 text-base font-medium text-white shadow-sm transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Salvar
+                        </button>
+                        <button type="button" id="btnCancelCompanyModal"
+                            class="mt-3 inline-flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 dark:hover:bg-slate-700 sm:mt-0 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/filter-panel.js"></script>
+    <script src="/js/companies.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0 mt-auto"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

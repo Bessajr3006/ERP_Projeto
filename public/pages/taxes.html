@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Regras de Tributação</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Regras de Tributação</h3>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
+                        <button type="button" id="btnListView" title="Visualização em Lista"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        </button>
+                        <button type="button" id="btnGridView" title="Visualização em Cards"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        </button>
+                    </div>
+                    <button type="button" id="btnOpenModal" title="Nova Regra"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="taxesSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left w-12 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <input type="checkbox" id="selectAll" name="selectAll" title="Selecionar todos os tributos" aria-label="Selecionar todos os tributos"
+                                        class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    ID</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Regra de Imposto</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    CSOSN</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Produtos Associados</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taxesTable"
+                            class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    Nenhum tributo cadastrado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="taxesGridSection"
+                class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 content-start"></div>
+        </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="taxModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="modalBackdrop"></div>
+            <div
+                class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="taxForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modalTitle">
+                                Cadastrar Regra de Tributação</h3>
+                            <div class="mt-4">
+                                <label for="taxName"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da
+                                    Regra</label>
+                                <input type="text" id="taxName" name="taxName" required placeholder="Ex: Substituição Tributária 18%"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                            </div>
+
+                            <div class="mt-4">
+                                <!-- Tabs Navigation -->
+                                <div class="border-b border-gray-200 dark:border-slate-700">
+                                    <nav class="-mb-px flex items-center space-x-3 sm:space-x-4 overflow-x-auto"
+                                        aria-label="Tabs" id="taxTabs">
+                                        <button type="button"
+                                            class="tab-btn active border-brand-500 text-brand-600 dark:text-brand-400 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none"
+                                            data-target="tab-estado">
+                                            Estado
+                                        </button>
+                                        <span class="text-gray-300 dark:text-slate-600 select-none pb-0.5">|</span>
+                                        <button type="button"
+                                            class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none"
+                                            data-target="tab-federal">
+                                            Federal
+                                        </button>
+                                        <span class="text-gray-300 dark:text-slate-600 select-none pb-0.5">|</span>
+                                        <button type="button"
+                                            class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none"
+                                            data-target="tab-municipal">
+                                            Municipal
+                                        </button>
+                                        <span class="text-gray-300 dark:text-slate-600 select-none pb-0.5">|</span>
+                                        <button type="button"
+                                            class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none"
+                                            data-target="tab-industria">
+                                            Indústria
+                                        </button>
+                                        <span class="text-gray-300 dark:text-slate-600 select-none pb-0.5">|</span>
+                                        <button type="button"
+                                            class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none"
+                                            data-target="tab-reforma">
+                                            Reforma
+                                        </button>
+                                    </nav>
+                                </div>
+
+                                <!-- Tabs Content -->
+                                <div class="mt-4">
+
+                                    <!-- Aba Estado -->
+                                    <div id="tab-estado" class="tab-pane">
+                                        <div class="grid grid-cols-4 gap-4">
+                                            <div class="col-span-2">
+                                                <label for="taxCsosn"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CSOSN</label>
+                                                <input type="text" id="taxCsosn" name="taxCsosn" maxlength="4" placeholder="Ex: 102"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="taxCstIcms"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CST
+                                                    ICMS</label>
+                                                <input type="text" id="taxCstIcms" name="taxCstIcms" maxlength="5" placeholder="Ex: 00"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="icmsType"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de ICMS</label>
+                                                <select id="icmsType" name="icmsType"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                                    <option value="Normal">ICMS Normal</option>
+                                                    <option value="Substituição">ICMS Substituição</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="aliquotaIcms"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Alíq.
+                                                    ICMS (%)</label>
+                                                <input type="number" step="0.01" id="aliquotaIcms" name="aliquotaIcms" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="mvaInternal"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">MVA Interno (%)</label>
+                                                <input type="number" step="0.01" id="mvaInternal" name="mvaInternal" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="mvaInterstate"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">MVA Interestadual (%)</label>
+                                                <input type="number" step="0.01" id="mvaInterstate" name="mvaInterstate" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="fecpPercentage"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">FECP
+                                                    (%)</label>
+                                                <input type="number" step="0.01" id="fecpPercentage" name="fecpPercentage" value="0.00"
+                                                    min="0" max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Aba Federal -->
+                                    <div id="tab-federal" class="tab-pane hidden">
+                                        <div class="grid grid-cols-4 gap-4">
+                                            <div class="col-span-2">
+                                                <label for="taxCstPis"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CST
+                                                    PIS</label>
+                                                <input type="text" id="taxCstPis" name="taxCstPis" maxlength="5" placeholder="Ex: 01"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="aliquotaPis"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">PIS
+                                                    (%)</label>
+                                                <input type="number" step="0.01" id="aliquotaPis" name="aliquotaPis" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+
+                                            <div class="col-span-2">
+                                                <label for="taxCstCofins"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CST
+                                                    COFINS</label>
+                                                <input type="text" id="taxCstCofins" name="taxCstCofins" maxlength="5" placeholder="Ex: 01"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="aliquotaCofins"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">COFINS
+                                                    (%)</label>
+                                                <input type="number" step="0.01" id="aliquotaCofins" name="aliquotaCofins" value="0.00"
+                                                    min="0" max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Aba Indústria -->
+                                    <div id="tab-industria" class="tab-pane hidden">
+                                        <div class="grid grid-cols-4 gap-4">
+                                            <div class="col-span-2">
+                                                <label for="aliquotaIpi"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">IPI
+                                                    (%)</label>
+                                                <input type="number" step="0.01" id="aliquotaIpi" name="aliquotaIpi" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Aba Municipal -->
+                                    <div id="tab-municipal" class="tab-pane hidden">
+                                        <div class="grid grid-cols-4 gap-4">
+                                            <div class="col-span-2">
+                                                <label for="serviceCode"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código
+                                                    de Serviço</label>
+                                                <input type="text" id="serviceCode" name="serviceCode" placeholder="Ex: 01.01"
+                                                    maxlength="20"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="issPercentage"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">ISS
+                                                    (%)</label>
+                                                <input type="number" step="0.01" id="issPercentage" name="issPercentage" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Aba Reforma -->
+                                    <div id="tab-reforma" class="tab-pane hidden">
+                                        <div class="grid grid-cols-4 gap-4">
+                                            <div class="col-span-2">
+                                                <label for="taxCstIbs"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CST
+                                                    IBS</label>
+                                                <input type="text" id="taxCstIbs" name="taxCstIbs" maxlength="5" placeholder="Ex: 01"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="ibsPercentage"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">IBS
+                                                    (%)</label>
+                                                <input type="number" step="0.01" id="ibsPercentage" name="ibsPercentage" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+
+                                            <div class="col-span-2">
+                                                <label for="taxCstCbs"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CST
+                                                    CBS</label>
+                                                <input type="text" id="taxCstCbs" name="taxCstCbs" maxlength="5" placeholder="Ex: 01"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="cbsPercentage"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CBS
+                                                    (%)</label>
+                                                <input type="number" step="0.01" id="cbsPercentage" name="cbsPercentage" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+
+                                            <div class="col-span-2">
+                                                <label for="taxCstIs"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CST
+                                                    IS</label>
+                                                <input type="text" id="taxCstIs" name="taxCstIs" maxlength="5" placeholder="Ex: 01"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="isPercentage"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">IS
+                                                    (%)</label>
+                                                <input type="number" step="0.01" id="isPercentage" name="isPercentage" value="0.00" min="0"
+                                                    max="100"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse dark:border-t dark:border-slate-700">
+                        <button type="submit" id="saveBtn"
+                            class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">Salvar</button>
+                        <button type="button" id="btnCancelModal"
+                            class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/filter-panel.js"></script>
+    <script src="/js/components/crud-manager.js"></script>
+    <script src="/js/taxes.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

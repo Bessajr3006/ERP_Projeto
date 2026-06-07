@@ -1,0 +1,2 @@
+# Wrapper image to keep a friendly local name while using upstream MariaDB
+FROM mariadb:11.4

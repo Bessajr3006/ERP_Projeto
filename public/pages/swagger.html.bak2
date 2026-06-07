@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Swagger</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden" data-required-module="swagger">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
+
+        <!-- Cabeçalho -->
+        <div class="px-4 sm:px-0 mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">API Docs</h1>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Documentação interativa da API. Base: <code class="bg-gray-100 dark:bg-slate-700 text-brand-600 dark:text-brand-300 px-1.5 py-0.5 rounded text-xs">/api/v1</code>
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="/api-docs.json" target="_blank" rel="noopener"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    OpenAPI JSON
+                </a>
+                <a href="/api-docs/" target="_blank" rel="noopener"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    Abrir em nova aba
+                </a>
+            </div>
+        </div>
+
+        <!-- Documentação inline: POST /orders/sales -->
+        <div class="px-4 sm:px-0 mb-4">
+            <button type="button" id="btnToggleSaleDoc"
+                class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                <svg id="saleDocChevron" class="w-4 h-4 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                <span class="method-post" style="font-size:11px;padding:2px 6px;width:auto;">POST</span>
+                <code class="text-xs text-gray-800 dark:text-gray-100">/api/v1/orders/sales</code>
+                <span class="text-gray-500 dark:text-gray-400">— Criar pedido de venda</span>
+            </button>
+
+            <div id="saleDocPanel" class="mt-3">
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-brand-300 dark:border-brand-700 shadow-sm overflow-hidden">
+
+                    <!-- Header -->
+                    <div class="bg-brand-50 dark:bg-brand-900/20 border-b border-brand-200 dark:border-brand-800 px-5 py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="method-post" style="font-size:12px;padding:3px 8px;width:auto;border-radius:6px;">POST</span>
+                            <code class="text-sm font-semibold text-gray-900 dark:text-gray-100">/api/v1/orders/sales</code>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/40 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-300">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                Bearer JWT
+                            </span>
+                            <span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-800 dark:text-green-300">201 Created</span>
+                        </div>
+                    </div>
+
+                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                        <!-- Campos do body -->
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Request Body <code class="normal-case font-normal bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">application/json</code></p>
+                            <div class="space-y-2">
+
+                                <!-- customer_public_id -->
+                                <div class="flex items-start gap-3 py-2 border-b border-gray-100 dark:border-slate-700">
+                                    <code class="text-xs text-brand-700 dark:text-brand-300 shrink-0 w-44">customer_public_id</code>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">uuid</span>
+                                            <span class="inline-flex items-center rounded bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] text-gray-500 dark:text-gray-400">nullable</span>
+                                            <span class="inline-flex items-center rounded bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] text-gray-500 dark:text-gray-400">opcional</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">UUID do cliente. Omita para venda avulsa.</p>
+                                    </div>
+                                </div>
+
+                                <!-- delivery_address -->
+                                <div class="flex items-start gap-3 py-2 border-b border-gray-100 dark:border-slate-700">
+                                    <code class="text-xs text-brand-700 dark:text-brand-300 shrink-0 w-44">delivery_address</code>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">string</span>
+                                            <span class="inline-flex items-center rounded bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] text-gray-500 dark:text-gray-400">nullable</span>
+                                            <span class="inline-flex items-center rounded bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] text-gray-500 dark:text-gray-400">opcional</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Endereço de entrega completo.</p>
+                                    </div>
+                                </div>
+
+                                <!-- bank_account_public_id -->
+                                <div class="flex items-start gap-3 py-2 border-b border-gray-100 dark:border-slate-700">
+                                    <code class="text-xs text-brand-700 dark:text-brand-300 shrink-0 w-44">bank_account_public_id</code>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">uuid</span>
+                                            <span class="inline-flex items-center rounded bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-300">obrigatório</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">UUID da conta bancária para recebimento.</p>
+                                    </div>
+                                </div>
+
+                                <!-- category_public_id -->
+                                <div class="flex items-start gap-3 py-2 border-b border-gray-100 dark:border-slate-700">
+                                    <code class="text-xs text-brand-700 dark:text-brand-300 shrink-0 w-44">category_public_id</code>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">uuid</span>
+                                            <span class="inline-flex items-center rounded bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-300">obrigatório</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">UUID da categoria financeira.</p>
+                                    </div>
+                                </div>
+
+                                <!-- date -->
+                                <div class="flex items-start gap-3 py-2 border-b border-gray-100 dark:border-slate-700">
+                                    <code class="text-xs text-brand-700 dark:text-brand-300 shrink-0 w-44">date</code>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">date</span>
+                                            <span class="inline-flex items-center rounded bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-300">obrigatório</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Data do pedido. Formato: <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">YYYY-MM-DD</code></p>
+                                    </div>
+                                </div>
+
+                                <!-- items -->
+                                <div class="flex items-start gap-3 py-2 border-b border-gray-100 dark:border-slate-700">
+                                    <code class="text-xs text-brand-700 dark:text-brand-300 shrink-0 w-44">items[]</code>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">array</span>
+                                            <span class="inline-flex items-center rounded bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-300">obrigatório</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Mínimo 1 item. Cada item: <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">product_public_id</code>, <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">quantity</code>, <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">unit_price</code></p>
+                                    </div>
+                                </div>
+
+                                <!-- payments -->
+                                <div class="flex items-start gap-3 py-2">
+                                    <code class="text-xs text-brand-700 dark:text-brand-300 shrink-0 w-44">payments[]</code>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">array</span>
+                                            <span class="inline-flex items-center rounded bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-[10px] text-gray-500 dark:text-gray-400">opcional</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Método: <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">pix</code> <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">credit</code> <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">debit</code> <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">cash</code> <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">transfer</code> <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">boleto</code></p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Exemplo de payload -->
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Exemplo de payload</p>
+                            <div class="relative">
+                                <pre class="text-xs rounded-lg p-4 overflow-x-auto leading-relaxed" style="background:#0f172a;color:#86efac;"><code style="background:transparent;color:inherit;">{
+  "customer_public_id": "550e8400-...-446655440001",
+  "delivery_address": "Rua das Flores, 123",
+  "bank_account_public_id": "550e8400-...-446655440002",
+  "category_public_id": "550e8400-...-446655440003",
+  "date": "2026-06-02",
+  "items": [
+    {
+      "product_public_id": "550e8400-...-446655440010",
+      "quantity": 2,
+      "unit_price": 49.90
+    }
+  ],
+  "payments": [
+    {
+      "method": "pix",
+      "amount": 99.80
+    }
+  ]
+}</code></pre>
+                                <button type="button" id="btnCopyPayload"
+                                    class="absolute top-2 right-2 inline-flex items-center gap-1 rounded bg-slate-700 hover:bg-slate-600 px-2 py-1 text-[10px] text-gray-300 transition-colors">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    Copiar
+                                </button>
+                            </div>
+
+                            <!-- Respostas -->
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-4 mb-2">Respostas</p>
+                            <div class="space-y-1.5">
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span class="inline-flex items-center rounded px-2 py-0.5 font-bold bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300">201</span>
+                                    <span class="text-gray-600 dark:text-gray-400">Pedido criado com sucesso</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span class="inline-flex items-center rounded px-2 py-0.5 font-bold bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300">400</span>
+                                    <span class="text-gray-600 dark:text-gray-400">Dados inválidos ou produto não encontrado</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span class="inline-flex items-center rounded px-2 py-0.5 font-bold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300">401</span>
+                                    <span class="text-gray-600 dark:text-gray-400">Não autenticado — envie Bearer JWT no header</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentação inline completa de endpoints -->
+        <section class="px-4 sm:px-0 flex-1 pb-6">
+            <div class="space-y-2" id="apiDocsList">
+
+                <!-- ===================== POST /orders/sales ===================== -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-brand-300 dark:border-brand-700 shadow-sm overflow-hidden">
+                    <button type="button" class="api-toggle w-full flex items-center justify-between px-5 py-3 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors" aria-expanded="true">
+                        <div class="flex items-center gap-3">
+                            <span class="api-badge" style="background:#dcfce7;color:#16a34a;">POST</span>
+                            <code class="text-sm font-semibold text-gray-900 dark:text-gray-100">/orders/sales</code>
+                            <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400">Criar pedido de venda</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/40 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:text-yellow-300">JWT</span>
+                            <span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-[10px] font-bold text-green-800 dark:text-green-300">201</span>
+                            <svg class="api-chevron w-4 h-4 text-gray-400 transition-transform rotate-180 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </button>
+                    <div class="api-body border-t border-brand-100 dark:border-brand-900 p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Request Body <code class="normal-case font-normal bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">application/json</code></p>
+                            <div class="divide-y divide-gray-100 dark:divide-slate-700">
+                                <div class="flex items-start gap-3 py-2">
+                                    <code class="field-name">customer_public_id</code>
+                                    <div><div class="flex gap-1 flex-wrap"><span class="badge-type">uuid</span><span class="badge-opt">nullable</span><span class="badge-opt">opcional</span></div><p class="field-desc">UUID do cliente. Omita para venda avulsa.</p></div>
+                                </div>
+                                <div class="flex items-start gap-3 py-2">
+                                    <code class="field-name">delivery_address</code>
+                                    <div><div class="flex gap-1 flex-wrap"><span class="badge-type">string</span><span class="badge-opt">nullable</span><span class="badge-opt">opcional</span></div><p class="field-desc">Endereço de entrega completo.</p></div>
+                                </div>
+                                <div class="flex items-start gap-3 py-2">
+                                    <code class="field-name">bank_account_public_id</code>
+                                    <div><div class="flex gap-1 flex-wrap"><span class="badge-type">uuid</span><span class="badge-req">obrigatório</span></div><p class="field-desc">UUID da conta bancária para recebimento.</p></div>
+                                </div>
+                                <div class="flex items-start gap-3 py-2">
+                                    <code class="field-name">category_public_id</code>
+                                    <div><div class="flex gap-1 flex-wrap"><span class="badge-type">uuid</span><span class="badge-req">obrigatório</span></div><p class="field-desc">UUID da categoria financeira.</p></div>
+                                </div>
+                                <div class="flex items-start gap-3 py-2">
+                                    <code class="field-name">date</code>
+                                    <div><div class="flex gap-1 flex-wrap"><span class="badge-type">date</span><span class="badge-req">obrigatório</span></div><p class="field-desc">Data do pedido. Formato: <code class="inline-code">YYYY-MM-DD</code></p></div>
+                                </div>
+                                <div class="flex items-start gap-3 py-2">
+                                    <code class="field-name">items[]</code>
+                                    <div><div class="flex gap-1 flex-wrap"><span class="badge-type">array</span><span class="badge-req">obrigatório</span></div><p class="field-desc">Mínimo 1. Cada item: <code class="inline-code">product_public_id</code>, <code class="inline-code">quantity</code>, <code class="inline-code">unit_price</code></p></div>
+                                </div>
+                                <div class="flex items-start gap-3 py-2">
+                                    <code class="field-name">payments[]</code>
+                                    <div><div class="flex gap-1 flex-wrap"><span class="badge-type">array</span><span class="badge-opt">opcional</span></div><p class="field-desc">Método: <code class="inline-code">pix</code> <code class="inline-code">credit</code> <code class="inline-code">debit</code> <code class="inline-code">cash</code> <code class="inline-code">transfer</code> <code class="inline-code">boleto</code></p></div>
+                                </div>
+                            </div>
+                            <div class="mt-4 space-y-1.5">
+                                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Respostas</p>
+                                <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-2xx">201</span><span class="field-desc">Pedido criado com sucesso</span></div>
+                                <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">400</span><span class="field-desc">Dados inválidos ou produto não encontrado</span></div>
+                                <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">401</span><span class="field-desc">Não autenticado</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Exemplo</p>
+                            <div class="relative">
+                                <pre class="text-xs rounded-lg p-4 overflow-x-auto leading-relaxed" style="background:#0f172a;color:#86efac;"><code style="background:transparent;color:inherit;">{
+  "customer_public_id": "550e8400-...-001",
+  "delivery_address": "Rua das Flores, 123",
+  "bank_account_public_id": "550e8400-...-002",
+  "category_public_id": "550e8400-...-003",
+  "date": "2026-06-02",
+  "items": [
+    {
+      "product_public_id": "550e8400-...-010",
+      "quantity": 2,
+      "unit_price": 49.90
+    }
+  ],
+  "payments": [
+    { "method": "pix", "amount": 99.80 }
+  ]
+}</code></pre>
+                                <button type="button" class="copy-btn absolute top-2 right-2 inline-flex items-center gap-1 rounded bg-slate-700 hover:bg-slate-600 px-2 py-1 text-[10px] text-gray-300 transition-colors">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===================== GET /orders/sales ===================== -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <button type="button" class="api-toggle w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                        <div class="flex items-center gap-3">
+                            <span class="api-badge" style="background:#dbeafe;color:#2563eb;">GET</span>
+                            <code class="text-sm font-semibold text-gray-900 dark:text-gray-100">/orders/sales</code>
+                            <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400">Listar vendas</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/40 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:text-yellow-300">JWT</span>
+                            <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300">200</span>
+                            <svg class="api-chevron w-4 h-4 text-gray-400 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </button>
+                    <div class="api-body hidden border-t border-gray-100 dark:border-slate-700 p-5">
+                        <div class="space-y-1.5">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Respostas</p>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-2xx">200</span><span class="field-desc">Lista de pedidos de venda da empresa</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">401</span><span class="field-desc">Não autenticado</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===================== GET /orders/customers/{id}/sales ===================== -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <button type="button" class="api-toggle w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                        <div class="flex items-center gap-3">
+                            <span class="api-badge" style="background:#dbeafe;color:#2563eb;">GET</span>
+                            <code class="text-sm font-semibold text-gray-900 dark:text-gray-100">/orders/customers/{customerPublicId}/sales</code>
+                            <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400">Vendas por cliente</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/40 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:text-yellow-300">JWT</span>
+                            <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300">200</span>
+                            <svg class="api-chevron w-4 h-4 text-gray-400 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </button>
+                    <div class="api-body hidden border-t border-gray-100 dark:border-slate-700 p-5">
+                        <div class="divide-y divide-gray-100 dark:divide-slate-700 mb-4">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Path Parameter</p>
+                            <div class="flex items-start gap-3 py-2">
+                                <code class="field-name">customerPublicId</code>
+                                <div><div class="flex gap-1"><span class="badge-type">uuid</span><span class="badge-req">obrigatório</span></div><p class="field-desc">UUID público do cliente.</p></div>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Respostas</p>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-2xx">200</span><span class="field-desc">Lista de vendas do cliente</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">401</span><span class="field-desc">Não autenticado</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===================== PATCH /orders/{id}/status ===================== -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <button type="button" class="api-toggle w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                        <div class="flex items-center gap-3">
+                            <span class="api-badge" style="background:#ede9fe;color:#7c3aed;">PATCH</span>
+                            <code class="text-sm font-semibold text-gray-900 dark:text-gray-100">/orders/{id}/status</code>
+                            <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400">Atualizar status do pedido</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/40 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:text-yellow-300">JWT</span>
+                            <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300">200</span>
+                            <svg class="api-chevron w-4 h-4 text-gray-400 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </button>
+                    <div class="api-body hidden border-t border-gray-100 dark:border-slate-700 p-5">
+                        <div class="divide-y divide-gray-100 dark:divide-slate-700 mb-4">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Path + Body</p>
+                            <div class="flex items-start gap-3 py-2">
+                                <code class="field-name">id</code>
+                                <div><div class="flex gap-1"><span class="badge-type">uuid</span><span class="badge-req">path</span></div><p class="field-desc">UUID do pedido.</p></div>
+                            </div>
+                            <div class="flex items-start gap-3 py-2">
+                                <code class="field-name">status</code>
+                                <div><div class="flex gap-1"><span class="badge-type">string</span><span class="badge-req">obrigatório</span></div><p class="field-desc">Novo status do pedido.</p></div>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Respostas</p>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-2xx">200</span><span class="field-desc">Status atualizado</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">400</span><span class="field-desc">Status inválido</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">401</span><span class="field-desc">Não autenticado</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===================== POST /orders/purchases ===================== -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <button type="button" class="api-toggle w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                        <div class="flex items-center gap-3">
+                            <span class="api-badge" style="background:#dcfce7;color:#16a34a;">POST</span>
+                            <code class="text-sm font-semibold text-gray-900 dark:text-gray-100">/orders/purchases</code>
+                            <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400">Criar pedido de compra</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/40 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:text-yellow-300">JWT</span>
+                            <span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-[10px] font-bold text-green-800 dark:text-green-300">201</span>
+                            <svg class="api-chevron w-4 h-4 text-gray-400 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </button>
+                    <div class="api-body hidden border-t border-gray-100 dark:border-slate-700 p-5">
+                        <div class="space-y-1.5">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Respostas</p>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-2xx">201</span><span class="field-desc">Compra criada com sucesso</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">400</span><span class="field-desc">Dados inválidos</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">401</span><span class="field-desc">Não autenticado</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===================== GET /orders/suppliers/{id}/purchases ===================== -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <button type="button" class="api-toggle w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                        <div class="flex items-center gap-3">
+                            <span class="api-badge" style="background:#dbeafe;color:#2563eb;">GET</span>
+                            <code class="text-sm font-semibold text-gray-900 dark:text-gray-100">/orders/suppliers/{supplierPublicId}/purchases</code>
+                            <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400">Compras por fornecedor</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/40 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:text-yellow-300">JWT</span>
+                            <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300">200</span>
+                            <svg class="api-chevron w-4 h-4 text-gray-400 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </button>
+                    <div class="api-body hidden border-t border-gray-100 dark:border-slate-700 p-5">
+                        <div class="divide-y divide-gray-100 dark:divide-slate-700 mb-4">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Path Parameter</p>
+                            <div class="flex items-start gap-3 py-2">
+                                <code class="field-name">supplierPublicId</code>
+                                <div><div class="flex gap-1"><span class="badge-type">uuid</span><span class="badge-req">obrigatório</span></div><p class="field-desc">UUID público do fornecedor.</p></div>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Respostas</p>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-2xx">200</span><span class="field-desc">Lista de compras do fornecedor</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="resp-badge resp-4xx">401</span><span class="field-desc">Não autenticado</span></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <style>
+        .method-get   { display:inline-block;width:40px;text-align:center;font-weight:700;font-size:10px;color:#2563eb;background:#dbeafe;border-radius:4px;padding:1px 3px;margin-right:4px; }
+        .method-post  { display:inline-block;width:40px;text-align:center;font-weight:700;font-size:10px;color:#16a34a;background:#dcfce7;border-radius:4px;padding:1px 3px;margin-right:4px; }
+        .method-put   { display:inline-block;width:40px;text-align:center;font-weight:700;font-size:10px;color:#d97706;background:#fef3c7;border-radius:4px;padding:1px 3px;margin-right:4px; }
+        .method-patch { display:inline-block;width:40px;text-align:center;font-weight:700;font-size:10px;color:#7c3aed;background:#ede9fe;border-radius:4px;padding:1px 3px;margin-right:4px; }
+        .method-delete{ display:inline-block;width:40px;text-align:center;font-weight:700;font-size:10px;color:#dc2626;background:#fee2e2;border-radius:4px;padding:1px 3px;margin-right:4px; }
+        .dark .method-get   { color:#93c5fd;background:#1e3a5f; }
+        .dark .method-post  { color:#86efac;background:#14532d; }
+        .dark .method-put   { color:#fcd34d;background:#451a03; }
+        .dark .method-patch { color:#c4b5fd;background:#2e1065; }
+        .dark .method-delete{ color:#fca5a5;background:#450a0a; }
+        ul li code { font-family:monospace;font-size:11px;color:inherit;opacity:.85; }
+        /* API docs accordion */
+        .api-badge  { display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:2px 8px;min-width:48px;text-align:center; }
+        .field-name { font-size:11px;font-family:monospace;color:#5b7af5;white-space:nowrap;min-width:160px;padding-top:2px; }
+        .dark .field-name { color:#93c5fd; }
+        .field-desc { font-size:11px;color:#6b7280;margin-top:2px; }
+        .dark .field-desc { color:#9ca3af; }
+        .badge-type { display:inline-flex;align-items:center;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;background:#dbeafe;color:#1d4ed8; }
+        .dark .badge-type { background:#1e3a5f;color:#93c5fd; }
+        .badge-req  { display:inline-flex;align-items:center;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:600;background:#fee2e2;color:#dc2626; }
+        .dark .badge-req  { background:#450a0a;color:#fca5a5; }
+        .badge-opt  { display:inline-flex;align-items:center;border-radius:3px;padding:1px 5px;font-size:10px;background:#f3f4f6;color:#6b7280; }
+        .dark .badge-opt  { background:#374151;color:#9ca3af; }
+        .inline-code{ font-family:monospace;font-size:10px;background:#f3f4f6;border-radius:3px;padding:1px 4px; }
+        .dark .inline-code{ background:#374151; }
+        .resp-badge { display:inline-flex;align-items:center;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700; }
+        .resp-2xx   { background:#dcfce7;color:#166534; }
+        .dark .resp-2xx { background:#14532d;color:#86efac; }
+        .resp-4xx   { background:#fee2e2;color:#991b1b; }
+        .dark .resp-4xx { background:#450a0a;color:#fca5a5; }
+    </style>
+
+    <script>
+        // Toggle acordeão dos endpoints
+        document.querySelectorAll('.api-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const body    = btn.nextElementSibling;
+                const chevron = btn.querySelector('.api-chevron');
+                const open    = btn.getAttribute('aria-expanded') === 'true';
+                btn.setAttribute('aria-expanded', String(!open));
+                body?.classList.toggle('hidden', open);
+                chevron?.classList.toggle('rotate-180', !open);
+            });
+        });
+
+        // Toggle do painel inline anterior (POST /orders/sales acima)
+        document.getElementById('btnToggleSaleDoc')?.addEventListener('click', () => {
+            const panel   = document.getElementById('saleDocPanel');
+            const chevron = document.getElementById('saleDocChevron');
+            panel?.classList.toggle('hidden');
+            chevron?.classList.toggle('rotate-180');
+        });
+
+        // Copiar payload
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const code = this.closest('.relative')?.querySelector('code')?.textContent || '';
+                navigator.clipboard.writeText(code).then(() => {
+                    const orig = this.innerHTML;
+                    this.textContent = 'Copiado!';
+                    setTimeout(() => { this.innerHTML = orig; }, 2000);
+                });
+            });
+        });
+        // Botão legado
+        document.getElementById('btnCopyPayload')?.addEventListener('click', function () {
+            const code = this.closest('.relative')?.querySelector('code')?.textContent || '';
+            navigator.clipboard.writeText(code).then(() => {
+                this.textContent = 'Copiado!';
+                setTimeout(() => { this.innerHTML = '<svg class="w-3 h-3 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Copiar'; }, 2000);
+            });
+        });
+    </script>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

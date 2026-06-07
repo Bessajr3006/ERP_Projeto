@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- theme-color not supported in Firefox/Opera, using color-scheme in CSS instead -->
+    <title>KEYSTONE - Lançamentos Contábeis</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+<body data-required-module="accounting" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 font-sans flex flex-col">
+    <!-- Navbar Dinâmica -->
+    <div id="app-navbar"></div>
+
+    <main class="flex-1 w-full pt-4 pb-8 max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <!-- ── HEADER ────────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-5 flex flex-wrap justify-between items-center gap-3">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Lançamentos Contábeis</h1>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <div id="batchActions" class="hidden items-center gap-2">
+                    <button id="btnBatchDelete" class="inline-flex items-center gap-1.5 rounded-lg border border-red-300 dark:border-red-900 px-3 py-1.5 bg-white dark:bg-slate-800 text-sm font-medium text-red-700 dark:text-red-400 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Excluir Selecionados (<span id="batchDeleteCount">0</span>)
+                    </button>
+                </div>
+
+                <div class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-lg border border-gray-200 dark:border-slate-700 mr-2 shadow-sm">
+                    <button id="btnListView" title="Visualização em Lista" class="flex items-center justify-center px-3 py-1.5 rounded-md bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1">
+                        <svg class="w-4 h-4 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <button id="btnGridView" title="Visualização em Cards" class="items-center justify-center px-3 py-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 transition-all focus:outline-none gap-1 hidden">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"></path></svg>
+                    </button>
+                </div>
+
+                <button id="btnOpenImportModal" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                    Importação
+                </button>
+                <button id="btnOpenModal" class="inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-brand-600 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                    Novo Lançamento
+                </button>
+            </div>
+        </div>
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <!-- ── FILTERS ───────────────────────────────────────────── -->
+            <div class="mb-3">
+                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
+                    <button type="button" id="toggleFilterBtn" class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors rounded-xl">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                        </div>
+                        <svg id="filterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="filterBody" class="overflow-hidden">
+                        <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                            <form id="filterForm">
+                                <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                    <div>
+                                        <label for="filterStartDate" class="block text-[10px] font-bold text-gray-500 uppercase">Data Início</label>
+                                        <input type="date" id="filterStartDate" name="filterStartDate" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                    <div>
+                                        <label for="filterEndDate" class="block text-[10px] font-bold text-gray-500 uppercase">Data Fim</label>
+                                        <input type="date" id="filterEndDate" name="filterEndDate" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                    <div>
+                                        <label for="filterAccountGroup" class="block text-[10px] font-bold text-gray-500 uppercase">Grupo</label>
+                                        <select id="filterAccountGroup" name="filterAccountGroup" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                            <option value="">Todos</option>
+                                            <option value="1">1 - Ativo</option><option value="2">2 - Passivo</option>
+                                            <option value="3">3 - Receita</option><option value="4">4 - Despesa</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="filterAccountId" class="block text-[10px] font-bold text-gray-500 uppercase">Conta</label>
+                                        <select id="filterAccountId" name="filterAccountId" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                            <option value="">Todas Analíticas</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="filterSearch" class="block text-[10px] font-bold text-gray-500 uppercase">Busca</label>
+                                        <input type="text" id="filterSearch" name="filterSearch" placeholder="Histórico, doc..." class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex justify-end gap-2">
+                                    <button type="button" id="btnClearFiltersKeepDate" class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none transition-colors">Limpar sem Data</button>
+                                    <button type="button" id="btnClearFilters" class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none transition-colors">Limpar Filtro</button>
+                                    <button type="submit" id="btnApplyFilters" class="px-4 py-1.5 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm focus:outline-none transition-colors">Filtrar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── TABLE ─────────────────────────────────────────────── -->
+            <div id="entriesSection" class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl overflow-auto flex-1 h-full border border-gray-200 dark:border-slate-700">
+                <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
+                    <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                        <tr>
+                            <th class="px-3 py-2.5 text-left w-8"><input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300" title="Selecionar todos"></th>
+                            <th class="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                            <th class="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documento</th>
+                            <th class="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">D/C</th>
+                            <th class="px-2 py-2.5 text-right text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor (R$)</th>
+                            <th class="px-2 py-2.5 text-left text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Histórico</th>
+                            <th class="px-2 py-2.5 text-center text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entriesTable" class="divide-y divide-gray-100 dark:divide-slate-700/40">
+                        <tr><td colspan="7" class="text-center py-4">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ── FOOTER ────────────────────────────────────────────── -->
+            <div class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4 flex-wrap">
+                <span class="text-xs text-gray-500 flex gap-2"><span id="footerCount">0</span> lançamentos</span>
+                <div class="flex gap-4 text-xs">
+                    <span class="text-gray-500">Débito: <span class="font-bold text-gray-800 dark:text-gray-200" id="footerTotalDebit">R$ 0,00</span></span>
+                    <span class="text-gray-500">Crédito: <span class="font-bold text-gray-800 dark:text-gray-200" id="footerTotalCredit">R$ 0,00</span></span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ── MODAL NEW/EDIT ────────────────────────────────────────── -->
+    <div id="entryModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="entryModalBackdrop"></div>
+            <div class="modal-panel relative bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
+                <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100" id="entryModalTitle">Novo Lançamento</h3>
+                <form id="entryForm">
+                    <input type="hidden" id="entryId" name="public_id">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label for="entryDate" class="block text-sm text-gray-700 dark:text-gray-300">Data *</label>
+                                <input type="date" id="entryDate" name="entry_date" required title="Data do lançamento" class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div>
+                            <div><label for="documentRef" class="block text-sm text-gray-700 dark:text-gray-300">Documento *</label>
+                                <input type="text" id="documentRef" name="document_ref" placeholder="Número do documento" required title="Número do documento" class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div>
+                        </div>
+                        <div>
+                            <label for="debitAccountId" class="block text-sm text-gray-700 dark:text-gray-300">Conta Débito *</label>
+                            <select id="debitAccountId" name="debit_account_id" required title="Selecione a conta de débito" class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"></select>
+                        </div>
+                        <div>
+                            <label for="creditAccountId" class="block text-sm text-gray-700 dark:text-gray-300">Conta Crédito *</label>
+                            <select id="creditAccountId" name="credit_account_id" required title="Selecione a conta de crédito" class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"></select>
+                        </div>
+                        <div><label for="entryAmount" class="block text-sm text-gray-700 dark:text-gray-300">Valor (R$) *</label>
+                            <input type="number" id="entryAmount" name="amount" step="0.01" required title="Valor do lançamento" placeholder="0,00" class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"></div>
+                        <div><label for="entryHistory" class="block text-sm text-gray-700 dark:text-gray-300">Histórico *</label>
+                            <textarea id="entryHistory" name="history" required title="Histórico do lançamento" placeholder="Descreva o histórico do lançamento" class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"></textarea></div>
+                    </div>
+                    <div class="mt-5 flex justify-end gap-2">
+                        <button type="button" id="btnCancelEntry" class="px-4 py-2 border rounded text-gray-700 dark:text-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700">Cancelar</button>
+                        <button type="submit" id="btnSaveEntry" class="px-4 py-2 bg-brand-600 text-white rounded hover:bg-brand-700">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL IMPORT ─────────────────────────────────────────── -->
+    <div id="importModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="importModalBackdrop"></div>
+            <div class="modal-panel relative bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl p-6 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-gray-100">
+                <h3 class="text-lg font-medium mb-4">Importar Lançamentos</h3>
+                
+                <div id="importStepUpload">
+                    <label for="importFile" class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Arquivo de importação</label>
+                    <input type="file" id="importFile" accept=".csv,.txt" title="Selecione o arquivo para importação" class="block w-full text-sm dark:text-gray-300">
+                    <div class="mt-4 flex gap-4">
+                        <label><input type="radio" value="single" name="importFormat" checked> Linha Única</label>
+                        <label><input type="radio" value="double" name="importFormat"> Partidas Dobradas</label>
+                    </div>
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button type="button" class="btnCancelImport px-4 py-2 border rounded">Cancelar</button>
+                        <button type="button" id="btnNextImportStep" class="bg-brand-600 text-white px-4 py-2 rounded">Próximo</button>
+                    </div>
+                </div>
+
+                <div id="importStepMapping" class="hidden">
+                    <label><input type="checkbox" id="importHasHeader" checked> Primeira linha é cabeçalho</label>
+                    <div id="mappingContainer" class="mt-4 space-y-2"></div>
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button type="button" class="btnCancelImport px-4 py-2 border rounded">Cancelar</button>
+                        <button type="button" id="btnExecuteImport" class="bg-brand-600 text-white px-4 py-2 rounded">Executar Importação</button>
+                    </div>
+                </div>
+
+                <div id="importStepProgress" class="hidden">
+                    <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5 mb-2">
+                        <div id="importProgressBar" class="bg-brand-600 h-2.5 rounded-full"></div>
+                    </div>
+                    <p id="importProgressText" class="text-xs text-center text-gray-500 dark:text-gray-400">Processando...</p>
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" class="btnCancelImport px-4 py-2 border rounded">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js"></script>
+    <script src="/js/accounting_entries.js"></script>
+    <script src="/js/components/navbar.js"></script>
+    <div id="app-footer" class="shrink-0 mt-auto"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

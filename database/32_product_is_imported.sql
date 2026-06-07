@@ -1,0 +1,2 @@
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS is_imported TINYINT(1) NOT NULL DEFAULT 0 AFTER external_code;

@@ -1,0 +1,173 @@
+# Stack de producao para Portainer (deploy via repositorio)
+# Dominios:
+# - erp.keystones.dev
+# - phpmyadmin.erp.keystones.dev
+
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-bessa_erp}
+      MARIADB_USER: ${MARIADB_USER:-erp_user}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-30mariafn@}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-30mariafn@}
+      MARIADB_ROOT_HOST: ${MARIADB_ROOT_HOST:-%}
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping --socket=/run/mysqld/mysqld.sock -uroot -p\"$${MARIADB_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    volumes:
+      - mariadb:/var/lib/mysql
+    networks:
+      erp-internal:
+        aliases:
+          - db
+          - mariadb
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.portainer
+    image: projeto_erp_bessa-app:portainer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      TZ: ${TZ:-America/Sao_Paulo}
+      DATA_DIR: /data
+
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-bessa_erp}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-30mariafn@}
+
+      JWT_SECRET: ${JWT_SECRET:-erp_keystones_jwt_2026_default_change_me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      SALT_ROUNDS: ${SALT_ROUNDS:-10}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-d29900758b6b5e78698dc47e0830f863d49fc92331f882bb89bf0925fab7148c}
+
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-bessa_erp}
+      MARIADB_USER: ${MARIADB_USER:-erp_user}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-30mariafn@}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-30mariafn@}
+
+    volumes:
+      - app_data:/data
+    command: sh -c "node dist/scripts/initdb.js && npm start"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 30
+      start_period: 360s
+    networks:
+      - erp-internal
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.portainer
+    image: projeto_erp_bessa-app:portainer
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      TZ: ${TZ:-America/Sao_Paulo}
+      DATA_DIR: /data
+
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-bessa_erp}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-30mariafn@}
+
+      JWT_SECRET: ${JWT_SECRET:-erp_keystones_jwt_2026_default_change_me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      SALT_ROUNDS: ${SALT_ROUNDS:-10}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-d29900758b6b5e78698dc47e0830f863d49fc92331f882bb89bf0925fab7148c}
+
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-bessa_erp}
+      MARIADB_USER: ${MARIADB_USER:-erp_user}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-30mariafn@}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-30mariafn@}
+
+    volumes:
+      - app_data:/data
+    command: npm run start:worker
+    healthcheck:
+      disable: true
+    networks:
+      - erp-internal
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: projeto_erp_bessa-frontend:portainer
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.erp-keystones.rule=Host(`erp.keystones.dev`)
+      - traefik.http.routers.erp-keystones.entrypoints=websecure
+      - traefik.http.routers.erp-keystones.tls=true
+      - traefik.http.routers.erp-keystones.tls.certresolver=${TRAEFIK_CERTRESOLVER:-myresolver}
+      - traefik.http.services.erp-keystones.loadbalancer.server.port=80
+    networks:
+      - erp-internal
+      - traefik-public
+
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: ${PMA_USER:-root}
+      PMA_PASSWORD: ${PMA_PASSWORD:-30mariafn@}
+      PMA_ARBITRARY: 0
+      UPLOAD_LIMIT: ${PHPMYADMIN_UPLOAD_LIMIT:-256M}
+      PMA_ABSOLUTE_URI: https://phpmyadmin.erp.keystones.dev/
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.phpmyadmin-keystones.rule=Host(`phpmyadmin.erp.keystones.dev`)
+      - traefik.http.routers.phpmyadmin-keystones.entrypoints=websecure
+      - traefik.http.routers.phpmyadmin-keystones.tls=true
+      - traefik.http.routers.phpmyadmin-keystones.tls.certresolver=${TRAEFIK_CERTRESOLVER:-myresolver}
+      - traefik.http.services.phpmyadmin-keystones.loadbalancer.server.port=80
+    networks:
+      - erp-internal
+      - traefik-public
+
+volumes:
+  mariadb:
+    name: ${MARIADB_VOLUME_NAME:-projeto_erp_bessa_mariadb}
+
+  app_data:
+    name: ${APP_DATA_VOLUME_NAME:-projeto_erp_bessa_app_data}
+
+networks:
+  erp-internal:
+    name: ${ERP_INTERNAL_NETWORK_NAME:-projeto_erp_bessa_internal}
+    driver: bridge
+
+  traefik-public:
+    external: true
+    name: ${TRAEFIK_PUBLIC_NETWORK_NAME:-traefik}

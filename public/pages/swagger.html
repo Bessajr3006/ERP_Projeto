@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Swagger</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden" data-required-module="swagger">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
+        <div class="px-4 sm:px-0 mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Swagger</h1>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Documentação interativa da API para consulta e testes dos endpoints.
+                </p>
+            </div>
+            <a href="/api-docs/" target="_blank" rel="noopener"
+                class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                Abrir em nova aba
+            </a>
+        </div>
+
+        <section class="px-4 sm:px-0 flex-1 min-h-170 pb-6">
+            <div class="h-full min-h-170 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <iframe src="/api-docs/" title="Documentação Swagger da API" class="h-full min-h-170 w-full border-0"></iframe>
+            </div>
+        </section>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

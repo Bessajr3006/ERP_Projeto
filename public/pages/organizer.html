@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Organizador</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto">
+
+        <!-- Cabeçalho -->
+        <div class="px-4 sm:px-0 mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3">
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Organizador</h1>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <div class="relative">
+                    <select id="boardSelect" title="Selecionar quadro" aria-label="Selecionar quadro"
+                        class="appearance-none bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 text-sm rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer shadow-sm w-auto">
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                </div>
+                <button id="btnRenameBoard" type="button" title="Renomear quadro"
+                    class="inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 shadow-sm transition-colors">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                </button>
+                <button id="btnNewBoard" type="button" title="Novo quadro"
+                    class="inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 shadow-sm transition-colors">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+                <button id="btnDeleteBoard" type="button" title="Excluir quadro"
+                    class="inline-flex items-center justify-center p-1.5 rounded-lg border border-red-200 dark:border-red-800 bg-white dark:bg-slate-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm transition-colors">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+                <!-- View toggle -->
+                <div class="inline-flex rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm overflow-hidden" role="group">
+                    <button id="btnViewKanban" type="button" title="Visualização Kanban"
+                        class="view-btn inline-flex items-center justify-center p-1.5 text-sm bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-r border-gray-300 dark:border-slate-600 view-btn-active">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                        </svg>
+                    </button>
+                    <button id="btnViewBacklog" type="button" title="Visualização Backlog"
+                        class="view-btn inline-flex items-center justify-center p-1.5 text-sm bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <button id="btnAddColumn" type="button" title="Nova Lista"
+                    class="inline-flex items-center justify-center p-1.5 rounded-lg border border-transparent bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <hr class="border-gray-200 dark:border-slate-700 mx-4 sm:mx-0 mb-4">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <!-- Kanban Board -->
+        <div id="viewKanban" class="px-4 sm:px-0 overflow-x-auto flex-1 min-h-0 pb-4">
+            <div id="kanbanBoard" class="kanban-board min-h-full">
+                <!-- Colunas injetadas por JS -->
+                <div id="addColumnBtn" class="shrink-0 w-64 hidden"></div>
+            </div>
+        </div>
+
+        <!-- Backlog View -->
+        <div id="viewBacklog" class="hidden px-4 sm:px-0 flex-1 min-h-0 overflow-y-auto pb-4">
+            <div id="backlogBoard"></div>
+        </div>
+
+    </main>
+
+    <!-- ===== MODAL: Detalhes do Card ===== -->
+    <div id="cardModal" class="hidden fixed inset-0 z-10000" role="dialog" aria-modal="true">
+        <div class="flex h-full items-center justify-center p-4">
+        <div id="cardModalBackdrop" class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80" aria-hidden="true"></div>
+        <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl text-left modal-card-panel shadow-xl">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex items-start justify-between mb-4">
+                        <h3 id="cardModalTitle" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Novo Card</h3>
+                        <button id="btnCloseCardModal" type="button" title="Fechar" aria-label="Fechar"
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors ml-4">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <input type="hidden" id="cardId">
+                    <input type="hidden" id="cardColumnId">
+                    <input type="hidden" id="cardHeaderColor">
+                    <div class="mt-2 space-y-4">
+                        <div>
+                            <label for="cardTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Título <span class="text-red-500">*</span></label>
+                            <input type="text" id="cardTitle" placeholder="Título do card"
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                        </div>
+                        <div>
+                            <label for="cardDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
+                            <textarea id="cardDescription" rows="3" placeholder="Adicione uma descrição..."
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm resize-none"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="cardDueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Vencimento</label>
+                                <input type="datetime-local" id="cardDueDate" title="Data e hora de vencimento" aria-label="Data e hora de vencimento"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="cardPriority" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Prioridade</label>
+                                <select id="cardPriority" title="Prioridade" aria-label="Prioridade"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <option value="none">Nenhuma</option>
+                                    <option value="low">Baixa</option>
+                                    <option value="medium">Média</option>
+                                    <option value="high">Alta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="cardTipo" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
+                                <select id="cardTipo" title="Tipo da tarefa" aria-label="Tipo da tarefa"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <option value="">Nenhum</option>
+                                    <option value="Funcionalidade">Funcionalidade</option>
+                                    <option value="Bug">Bug</option>
+                                    <option value="Melhoria">Melhoria</option>
+                                    <option value="Tarefa">Tarefa</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="cardSP" class="block text-sm font-medium text-gray-700 dark:text-gray-300">SP estimados</label>
+                                <input type="number" id="cardSP" min="0" max="999" placeholder="0" title="Story points estimados" aria-label="SP estimados"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-lpignore="true">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="cardAssignee" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Responsável</label>
+                            <select id="cardAssignee" title="Responsável" aria-label="Responsável"
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                <option value="all">Todos</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-3 py-1">
+                            <button type="button" id="cardNotifyToggle" role="switch" aria-checked="false"
+                                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1 bg-gray-200 dark:bg-slate-600"
+                                title="Notificar pelo sino do sistema">
+                                <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+                            </button>
+                            <span id="cardNotifyLabel" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none flex items-center gap-1.5">
+                                <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                                Notificar pelo sino do sistema
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Etiqueta</label>
+                            <div id="labelPicker" class="flex flex-wrap gap-2"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cor do cabeçalho</label>
+                            <div id="headerColorPicker" class="flex flex-wrap gap-2"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Anexos</label>
+                            <div id="attachmentList" class="space-y-1.5 mb-2"></div>
+                            <label class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-dashed border-gray-300 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-brand-400 hover:text-brand-500 cursor-pointer transition-colors">
+                                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                Adicionar arquivo
+                                <input type="file" id="cardFileInput" multiple class="hidden">
+                            </label>
+                            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Máx. 500 KB por arquivo</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse items-center gap-2 dark:border-t dark:border-slate-700">
+                    <button id="btnSaveCard" type="button"
+                        class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">Salvar</button>
+                    <button id="btnCancelCardModal" type="button"
+                        class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    <button id="btnDeleteCard" type="button"
+                        class="hidden mr-auto mt-3 sm:mt-0 items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 transition-colors">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Excluir
+                    </button>
+                </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: Nome do Quadro/Lista ===== -->
+    <div id="nameModal" class="hidden fixed inset-0 z-10000" role="dialog" aria-modal="true">
+        <div class="flex h-full items-center justify-center p-4">
+        <div id="nameModalBackdrop" class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80" aria-hidden="true"></div>
+        <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl text-left modal-name-panel shadow-xl overflow-y-auto">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 id="nameModalTitle" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Nome</h3>
+                    <input type="text" id="nameInput" title="Nome" aria-label="Nome" placeholder="Digite o nome"
+                        class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                    <div id="nameModalColorSection" class="hidden mt-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cor do cabeçalho</label>
+                        <div id="nameModalColorPicker" class="flex flex-wrap gap-2"></div>
+                        <input type="hidden" id="nameModalColorValue">
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse dark:border-t dark:border-slate-700">
+                    <button id="btnConfirmNameModal" type="button"
+                        class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">Confirmar</button>
+                    <button id="btnCancelNameModal" type="button"
+                        class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                </div>
+        </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/organizer.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

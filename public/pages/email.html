@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - E-mail</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <style>
+        .em-floating-menu-btn {
+            display: none;
+            position: fixed;
+            left: 14px;
+            bottom: 14px;
+            z-index: 130;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: #38bdf8;
+            color: #00131e;
+            padding: 10px 16px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 900;
+            font-size: 14px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        }
+        .em-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 45;
+        }
+        .em-main {
+            padding-top: 10px;
+        }
+        .em-app {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .em-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.60);
+            place-items: center;
+            z-index: 80;
+            padding: 16px;
+        }
+        .em-compose-card {
+            width: min(780px, 100%);
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+            overflow: hidden;
+        }
+        .em-compose-header {
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .em-compose-title {
+            margin: 0;
+            font-size: 15px;
+            color: #e2e8f0;
+        }
+        .em-compose-close {
+            border: none;
+            background: transparent;
+            color: #e2e8f0;
+            font-size: 22px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .em-compose-form {
+            padding: 16px;
+            display: grid;
+            gap: 12px;
+        }
+        .em-field {
+            display: grid;
+            gap: 5px;
+        }
+        .em-label {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .em-input,
+        .em-textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #e2e8f0;
+            outline: none;
+            font-size: 13px;
+        }
+        .em-textarea {
+            min-height: 200px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+        .em-compose-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .em-compose-info {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .em-compose-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .em-btn-secondary {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.06);
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .em-btn-primary {
+            background: #38bdf8;
+            color: #00131e;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .em-toast {
+            display: none;
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+            z-index: 100;
+            max-width: 340px;
+            font-size: 13px;
+        }
+        .em-folder-btn-item:hover {
+            background: rgba(56, 189, 248, 0.10) !important;
+            border-color: rgba(56, 189, 248, 0.18) !important;
+        }
+        .em-folder-btn-item.active {
+            background: rgba(56, 189, 248, 0.14) !important;
+            border-color: rgba(56, 189, 248, 0.22) !important;
+            color: #38bdf8 !important;
+            font-weight: 600;
+        }
+        .em-sidebar-btn:hover {
+            background: rgba(56, 189, 248, 0.08) !important;
+        }
+        .em-mail-item-row:hover {
+            background: rgba(56, 189, 248, 0.07) !important;
+        }
+        .em-mail-item-row.active {
+            background: rgba(56, 189, 248, 0.12) !important;
+        }
+        @media (max-width: 1100px) {
+            #emailApp {
+                grid-template-columns: 1fr !important;
+            }
+            #emSidebar {
+                position: fixed !important;
+                left: -280px;
+                top: 64px;
+                bottom: 0;
+                width: 256px;
+                transition: left .22s ease;
+                z-index: 60;
+            }
+            #emSidebar.open {
+                left: 0 !important;
+            }
+            #emMenuToggle {
+                display: flex !important;
+            }
+            #emFloatingMenuBtn {
+                display: flex !important;
+            }
+        }
+        @media (max-width: 900px) {
+            #emContent {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        @media (max-width: 680px) {
+            #emTopbar {
+                grid-template-columns: auto 1fr !important;
+            }
+            #emTopActions {
+                grid-column: 1 / -1;
+                justify-content: stretch !important;
+            }
+            #emTopActions button {
+                flex: 1;
+                text-align: center;
+            }
+        }
+    </style>
+    <script src="/js/pwa.js"></script>
+</head>
+<body data-required-module="email" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+    <button id="emFloatingMenuBtn" type="button" class="em-floating-menu-btn">☰ Menu</button>
+    <div id="emOverlay" class="em-overlay"></div>
+    <main class="max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden em-main">
+        <div id="emailApp" class="em-app"></div>
+    </main>
+    <div class="em-modal-backdrop" id="emComposeModal">
+        <div class="em-compose-card">
+            <div class="em-compose-header">
+                <h3 id="emComposeTitle" class="em-compose-title">Novo E-mail</h3>
+                <button id="emComposeClose" type="button" class="em-compose-close">×</button>
+            </div>
+            <form id="emComposeForm" class="em-compose-form">
+                <input type="hidden" id="emEditingDraftId">
+                <div class="em-field"><label class="em-label">Para</label><input id="emToInput" placeholder="destinatario@empresa.com.br" required class="em-input"></div>
+                <div class="em-field"><label class="em-label">Assunto</label><input id="emSubjectInput" placeholder="Assunto do e-mail" required class="em-input"></div>
+                <div class="em-field"><label class="em-label">Mensagem</label><textarea id="emBodyInput" placeholder="Escreva sua mensagem..." required class="em-textarea"></textarea></div>
+                <div class="em-compose-footer">
+                    <span class="em-compose-info">E-mails salvos no navegador (localStorage)</span>
+                    <div class="em-compose-actions">
+                        <button type="button" id="emSaveDraftBtn" class="em-btn-secondary">Salvar rascunho</button>
+                        <button type="submit" class="em-btn-primary">Enviar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="emToast" class="em-toast"></div>
+    <div id="app-footer"></div>
+    <script src="/js/api.js"></script>
+    <script src="/js/email.js"></script>
+    <script src="/js/components/navbar.js"></script>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

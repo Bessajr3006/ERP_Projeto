@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Vendedores</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body data-required-module="sellers" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Vendedores</h3>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
+                        <button type="button" id="btnListView" title="Visualização em Lista"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <button type="button" id="btnGridView" title="Visualização em Cards"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <button type="button" id="btnOpenModal" title="Novo Vendedor"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="sellersSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-3 py-3 text-left w-12">
+                                    <input type="checkbox" id="selectAll" name="selectAll" title="Selecionar todos os vendedores" aria-label="Selecionar todos os vendedores"
+                                        class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
+                                    ID</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Nome</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Documento</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Contato</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Cidade / UF</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Status</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sellersTable"
+                            class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="sellersGridSection" class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 content-start"><div class="col-span-full flex flex-col items-center justify-center py-12 gap-2">
+            <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum vendedor encontrado.</p>
+        </div></div><div id="sellersResultsFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4" role="status" aria-live="polite">
+                <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+                    </svg>
+                    <span data-grid-footer-count="" class="font-semibold text-gray-700 dark:text-gray-200">0</span>
+                    <span data-grid-footer-label="">vendedor(es) exibido(s)</span>
+                </span>
+            </div>
+        </div>
+    </main>
+
+    <div id="entityModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true"
+                id="modalBackdrop"></div>
+            <div
+                class="modal-panel relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="entityForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="lg:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
+                                    id="modalTitle">Novo Vendedor</h3>
+                                <div class="mt-4 space-y-4">
+                                    <input type="hidden" id="sellerId" name="sellerId" value="" data-bwignore="true" data-lpignore="true" placeholder="">
+
+                                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+                                        O perfil deste cadastro é fixo como <span class="font-semibold">Vendedor</span>. Os dados de acesso continuam vinculados ao módulo de usuários.
+                                    </div>
+
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div class="sm:col-span-2">
+                                            <label for="sellerName"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Completo <span class="text-red-500">*</span></label>
+                                            <input type="text" id="sellerName" name="sellerName" required
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
+                                        <div>
+                                            <label for="sellerEmail"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email <span class="text-red-500">*</span></label>
+                                            <input type="email" id="sellerEmail" name="sellerEmail" required autocomplete="off"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
+                                        <div>
+                                            <label for="sellerPassword"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
+                                            <input type="password" id="sellerPassword" name="sellerPassword" autocomplete="new-password"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 hidden" id="passwordHint">Deixe em branco para manter a senha atual.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
+                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Dados Comerciais</h4>
+                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="sellerDocument"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF/CNPJ</label>
+                                                <input type="text" id="sellerDocument" name="sellerDocument" placeholder="000.000.000-00"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="sellerPhone"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
+                                                <input type="text" id="sellerPhone" name="sellerPhone"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
+                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Endereço</h4>
+                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="sellerZipcode"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CEP</label>
+                                                <div class="relative">
+                                                    <input type="text" id="sellerZipcode" name="sellerZipcode" placeholder="00000-000"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                    <div id="sellerCepLoading"
+                                                        class="hidden absolute inset-y-0 right-0 pr-3 items-center pointer-events-none">
+                                                        <svg class="animate-spin h-5 w-5 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label for="sellerStreet"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Rua / Logradouro</label>
+                                                <input type="text" id="sellerStreet" name="sellerStreet"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="sellerNumber"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número</label>
+                                                <input type="text" id="sellerNumber" name="sellerNumber"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="sellerComplement"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complemento</label>
+                                                <input type="text" id="sellerComplement" name="sellerComplement"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="sellerNeighborhood"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bairro</label>
+                                                <input type="text" id="sellerNeighborhood" name="sellerNeighborhood"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div>
+                                                <label for="sellerCity"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cidade</label>
+                                                <input type="text" id="sellerCity" name="sellerCity"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            </div>
+                                            <div class="sm:col-span-2">
+                                                <label for="sellerState"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado (UF)</label>
+                                                <select id="sellerState" name="sellerState"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                                    <option value="">Selecione...</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                        <button type="button" id="btnCancelModal"
+                            class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="saveBtn"
+                            class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/filter-panel.js"></script>
+    <script src="/js/components/crud-manager.js"></script>
+    <script src="/js/sellers.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

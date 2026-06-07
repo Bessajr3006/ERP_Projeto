@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Produtos</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <!-- Navbar Dinâmica -->
+    <div id="app-navbar"></div>
+
+    <!-- Main Content -->
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Produtos</h3>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="btnBulkUpdate" title="Alterar em Lote"
+                        class="hidden items-center justify-center gap-1.5 rounded-lg border border-amber-300 dark:border-amber-600 px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-sm font-medium text-amber-700 dark:text-amber-300 shadow-sm hover:bg-amber-100 dark:hover:bg-amber-900/50 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Alterar em Lote (<span id="bulkCount">0</span>)
+                    </button>
+                    <button type="button" id="btnBulkDelete" title="Excluir em Lote"
+                        class="hidden items-center justify-center gap-1.5 rounded-lg border border-red-300 dark:border-red-600 px-3 py-2 bg-red-50 dark:bg-red-900/30 text-sm font-medium text-red-700 dark:text-red-300 shadow-sm hover:bg-red-100 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Excluir em Lote (<span id="bulkDeleteCount">0</span>)
+                    </button>
+                    <button type="button" id="btnOpenSolidconModal" title="Importar Solidcon"
+                        class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        Solidcon
+                    </button>
+                    <button type="button" id="btnOpenModal" title="Novo Produto"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-b border-gray-200 dark:border-slate-700">
+                <button type="button" id="toggleFilterBtn"
+                    class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                        </svg>
+                        <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                    </div>
+                    <svg id="filterChevron"
+                        class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 -rotate-90"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="filterBody" class="overflow-hidden">
+                    <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 items-end">
+                            <div>
+                                <label for="filterSearch"
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Busca</label>
+                                <input type="text" id="filterSearch" name="filterSearch" placeholder="Nome, SKU, EAN ou código"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                            </div>
+                            <div>
+                                <label for="filterCategory"
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Categoria</label>
+                                <select id="filterCategory" name="filterCategory"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todas as Categorias</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="filterManufacturer"
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Fabricante</label>
+                                <select id="filterManufacturer" name="filterManufacturer"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todos os Fabricantes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="filterStock"
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Estoque</label>
+                                <select id="filterStock" name="filterStock"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todos</option>
+                                    <option value="low">Baixo Estoque</option>
+                                    <option value="in">Com Estoque</option>
+                                    <option value="out">Sem Estoque</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="filterImage"
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Imagem</label>
+                                <select id="filterImage" name="filterImage"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todas</option>
+                                    <option value="with">Com Imagem</option>
+                                    <option value="without">Sem Imagem</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex justify-end mt-2">
+                            <button type="button" id="btnClearFilters"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-transparent hover:border-red-200 dark:hover:border-red-800/40 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                Limpar filtro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Tabela de Produtos -->
+            <div id="productsSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left w-12">
+                                    <input type="checkbox" id="selectAllCheckbox" name="selectAllCheckbox" title="Selecionar todos os produtos" aria-label="Selecionar todos os produtos"
+                                        class="rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 dark:border-slate-600">
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left w-12 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    ID</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left w-20 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    SKU</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left w-24 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    EAN</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left w-24 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Imagem</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Nome</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Categoria</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Tipo Produto</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Custo</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Markup</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Venda</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Mín</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Máx</th>
+                                 <th scope="col"
+                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                     Estoque</th>
+                                 <th scope="col"
+                                     class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                     Externo</th>
+                                 <th scope="col"
+                                     class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                     Origem</th>
+                                 <th scope="col"
+                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                     Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTable"
+                            class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="17" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Grid de Produtos (Cards) -->
+            <div id="productsGridSection"
+                class="products-grid-section products-grid-section--hidden overflow-y-auto flex-1 min-h-0 p-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 content-start">
+                <!-- Cards renderizados dinamicamente pelo JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="productModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="modalBackdrop"></div>
+            <!-- Modal Box -->
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left
+            overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <form id="productForm" novalidate>
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="lg:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
+                                    id="modalTitle">
+                                    Cadastrar
+                                    Produto</h3>
+                                <div class="mt-4">
+                                    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
+                                        <li class="mr-2">
+                                            <button type="button" id="tabBtn-data"
+                                                class="inline-block px-4 py-3 border-b-2 rounded-t-lg active text-brand-600 border-brand-600 dark:text-brand-500 dark:border-brand-500">Dados
+                                                do Produto</button>
+                                        </li>
+                                        <li class="mr-2">
+                                            <button type="button" id="tabBtn-complemento"
+                                                class="inline-block px-4 py-3 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">Complemento</button>
+                                        </li>
+                                        <li class="mr-2">
+                                            <button type="button" id="tabBtn-image"
+                                                class="inline-block px-4 py-3 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">Imagem</button>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div id="tabContent-data" class="block mt-4 space-y-4">
+                                    <div class="grid grid-cols-4 gap-4">
+                                        <div class="col-span-4">
+                                            <label for="productName"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome
+                                                do Produto <span class="text-red-500">*</span></label>
+                                            <input type="text" id="productName" name="productName"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+                                        <div class="col-span-4 sm:col-span-1">
+                                            <label for="productSku"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">SKU</label>
+                                            <input type="text" id="productSku" name="productSku"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+                                        <div class="col-span-4 sm:col-span-1">
+                                            <label for="productEan"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">EAN
+                                                (EAN/GTIN)</label>
+                                            <input type="text" id="productEan" name="productEan"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+                                        <div class="col-span-4 sm:col-span-1">
+                                            <label for="productExternalCode"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código Externo</label>
+                                            <input type="text" id="productExternalCode" name="productExternalCode"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+
+                                        <div class="col-span-4 sm:col-span-1">
+                                            <label for="productNcm"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">NCM</label>
+                                            <input type="text" id="productNcm" name="productNcm" maxlength="8"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+                                        <div class="col-span-4 sm:col-span-1">
+                                            <label for="productCest"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">CEST</label>
+                                            <input type="text" id="productCest" name="productCest" maxlength="7"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+
+                                        <div
+                                            class="col-span-4 grid grid-cols-2 sm:grid-cols-5 gap-4 border-t border-gray-100 dark:border-slate-700 pt-4 mt-2">
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="productCategory"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label>
+                                                <select id="productCategory" name="productCategory"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <option value="">Nenhuma</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="productStockType"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Produto</label>
+                                                <select id="productStockType" name="productStockType"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <option value="">Nenhum</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="productManufacturer"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fabricante</label>
+                                                <select id="productManufacturer" name="productManufacturer"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <option value="">Nenhum</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="productTaxRule"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Regra
+                                                    de Tributo</label>
+                                                <select id="productTaxRule" name="productTaxRule"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <option value="">Nenhuma</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="productMeasure"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Medida</label>
+                                                <select id="productMeasure" name="productMeasure"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <option value="">Nenhuma</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-span-4 mt-2">
+                                            <label for="productDesc"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
+                                            <textarea id="productDesc" name="productDesc" rows="2"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tabContent-complemento" class="hidden mt-4 space-y-4">
+                            <div class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-md border border-gray-200 dark:border-slate-700">
+                                <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">Preços e Estoque</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                    <div>
+                                        <label for="initialStock"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estoque
+                                            Inicial</label>
+                                        <input type="number" id="initialStock" name="initialStock" value="0" min="0" step="1"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="minStock"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estoque Mínimo</label>
+                                        <input type="number" id="minStock" name="minStock" value="0" min="0" step="1"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="maxStock"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estoque Máximo</label>
+                                        <input type="number" id="maxStock" name="maxStock" value="0" min="0" step="1"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="costPrice"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Custo
+                                            (R$)</label>
+                                        <input type="number" step="0.01" id="costPrice" name="costPrice" value="0.00" min="0"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="markupPercentage"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Markup
+                                            (%)</label>
+                                        <input type="number" step="0.01" id="markupPercentage" name="markupPercentage" value="0.00"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="sellingPrice"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Venda
+                                            (R$)</label>
+                                        <input type="number" step="0.01" id="sellingPrice" name="sellingPrice" value="0.00" min="0"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div class="col-span-1 sm:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <input type="checkbox" id="promotionalActive" name="promotionalActive"
+                                                class="rounded border-gray-300 text-brand-600 shadow-sm mr-2">
+                                            Ativar Promoção
+                                        </label>
+                                    </div>
+                                    <div class="col-span-1 sm:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            <input type="checkbox" id="productImported" name="productImported"
+                                                class="rounded border-gray-300 text-brand-600 shadow-sm mr-2">
+                                            Produto Importado
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label for="promotionalPrice"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Preço Promocional
+                                            (R$)</label>
+                                        <input type="number" step="0.01" id="promotionalPrice" name="promotionalPrice" value="0.00" min="0"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tabContent-image" class="hidden mt-4 space-y-4">
+                            <div
+                                class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-md border border-gray-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Imagem do
+                                    Produto</label>
+                                <div class="mt-2 flex flex-col items-center justify-center w-full">
+                                    <label id="productImageDropzone" for="productImageFile"
+                                        class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white dark:hover:bg-slate-800 dark:bg-slate-700 hover:bg-gray-50 dark:border-slate-600 dark:hover:border-slate-500 overflow-hidden relative">
+                                        <div class="flex flex-col items-center justify-center pt-5 pb-6"
+                                            id="productImagePreviewContainer">
+                                            <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"
+                                                aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                viewBox="0 0 20 16">
+                                                <path stroke="currentColor" stroke-linecap="round"
+                                                    stroke-linejoin="round" stroke-width="2"
+                                                    d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                                            </svg>
+                                            <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span
+                                                    class="font-semibold">Clique para fazer upload</span> ou arraste a
+                                                imagem</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, JPEG (MAX.
+                                                2MB)</p>
+                                        </div>
+                                        <img id="productImagePreview"
+                                            class="hidden absolute inset-0 w-full h-full object-contain p-2" src=""
+                                            alt="Pré-visualização da imagem">
+                                        <input id="productImageFile" name="productImageFile" type="file" class="hidden"
+                                            accept=".png,.jpg,.jpeg,.webp" />
+                                    </label>
+                                    <div class="w-full mt-2 justify-between items-center hidden"
+                                        id="productImageActions">
+                                        <span id="productImageFileName"
+                                            class="text-sm text-gray-500 dark:text-gray-400 truncate w-3/4"></span>
+                                        <button type="button" id="btnRemoveProductImage"
+                                            class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Remover</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- CLOSING THE MISSING bg-white DIV -->
+
+                    <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:border-t dark:border-slate-700 gap-3">
+                        <button type="submit" id="saveBtn"
+                                class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto sm:text-sm">
+                                Salvar
+                            </button>
+                            <button type="button" id="btnCancelModal"
+                                class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:w-auto sm:text-sm">
+                                Cancelar
+                            </button>
+                        </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Solidcon Modal -->
+    <div id="solidconModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="solidcon-modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="solidconModalBackdrop"></div>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                            <h3 id="solidcon-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Importar Solidcon</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Busque o JSON pela URL configurada ou cole o payload para importar produtos.</p>
+                        </div>
+                        <button type="button" id="btnCloseSolidconModal" title="Fechar"
+                            class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                            <span class="sr-only">Fechar</span>
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-md border border-gray-200 dark:border-slate-700">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Importação Solidcon</p>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">As URLs são configuradas na tela Minha Empresa &gt; API/Solidcon.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="btnFetchSolidconJson" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+                                    Buscar JSON
+                                </button>
+                                <button type="button" id="btnImportSolidconJson" class="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-3 py-2 bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+                                    Importar JSON
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="solidconJsonInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payload JSON</label>
+                            <textarea id="solidconJsonInput" name="solidconJsonInput" rows="6" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Cole aqui o JSON ou clique em &quot;Buscar JSON&quot;"></textarea>
+                        </div>
+                        <div id="solidconImportStatus" class="hidden mt-3 text-sm rounded-md px-3 py-2"></div>
+                        <div id="solidconImportDetails" class="hidden mt-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Edit Modal Form -->
+    <div id="bulkUpdateModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="bulkModalBackdrop"></div>
+            <div
+                class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <form id="bulkUpdateForm">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+                                Atualização em Lote (<span id="bulkModalCount">0</span> itens)
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
+                                Preencha apenas os campos que deseja alterar para todos os itens selecionados. Deixe
+                                vazio para manter o valor atual.
+                            </p>
+                            <div class="mt-4 space-y-4">
+                                <div>
+                                    <label for="bulkCategory"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label>
+                                    <select id="bulkCategory" name="bulkCategory"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        <option value="">-- Não alterar --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="bulkStockType"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Estoque</label>
+                                    <select id="bulkStockType" name="bulkStockType"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        <option value="">-- Não alterar --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="bulkManufacturer"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fabricante</label>
+                                    <select id="bulkManufacturer" name="bulkManufacturer"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        <option value="">-- Não alterar --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="bulkTaxRule"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Regra de
+                                        Tributo</label>
+                                    <select id="bulkTaxRule" name="bulkTaxRule"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        <option value="">-- Não alterar --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="bulkMeasure"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Medida</label>
+                                    <select id="bulkMeasure" name="bulkMeasure"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        <option value="">-- Não alterar --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="bulkMarkup"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Markup (%)</label>
+                                    <input type="number" step="0.01" id="bulkMarkup" name="bulkMarkup" min="0"
+                                        placeholder="-- Calc. Automático --"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="bulkSellingPrice"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Preço de
+                                        Venda (R$)</label>
+                                    <input type="number" step="0.01" id="bulkSellingPrice" name="bulkSellingPrice" min="0"
+                                        placeholder="-- Não alterar --"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="bulkCostPrice"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Custo (R$)</label>
+                                    <input type="number" step="0.01" id="bulkCostPrice" name="bulkCostPrice" min="0"
+                                        placeholder="-- Não alterar --"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="bulkMinStock"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Est. Mínimo</label>
+                                        <input type="number" id="bulkMinStock" name="bulkMinStock" step="1"
+                                            placeholder="Manter"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="bulkMaxStock"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Est. Máximo</label>
+                                        <input type="number" id="bulkMaxStock" name="bulkMaxStock" step="1"
+                                            placeholder="Manter"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse dark:border-t dark:border-slate-700">
+                        <button type="submit" id="bulkSaveBtn"
+                            class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Aplicar a todos
+                        </button>
+                        <button type="button" id="btnCancelBulkModal"
+                            class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="bulkDeleteModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="bulk-delete-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="bulkDeleteModalBackdrop"></div>
+
+            <div
+                class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div
+                            class="mx-auto shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 id="bulk-delete-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+                                Excluir Produtos em Lote
+                            </h3>
+                            <div class="mt-2">
+                                <p id="bulkDeleteSummary" class="text-sm text-gray-600 dark:text-gray-300"></p>
+                            </div>
+                            <div class="mt-4 max-h-48 overflow-auto rounded-md border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40">
+                                <ul id="bulkDeleteList" class="divide-y divide-gray-200 dark:divide-slate-700 text-sm"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse dark:border-t dark:border-slate-700">
+                    <button type="button" id="btnConfirmBulkDelete"
+                        class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Excluir Selecionados
+                    </button>
+                    <button type="button" id="btnCancelBulkDeleteModal"
+                        class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Scripts -->
+    <script src="/js/api.js"></script>
+    <script src="/js/products.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0 mt-auto"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

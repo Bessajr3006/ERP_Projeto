@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.log
+.DS_Store
+.runtime/
+.wwebjs_cache/
+public/uploads/
+key.pem
+cert.p12
+cert.pem
+.node/
+*.pem
+certs/

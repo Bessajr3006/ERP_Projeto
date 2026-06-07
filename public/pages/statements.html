@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Extrato</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto">
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col xl:flex-row gap-5 flex-1 min-h-0">
+            <!-- COLUNA ESQUERDA: SISTEMA ERP -->
+            <div class="flex-1 flex flex-col min-w-0">
+                <div id="statementsSection" class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                    <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50/50 dark:bg-slate-800/50">
+                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
+                            Lançamentos do Sistema
+                        </h3>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 border border-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:border-brand-800 px-2 py-0.5 rounded-md">ERP</span>
+                    </div>
+                    <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                        <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
+                            <thead class="bg-gray-50 dark:bg-slate-900/40">
+                                <tr>
+                                    <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-4 py-3 text-left w-12">
+                                        <input type="checkbox" id="chkAllSystem" title="Selecionar todos os lançamentos do sistema" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500/30 dark:bg-slate-700 dark:border-slate-600">
+                                    </th>
+                                    <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                    <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                    <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                                    <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Categoria / Conta</th>
+                                    <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-3 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statementsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
+                                <tr>
+                                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma movimentação no momento.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="statementsPaginationContainer" class="shrink-0 px-4 py-1 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"></div>
+                </div>
+                <div id="statementsGridSection" class="hidden flex-col flex-1 min-h-0 bg-white dark:bg-slate-800 border-l border-r border-gray-200 dark:border-slate-700">
+                    <div id="statementsGridContainer" class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 content-start"></div>
+                </div>
+                <div id="statementsGridPaginationContainer" class="hidden px-4 py-1 border-t border-l border-r border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"></div>
+                <div id="statementsFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg>
+                        <span id="footerCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span> mov(s)
+                    </span>
+                    <div class="grid grid-cols-3 gap-2 w-full">
+                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Entradas</span>
+                            <span id="footerTotalIn" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                        </div>
+                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saídas</span>
+                            <span id="footerTotalOut" class="mt-0.5 block text-xs font-bold text-red-600 dark:text-red-400">R$ 0,00</span>
+                        </div>
+                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saldo</span>
+                            <span id="footerBalance" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUNA DIREITA: EXTRATO DO BANCO -->
+            <div class="flex-1 flex flex-col min-w-0">
+                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                    <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50/50 dark:bg-slate-800/50">
+                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-emerald-500 rounded-full inline-block"></span>
+                            Extrato do Banco
+                        </h3>
+                        <div class="relative inline-block text-left" id="bankApiDropdownContainer">
+                            <button id="btnBankActionsToggle" type="button" class="flex items-center justify-center p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors" title="Opções do Extrato">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                </svg>
+                            </button>
+                            <div id="bankActionsMenu" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 z-50 focus:outline-none divide-y divide-gray-100 dark:divide-slate-700">
+                                <div class="py-1">
+                                    <button id="btnSyncBankApi" class="w-full text-left group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-brand-600 dark:hover:text-brand-400">
+                                        <svg class="mr-3 h-4 w-4 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                        Consultar API
+                                    </button>
+                                </div>
+                                <div class="py-1">
+                                    <button id="btnImportOfx" class="w-full text-left group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400">
+                                        <svg class="mr-3 h-4 w-4 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                        Importar OFX
+                                    </button>
+                                </div>
+                                <div class="py-1">
+                                    <button id="btnBatchDeleteBank" class="w-full text-left group flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                        <svg class="mr-3 h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        Excluir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" id="fileOfx" class="hidden" accept=".ofx,.qfx" title="Arquivo OFX para importação" />
+                    </div>
+                    <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 relative">
+                        <!-- Componente de Empty State Moderno para o OFX -->
+                        <div id="bankStatementsEmptyState" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50/40 dark:bg-slate-900/20 backdrop-blur-[1px] z-10">
+                            <div class="w-14 h-14 bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-slate-700 rounded-2xl flex items-center justify-center mb-4 text-gray-400 dark:text-gray-500">
+                                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                </svg>
+                            </div>
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-emerald-400 mb-1">Área de Conciliação Bancária</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 max-w-xs text-center leading-relaxed mb-4">
+                                Importe o arquivo <span class="font-mono bg-gray-100 dark:bg-slate-700 px-1 rounded">.OFX</span> ou faça a ponte automática via API do banco.
+                            </p>
+                            <button id="btnSyncBankApiCenter" class="flex items-center justify-center px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors shadow-sm gap-2 text-sm border border-emerald-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Consultar Extrato via API
+                            </button>
+                        </div>
+
+                        <!-- Mock Table Body behind the blur -->
+                        <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60 opacity-30 select-none pointer-events-none">
+                            <thead class="bg-gray-50 dark:bg-slate-900/40">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left w-12">
+                                        <input type="checkbox" id="chkAllBank" title="Selecionar todos os lançamentos do banco" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600">
+                                    </th>
+                                    <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase">Data</th>
+                                    <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase">Histórico</th>
+                                    <th scope="col" class="px-3 py-3 text-right text-[10px] font-medium text-gray-500 uppercase">Valor</th>
+                                    <th scope="col" class="px-4 py-3 text-center text-[10px] font-medium text-gray-500 uppercase">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bankStatementsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
+                                <tr>
+                                    <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3"><div class="h-3 w-32 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-emerald-100 dark:bg-emerald-900/30 ml-auto rounded animate-pulse"></div></td>
+                                    <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3"><div class="h-3 w-24 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-red-100 dark:bg-red-900/30 ml-auto rounded animate-pulse"></div></td>
+                                    <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3"><div class="h-3 w-36 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                    <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-red-100 dark:bg-red-900/30 ml-auto rounded animate-pulse"></div></td>
+                                    <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Footer OFX -->
+                <div id="statementsBankFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg>
+                        <span id="footerBankCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span> mov(s)
+                    </span>
+                    <div class="grid grid-cols-3 gap-2 w-full">
+                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Entradas</span>
+                            <span id="footerBankTotalIn" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                        </div>
+                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saídas</span>
+                            <span id="footerBankTotalOut" class="mt-0.5 block text-xs font-bold text-red-600 dark:text-red-400">R$ 0,00</span>
+                        </div>
+                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saldo</span>
+                            <span id="footerBankBalance" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Floating Conciliation Bar -->
+    <div id="conciliationActionBar" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 translate-y-24 opacity-0 pointer-events-none">
+        <div class="bg-gray-900/95 dark:bg-slate-800/95 backdrop-blur-md shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 border border-gray-700/50 dark:border-slate-700/80">
+            <div class="flex items-center gap-4 text-sm font-medium text-white">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse hidden" id="concilSystemDotActive"></span>
+                    <span class="w-2 h-2 rounded-full bg-gray-600" id="concilSystemDotInactive"></span>
+                    <span id="concilSystemCount" class="text-gray-400">0 ERP</span>
+                </div>
+                <div class="h-4 w-px bg-gray-700"></div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse hidden" id="concilBankDotActive"></span>
+                    <span class="w-2 h-2 rounded-full bg-gray-600" id="concilBankDotInactive"></span>
+                    <span id="concilBankCount" class="text-gray-400">0 Banco</span>
+                </div>
+            </div>
+            
+            <button id="btnConciliate" disabled class="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                Conciliar Selecionados
+            </button>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/filter-panel.js"></script>
+    <script src="/js/pagination.js"></script>
+    <script src="/js/statements.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

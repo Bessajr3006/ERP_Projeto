@@ -1,0 +1,23 @@
+{
+  "name": "KEYSTONE ERP",
+  "short_name": "KEYSTONE",
+  "description": "Sistema ERP Progressivo",
+  "start_url": "/pages/dashboard.html",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#5283AE",
+  "icons": [
+    {
+      "src": "/img/icon-192x192-v3.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/icon-512x512-v3.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

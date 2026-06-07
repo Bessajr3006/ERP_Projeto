@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - WhatsApp</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden" data-no-perm-check-page="true">
+    <div id="app-navbar"></div>
+
+    <main class="flex flex-col flex-1 min-h-0 max-w-7xl mx-auto w-full sm:px-6 lg:px-8">
+        <div class="px-4 sm:px-0 py-4 flex items-center gap-3">
+            <svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">WhatsApp</h1>
+            <button type="button" id="waConnectBtn"
+                class="ml-auto inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
+                Conectar
+            </button>
+            <button type="button" id="waDisconnectBtn"
+                class="hidden items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-600 text-white hover:bg-slate-700 transition-colors">
+                Desconectar
+            </button>
+            <span id="waStatusBadge" class="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">Verificando...</span>
+        </div>
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-3 rounded-lg px-3 py-2 text-sm"></div>
+
+        <div class="flex flex-1 min-h-0 rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm mb-4">
+
+            <!-- Sidebar: conversas -->
+            <div class="wa-sidebar" id="waSidebar">
+                <div class="px-4 py-3 border-b border-gray-100 dark:border-slate-700">
+                    <input type="text" id="waSearchInput" placeholder="Buscar conversa..."
+                        class="w-full text-sm rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                </div>
+                <div id="waConvList" class="flex-1 overflow-y-auto">
+                    <div class="flex items-center justify-center py-10 text-sm text-gray-400 dark:text-gray-500">Carregando conversas...</div>
+                </div>
+            </div>
+
+            <!-- Painel direito: chat -->
+            <div class="flex flex-col flex-1 min-h-0 bg-gray-50 dark:bg-slate-900" id="waChatPanel">
+                <div id="waChatEmpty" class="flex flex-col flex-1 items-center justify-center gap-3 text-gray-400 dark:text-gray-500">
+                    <svg class="w-12 h-12 opacity-30" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    <p class="text-sm">Selecione uma conversa</p>
+                </div>
+
+                <div id="waChatActive" class="hidden flex-col flex-1 min-h-0">
+                    <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
+                        <button type="button" id="waBtnBack" aria-label="Voltar para conversas" class="sm:hidden text-gray-500 dark:text-gray-400 mr-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        <div class="wa-avatar" id="waChatAvatar">?</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate" id="waChatName">—</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate" id="waChatPhone">—</p>
+                        </div>
+                        <button type="button" id="waDeleteContactBtn"
+                            class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            title="Excluir contato e mensagens">
+                            Excluir contato
+                        </button>
+                    </div>
+                    <div class="wa-messages-area" id="waMessagesArea"></div>
+                    <div class="wa-input-area">
+                        <div class="wa-input-tools">
+                            <input type="file" id="waAttachmentInput" class="hidden" accept="image/*,application/pdf" title="Selecionar imagem ou PDF" aria-label="Selecionar imagem ou PDF">
+                            <button type="button" id="waAttachmentBtn" class="wa-attach-btn" title="Anexar imagem ou PDF" aria-label="Anexar imagem ou PDF">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a4 4 0 10-5.657-5.657L5.757 10.757a6 6 0 108.486 8.486L20 13"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="wa-input-content">
+                            <div id="waAttachmentInfo" class="wa-attachment-meta hidden" aria-live="polite">
+                                <span id="waAttachmentName" class="wa-attachment-name"></span>
+                                <button type="button" id="waAttachmentClearBtn" class="wa-attachment-clear" title="Remover arquivo" aria-label="Remover arquivo">&times;</button>
+                            </div>
+                            <textarea id="waMessageInput" rows="1" placeholder="Digite uma mensagem..."
+                                class="w-full resize-none rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 max-h-28 overflow-y-auto"></textarea>
+                        </div>
+                        <button type="button" id="waSendBtn" title="Enviar"
+                            class="shrink-0 w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/whatsapp.js"></script>
+    <script src="/js/components/navbar.js"></script>
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "module": "None",
+    "moduleResolution": "Node",
+    "rootDir": "public/ts",
+    "outDir": "public/js",
+    "strict": true,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+    "skipLibCheck": true,
+    "noEmitOnError": true,
+    "alwaysStrict": false,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["public/ts/**/*.ts", "public/ts/**/*.d.ts"]
+}

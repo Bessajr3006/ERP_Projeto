@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Contas Bancárias</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <!-- Navbar -->
+    <!-- Navbar Dinâmica -->
+    <div id="app-navbar"></div>
+
+    <!-- Main Content -->
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Contas Bancárias</h3>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
+                        <button type="button" id="btnListView" title="Visualização em Lista"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        </button>
+                        <button type="button" id="btnGridView" title="Visualização em Cards"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        </button>
+                    </div>
+                    <button type="button" id="btnOpenModal" title="Nova Conta"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="banksSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-3 py-3 text-left w-12">
+                                    <input type="checkbox" id="selectAllCheckbox" name="selectAllCheckbox" title="Selecionar todas as contas bancárias" aria-label="Selecionar todas as contas bancárias"
+                                        class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
+                                    ID</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Identificação</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Tipo</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Membro Instituição</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Saldo Atual</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="banksTable"
+                            class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="banksGridSection"
+                class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 content-start">
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="bankModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="modalBackdrop"></div>
+            <div
+                class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="bankForm">
+                    <input type="hidden" id="bankId" name="bankId">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="lg:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
+                                        id="modalTitle">Nova Conta Bancária</h3>
+
+                                    <button type="button" id="btnTestApi" title="Testar Conexão API"
+                                        class="inline-flex items-center justify-center p-2 rounded-full text-amber-600 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors duration-200">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="mt-4 border-b border-gray-200 dark:border-slate-700">
+                                    <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                                        <button type="button" id="tabBtnGeral"
+                                            class="border-brand-500 text-brand-600 border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap">
+                                            Geral
+                                        </button>
+                                        <button type="button" id="tabBtnApi"
+                                            class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500 border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap ml-4">
+                                            Integração API/Inter
+                                        </button>
+                                    </nav>
+                                </div>
+
+                                <div class="mt-4 space-y-4">
+                                    <!-- TAB GERAL -->
+                                    <div id="tabContentGeral" class="block">
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div class="col-span-2">
+                                                <label for="bankName"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Identificação
+                                                    /
+                                                    Apelido</label>
+                                                <input type="text" id="bankName" name="bankName" required
+                                                    placeholder="Ex: Conta Corrente Itaú" autocomplete="off"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="institution"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Instituição
+                                                    (Banco)</label>
+                                                <input type="text" id="institution" name="institution" placeholder="Ex: Banco Itaú S.A" autocomplete="off"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="agencyNumber"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Agência</label>
+                                                <input type="text" id="agencyNumber" name="agencyNumber" placeholder="Ex: 0001" autocomplete="off"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="accountNumber"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número
+                                                    da Conta</label>
+                                                <input type="text" id="accountNumber" name="accountNumber" placeholder="Ex: 123456-7" autocomplete="off"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div class="col-span-2">
+                                                <label for="pixKey"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chave PIX</label>
+                                                <input type="text" id="pixKey" name="pixKey" placeholder="Ex: chave@pix.com" autocomplete="off"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="bankType"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo
+                                                    de Conta</label>
+                                                <select id="bankType" name="bankType" required
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <option value="checking">Conta Corrente</option>
+                                                    <option value="savings">Poupança</option>
+                                                    <option value="cash">Caixinha Física</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-span-2 sm:col-span-1">
+                                                <label for="initialBalance"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Saldo
+                                                    Inicial
+                                                    (R$)</label>
+                                                <input type="text" id="initialBalance" name="initialBalance" value="R$ 0,00"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB API/INTER -->
+                                    <div id="tabContentApi" class="hidden">
+                                        <div class="space-y-4">
+                                            <div>
+                                                <label for="apiClientId"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client
+                                                    ID</label>
+                                                <input type="text" id="apiClientId" name="apiClientId" placeholder="ID do Cliente do Inter" autocomplete="off"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="apiClientSecret"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client
+                                                    Secret</label>
+                                                <input type="password" id="apiClientSecret" name="apiClientSecret"
+                                                    placeholder="Client Secret do Inter" autocomplete="current-password"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certificado
+                                                    (.crt)</label>
+                                                <label id="dropzoneCert" for="fileCertificado"
+                                                    class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
+                                                    <span class="flex flex-col items-center space-y-1 text-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                            class="w-6 h-6 text-gray-400" fill="none"
+                                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                        </svg>
+                                                        <span
+                                                            class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                            Solte o arquivo ou <span
+                                                                class="text-brand-600 dark:text-brand-400 underline">selecione</span>
+                                                        </span>
+                                                        <span class="text-xs text-gray-500">Apenas arquivos .crt</span>
+                                                    </span>
+                                                    <input type="file" id="fileCertificado" name="fileCertificado"
+                                                        class="hidden" accept=".crt,.pem,.txt">
+                                                </label>
+                                                <div id="filenameCert" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                        viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    <span id="filenameCertText" class="truncate"></span>
+                                                    <button type="button" id="clearCertBtn" title="Remover certificado"
+                                                        class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <textarea id="apiCertificado" name="apiCertificado" class="hidden" aria-hidden="true" title="Conteúdo do certificado da API"></textarea>
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chave
+                                                    Privada (.key)</label>
+                                                <label id="dropzoneKey" for="fileKey"
+                                                    class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
+                                                    <span class="flex flex-col items-center space-y-1 text-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                            class="w-6 h-6 text-gray-400" fill="none"
+                                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                        </svg>
+                                                        <span
+                                                            class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                            Solte o arquivo ou <span
+                                                                class="text-brand-600 dark:text-brand-400 underline">selecione</span>
+                                                        </span>
+                                                        <span class="text-xs text-gray-500">Apenas arquivos .key</span>
+                                                    </span>
+                                                    <input type="file" id="fileKey" name="fileKey" class="hidden"
+                                                        accept=".key,.pem,.txt">
+                                                </label>
+                                                <div id="filenameKey" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                        viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    <span id="filenameKeyText" class="truncate"></span>
+                                                    <button type="button" id="clearKeyBtn" title="Remover chave"
+                                                        class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <textarea id="apiKey" name="apiKey" class="hidden" aria-hidden="true" title="Conteúdo da chave privada da API"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-col sm:flex-row-reverse sm:items-center dark:border-t dark:border-slate-700">
+                        <button type="submit" id="saveBtn"
+                            class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
+                            Salvar
+                        </button>
+                        <button type="button" id="btnCancelModal"
+                            class="mt-3 w-full inline-flex justify-center rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 text-base font-medium hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/filter-panel.js"></script>
+    <script src="/js/banks.js"></script>
+    <script src="/js/components/navbar.js"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,7 @@
+ALTER TABLE tax_rules
+ADD COLUMN cst_ibs VARCHAR(5) DEFAULT NULL AFTER iss_percentage,
+ADD COLUMN ibs_percentage DECIMAL(5, 2) NOT NULL DEFAULT 0.00 AFTER cst_ibs,
+ADD COLUMN cst_cbs VARCHAR(5) DEFAULT NULL AFTER ibs_percentage,
+ADD COLUMN cbs_percentage DECIMAL(5, 2) NOT NULL DEFAULT 0.00 AFTER cst_cbs,
+ADD COLUMN cst_is VARCHAR(5) DEFAULT NULL AFTER cbs_percentage,
+ADD COLUMN is_percentage DECIMAL(5, 2) NOT NULL DEFAULT 0.00 AFTER cst_is;

@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS contacts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    public_id CHAR(36) NOT NULL UNIQUE,
+    company_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    cnpj_cpf VARCHAR(18),
+    email VARCHAR(255),
+    birth_date DATE DEFAULT NULL,
+    phone VARCHAR(20),
+    zipcode VARCHAR(15) DEFAULT NULL,
+    street VARCHAR(255) DEFAULT NULL,
+    number VARCHAR(20) DEFAULT NULL,
+    complement VARCHAR(100) DEFAULT NULL,
+    neighborhood VARCHAR(100) DEFAULT NULL,
+    city VARCHAR(100) DEFAULT NULL,
+    state VARCHAR(50) DEFAULT NULL,
+    certificate_url VARCHAR(512) DEFAULT NULL,
+    certificate_password VARCHAR(255) DEFAULT NULL,
+    certificate_expiration DATE DEFAULT NULL,
+    social_contract_url VARCHAR(512) DEFAULT NULL,
+    cnpj_document_url VARCHAR(512) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    INDEX idx_company_id (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

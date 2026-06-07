@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Manifesto de Notas (DFe)</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 font-sans flex flex-col">
+    <div id="app-navbar"></div>
+
+    <main class="flex-1 w-full pt-4 pb-8 max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="px-4 sm:px-0 mb-6 flex flex-wrap justify-between items-center gap-3">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Manifesto de Notas (DFe)</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Notas enviadas contra o CNPJ da empresa pela SEFAZ</p>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" id="btnReset" class="bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2 group" title="Recomeçar busca do zero (NSU=0)">
+                    <svg class="w-4 h-4 group-hover:-rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Reiniciar Consulta
+                </button>
+                <button type="button" id="btnConsult" class="bg-brand-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-brand-700 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Sincronizar com SEFAZ
+                </button>
+            </div>
+        </div>
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="bg-white dark:bg-slate-800 shadow sm:rounded-xl overflow-hidden overflow-x-auto border border-gray-200 dark:border-slate-700">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                <thead class="bg-gray-50 dark:bg-slate-900/50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data Emissão</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Emitente</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">CNPJ/CPF</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Chave de Acesso</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="dfeTableBody" class="divide-y divide-gray-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
+                    <tr>
+                        <td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                            Nenhuma nota encontrada localmente. Clique em Sincronizar para buscar na SEFAZ.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="app-footer"></div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/manifestation.js"></script>
+    <script src="/js/components/navbar.js"></script>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

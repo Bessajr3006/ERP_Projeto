@@ -1,0 +1,14 @@
+node_modules
+.dist
+dist
+.env
+.git
+.gitignore
+*.log
+.DS_Store
+.npm
+.vscode
+.runtime
+.wwebjs_cache
+public/uploads
+tests

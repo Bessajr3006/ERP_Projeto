@@ -421,17 +421,28 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         applyFilters: (data) => {
-            const search = window.FilterPanel.normalizeText(getById('filterSearch')?.value);
-            const searchDigits = window.FilterPanel.onlyDigits(search);
+            const filterPanel = (window as any).FilterPanel;
+            const normalizeText = typeof filterPanel?.normalizeText === 'function'
+                ? filterPanel.normalizeText
+                : (value: any) => String(value || '').trim().toLowerCase();
+            const onlyDigitsFn = typeof filterPanel?.onlyDigits === 'function'
+                ? filterPanel.onlyDigits
+                : onlyDigits;
+            const matchesSearch = typeof filterPanel?.matchesSearch === 'function'
+                ? filterPanel.matchesSearch
+                : (item: any, fields: string[], term: string) => fields.some((field) => normalizeText(item?.[field]).includes(term));
+
+            const search = normalizeText(getById('filterSearch')?.value);
+            const searchDigits = onlyDigitsFn(search);
 
             const filtered = data.filter((item) => {
                 if (!search) return true;
 
-                if (window.FilterPanel.matchesSearch(item, ['name', 'email', 'cnpj_cpf', 'phone', 'city', 'state', 'seller_name'], search)) return true;
+                if (matchesSearch(item, ['name', 'email', 'cnpj_cpf', 'phone', 'city', 'state', 'seller_name'], search)) return true;
                 if (!searchDigits) return false;
 
                 return [item.cnpj_cpf, item.phone]
-                    .map((value) => window.FilterPanel.onlyDigits(value))
+                    .map((value) => onlyDigitsFn(value))
                     .some((value) => value.includes(searchDigits));
             });
 

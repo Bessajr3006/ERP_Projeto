@@ -35,8 +35,30 @@ function getEntityLabel(table: EntityTable): string {
 
 export class EntityRepository {
     private static customerSchemaReady = false;
+    private static customerColumnNames: Set<string> | null = null;
+
+    private static async loadCustomerColumnNames(): Promise<Set<string>> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT COLUMN_NAME
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'customers'`
+        );
+
+        const columns = new Set(rows.map((row) => String(row.COLUMN_NAME)));
+        this.customerColumnNames = columns;
+        return columns;
+    }
+
+    private static customerHasColumn(columnName: string): boolean {
+        return this.customerColumnNames ? this.customerColumnNames.has(columnName) : true;
+    }
 
     private static async customerColumnExists(columnName: string): Promise<boolean> {
+        if (this.customerColumnNames) {
+            return this.customerColumnNames.has(columnName);
+        }
+
         const [rows] = await pool.query<ColumnExistsRow[]>(
             `SELECT COUNT(*) AS column_count
              FROM information_schema.COLUMNS
@@ -54,7 +76,15 @@ export class EntityRepository {
             return;
         }
 
-        await pool.query(`ALTER TABLE customers ADD COLUMN ${definition}`);
+        try {
+            await pool.query(`ALTER TABLE customers ADD COLUMN ${definition}`);
+        } catch (error: any) {
+            if (error?.code !== 'ER_DUP_FIELDNAME') {
+                console.warn(`[EntityRepository] Nao foi possivel adicionar customers.${columnName}:`, error?.message || error);
+            }
+        } finally {
+            await this.loadCustomerColumnNames();
+        }
     }
 
     private static async ensureCustomerSchema(): Promise<void> {
@@ -62,6 +92,7 @@ export class EntityRepository {
             return;
         }
 
+        await this.loadCustomerColumnNames();
         await this.addCustomerColumnIfMissing('seller_user_id', `seller_user_id INT DEFAULT NULL AFTER phone`);
         await this.addCustomerColumnIfMissing('vencimento_dia', `vencimento_dia TINYINT DEFAULT NULL COMMENT 'Dia do mes para vencimento (1-31)' AFTER phone`);
         await this.addCustomerColumnIfMissing('limite', `limite DECIMAL(15, 2) NOT NULL DEFAULT 0.00 COMMENT 'Limite de credito' AFTER vencimento_dia`);
@@ -73,6 +104,17 @@ export class EntityRepository {
         if (table === 'customers') {
             await this.ensureCustomerSchema();
         }
+    }
+
+    private static async getPersistedFieldsForTable(table: EntityTable): Promise<readonly string[]> {
+        await this.ensureSchemaForTable(table);
+
+        const fields = getPersistedFields(table);
+        if (table !== 'customers') {
+            return fields;
+        }
+
+        return fields.filter((field) => this.customerHasColumn(field));
     }
 
     static async resolveCustomerSellerId(companyId: number, sellerPublicId: string | null | undefined): Promise<number | null | undefined> {
@@ -92,6 +134,10 @@ export class EntityRepository {
 
     static buildSelectQuery(table: EntityTable, whereSql: string, tailSql = ''): string {
         if (table === 'customers') {
+            if (!this.customerHasColumn('seller_user_id')) {
+                return `SELECT c.*, NULL AS seller_public_id, NULL AS seller_name FROM customers c ${whereSql} ${tailSql}`;
+            }
+
             return `SELECT c.*, seller.public_id AS seller_public_id, seller.full_name AS seller_name FROM customers c LEFT JOIN users seller ON seller.id = c.seller_user_id AND seller.company_id = c.company_id ${whereSql} ${tailSql}`;
         }
         return `SELECT e.* FROM ${table} e ${whereSql} ${tailSql}`;
@@ -170,15 +216,19 @@ export class EntityRepository {
             cnpjDestUrl = saved ? saved.url : null;
         }
 
-        const persistedFields = getPersistedFields(table);
+        const persistedFields = await this.getPersistedFieldsForTable(table);
         const persistedValues: Record<string, any> = Object.fromEntries(persistedFields.map((field) => [field, (data as any)[field] ?? null]));
         persistedValues.certificate_url = certUrl;
         persistedValues.social_contract_url = socialDestUrl;
         persistedValues.cnpj_document_url = cnpjDestUrl;
 
         if (table === 'customers') {
-            persistedValues.seller_user_id = (await this.resolveCustomerSellerId(companyId, data.seller_public_id)) ?? null;
-            persistedValues.limite = data.limite ?? 0;
+            if (this.customerHasColumn('seller_user_id')) {
+                persistedValues.seller_user_id = (await this.resolveCustomerSellerId(companyId, data.seller_public_id)) ?? null;
+            }
+            if (this.customerHasColumn('limite')) {
+                persistedValues.limite = data.limite ?? 0;
+            }
         }
 
         const [result] = await pool.query<ResultSetHeader>(
@@ -247,7 +297,7 @@ export class EntityRepository {
             updates.push('cnpj_document_url = ?'); values.push(data.cnpj_document_url || null);
         }
 
-        for (const field of getPersistedFields(table)) {
+        for (const field of await this.getPersistedFieldsForTable(table)) {
             if (['certificate_url', 'social_contract_url', 'cnpj_document_url'].includes(field)) continue;
             const val = (data as any)[field];
             if (val !== undefined) {
@@ -256,7 +306,7 @@ export class EntityRepository {
             }
         }
 
-        if (table === 'customers' && data.seller_public_id !== undefined) {
+        if (table === 'customers' && this.customerHasColumn('seller_user_id') && data.seller_public_id !== undefined) {
             updates.push('seller_user_id = ?');
             values.push(await this.resolveCustomerSellerId(companyId, data.seller_public_id));
         }

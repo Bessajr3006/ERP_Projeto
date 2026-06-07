@@ -240,14 +240,25 @@ function initThemeToggle() {
     });
 }
 function initLogout() {
-    const doLogout = () => {
-        if (typeof Auth !== 'undefined') {
+    const doLogout = (event) => {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        if (typeof Auth !== 'undefined' && typeof Auth.clearToken === 'function') {
             Auth.clearToken();
         }
         else {
             localStorage.removeItem('erp_token');
         }
-        window.location.href = '/';
+
+        // Fallbacks para ambientes com variações de sessão/local cache.
+        localStorage.removeItem('erp_token');
+        sessionStorage.removeItem('erp_token');
+
+        closeLogoutModal();
+        window.location.replace('/');
     };
     const logoutModal = document.getElementById('logoutConfirmModal');
     const logoutBackdrop = document.getElementById('logoutConfirmBackdrop');
@@ -287,22 +298,31 @@ function initLogout() {
         }
     });
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', openLogoutModal);
-    }
-    const logoutBtnUserSubmenuDesktop = document.getElementById('logoutBtnUserSubmenuDesktop');
-    if (logoutBtnUserSubmenuDesktop) {
-        logoutBtnUserSubmenuDesktop.addEventListener('click', openLogoutModal);
-    }
-    const logoutBtnUserSubmenuMobile = document.getElementById('logoutBtnUserSubmenuMobile');
-    if (logoutBtnUserSubmenuMobile) {
-        logoutBtnUserSubmenuMobile.addEventListener('click', openLogoutModal);
-    }
-    const logoutBtnMobile = document.getElementById('logoutBtnMobile');
-    if (logoutBtnMobile) {
-        logoutBtnMobile.addEventListener('click', openLogoutModal);
-    }
+    const bindOpenLogout = (elementId) => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.addEventListener('click', openLogoutModal);
+        }
+    };
+
+    bindOpenLogout('logoutBtn');
+    bindOpenLogout('logoutBtnUserSubmenuDesktop');
+    bindOpenLogout('logoutBtnUserSubmenuMobile');
+    bindOpenLogout('logoutBtnMobile');
+
+    // Delegação para cenários em que a navbar é re-renderizada após o bind inicial.
+    document.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) {
+            return;
+        }
+
+        const trigger = target.closest('#logoutBtn, #logoutBtnUserSubmenuDesktop, #logoutBtnUserSubmenuMobile, #logoutBtnMobile');
+        if (trigger) {
+            event.preventDefault();
+            openLogoutModal();
+        }
+    });
 }
 async function loadUserGreeting() {
     const greetingEl = document.getElementById('userGreeting');

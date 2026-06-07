@@ -27,6 +27,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 2. Insert HTML
         navbarContainer.innerHTML = navHtml;
 
+        // Reaplica preferências visuais globais agora que a navbar existe no DOM.
+        if (typeof window.applyGlobalLayoutWidth === 'function') {
+            window.applyGlobalLayoutWidth();
+        }
+        if (typeof window.applyGlobalNavWidth === 'function') {
+            window.applyGlobalNavWidth();
+        }
+        if (typeof window.applyGlobalLayoutAlign === 'function') {
+            window.applyGlobalLayoutAlign();
+        }
+        if (typeof window.applyGlobalNavAlign === 'function') {
+            window.applyGlobalNavAlign();
+        }
+        if (typeof window.applyGlobalNavColor === 'function') {
+            window.applyGlobalNavColor();
+        }
+        if (typeof window.applyGlobalThemeToggleVisibility === 'function') {
+            window.applyGlobalThemeToggleVisibility();
+        }
+
         // 3. Initialize components
         highlightActiveLink();
         initMobileMenu();
@@ -48,7 +68,9 @@ function highlightActiveLink() {
     const desktopCustomersDropdownLinks = document.querySelectorAll('#desktopCustomersDropdown a');
     const desktopFinanceDropdownLinks = document.querySelectorAll('#desktopFinanceDropdown a');
     const desktopProductsDropdownLinks = document.querySelectorAll('#desktopProductsDropdown a');
+    const desktopServiceDropdownLinks = document.querySelectorAll('#desktopServiceDropdown a');
     const desktopAccountingDropdownLinks = document.querySelectorAll('#desktopAccountingDropdown a');
+    const desktopOverviewDropdownLinks = document.querySelectorAll('#desktopOverviewDropdown a');
     const desktopReportsDropdownLinks = document.querySelectorAll('#desktopReportsDropdown a');
     const desktopConfigDropdownLinks = document.querySelectorAll('#desktopConfigDropdown a');
 
@@ -82,7 +104,9 @@ function highlightActiveLink() {
     highlightDesktopDropdown(desktopCustomersDropdownLinks, 'desktopCustomersDropdownBtn');
     highlightDesktopDropdown(desktopFinanceDropdownLinks, 'desktopFinanceDropdownBtn');
     highlightDesktopDropdown(desktopProductsDropdownLinks, 'desktopProductsDropdownBtn');
+    highlightDesktopDropdown(desktopServiceDropdownLinks, 'desktopServiceDropdownBtn');
     highlightDesktopDropdown(desktopAccountingDropdownLinks, 'desktopAccountingDropdownBtn');
+    highlightDesktopDropdown(desktopOverviewDropdownLinks, 'desktopOverviewDropdownBtn');
     highlightDesktopDropdown(desktopReportsDropdownLinks, 'desktopReportsDropdownBtn');
     highlightDesktopDropdown(desktopConfigDropdownLinks, 'desktopConfigDropdownBtn');
     highlightDesktopDropdown(desktopPurchasesDropdownLinks, 'desktopPurchasesDropdownBtn');
@@ -93,7 +117,9 @@ function highlightActiveLink() {
     const mobileCustomersDropdownLinks = document.querySelectorAll('#mobileCustomersDropdown a');
     const mobileFinanceDropdownLinks = document.querySelectorAll('#mobileFinanceDropdown a');
     const mobileProductsDropdownLinks = document.querySelectorAll('#mobileProductsDropdown a');
+    const mobileServiceDropdownLinks = document.querySelectorAll('#mobileServiceDropdown a');
     const mobileAccountingDropdownLinks = document.querySelectorAll('#mobileAccountingDropdown a');
+    const mobileOverviewDropdownLinks = document.querySelectorAll('#mobileOverviewDropdown a');
     const mobileReportsDropdownLinks = document.querySelectorAll('#mobileReportsDropdown a');
     const mobileConfigDropdownLinks = document.querySelectorAll('#mobileConfigDropdown a');
 
@@ -130,7 +156,9 @@ function highlightActiveLink() {
     highlightMobileDropdown(mobileCustomersDropdownLinks, 'mobileCustomersDropdownBtn', 'mobileCustomersDropdown', 'mobileCustomersDropdownIcon');
     highlightMobileDropdown(mobileFinanceDropdownLinks, 'mobileFinanceDropdownBtn', 'mobileFinanceDropdown', 'mobileFinanceDropdownIcon');
     highlightMobileDropdown(mobileProductsDropdownLinks, 'mobileProductsDropdownBtn', 'mobileProductsDropdown', 'mobileProductsDropdownIcon');
+    highlightMobileDropdown(mobileServiceDropdownLinks, 'mobileServiceDropdownBtn', 'mobileServiceDropdown', 'mobileServiceDropdownIcon');
     highlightMobileDropdown(mobileAccountingDropdownLinks, 'mobileAccountingDropdownBtn', 'mobileAccountingDropdown', 'mobileAccountingDropdownIcon');
+    highlightMobileDropdown(mobileOverviewDropdownLinks, 'mobileOverviewDropdownBtn', 'mobileOverviewDropdown', 'mobileOverviewDropdownIcon');
     highlightMobileDropdown(mobileReportsDropdownLinks, 'mobileReportsDropdownBtn', 'mobileReportsDropdown', 'mobileReportsDropdownIcon');
     highlightMobileDropdown(mobileConfigDropdownLinks, 'mobileConfigDropdownBtn', 'mobileConfigDropdown', 'mobileConfigDropdownIcon');
     highlightMobileDropdown(mobilePurchasesDropdownLinks, 'mobilePurchasesDropdownBtn', 'mobilePurchasesDropdown', 'mobilePurchasesDropdownIcon');
@@ -177,9 +205,12 @@ function initMobileMenu() {
     setupMobileDropdown('mobileCustomersDropdownBtn', 'mobileCustomersDropdown', 'mobileCustomersDropdownIcon');
     setupMobileDropdown('mobileFinanceDropdownBtn', 'mobileFinanceDropdown', 'mobileFinanceDropdownIcon');
     setupMobileDropdown('mobileProductsDropdownBtn', 'mobileProductsDropdown', 'mobileProductsDropdownIcon');
+    setupMobileDropdown('mobileServiceDropdownBtn', 'mobileServiceDropdown', 'mobileServiceDropdownIcon');
     setupMobileDropdown('mobileAccountingDropdownBtn', 'mobileAccountingDropdown', 'mobileAccountingDropdownIcon');
+    setupMobileDropdown('mobileOverviewDropdownBtn', 'mobileOverviewDropdown', 'mobileOverviewDropdownIcon');
     setupMobileDropdown('mobileReportsDropdownBtn', 'mobileReportsDropdown', 'mobileReportsDropdownIcon');
     setupMobileDropdown('mobileConfigDropdownBtn', 'mobileConfigDropdown', 'mobileConfigDropdownIcon');
+    setupMobileDropdown('mobileUserSubmenuBtn', 'mobileUserSubmenu', 'mobileUserSubmenuIcon');
     setupMobileDropdown('mobileOrdersDropdownBtn', 'mobileOrdersDropdown', 'mobileOrdersDropdownIcon');
     setupMobileDropdown('mobilePurchasesDropdownBtn', 'mobilePurchasesDropdown', 'mobilePurchasesDropdownIcon');
 }
@@ -227,24 +258,90 @@ function initThemeToggle() {
 }
 
 function initLogout() {
-    const doLogout = () => {
-        if (typeof Auth !== 'undefined') {
+    const doLogout = (event?: Event) => {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        if (typeof Auth !== 'undefined' && typeof Auth.clearToken === 'function') {
             Auth.clearToken();
         } else {
             localStorage.removeItem('erp_token');
         }
-        window.location.href = '/';
+
+        // Fallbacks para ambientes com variações de sessão/local cache.
+        localStorage.removeItem('erp_token');
+        sessionStorage.removeItem('erp_token');
+
+        closeLogoutModal();
+        window.location.replace('/');
     };
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', doLogout);
+    const logoutModal = document.getElementById('logoutConfirmModal');
+    const logoutBackdrop = document.getElementById('logoutConfirmBackdrop');
+    const logoutCancelBtn = document.getElementById('logoutCancelBtn');
+    const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
+
+    const closeLogoutModal = () => {
+        if (logoutModal) {
+            logoutModal.classList.add('hidden');
+        }
+    };
+
+    const openLogoutModal = () => {
+        if (logoutModal) {
+            logoutModal.classList.remove('hidden');
+            return;
+        }
+
+        // Fallback para ambientes sem modal carregado.
+        if (window.confirm('Deseja sair do sistema?')) {
+            doLogout();
+        }
+    };
+
+    if (logoutBackdrop) {
+        logoutBackdrop.addEventListener('click', closeLogoutModal);
+    }
+    if (logoutCancelBtn) {
+        logoutCancelBtn.addEventListener('click', closeLogoutModal);
+    }
+    if (logoutConfirmBtn) {
+        logoutConfirmBtn.addEventListener('click', doLogout);
     }
 
-    const logoutBtnMobile = document.getElementById('logoutBtnMobile');
-    if (logoutBtnMobile) {
-        logoutBtnMobile.addEventListener('click', doLogout);
-    }
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeLogoutModal();
+        }
+    });
+
+    const bindOpenLogout = (elementId: string) => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.addEventListener('click', openLogoutModal);
+        }
+    };
+
+    bindOpenLogout('logoutBtn');
+    bindOpenLogout('logoutBtnUserSubmenuDesktop');
+    bindOpenLogout('logoutBtnUserSubmenuMobile');
+    bindOpenLogout('logoutBtnMobile');
+
+    // Delegação para cenários em que a navbar é re-renderizada após o bind inicial.
+    document.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) {
+            return;
+        }
+
+        const trigger = target.closest('#logoutBtn, #logoutBtnUserSubmenuDesktop, #logoutBtnUserSubmenuMobile, #logoutBtnMobile');
+        if (trigger) {
+            event.preventDefault();
+            openLogoutModal();
+        }
+    });
 }
 
 async function loadUserGreeting() {
@@ -255,6 +352,14 @@ async function loadUserGreeting() {
         if (typeof api !== 'undefined') {
             const data = await api('/auth/me');
             if (data && data.data && data.data.user && data.data.user.full_name) {
+                const role = data.data.user.role;
+                const rawName = String(data.data.user.full_name || '').trim();
+                const normalizedName = rawName.toLowerCase();
+                const isGenericName = normalizedName === 'usuario' || normalizedName === 'usuário';
+                const greetingName = role === 'super_admin' && (!rawName || isGenericName)
+                    ? 'Super Admin'
+                    : (rawName || 'Usuário');
+
                 gNavbarAuthContext = {
                     user: data.data.user || null,
                     company: data.data.company || null,
@@ -265,9 +370,8 @@ async function loadUserGreeting() {
                     cnpj: data.data.company?.cnpj || '',
                 });
 
-                greetingEl.textContent = `Olá, ${data.data.user.full_name}`;
-                
-                const role = data.data.user.role;
+                greetingEl.textContent = `Olá, ${greetingName}`;
+
                 const isSuperAdmin = role === 'super_admin';
                 const isSuperAdminPage = document.body?.dataset?.superAdminPage === 'true';
 
@@ -279,6 +383,39 @@ async function loadUserGreeting() {
 
                 if (isSuperAdminPage && !isSuperAdmin) {
                     window.location.href = '/pages/dashboard.html';
+                    return;
+                }
+
+                // Super Admin deve sempre visualizar todos os menus/submenus.
+                if (isSuperAdmin) {
+                    document.querySelectorAll('a[href^="/pages/"]').forEach((a) => {
+                        a.style.removeProperty('display');
+                    });
+                    [
+                        'desktopCustomersDropdownBtn',
+                        'desktopFinanceDropdownBtn',
+                        'desktopProductsDropdownBtn',
+                        'desktopServiceDropdownBtn',
+                        'desktopAccountingDropdownBtn',
+                        'desktopOverviewDropdownBtn',
+                        'desktopReportsDropdownBtn',
+                        'desktopConfigDropdownBtn',
+                        'desktopOrdersDropdownBtn',
+                        'desktopPurchasesDropdownBtn',
+                        'mobileCustomersDropdownBtn',
+                        'mobileFinanceDropdownBtn',
+                        'mobileProductsDropdownBtn',
+                        'mobileServiceDropdownBtn',
+                        'mobileAccountingDropdownBtn',
+                        'mobileOverviewDropdownBtn',
+                        'mobileReportsDropdownBtn',
+                        'mobileConfigDropdownBtn',
+                        'mobileOrdersDropdownBtn',
+                        'mobilePurchasesDropdownBtn',
+                    ].forEach((btnId) => {
+                        const btnEl = document.getElementById(btnId);
+                        btnEl?.parentElement?.style.removeProperty('display');
+                    });
                     return;
                 }
 
@@ -303,10 +440,26 @@ async function loadUserGreeting() {
 
                     // Página é companies.html, mas permissão é company
                     companies: 'company',
+
+                    // Mapeamento de página para módulo de permissão
+                    'stock-vision': 'stock_vision',
+                    'finance-vision': 'finance_vision',
                 };
                 const normalizeModule = (name?: string) => {
                     const value = String(name || '').trim();
                     return MODULE_ALIASES[value] || value;
+                };
+                const moduleToPage = (moduleName: string) => {
+                    if (moduleName === 'stock_vision') {
+                        return 'stock-vision';
+                    }
+                    if (moduleName === 'finance_vision') {
+                        return 'finance-vision';
+                    }
+                    if (moduleName === 'stock_types') {
+                        return 'stock-types';
+                    }
+                    return moduleName;
                 };
 
                 // Obter lista de permissões onde can_view é true
@@ -325,7 +478,8 @@ async function loadUserGreeting() {
                         ...fallbackPerms,
                     ])
                 );
-                
+                const hasStockTypesAccess = effectivePerms.includes('stock_types') || effectivePerms.includes('categories');
+
                 // Aplicar as regras na Navbar visível
                 const allLinks = document.querySelectorAll('a[href^="/pages/"]');
                 allLinks.forEach(a => {
@@ -354,10 +508,13 @@ async function loadUserGreeting() {
                     // Ocultar com força (style.display) recursos sem permissão
                     // Obs: admin agora pode ter permissões customizadas; então NÃO devemos fazer bypass.
                     // Mantemos apenas um bypass de segurança para o super_admin não ficar trancado.
-                    const isSuperAdminBypass = role === 'super_admin'
-                        && (moduleName === 'tasks' || moduleName === 'roles' || moduleName === 'accounting' || moduleName === 'organizer' || moduleName === 'users' || moduleName === 'company');
+                    const isSuperAdminBypass = (role === 'super_admin' || role === 'admin')
+                        && (moduleName === 'tasks' || moduleName === 'roles' || moduleName === 'accounting' || moduleName === 'organizer' || moduleName === 'users' || moduleName === 'company' || moduleName === 'email-config' || moduleName === 'email' || moduleName === 'ajuste' || moduleName === 'service_types' || moduleName === 'services' || moduleName === 'service_launches' || moduleName === 'service_tax_municipal' || moduleName === 'service_tax_federal');
+                    const hasModuleAccess = moduleName === 'stock_types'
+                        ? hasStockTypesAccess
+                        : effectivePerms.includes(moduleName);
 
-                    if (!effectivePerms.includes(moduleName) && !isSuperAdminBypass) {
+                    if (!hasModuleAccess && !isSuperAdminBypass) {
                         a.style.setProperty('display', 'none', 'important');
                     }
                 });
@@ -367,7 +524,9 @@ async function loadUserGreeting() {
                     { btn: 'desktopCustomersDropdownBtn', menu: 'desktopCustomersDropdown' },
                     { btn: 'desktopFinanceDropdownBtn', menu: 'desktopFinanceDropdown' },
                     { btn: 'desktopProductsDropdownBtn', menu: 'desktopProductsDropdown' },
+                    { btn: 'desktopServiceDropdownBtn', menu: 'desktopServiceDropdown' },
                     { btn: 'desktopAccountingDropdownBtn', menu: 'desktopAccountingDropdown' },
+                    { btn: 'desktopOverviewDropdownBtn', menu: 'desktopOverviewDropdown' },
                     { btn: 'desktopReportsDropdownBtn', menu: 'desktopReportsDropdown' },
                     { btn: 'desktopConfigDropdownBtn', menu: 'desktopConfigDropdown' },
                     { btn: 'desktopOrdersDropdownBtn', menu: 'desktopOrdersDropdown' },
@@ -375,7 +534,9 @@ async function loadUserGreeting() {
                     { btn: 'mobileCustomersDropdownBtn', menu: 'mobileCustomersDropdown' },
                     { btn: 'mobileFinanceDropdownBtn', menu: 'mobileFinanceDropdown' },
                     { btn: 'mobileProductsDropdownBtn', menu: 'mobileProductsDropdown' },
+                    { btn: 'mobileServiceDropdownBtn', menu: 'mobileServiceDropdown' },
                     { btn: 'mobileAccountingDropdownBtn', menu: 'mobileAccountingDropdown' },
+                    { btn: 'mobileOverviewDropdownBtn', menu: 'mobileOverviewDropdown' },
                     { btn: 'mobileReportsDropdownBtn', menu: 'mobileReportsDropdown' },
                     { btn: 'mobileConfigDropdownBtn', menu: 'mobileConfigDropdown' },
                     { btn: 'mobileOrdersDropdownBtn', menu: 'mobileOrdersDropdown' },
@@ -416,15 +577,18 @@ async function loadUserGreeting() {
 
                 const currentModule = normalizeModule(document.body?.dataset?.requiredModule || currentFile);
                 
-                const isBypassed = role === 'super_admin'
-                    && (currentModule === 'tasks' || currentModule === 'roles' || currentModule === 'accounting' || currentModule === 'organizer' || currentModule === 'users' || currentModule === 'company');
+                const isBypassed = (role === 'super_admin' || role === 'admin')
+                    && (currentModule === 'tasks' || currentModule === 'roles' || currentModule === 'accounting' || currentModule === 'organizer' || currentModule === 'users' || currentModule === 'company' || currentModule === 'email-config' || currentModule === 'email' || currentModule === 'ajuste' || currentModule === 'service_types' || currentModule === 'services' || currentModule === 'service_launches');
+                const hasCurrentModuleAccess = currentModule === 'stock_types'
+                    ? hasStockTypesAccess
+                    : effectivePerms.includes(currentModule);
 
-                if (currentModule && currentFile !== 'roles' && !effectivePerms.includes(currentModule) && !isBypassed) {
+                if (currentModule && currentFile !== 'roles' && !hasCurrentModuleAccess && !isBypassed) {
                     // Usuário tentou acessar/está em uma página que não tem permissão!
                     if (effectivePerms.includes('dashboard')) {
                         window.location.href = '/pages/dashboard.html';
                     } else if (effectivePerms.length > 0) {
-                        window.location.href = `/pages/${effectivePerms[0]}.html`;
+                        window.location.href = `/pages/${moduleToPage(effectivePerms[0])}.html`;
                     } else {
                         // Nenhuma tela permitida
                         window.location.href = '/pages/roles.html';

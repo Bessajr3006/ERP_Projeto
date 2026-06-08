@@ -7,6 +7,8 @@
      * Gerenciamento de Usuários e WhatsApp QR Code - KEYSTONE ERP
      */
     document.addEventListener('DOMContentLoaded', async () => {
+        const api = window.api;
+        const UI = window.UI;
         let waSessionPollTimer = null;
         let currentView = localStorage.getItem('usersView') || 'list';
         let activeTab = 'data';
@@ -216,14 +218,14 @@
                 </td>
             </tr>
         `).join('');
-            tbody.querySelectorAll('.btn-edit').forEach(btn => {
+            tbody.querySelectorAll('.btn-edit').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const user = usersData.find(u => u.public_id === btn.dataset.id);
                     if (user)
                         openModalDeferred(user);
                 });
             });
-            tbody.querySelectorAll('.btn-status').forEach(btn => {
+            tbody.querySelectorAll('.btn-status').forEach((btn) => {
                 btn.addEventListener('click', () => toggleStatus(btn.dataset.id, btn.dataset.active === 'false'));
             });
             bindCopyEvents();
@@ -272,7 +274,7 @@
                 </div>
             </div>
         `).join('');
-            grid.querySelectorAll('.btn-edit-card').forEach(btn => {
+            grid.querySelectorAll('.btn-edit-card').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const user = usersData.find(u => u.public_id === btn.dataset.id);
                     if (user)
@@ -356,7 +358,7 @@
             getById('userModal').classList.remove('hidden');
             getById('formFullName').focus();
             // Attach tab listeners
-            qsa('.tab-btn').forEach(btn => {
+            qsa('.tab-btn').forEach((btn) => {
                 btn.addEventListener('click', () => switchTab(btn.dataset.tab));
             });
         }
@@ -380,7 +382,7 @@
             tabData.classList.toggle('hidden', tab !== 'data');
             tabWhatsapp.classList.toggle('hidden', tab !== 'whatsapp');
             footer.classList.remove('hidden');
-            qsa('.tab-btn').forEach(btn => {
+            qsa('.tab-btn').forEach((btn) => {
                 const isActive = btn.dataset.tab === tab;
                 btn.classList.toggle('border-brand-600', isActive);
                 btn.classList.toggle('text-brand-600', isActive);

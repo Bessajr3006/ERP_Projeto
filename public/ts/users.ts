@@ -9,6 +9,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const api = (window as any).api;
+    const UI = (window as any).UI;
     let waSessionPollTimer: any = null;
     let currentView: string = localStorage.getItem('usersView') || 'list';
     let activeTab: string = 'data';
@@ -33,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // --- Helpers ---
-    const formatPhone = (phone) => {
+    const formatPhone = (phone: any) => {
         if (!phone) return '-';
         const clean = String(phone).replace(/\D/g, '');
         if (clean.length === 10) return clean.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
@@ -67,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `+${digits}`;
     };
 
-    const getRoleName = (slug) => {
+    const getRoleName = (slug: any) => {
         const found = rolesData.find(r => r.slug === slug);
         return found ? found.name : (slug || 'Usuário');
     };
@@ -240,20 +242,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             </tr>
         `).join('');
 
-        tbody.querySelectorAll('.btn-edit').forEach(btn => {
+        tbody.querySelectorAll('.btn-edit').forEach((btn: any) => {
             btn.addEventListener('click', () => {
                 const user = usersData.find(u => u.public_id === (btn as any).dataset.id);
                 if (user) openModalDeferred(user);
             });
         });
 
-        tbody.querySelectorAll('.btn-status').forEach(btn => {
+        tbody.querySelectorAll('.btn-status').forEach((btn: any) => {
             btn.addEventListener('click', () => toggleStatus((btn as any).dataset.id, (btn as any).dataset.active === 'false'));
         });
 
         bindCopyEvents();
 
-        window.GridSummaryFooter?.update({
+        (window as any).GridSummaryFooter?.update({
             footerId: 'usersResultsFooter',
             anchorId: 'usersGridSection',
             count: filtered.length,
@@ -301,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `).join('');
 
-        grid.querySelectorAll('.btn-edit-card').forEach(btn => {
+        grid.querySelectorAll('.btn-edit-card').forEach((btn: any) => {
             btn.addEventListener('click', () => {
                 const user = usersData.find(u => u.public_id === (btn as any).dataset.id);
                 if (user) openModalDeferred(user);
@@ -310,7 +312,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         bindCopyEvents();
 
-        window.GridSummaryFooter?.update({
+        (window as any).GridSummaryFooter?.update({
             footerId: 'usersResultsFooter',
             anchorId: 'usersGridSection',
             count: filtered.length,
@@ -319,7 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- View toggle ---
-    function setView(view) {
+    function setView(view: any) {
         currentView = view;
         localStorage.setItem('usersView', view);
 
@@ -397,7 +399,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         getById('formFullName').focus();
 
         // Attach tab listeners
-        qsa('.tab-btn').forEach(btn => {
+        qsa('.tab-btn').forEach((btn: any) => {
             btn.addEventListener('click', () => switchTab(btn.dataset.tab));
         });
     }
@@ -416,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         getById('userModal').classList.add('hidden');
     }
 
-    function switchTab(tab) {
+    function switchTab(tab: any) {
         activeTab = tab;
 
         const tabData      = getById('tabData');
@@ -427,7 +429,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         tabWhatsapp.classList.toggle('hidden', tab !== 'whatsapp');
         footer.classList.remove('hidden');
 
-        qsa('.tab-btn').forEach(btn => {
+        qsa('.tab-btn').forEach((btn: any) => {
             const isActive = btn.dataset.tab === tab;
             btn.classList.toggle('border-brand-600', isActive);
             btn.classList.toggle('text-brand-600', isActive);
@@ -580,7 +582,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await startWaSession();
                 return;
             }
-        } catch (e) {
+        } catch (e: any) {
             console.warn(e);
             waSession = {
                 ...waSession,
@@ -607,7 +609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderWhatsappContent();
                 scheduleWaPolling();
             }
-        } catch (e) {
+        } catch (e: any) {
             waSession = {
                 ...waSession,
                 status: 'error',
@@ -646,11 +648,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const res = await api(`/users/${editingUserId}/whatsapp-business/session`, { method: 'DELETE' });
             waSession = res.data || res;
             renderWhatsappContent();
-        } catch (e) { alert(e.message); }
+        } catch (e: any) { alert(e.message); }
     }
 
     // --- Save ---
-    async function saveUser(event) {
+    async function saveUser(event: any) {
         event.preventDefault();
         if (saving) return;
 
@@ -710,7 +712,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await loadData();
             renderTable();
             renderGrid();
-        } catch (e) {
+        } catch (e: any) {
             UI.showAlert('alertMessage', e.message || 'Falha ao salvar usuário.', 'error');
         } finally {
             saving = false;
@@ -719,14 +721,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- Toggle Status ---
-    async function toggleStatus(id, isActive) {
+    async function toggleStatus(id: any, isActive: any) {
         if (!confirm('Deseja realmente alterar o status deste usuário?')) return;
         try {
             await api(`/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ is_active: isActive }) });
             await loadData();
             renderTable();
             renderGrid();
-        } catch (e) {
+        } catch (e: any) {
             UI.showAlert('alertMessage', e.message || 'Falha ao alterar status.', 'error');
         }
     }
@@ -743,7 +745,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     getById('userModalBackdrop')?.addEventListener('click', closeModal);
     getById('userForm')?.addEventListener('submit', saveUser);
 
-    getById('filterSearch')?.addEventListener('input', (e) => {
+    getById('filterSearch')?.addEventListener('input', (e: any) => {
         const target = e.target as HTMLInputElement;
         const nextSearch = target?.value || '';
 
@@ -759,7 +761,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 180);
     });
 
-    getById('filterRole')?.addEventListener('change', (e) => {
+    getById('filterRole')?.addEventListener('change', (e: any) => {
         filters.role = e.target.value;
         renderTable();
         renderGrid();

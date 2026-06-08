@@ -266,7 +266,7 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${b.institution || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100 text-right">${formatCurrency(b.current_balance)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                <button class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mr-3 transition-colors view-id-btn" data-id="${b.public_id}" title="Ver / Copiar ID: ${b.public_id}">
+                <button class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mr-3 transform transition-all duration-200 ease-out view-id-btn" data-id="${b.public_id}" title="Ver / Copiar ID: ${b.public_id}">
                     <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </button>
                 <button class="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300 mr-3 edit-btn" data-id="${b.public_id}" title="Editar">
@@ -334,7 +334,7 @@
                 </div>
 
                 <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
-                    <button class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-md transition-colors view-id-btn" data-id="${b.public_id}" title="Ver / Copiar ID: ${b.public_id}">
+                    <button class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-md transform transition-all duration-200 ease-out view-id-btn" data-id="${b.public_id}" title="Ver / Copiar ID: ${b.public_id}">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     </button>
                     <button class="p-1.5 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded edit-btn" data-id="${b.public_id}" title="Editar">
@@ -381,9 +381,39 @@
         const pid = e.currentTarget.getAttribute('data-id') || '';
         navigator.clipboard.writeText(pid).then(() => {
           const b = e.currentTarget;
+          if (b.classList.contains('animating')) return;
+          b.classList.add('animating');
+
           const orig = b.innerHTML;
-          b.innerHTML = '<svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-          setTimeout(() => { b.innerHTML = orig; }, 1500);
+          const isGrid = b.querySelector('svg')?.classList.contains('h-4');
+          const svgSize = isGrid ? 'h-4 w-4' : 'h-5 w-5 inline';
+
+          // Step 1: Fade out and shrink original icon
+          b.classList.add('scale-75', 'opacity-0');
+
+          setTimeout(() => {
+            // Step 2: Swap innerHTML to checkmark and pop
+            b.innerHTML = `<svg class="${svgSize} text-green-500 transition-all duration-300 transform scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+            b.classList.remove('scale-75', 'opacity-0');
+            b.classList.add('scale-110', 'opacity-100');
+
+            // Step 3: Revert checkmark back to normal scale
+            setTimeout(() => {
+              b.classList.remove('scale-110');
+            }, 100);
+
+            // Step 4: After 1500ms, fade out checkmark
+            setTimeout(() => {
+              b.classList.add('scale-75', 'opacity-0');
+
+              setTimeout(() => {
+                // Step 5: Restore original icon
+                b.innerHTML = orig;
+                b.classList.remove('scale-75', 'opacity-0', 'animating');
+              }, 150);
+            }, 1500);
+
+          }, 150);
         });
       });
     });

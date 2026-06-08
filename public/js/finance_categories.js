@@ -7,6 +7,7 @@
     let g_filteredCategories = [];
     let g_editingId = null;
     const FilterPanel = window.FilterPanel;
+    const api = window.api;
     const getEl = (id) => document.getElementById(id);
     document.addEventListener('DOMContentLoaded', () => {
         void fetchCategories();

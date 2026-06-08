@@ -16,6 +16,7 @@
   let g_editingId: string | null = null;
 
   const FilterPanel: any = (window as any).FilterPanel;
+  const api = (window as any).api;
 
   const getEl = <T extends HTMLElement = HTMLElement>(id: string): T | null =>
     document.getElementById(id) as T | null;

@@ -4,11 +4,11 @@ const BRAZIL_TIME_ZONE = 'America/Sao_Paulo';
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const NAIVE_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d{1,3}))?$/;
 
-function isDateOnlyString(value) {
+function isDateOnlyString(value: any) {
     return typeof value === 'string' && DATE_ONLY_PATTERN.test(value.trim());
 }
 
-function parseDateValue(value) {
+function parseDateValue(value: any) {
     if (value instanceof Date) {
         return Number.isNaN(value.getTime()) ? null : new Date(value.getTime());
     }
@@ -37,11 +37,11 @@ function parseDateValue(value) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function getDatePart(parts, type) {
-    return parts.find((part) => part.type === type)?.value || '00';
+function getDatePart(parts: any[], type: string) {
+    return parts.find((part: any) => part.type === type)?.value || '00';
 }
 
-function getBrazilParts(value) {
+function getBrazilParts(value: any) {
     const date = parseDateValue(value);
     if (!date) return null;
 
@@ -66,7 +66,7 @@ function getBrazilParts(value) {
     };
 }
 
-function getBrazilOffset(value) {
+function getBrazilOffset(value?: any) {
     const date = parseDateValue(value) || new Date();
 
     try {
@@ -91,7 +91,7 @@ function getBrazilOffset(value) {
 
 const DateUtils = {
     timeZone: BRAZIL_TIME_ZONE,
-    toDateInputValue(value) {
+    toDateInputValue(value: any) {
         if (!value) return '';
         if (isDateOnlyString(value)) return value.trim();
 
@@ -101,7 +101,7 @@ const DateUtils = {
     getTodayDateInputValue() {
         return DateUtils.toDateInputValue(new Date());
     },
-    formatDate(value) {
+    formatDate(value: any) {
         if (!value) return '-';
         if (isDateOnlyString(value)) {
             const [year, month, day] = value.trim().split('-');
@@ -118,7 +118,7 @@ const DateUtils = {
             year: 'numeric',
         }).format(date);
     },
-    formatDateTime(value) {
+    formatDateTime(value: any) {
         if (!value) return '-';
         if (isDateOnlyString(value)) return DateUtils.formatDate(value);
 
@@ -140,17 +140,17 @@ const DateUtils = {
 
         return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${getBrazilOffset(value)}`;
     },
-    compareDateOnly(left, right) {
+    compareDateOnly(left: any, right: any) {
         const leftValue = DateUtils.toDateInputValue(left);
         const rightValue = DateUtils.toDateInputValue(right);
         if (!leftValue || !rightValue) return 0;
         if (leftValue === rightValue) return 0;
         return leftValue < rightValue ? -1 : 1;
     },
-    isBeforeToday(value) {
+    isBeforeToday(value: any) {
         return DateUtils.compareDateOnly(value, DateUtils.getTodayDateInputValue()) < 0;
     },
-    addDays(value, days) {
+    addDays(value: any, days: any) {
         const base = DateUtils.toDateInputValue(value) || DateUtils.getTodayDateInputValue();
         const [year, month, day] = base.split('-').map(Number);
         const date = new Date(Date.UTC(year, month - 1, day));
@@ -163,11 +163,11 @@ const DateUtils = {
     },
 };
 
-window.DateUtils = DateUtils;
+(window as any).DateUtils = DateUtils;
 
 // Token Management
 const Auth = {
-    setToken(token) {
+    setToken(token: any) {
         const normalizedToken = typeof token === 'string' ? token.trim() : '';
         if (!normalizedToken || normalizedToken === 'undefined' || normalizedToken === 'null') {
             localStorage.removeItem('erp_token');
@@ -196,7 +196,7 @@ const Auth = {
 
 // LocalStorage Cache Manager for Offline PWA Support
 const CacheManager = {
-    normalizeEndpoint: (endpoint) => {
+    normalizeEndpoint: (endpoint: any) => {
         const rawEndpoint = String(endpoint || '').trim();
         if (!rawEndpoint) return '';
 
@@ -208,7 +208,7 @@ const CacheManager = {
         const normalizedQuery = params.toString();
         return normalizedQuery ? `${pathname}?${normalizedQuery}` : pathname;
     },
-    shouldCache: (endpoint, serializedData = '') => {
+    shouldCache: (endpoint: any, serializedData: any = '') => {
         const normalizedEndpoint = CacheManager.normalizeEndpoint(endpoint);
         if (!normalizedEndpoint) return false;
 
@@ -248,7 +248,7 @@ const CacheManager = {
             // Ignore cache cleanup errors.
         }
     },
-    save: (endpoint, data) => {
+    save: (endpoint: any, data: any) => {
         const normalizedEndpoint = CacheManager.normalizeEndpoint(endpoint);
         let serializedData = '';
 
@@ -273,7 +273,7 @@ const CacheManager = {
             }
         }
     },
-    get: (endpoint) => {
+    get: (endpoint: any) => {
         try {
             const normalizedEndpoint = CacheManager.normalizeEndpoint(endpoint);
             if (!normalizedEndpoint) return null;
@@ -289,7 +289,7 @@ CacheManager.pruneVolatileEntries();
 
 // LocalStorage Sync Manager for Offline Writes
 const SyncManager = {
-    enqueue: (requestParams) => {
+    enqueue: (requestParams: any) => {
         try {
             const queue = JSON.parse(localStorage.getItem('erp_sync_queue') || '[]');
             queue.push({ ...requestParams, id: Date.now(), timestamp: DateUtils.toBrazilIsoDateTime() });
@@ -308,7 +308,7 @@ const SyncManager = {
     clearQueue: () => {
         localStorage.removeItem('erp_sync_queue');
     },
-    setQueue: (queue) => {
+    setQueue: (queue: any) => {
         try {
             localStorage.setItem('erp_sync_queue', JSON.stringify(queue));
         } catch (_error) {
@@ -534,7 +534,7 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
 // UI Helpers
 const UI = {
     _alertTimers: {} as Record<string, ReturnType<typeof setTimeout>>,
-    showAlert: (elementId, message, type = 'error', durationMillis = 15000) => {
+    showAlert: (elementId: any, message: any, type = 'error', durationMillis = 15000) => {
         const el = document.getElementById(elementId);
         if (!el) return;
 
@@ -573,7 +573,7 @@ const UI = {
             }, durationMillis);
         }
     },
-    hideAlert: (elementId) => {
+    hideAlert: (elementId: any) => {
         const el = document.getElementById(elementId);
         if (el) el.classList.add('hidden');
     }
@@ -816,14 +816,14 @@ function applyNavWidthPreference() {
 
 function getNavColorPreference() {
     const navColor = localStorage.getItem(NAV_COLOR_KEY);
-    const LEGACY = {
+    const LEGACY: Record<string, string> = {
         brand: '#1e3a8a',
         slate: '#0f172a',
         emerald: '#064e3b',
         rose: '#881337',
     };
 
-    const normalizeHex = (value) => {
+    const normalizeHex = (value: any) => {
         const raw = String(value || '').trim().toLowerCase();
         if (LEGACY[raw]) {
             return LEGACY[raw];
@@ -846,14 +846,14 @@ function applyNavColorPreference() {
     if (!navRoot) return;
 
     const color = getNavColorPreference();
-    const hexToRgba = (hex, alpha = 1) => {
+    const hexToRgba = (hex: string, alpha: number = 1) => {
         const n = parseInt(hex.slice(1), 16);
         const r = (n >> 16) & 0xff;
         const g = (n >> 8) & 0xff;
         const b = n & 0xff;
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
-    const shadeHex = (hex, delta) => {
+    const shadeHex = (hex: string, delta: number) => {
         const n = parseInt(hex.slice(1), 16);
         const r = Math.min(255, Math.max(0, (n >> 16) + delta));
         const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + delta));
@@ -867,14 +867,14 @@ function applyNavColorPreference() {
 
 function getFooterColorPreference() {
     const footerColor = localStorage.getItem(FOOTER_COLOR_KEY);
-    const LEGACY = {
+    const LEGACY: Record<string, string> = {
         brand: '#1e3a8a',
         slate: '#0f172a',
         emerald: '#064e3b',
         rose: '#881337',
     };
 
-    const normalizeHex = (value) => {
+    const normalizeHex = (value: any) => {
         const raw = String(value || '').trim().toLowerCase();
         if (LEGACY[raw]) {
             return LEGACY[raw];
@@ -902,21 +902,21 @@ function applyFooterColorPreference() {
     const footerCopyright = document.getElementById('footerCopyright');
 
     const color = getFooterColorPreference();
-    const hexToRgba = (hex, alpha = 1) => {
+    const hexToRgba = (hex: string, alpha: number = 1) => {
         const n = parseInt(hex.slice(1), 16);
         const r = (n >> 16) & 0xff;
         const g = (n >> 8) & 0xff;
         const b = n & 0xff;
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
-    const shadeHex = (hex, delta) => {
+    const shadeHex = (hex: string, delta: number) => {
         const n = parseInt(hex.slice(1), 16);
         const r = Math.min(255, Math.max(0, (n >> 16) + delta));
         const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + delta));
         const b = Math.min(255, Math.max(0, (n & 0xff) + delta));
         return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
     };
-    const getLuminance = (hex) => {
+    const getLuminance = (hex: string) => {
         const n = parseInt(hex.slice(1), 16);
         const r = (n >> 16) & 0xff;
         const g = (n >> 8) & 0xff;
@@ -990,11 +990,11 @@ if (document.readyState === 'loading') {
 }
 
 // Expor helpers no escopo global (vários módulos públicos usam window.*)
-window.Auth = Auth;
-window.api = api;
-window.UI = UI;
-window.CacheManager = CacheManager;
-window.SyncManager = SyncManager;
+(window as any).Auth = Auth;
+(window as any).api = api;
+(window as any).UI = UI;
+(window as any).CacheManager = CacheManager;
+(window as any).SyncManager = SyncManager;
 (window as any).applyGlobalLayoutAlign = applyLayoutAlignPreference;
 (window as any).applyGlobalNavAlign = applyNavAlignPreference;
 (window as any).applyGlobalLayoutWidth = applyLayoutWidthPreference;

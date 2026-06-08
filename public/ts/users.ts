@@ -136,6 +136,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         return list;
     }
 
+    const bindCopyEvents = (): void => {
+        document.querySelectorAll('.view-id-btn').forEach((btn: any) => {
+            btn.addEventListener('click', (e: any) => {
+                const pid = e.currentTarget.getAttribute('data-id') || '';
+                navigator.clipboard.writeText(pid).then(() => {
+                    const b = e.currentTarget;
+                    if (b.classList.contains('animating')) return;
+                    b.classList.add('animating');
+
+                    const orig = b.innerHTML;
+                    const svgSize = 'h-3.5 w-3.5 inline';
+
+                    // Step 1: Fade out and shrink original icon
+                    b.classList.add('scale-75', 'opacity-0');
+
+                    setTimeout(() => {
+                        // Step 2: Swap innerHTML to checkmark and pop
+                        b.innerHTML = `<svg class="${svgSize} text-green-500 transition-all duration-300 transform scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+                        b.classList.remove('scale-75', 'opacity-0');
+                        b.classList.add('scale-110', 'opacity-100');
+
+                        // Step 3: Revert checkmark back to normal scale
+                        setTimeout(() => {
+                            b.classList.remove('scale-110');
+                        }, 100);
+
+                        // Step 4: After 1500ms, fade out checkmark
+                        setTimeout(() => {
+                            b.classList.add('scale-75', 'opacity-0');
+
+                            setTimeout(() => {
+                                // Step 5: Restore original icon
+                                b.innerHTML = orig;
+                                b.classList.remove('scale-75', 'opacity-0', 'animating');
+                            }, 150);
+                        }, 1500);
+
+                    }, 150);
+                });
+            });
+        });
+    };
+
     // --- Render Table ---
     function renderTable() {
         const tbody = getById('usersTable');
@@ -149,7 +192,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tbody.innerHTML = filtered.map(u => `
             <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 ${!u.is_active ? 'opacity-60' : ''}">
-                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100 text-sm whitespace-nowrap">${u.full_name}</td>
+                <td class="px-6 py-4 text-sm whitespace-nowrap">
+                    <div class="font-semibold text-gray-900 dark:text-gray-100">${u.full_name}</div>
+                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <span class="font-mono text-[10px] select-all">${u.public_id}</span>
+                        <button type="button" class="view-id-btn text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transform transition-all duration-200 ease-out" data-id="${u.public_id}" title="Copiar ID: ${u.public_id}">
+                            <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
                 <td class="px-6 py-4 text-sm">
                     <div class="text-gray-700 dark:text-gray-300">${u.email}</div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">${formatPhone(u.phone)}</div>
@@ -177,14 +230,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tbody.querySelectorAll('.btn-edit').forEach(btn => {
             btn.addEventListener('click', () => {
-                const user = usersData.find(u => u.public_id === btn.dataset.id);
+                const user = usersData.find(u => u.public_id === (btn as any).dataset.id);
                 if (user) openModalDeferred(user);
             });
         });
 
         tbody.querySelectorAll('.btn-status').forEach(btn => {
-            btn.addEventListener('click', () => toggleStatus(btn.dataset.id, btn.dataset.active === 'false'));
+            btn.addEventListener('click', () => toggleStatus((btn as any).dataset.id, (btn as any).dataset.active === 'false'));
         });
+
+        bindCopyEvents();
 
         window.GridSummaryFooter?.update({
             footerId: 'usersResultsFooter',
@@ -217,6 +272,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-4">
                     <div>${u.email}</div>
                     <div>${formatPhone(u.phone)}</div>
+                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span class="font-mono text-[10px] select-all">${u.public_id}</span>
+                        <button type="button" class="view-id-btn text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transform transition-all duration-200 ease-out" data-id="${u.public_id}" title="Copiar ID: ${u.public_id}">
+                            <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="mt-auto flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-700">
                     <button type="button" class="btn-edit-card p-2 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 rounded-lg hover:bg-brand-100 transition-colors" data-id="${u.public_id}" title="Editar">
@@ -228,10 +291,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         grid.querySelectorAll('.btn-edit-card').forEach(btn => {
             btn.addEventListener('click', () => {
-                const user = usersData.find(u => u.public_id === btn.dataset.id);
+                const user = usersData.find(u => u.public_id === (btn as any).dataset.id);
                 if (user) openModalDeferred(user);
             });
         });
+
+        bindCopyEvents();
 
         window.GridSummaryFooter?.update({
             footerId: 'usersResultsFooter',

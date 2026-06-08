@@ -7,8 +7,8 @@ export interface UiPreference {
     theme: 'light' | 'dark' | 'system';
     layout_align: 'left' | 'center' | 'right' | 'responsive';
     nav_align: 'left' | 'center' | 'right' | 'responsive';
-    layout_width: 'system' | 'max-w-5xl' | 'max-w-6xl' | 'max-w-7xl' | 'max-w-screen-2xl';
-    nav_width: 'system' | 'max-w-5xl' | 'max-w-6xl' | 'max-w-7xl' | 'max-w-screen-2xl';
+    layout_width: 'system' | 'max-w-5xl' | 'max-w-6xl' | 'max-w-7xl' | 'max-w-screen-2xl' | 'max-w-none';
+    nav_width: 'system' | 'max-w-5xl' | 'max-w-6xl' | 'max-w-7xl' | 'max-w-screen-2xl' | 'max-w-none';
     nav_color: string;
     footer_color: string;
     form_company_name: string | null;

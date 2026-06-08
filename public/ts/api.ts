@@ -633,11 +633,11 @@ async function syncUiPreferencesFromServer() {
             localStorage.setItem(NAV_ALIGN_KEY, data.nav_align);
         }
 
-        if (data.layout_width === 'system' || data.layout_width === 'max-w-5xl' || data.layout_width === 'max-w-6xl' || data.layout_width === 'max-w-7xl' || data.layout_width === 'max-w-screen-2xl') {
+        if (data.layout_width === 'system' || data.layout_width === 'max-w-5xl' || data.layout_width === 'max-w-6xl' || data.layout_width === 'max-w-7xl' || data.layout_width === 'max-w-screen-2xl' || data.layout_width === 'max-w-none') {
             localStorage.setItem(LAYOUT_WIDTH_KEY, data.layout_width);
         }
 
-        if (data.nav_width === 'system' || data.nav_width === 'max-w-5xl' || data.nav_width === 'max-w-6xl' || data.nav_width === 'max-w-7xl' || data.nav_width === 'max-w-screen-2xl') {
+        if (data.nav_width === 'system' || data.nav_width === 'max-w-5xl' || data.nav_width === 'max-w-6xl' || data.nav_width === 'max-w-7xl' || data.nav_width === 'max-w-screen-2xl' || data.nav_width === 'max-w-none') {
             localStorage.setItem(NAV_WIDTH_KEY, data.nav_width);
         }
 
@@ -717,7 +717,7 @@ function applyLayoutAlignPreference() {
 
     htmlDecl.setAttribute('data-layout-align', align);
 
-    const targets = document.querySelectorAll<HTMLElement>('main.max-w-5xl, main.max-w-6xl, main.max-w-7xl, main.max-w-screen-2xl');
+    const targets = document.querySelectorAll<HTMLElement>('main.max-w-5xl, main.max-w-6xl, main.max-w-7xl, main.max-w-screen-2xl, main.max-w-none');
     targets.forEach((el) => {
         el.style.removeProperty('margin-left');
         el.style.removeProperty('margin-right');
@@ -777,7 +777,7 @@ function getLayoutWidthPreference() {
         localStorage.setItem(LAYOUT_WIDTH_KEY, 'system');
         return 'system';
     }
-    if (width === 'system' || width === 'max-w-5xl' || width === 'max-w-6xl' || width === 'max-w-7xl' || width === 'max-w-screen-2xl') {
+    if (width === 'system' || width === 'max-w-5xl' || width === 'max-w-6xl' || width === 'max-w-7xl' || width === 'max-w-screen-2xl' || width === 'max-w-none') {
         return width;
     }
     localStorage.setItem(LAYOUT_WIDTH_KEY, 'system');
@@ -789,14 +789,14 @@ function applyLayoutWidthPreference() {
     const widthClass = widthPreference === 'system' ? 'max-w-7xl' : widthPreference;
     const targets = document.querySelectorAll('main.w-full');
     targets.forEach((el) => {
-        el.classList.remove('max-w-5xl', 'max-w-6xl', 'max-w-7xl', 'max-w-screen-2xl');
+        el.classList.remove('max-w-5xl', 'max-w-6xl', 'max-w-7xl', 'max-w-screen-2xl', 'max-w-none');
         el.classList.add(widthClass);
     });
 }
 
 function getNavWidthPreference() {
     const width = localStorage.getItem(NAV_WIDTH_KEY);
-    if (width === 'system' || width === 'max-w-5xl' || width === 'max-w-6xl' || width === 'max-w-7xl' || width === 'max-w-screen-2xl') {
+    if (width === 'system' || width === 'max-w-5xl' || width === 'max-w-6xl' || width === 'max-w-7xl' || width === 'max-w-screen-2xl' || width === 'max-w-none') {
         return width;
     }
     const fallback = getLayoutWidthPreference();
@@ -810,7 +810,7 @@ function applyNavWidthPreference() {
 
     const widthPreference = getNavWidthPreference();
     const widthClass = widthPreference === 'system' ? 'max-w-7xl' : widthPreference;
-    navInner.classList.remove('max-w-5xl', 'max-w-6xl', 'max-w-7xl', 'max-w-screen-2xl');
+    navInner.classList.remove('max-w-5xl', 'max-w-6xl', 'max-w-7xl', 'max-w-screen-2xl', 'max-w-none');
     navInner.classList.add(widthClass);
 }
 

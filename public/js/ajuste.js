@@ -45,7 +45,7 @@
             localStorage.setItem(WIDTH_KEY, 'system');
             return 'system';
         }
-        if (raw === 'system' || raw === 'max-w-5xl' || raw === 'max-w-6xl' || raw === 'max-w-7xl' || raw === 'max-w-screen-2xl') {
+        if (raw === 'system' || raw === 'max-w-5xl' || raw === 'max-w-6xl' || raw === 'max-w-7xl' || raw === 'max-w-screen-2xl' || raw === 'max-w-none') {
             return raw;
         }
         localStorage.setItem(WIDTH_KEY, 'system');
@@ -54,7 +54,7 @@
 
     function getNavWidthValue() {
         const raw = localStorage.getItem(NAV_WIDTH_KEY);
-        if (raw === 'system' || raw === 'max-w-5xl' || raw === 'max-w-6xl' || raw === 'max-w-7xl' || raw === 'max-w-screen-2xl') {
+        if (raw === 'system' || raw === 'max-w-5xl' || raw === 'max-w-6xl' || raw === 'max-w-7xl' || raw === 'max-w-screen-2xl' || raw === 'max-w-none') {
             return raw;
         }
         const fallback = getWidthValue();
@@ -558,10 +558,10 @@
             if (data.nav_align === 'left' || data.nav_align === 'center' || data.nav_align === 'right' || data.nav_align === 'responsive') {
                 localStorage.setItem(NAV_ALIGN_KEY, data.nav_align);
             }
-            if (data.layout_width === 'system' || data.layout_width === 'max-w-5xl' || data.layout_width === 'max-w-6xl' || data.layout_width === 'max-w-7xl' || data.layout_width === 'max-w-screen-2xl') {
+            if (data.layout_width === 'system' || data.layout_width === 'max-w-5xl' || data.layout_width === 'max-w-6xl' || data.layout_width === 'max-w-7xl' || data.layout_width === 'max-w-screen-2xl' || data.layout_width === 'max-w-none') {
                 localStorage.setItem(WIDTH_KEY, data.layout_width);
             }
-            if (data.nav_width === 'system' || data.nav_width === 'max-w-5xl' || data.nav_width === 'max-w-6xl' || data.nav_width === 'max-w-7xl' || data.nav_width === 'max-w-screen-2xl') {
+            if (data.nav_width === 'system' || data.nav_width === 'max-w-5xl' || data.nav_width === 'max-w-6xl' || data.nav_width === 'max-w-7xl' || data.nav_width === 'max-w-screen-2xl' || data.nav_width === 'max-w-none') {
                 localStorage.setItem(NAV_WIDTH_KEY, data.nav_width);
             }
             if (typeof data.nav_color === 'string' && /^#[0-9a-fA-F]{6}$/.test(data.nav_color)) {

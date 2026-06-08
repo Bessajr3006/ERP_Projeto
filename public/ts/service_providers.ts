@@ -1,5 +1,5 @@
 (() => {
-window.initUserRoleDirectory({
+(window as any).initUserRoleDirectory({
     role: 'service_provider',
     moduleId: 'service_providers',
     singularLabel: 'Prestador de Serviço',

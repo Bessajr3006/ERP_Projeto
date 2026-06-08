@@ -101,7 +101,8 @@
         const toggle = document.getElementById(toggleId);
         if (!body || !chevron || !toggle)
             return null;
-        let isOpen = false;
+        const savedOpenState = localStorage.getItem(storageKey);
+        let isOpen = savedOpenState === null ? Boolean(config.defaultOpen) : savedOpenState === 'true';
         body.style.transition = 'none';
         body.style.maxHeight = isOpen ? `${body.scrollHeight}px` : '0px';
         chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(-90deg)';

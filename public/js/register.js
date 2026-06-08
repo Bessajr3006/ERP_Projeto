@@ -5,100 +5,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const form = document.getElementById('registerForm');
     const submitBtn = document.getElementById('submitBtn');
-
-    const generateAutoPassword = () => {
-        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
-        const length = 16;
-        const randomBytes = new Uint32Array(length);
-        window.crypto.getRandomValues(randomBytes);
-
-        let value = '';
-        for (let i = 0; i < length; i += 1) {
-            value += alphabet[randomBytes[i] % alphabet.length];
-        }
-
-        return value;
-    };
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', () => {
+            const passwordInput = document.getElementById('password');
+            const eyeOpen = document.getElementById('eyeIconOpen');
+            const eyeClosed = document.getElementById('eyeIconClosed');
+            if (passwordInput && eyeOpen && eyeClosed) {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                eyeOpen.classList.toggle('hidden');
+                eyeClosed.classList.toggle('hidden');
+            }
+        });
+    }
     // Configuração da máscara do CNPJ
     const cnpjInput = document.getElementById('cnpj');
-    const whatsappInput = document.getElementById('whatsapp');
     const companyNameInput = document.getElementById('companyName');
     const cnpjLoading = document.getElementById('cnpjLoading');
     const cnpjError = document.getElementById('cnpjError');
     const makeMask = window.createMaskAdapter || ((input, options) => window.IMask?.(input, options));
     const cnpjMask = makeMask ? makeMask(cnpjInput, { mask: '00.000.000/0000-00' }) : null;
-    const whatsappMask = makeMask ? makeMask(whatsappInput, { mask: '(00) 00000-0000' }) : null;
-    let lastCnpjLookup = { cnpj: '', data: null };
-
-    const setCnpjError = (message) => {
-        if (!cnpjError)
-            return;
-        cnpjError.textContent = message;
-        cnpjError.classList.remove('hidden');
-    };
-
-    const fetchCompanyByCnpj = async (cnpjDigits) => {
-        if (lastCnpjLookup.cnpj === cnpjDigits && lastCnpjLookup.data) {
-            return lastCnpjLookup.data;
-        }
-
-        if (cnpjLoading) {
-            cnpjLoading.classList.remove('hidden');
-        }
-        if (cnpjError) {
-            cnpjError.classList.add('hidden');
-        }
-        if (companyNameInput) {
-            companyNameInput.readOnly = true;
-            companyNameInput.classList.add('bg-gray-100');
-        }
-
-        try {
-            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjDigits}`);
-            const data = await response.json();
-            if (!response.ok || !data?.razao_social) {
-                return null;
-            }
-
-            lastCnpjLookup = { cnpj: cnpjDigits, data };
-            return data;
-        }
-        catch (error) {
-            console.error('Falha ao buscar CNPJ:', error);
-            return null;
-        }
-        finally {
-            if (cnpjLoading) {
-                cnpjLoading.classList.add('hidden');
-            }
-            if (companyNameInput) {
-                companyNameInput.readOnly = false;
-                companyNameInput.classList.remove('bg-gray-100');
-            }
-        }
-    };
-
-    if (cnpjInput) {
-        cnpjInput.addEventListener('input', () => {
-            lastCnpjLookup = { cnpj: '', data: null };
-            if (cnpjError) {
-                cnpjError.classList.add('hidden');
-            }
-        });
-    }
-
     if (cnpjInput && cnpjMask && companyNameInput && cnpjLoading && cnpjError) {
         // Busca dados da Empresa via CNPJ (BrasilAPI)
         cnpjInput.addEventListener('blur', async () => {
             const unmaskedCnpj = String(cnpjMask.unmaskedValue || '');
             if (unmaskedCnpj.length === 14) {
-                const data = await fetchCompanyByCnpj(unmaskedCnpj);
-                if (data?.razao_social) {
-                    companyNameInput.value = data.razao_social;
+                cnpjLoading.classList.remove('hidden');
+                cnpjError.classList.add('hidden');
+                companyNameInput.readOnly = true;
+                companyNameInput.classList.add('bg-gray-100');
+                try {
+                    const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${unmaskedCnpj}`);
+                    const data = await response.json();
+                    if (response.ok && data?.razao_social) {
+                        companyNameInput.value = data.razao_social;
+                    }
+                    else {
+                        cnpjError.classList.remove('hidden');
+                        companyNameInput.value = '';
+                    }
                 }
-                else {
-                    companyNameInput.value = '';
-                    setCnpjError('CNPJ inválido ou não encontrado na API.');
+                catch (error) {
+                    console.error('Falha ao buscar CNPJ:', error);
+                    cnpjError.classList.remove('hidden');
+                }
+                finally {
+                    cnpjLoading.classList.add('hidden');
+                    companyNameInput.readOnly = false;
+                    companyNameInput.classList.remove('bg-gray-100');
                 }
             }
         });
@@ -110,35 +65,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const companyNameEl = document.getElementById('companyName');
         const nameEl = document.getElementById('name');
         const emailEl = document.getElementById('email');
-        if (!companyNameEl || !nameEl || !emailEl)
+        const passwordEl = document.getElementById('password');
+        if (!companyNameEl || !nameEl || !emailEl || !passwordEl)
             return;
-        const cnpjDigits = String(cnpjMask?.unmaskedValue || '').trim();
-        if (cnpjDigits.length !== 14) {
-            setCnpjError('Informe um CNPJ válido com 14 dígitos.');
-            UI.showAlert('alertMessage', 'CNPJ é obrigatório para cadastro da empresa.');
-            return;
-        }
-
-        const cnpjData = await fetchCompanyByCnpj(cnpjDigits);
-        if (!cnpjData?.razao_social) {
-            setCnpjError('Não foi possível consultar o CNPJ na API.');
-            UI.showAlert('alertMessage', 'Não foi possível validar o CNPJ na API. Verifique e tente novamente.');
-            return;
-        }
-
-        companyNameEl.value = cnpjData.razao_social;
         const rawCompany = companyNameEl.value;
         // Limitamos o tamanho máximo do companyName para 150 caso a API retorne gigante
         const companyName = rawCompany.substring(0, 150);
         const name = nameEl.value;
-        const companyEmail = String(emailEl.value || '').trim();
-        const userEmail = companyEmail || `admin.${cnpjDigits}@keystone.local`;
-        const whatsappDigits = String(whatsappMask?.unmaskedValue || whatsappInput?.value || '').replace(/\D/g, '');
-        if (whatsappDigits && whatsappDigits.length < 10) {
-            UI.showAlert('alertMessage', 'Informe um WhatsApp válido com DDD.');
-            return;
-        }
-        const password = generateAutoPassword();
+        const email = emailEl.value;
+        const password = passwordEl.value;
         UI.hideAlert('alertMessage');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Registrando...';
@@ -150,9 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     trade_name: companyName,
                     company_name: companyNameEl.value,
-                    cnpj: cnpjDigits,
-                    email: companyEmail || undefined,
-                    phone: whatsappDigits || undefined
+                    cnpj: cnpjMask?.unmaskedValue || undefined
                 })
             });
             const compData = await compRes.json();
@@ -167,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     company_id: parseInt(String(companyId), 10),
                     full_name: name,
-                    email: userEmail,
+                    email,
                     passwordRaw: password
                 })
             });
@@ -175,8 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!responseData.ok) {
                 throw new Error(data?.message || (data?.errors ? JSON.stringify(data.errors) : 'Erro no cadastro do usuário.'));
             }
-            alert('Empresa cadastrada com sucesso! Faça login para acessar o sistema.');
-            window.location.href = '/index.html';
+            const tokenSaved = Auth.setToken(data?.data?.token || data?.token);
+            if (!tokenSaved) {
+                throw new Error('O servidor não retornou um token de acesso válido para concluir o cadastro.');
+            }
+            alert('Cadastro realizado com sucesso! Bem-vindo ao KEYSTONE.');
+            window.location.href = '/pages/dashboard.html';
         }
         catch (error) {
             UI.showAlert('alertMessage', error?.message || 'Erro ao realizar cadastro.');

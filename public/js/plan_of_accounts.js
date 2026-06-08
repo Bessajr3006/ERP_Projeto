@@ -29,7 +29,7 @@
                     return;
                 if (!accounts || accounts.length === 0) {
                     tableBody.innerHTML =
-                        '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma conta contábil cadastrada.</td></tr>';
+                        '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma conta contábil cadastrada.</td></tr>';
                     return;
                 }
                 tableBody.innerHTML = accounts

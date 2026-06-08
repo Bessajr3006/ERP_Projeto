@@ -51,8 +51,6 @@ class CrudManager {
         }
         catch (error) {
             console.error(`Falha ao carregar ${this.entityName}`, error);
-            this.data = [];
-            this.applyFilters();
             if (typeof UI !== 'undefined' && UI.showAlert) {
                 UI.showAlert('alertMessage', 'Erro ao carregar dados. Verifique a conexão.');
             }

@@ -1,6 +1,5 @@
 // @ts-nocheck
 (() => {
-    const SWAGGER_TOKEN_STORAGE_KEY = 'bessa_swagger_token';
     let g_companyPublicId = null;
     let g_companySnapshot = null;
     let docMask, phoneMask, zipMask;
@@ -9,15 +8,6 @@
     const COMPANY_LOGO_MAX_BYTES = 2 * 1024 * 1024;
     const COMPANY_LOGO_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
     let g_companyLogoPreviewVersion = 0;
-    function setStoredSwaggerToken(token) {
-        const normalized = String(token || '').trim();
-        if (normalized) {
-            localStorage.setItem(SWAGGER_TOKEN_STORAGE_KEY, normalized);
-        }
-        else {
-            localStorage.removeItem(SWAGGER_TOKEN_STORAGE_KEY);
-        }
-    }
     function onlyDigits(value) {
         return String(value || '').replace(/\D/g, '');
     }
@@ -450,10 +440,6 @@
                     const swaggerTokenEl = document.getElementById('swaggerToken');
                     if (swaggerTokenEl)
                         swaggerTokenEl.value = company.swagger_api_token;
-                    setStoredSwaggerToken(company.swagger_api_token);
-                }
-                else {
-                    setStoredSwaggerToken('');
                 }
                 for (let i = 1; i <= 5; i++) {
                     if (company[`solidcon_url_${i}`]) {
@@ -573,7 +559,6 @@
                     });
                     g_companySnapshot = { ...(g_companySnapshot || {}), swagger_api_token: newToken };
                     document.getElementById('swaggerToken').value = newToken;
-                    setStoredSwaggerToken(newToken);
                     refreshParameterSummary();
                     UI.showAlert('alertMessage', 'Token Swagger gerado com sucesso!', 'success');
                 }
@@ -1148,7 +1133,8 @@
         }
     });
     // UI function to toggle tabs
-    window.switchTab = function (tabName) {        const tabs = ['data', 'param', 'cert', 'logo', 'notas', 'api', 'solidcon', 'swagger'];
+    window.switchTab = function (tabName) {
+        const tabs = ['data', 'param', 'cert', 'logo', 'notas', 'api', 'solidcon', 'swagger'];
         tabs.forEach(tab => {
             const btn = document.getElementById(`tabBtn-${tab}`);
             const content = document.getElementById(`tabContent-${tab}`);
@@ -1159,7 +1145,6 @@
                 btn.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'text-gray-500');
                 content.classList.remove('hidden');
                 content.classList.add('block');
-                content.style.removeProperty('display');
                 if (tab === 'param') {
                     refreshParameterSummary();
                 }

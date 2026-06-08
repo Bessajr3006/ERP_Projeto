@@ -314,15 +314,11 @@
         document.querySelectorAll('.view-id-btn').forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 const pid = e.currentTarget.getAttribute('data-id') || '';
-                const buttonEl = e.currentTarget;
                 navigator.clipboard.writeText(pid).then(() => {
-                    if (!buttonEl)
-                        return;
-                    const orig = buttonEl.innerHTML;
-                    buttonEl.innerHTML = '<svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-                    setTimeout(() => {
-                        buttonEl.innerHTML = orig;
-                    }, 1500);
+                    const b = e.currentTarget;
+                    const orig = b.innerHTML;
+                    b.innerHTML = '<svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                    setTimeout(() => { b.innerHTML = orig; }, 1500);
                 });
             });
         });

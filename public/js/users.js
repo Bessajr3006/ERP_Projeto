@@ -149,17 +149,9 @@
                 </td>
                 <td class="px-6 py-4 text-right whitespace-nowrap">
                     <div class="flex items-center justify-end gap-3">
-                        <button type="button" class="btn-copy-id text-gray-500 hover:text-gray-700" data-id="${u.public_id}" title="Copiar ID">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        </button>
                         <button type="button" class="btn-edit text-brand-600 hover:text-brand-800" data-id="${u.public_id}" title="Editar">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </button>
-                        ${!u.is_deletable ? '' : `
-                        <button type="button" class="btn-delete text-red-500 hover:text-red-700" data-id="${u.public_id}" title="Excluir">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                        `}
                         <button type="button" class="btn-status ${u.is_active ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'}" data-id="${u.public_id}" data-active="${u.is_active}" title="${u.is_active ? 'Inativar' : 'Ativar'}">
                             ${u.is_active
                 ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>'
@@ -169,34 +161,12 @@
                 </td>
             </tr>
         `).join('');
-            tbody.querySelectorAll('.btn-copy-id').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const buttonEl = e.currentTarget;
-                    const id = buttonEl?.dataset?.id;
-                    if (!id) return;
-                    navigator.clipboard.writeText(id).then(() => {
-                        if (!buttonEl)
-                            return;
-                        const origHtml = buttonEl.innerHTML;
-                        buttonEl.innerHTML = '<svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-                        setTimeout(() => {
-                            buttonEl.innerHTML = origHtml;
-                        }, 1500);
-                    }).catch(err => {
-                        console.error('Falha ao copiar ID:', err);
-                        alert('Não foi possível copiar o ID.');
-                    });
-                });
-            });
             tbody.querySelectorAll('.btn-edit').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const user = usersData.find(u => u.public_id === btn.dataset.id);
                     if (user)
                         openModalDeferred(user);
                 });
-            });
-            tbody.querySelectorAll('.btn-delete').forEach(btn => {
-                btn.addEventListener('click', () => deleteUser(btn.dataset.id));
             });
             tbody.querySelectorAll('.btn-status').forEach(btn => {
                 btn.addEventListener('click', () => toggleStatus(btn.dataset.id, btn.dataset.active === 'false'));
@@ -290,7 +260,6 @@
             clearWaPolling();
             activeTab = 'data';
             waSessionLoadedOnce = false;
-            emailConfigLoadedForUser = null;
             editingUserId = user ? user.public_id : null;
             editingUserData = user;
             editingUserWhatsAppAutoReplyMode = user?.whatsapp_auto_reply_mode || 'automatic';
@@ -311,18 +280,12 @@
             // WhatsApp tab (only when editing)
             const tabsList = getById('userModalTabs');
             const existingWaTab = tabsList.querySelector('[data-tab="whatsapp"]')?.closest('li');
-            if (existingWaTab) existingWaTab.remove();
-            const existingEmailTab = tabsList.querySelector('[data-tab="email"]')?.closest('li');
-            if (existingEmailTab) existingEmailTab.remove();
-
+            if (existingWaTab)
+                existingWaTab.remove();
             if (user) {
                 const li = document.createElement('li');
                 li.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp Web / QR</button>`;
                 tabsList.appendChild(li);
-                
-                const liEmail = document.createElement('li');
-                liEmail.innerHTML = `<button type="button" data-tab="email" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">Caixa de E-mail</button>`;
-                tabsList.appendChild(liEmail);
             }
             switchTab('data');
             getById('userModal').classList.remove('hidden');
@@ -348,13 +311,9 @@
             activeTab = tab;
             const tabData = getById('tabData');
             const tabWhatsapp = getById('tabWhatsapp');
-            const tabEmail = getById('tabEmail');
             const footer = getById('userModalFooter');
-
             tabData.classList.toggle('hidden', tab !== 'data');
-            if (tabWhatsapp) tabWhatsapp.classList.toggle('hidden', tab !== 'whatsapp');
-            if (tabEmail) tabEmail.classList.toggle('hidden', tab !== 'email');
-            
+            tabWhatsapp.classList.toggle('hidden', tab !== 'whatsapp');
             footer.classList.remove('hidden');
             qsa('.tab-btn').forEach(btn => {
                 const isActive = btn.dataset.tab === tab;
@@ -373,9 +332,6 @@
                     scheduleWaPolling();
                 }
             }
-            if (tab === 'email' && editingUserId) {
-                loadUserEmailConfig(editingUserId);
-            }
         }
         function runDeferredAsync(action) {
             window.setTimeout(() => {
@@ -383,125 +339,6 @@
                     console.warn('[users] Ação assíncrona adiada falhou:', error);
                 });
             }, 0);
-        }
-        // --- E-mail Config ---
-        let emailConfigLoadedForUser = null;
-        function showEmailConfigAlert(type, msg) {
-            const el = getById('emailConfigAlert');
-            if (!el) return;
-            const cls = {
-                success: 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200',
-                error: 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200',
-            };
-            el.className = `mb-4 rounded-lg px-4 py-3 text-sm ${cls[type] || cls.error}`;
-            el.textContent = msg;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 5000);
-        }
-        function inferImapHostFromSmtp(smtpHost) {
-            const host = String(smtpHost || '').trim();
-            if (!host) return '';
-            if (host.startsWith('smtp.')) return host.replace(/^smtp\./i, 'imap.');
-            if (host.includes('smtp')) return host.replace(/smtp/gi, 'imap');
-            return host;
-        }
-        function suggestImapFromSmtp({ force = false } = {}) {
-            const smtpHostEl = getById('userSmtpHost');
-            const smtpPortEl = getById('userSmtpPort');
-            const smtpSecureEl = getById('userSmtpSecure');
-            const imapHostEl = getById('userImapHost');
-            const imapPortEl = getById('userImapPort');
-            const imapSecureEl = getById('userImapSecure');
-
-            if (!smtpHostEl || !imapHostEl || !imapPortEl || !imapSecureEl) return;
-
-            const inferredHost = inferImapHostFromSmtp(smtpHostEl.value);
-            const inferredSecure = smtpSecureEl ? Boolean(smtpSecureEl.checked) : true;
-            const inferredPort = inferredSecure ? 993 : 143;
-
-            if ((force || !String(imapHostEl.value || '').trim()) && inferredHost) {
-                imapHostEl.value = inferredHost;
-            }
-            if (force || !String(imapPortEl.value || '').trim()) {
-                imapPortEl.value = String(inferredPort);
-            }
-            if (force || (imapSecureEl.checked !== true && imapSecureEl.checked !== false)) {
-                imapSecureEl.checked = inferredSecure;
-            }
-
-            // Quando SMTP porta padrao segura/insegura mudar e IMAP estiver vazio, refletir comportamento.
-            if (!String(imapHostEl.value || '').trim() && inferredHost) {
-                imapHostEl.value = inferredHost;
-            }
-            if (!String(imapPortEl.value || '').trim() && smtpPortEl) {
-                imapPortEl.value = String(inferredPort);
-            }
-        }
-        async function loadUserEmailConfig(userId) {
-            if (emailConfigLoadedForUser === userId) return;
-            try {
-                const res = await api(`/users/${userId}/email-config`);
-                const cfg = res?.data;
-                emailConfigLoadedForUser = userId;
-                if (!cfg) return;
-                const set = (id, val) => { const el = getById(id); if (el) el.value = val ?? ''; };
-                const chk = (id, val) => { const el = getById(id); if (el) el.checked = Boolean(val); };
-                set('userSmtpHost', cfg.smtp_host);
-                set('userSmtpPort', cfg.smtp_port || 587);
-                chk('userSmtpSecure', cfg.smtp_secure);
-                set('userSmtpUser', cfg.smtp_user);
-                set('userImapHost', cfg.imap_host || '');
-                set('userImapPort', cfg.imap_port || 993);
-                chk('userImapSecure', cfg.imap_secure !== false);
-                set('userSenderName', cfg.sender_name);
-                set('userSenderEmail', cfg.sender_email);
-                chk('userEmailIsActive', cfg.is_active !== false);
-                const hint = getById('userHasPasswordHint');
-                if (hint && cfg.has_password) hint.classList.remove('hidden');
-
-                if (!cfg.imap_host) {
-                    suggestImapFromSmtp({ force: false });
-                }
-            } catch (err) {
-                showEmailConfigAlert('error', `Erro ao carregar: ${err.message}`);
-            }
-        }
-        async function saveUserEmailConfig() {
-            if (!editingUserId) return;
-            const btn = getById('saveUserEmailConfigBtn');
-            const orig = btn?.innerHTML;
-            if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
-            try {
-                const get = (id) => getById(id)?.value?.trim() || '';
-                const chk = (id) => getById(id)?.checked ?? false;
-                const imapHostValue = get('userImapHost') || inferImapHostFromSmtp(get('userSmtpHost'));
-                const imapPortValue = parseInt(getById('userImapPort')?.value || '', 10);
-                const imapSecureValue = chk('userImapSecure');
-                const payload = {
-                    smtp_host: get('userSmtpHost'),
-                    smtp_port: parseInt(getById('userSmtpPort')?.value || '587', 10),
-                    smtp_secure: chk('userSmtpSecure'),
-                    smtp_user: get('userSmtpUser'),
-                    imap_host: imapHostValue,
-                    imap_port: Number.isInteger(imapPortValue) && imapPortValue > 0 ? imapPortValue : (imapSecureValue ? 993 : 143),
-                    imap_secure: imapSecureValue,
-                    smtp_password: getById('userSmtpPassword')?.value || null,
-                    sender_name: get('userSenderName'),
-                    sender_email: get('userSenderEmail'),
-                    is_active: chk('userEmailIsActive'),
-                };
-                await api(`/users/${editingUserId}/email-config`, { method: 'POST', body: JSON.stringify(payload) });
-                showEmailConfigAlert('success', 'Configuração de e-mail salva!');
-                const pwdEl = getById('userSmtpPassword');
-                if (pwdEl) pwdEl.value = '';
-                const hint = getById('userHasPasswordHint');
-                if (hint) hint.classList.remove('hidden');
-                emailConfigLoadedForUser = null;
-            } catch (err) {
-                showEmailConfigAlert('error', `Erro ao salvar: ${err.message}`);
-            } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = orig; }
-            }
         }
         // --- WhatsApp ---
         function renderWhatsappContent() {
@@ -740,17 +577,11 @@
                 const response = await api(endpoint, { method, body: JSON.stringify(payload) });
                 const savedUser = response?.data || null;
                 const selectedDefaultPage = payload.default_page || null;
-                const defaultPageNotSaved = Boolean(
-                    savedUser
-                    && (savedUser.default_page || null) !== selectedDefaultPage
-                );
+                if (savedUser && (savedUser.default_page || null) !== selectedDefaultPage) {
+                    throw new Error('A página inicial após login não foi gravada. Verifique se a migração do campo default_page foi aplicada no banco.');
+                }
                 closeModal();
-                if (defaultPageNotSaved) {
-                    UI.showAlert('alertMessage', 'Perfil salvo, mas a página inicial após login não foi aplicada neste ambiente. Verifique a migration do campo default_page no banco da nuvem.', 'error');
-                }
-                else {
-                    UI.showAlert('alertMessage', `Usuário ${isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
-                }
+                UI.showAlert('alertMessage', `Usuário ${isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
                 await loadData();
                 renderTable();
                 renderGrid();
@@ -764,23 +595,6 @@
                     btn.disabled = false;
                     btn.textContent = 'Salvar';
                 }
-            }
-        }
-        // --- Delete User ---
-        async function deleteUser(id) {
-            if (!id)
-                return;
-            if (!confirm('Deseja realmente excluir este usuário? Esta ação não pode ser desfeita.'))
-                return;
-            try {
-                await api(`/users/${id}`, { method: 'DELETE' });
-                UI.showAlert('alertMessage', 'Usuário excluído com sucesso!', 'success');
-                await loadData();
-                renderTable();
-                renderGrid();
-            }
-            catch (e) {
-                UI.showAlert('alertMessage', e.message || 'Falha ao excluir usuário.', 'error');
             }
         }
         // --- Toggle Status ---
@@ -807,17 +621,6 @@
         getById('btnCancelModal')?.addEventListener('click', closeModal);
         getById('userModalBackdrop')?.addEventListener('click', closeModal);
         getById('userForm')?.addEventListener('submit', saveUser);
-        getById('userEmailConfigForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            void saveUserEmailConfig();
-        });
-        getById('toggleUserSmtpPassword')?.addEventListener('click', () => {
-            const input = getById('userSmtpPassword');
-            if (input) input.type = input.type === 'password' ? 'text' : 'password';
-        });
-        getById('userSmtpHost')?.addEventListener('blur', () => suggestImapFromSmtp({ force: false }));
-        getById('userSmtpSecure')?.addEventListener('change', () => suggestImapFromSmtp({ force: false }));
-        getById('userSmtpPort')?.addEventListener('change', () => suggestImapFromSmtp({ force: false }));
         getById('filterSearch')?.addEventListener('input', (e) => {
             const target = e.target;
             const nextSearch = target?.value || '';

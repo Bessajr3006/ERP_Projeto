@@ -199,7 +199,6 @@ function initMobileMenu() {
     setupMobileDropdown('mobileUserSubmenuBtn', 'mobileUserSubmenu', 'mobileUserSubmenuIcon');
     setupMobileDropdown('mobileOrdersDropdownBtn', 'mobileOrdersDropdown', 'mobileOrdersDropdownIcon');
     setupMobileDropdown('mobilePurchasesDropdownBtn', 'mobilePurchasesDropdown', 'mobilePurchasesDropdownIcon');
-
 }
 function initThemeToggle() {
     const btn = document.getElementById('themeToggleBtn');
@@ -245,18 +244,15 @@ function initLogout() {
             event.preventDefault();
             event.stopPropagation();
         }
-
         if (typeof Auth !== 'undefined' && typeof Auth.clearToken === 'function') {
             Auth.clearToken();
         }
         else {
             localStorage.removeItem('erp_token');
         }
-
         // Fallbacks para ambientes com variações de sessão/local cache.
         localStorage.removeItem('erp_token');
         sessionStorage.removeItem('erp_token');
-
         closeLogoutModal();
         window.location.replace('/');
     };
@@ -264,13 +260,11 @@ function initLogout() {
     const logoutBackdrop = document.getElementById('logoutConfirmBackdrop');
     const logoutCancelBtn = document.getElementById('logoutCancelBtn');
     const logoutConfirmBtn = document.getElementById('logoutConfirmBtn');
-
     const closeLogoutModal = () => {
         if (logoutModal) {
             logoutModal.classList.add('hidden');
         }
     };
-
     const openLogoutModal = () => {
         if (logoutModal) {
             logoutModal.classList.remove('hidden');
@@ -281,7 +275,6 @@ function initLogout() {
             doLogout();
         }
     };
-
     if (logoutBackdrop) {
         logoutBackdrop.addEventListener('click', closeLogoutModal);
     }
@@ -291,32 +284,27 @@ function initLogout() {
     if (logoutConfirmBtn) {
         logoutConfirmBtn.addEventListener('click', doLogout);
     }
-
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
             closeLogoutModal();
         }
     });
-
     const bindOpenLogout = (elementId) => {
         const element = document.getElementById(elementId);
         if (element) {
             element.addEventListener('click', openLogoutModal);
         }
     };
-
     bindOpenLogout('logoutBtn');
     bindOpenLogout('logoutBtnUserSubmenuDesktop');
     bindOpenLogout('logoutBtnUserSubmenuMobile');
     bindOpenLogout('logoutBtnMobile');
-
     // Delegação para cenários em que a navbar é re-renderizada após o bind inicial.
     document.addEventListener('click', (event) => {
         const target = event.target instanceof Element ? event.target : null;
         if (!target) {
             return;
         }
-
         const trigger = target.closest('#logoutBtn, #logoutBtnUserSubmenuDesktop, #logoutBtnUserSubmenuMobile, #logoutBtnMobile');
         if (trigger) {
             event.preventDefault();
@@ -360,38 +348,38 @@ async function loadUserGreeting() {
                     window.location.href = '/pages/dashboard.html';
                     return;
                 }
-                    // Super Admin deve sempre visualizar todos os menus/submenus.
-                    if (isSuperAdmin) {
-                        document.querySelectorAll('a[href^="/pages/"]').forEach((a) => {
-                            a.style.removeProperty('display');
-                        });
-                        [
-                            'desktopCustomersDropdownBtn',
-                            'desktopFinanceDropdownBtn',
-                            'desktopProductsDropdownBtn',
-                            'desktopServiceDropdownBtn',
-                            'desktopAccountingDropdownBtn',
-                            'desktopOverviewDropdownBtn',
-                            'desktopReportsDropdownBtn',
-                            'desktopConfigDropdownBtn',
-                            'desktopOrdersDropdownBtn',
-                            'desktopPurchasesDropdownBtn',
-                            'mobileCustomersDropdownBtn',
-                            'mobileFinanceDropdownBtn',
-                            'mobileProductsDropdownBtn',
-                            'mobileServiceDropdownBtn',
-                            'mobileAccountingDropdownBtn',
-                            'mobileOverviewDropdownBtn',
-                            'mobileReportsDropdownBtn',
-                            'mobileConfigDropdownBtn',
-                            'mobileOrdersDropdownBtn',
-                            'mobilePurchasesDropdownBtn',
-                        ].forEach((btnId) => {
-                            const btnEl = document.getElementById(btnId);
-                            btnEl?.parentElement?.style.removeProperty('display');
-                        });
-                        return;
-                    }
+                // Super Admin deve sempre visualizar todos os menus/submenus.
+                if (isSuperAdmin) {
+                    document.querySelectorAll('a[href^="/pages/"]').forEach((a) => {
+                        a.style.removeProperty('display');
+                    });
+                    [
+                        'desktopCustomersDropdownBtn',
+                        'desktopFinanceDropdownBtn',
+                        'desktopProductsDropdownBtn',
+                        'desktopServiceDropdownBtn',
+                        'desktopAccountingDropdownBtn',
+                        'desktopOverviewDropdownBtn',
+                        'desktopReportsDropdownBtn',
+                        'desktopConfigDropdownBtn',
+                        'desktopOrdersDropdownBtn',
+                        'desktopPurchasesDropdownBtn',
+                        'mobileCustomersDropdownBtn',
+                        'mobileFinanceDropdownBtn',
+                        'mobileProductsDropdownBtn',
+                        'mobileServiceDropdownBtn',
+                        'mobileAccountingDropdownBtn',
+                        'mobileOverviewDropdownBtn',
+                        'mobileReportsDropdownBtn',
+                        'mobileConfigDropdownBtn',
+                        'mobileOrdersDropdownBtn',
+                        'mobilePurchasesDropdownBtn',
+                    ].forEach((btnId) => {
+                        const btnEl = document.getElementById(btnId);
+                        btnEl?.parentElement?.style.removeProperty('display');
+                    });
+                    return;
+                }
                 // Hide unauthorized links
                 const permissions = gNavbarAuthContext.permissions || [];
                 // Se for admin/super admin e o backend não trouxe permissões, mantemos o menu padrão.

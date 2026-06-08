@@ -27,6 +27,7 @@ if ('serviceWorker' in navigator) {
                     return;
                 }
                 sessionStorage.removeItem(PWA_DEV_RESET_KEY);
+                console.log('KEYSTONE PWA disabled for local development host.');
             }
             catch (error) {
                 console.error('KEYSTONE failed to disable service workers in local development:', error);

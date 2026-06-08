@@ -2,8 +2,6 @@
     let g_sales = [];
     let g_currentSaleItems = [];
     let g_currentSaleId = null;
-    const g_selectedSaleIds = new Set();
-    let g_visibleSales = [];
     const REMOVED_ITEMS_STORAGE_KEY = 'picking_removed_items';
     const g_removedPickingItems = new Set(JSON.parse(sessionStorage.getItem(REMOVED_ITEMS_STORAGE_KEY) || '[]'));
     const FilterPanel = window.FilterPanel;
@@ -23,137 +21,8 @@
     });
     async function initPickingPage() {
         setupModal();
-        setupBulkActions();
         setupFilters();
         await loadSales();
-    }
-    function showPageAlert(message, type = 'error', durationMillis = 4500) {
-        if (window.UI && typeof window.UI.showAlert === 'function') {
-            window.UI.showAlert('alertMessage', message, type, durationMillis);
-            return;
-        }
-        alert(message);
-    }
-    function setupBulkActions() {
-        const selectAll = getEl('pickingSelectAll');
-        const btnDeleteSelected = getEl('btnDeleteSelectedPicking');
-        window.addEventListener('resize', syncBulkSelectionUi);
-        selectAll?.addEventListener('change', () => {
-            const shouldSelect = !!selectAll.checked;
-            g_visibleSales.forEach((sale) => {
-                const saleId = Number(sale?.id);
-                if (!Number.isFinite(saleId)) {
-                    return;
-                }
-                if (shouldSelect) {
-                    g_selectedSaleIds.add(saleId);
-                }
-                else {
-                    g_selectedSaleIds.delete(saleId);
-                }
-            });
-            syncBulkSelectionUi();
-            renderGrid(g_visibleSales);
-        });
-        btnDeleteSelected?.addEventListener('click', async () => {
-            await deleteSelectedSales();
-        });
-    }
-    function syncBulkSelectionUi() {
-        const selectAll = getEl('pickingSelectAll');
-        const btnDeleteSelected = getEl('btnDeleteSelectedPicking');
-        const isMobile = !!window.matchMedia && window.matchMedia('(max-width: 639px)').matches;
-        const visibleIds = g_visibleSales
-            .map((sale) => Number(sale?.id))
-            .filter((id) => Number.isFinite(id));
-        const selectedVisibleCount = visibleIds.filter((id) => g_selectedSaleIds.has(id)).length;
-        if (selectAll) {
-            selectAll.checked = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
-            selectAll.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleIds.length;
-        }
-        if (btnDeleteSelected) {
-            const totalSelected = g_selectedSaleIds.size;
-            btnDeleteSelected.disabled = totalSelected === 0;
-            if (totalSelected > 0) {
-                btnDeleteSelected.textContent = isMobile
-                    ? `Excl. (${totalSelected})`
-                    : `Excluir selecionados (${totalSelected})`;
-            }
-            else {
-                btnDeleteSelected.textContent = isMobile ? 'Excluir' : 'Excluir selecionados';
-            }
-            if (totalSelected > 0) {
-                btnDeleteSelected.classList.remove('hidden');
-                btnDeleteSelected.classList.add('inline-flex');
-            }
-            else {
-                btnDeleteSelected.classList.add('hidden');
-                btnDeleteSelected.classList.remove('inline-flex');
-            }
-        }
-    }
-    async function deleteSelectedSales() {
-        const selectedIds = Array.from(g_selectedSaleIds.values()).filter((id) => Number.isFinite(Number(id)));
-        if (selectedIds.length === 0) {
-            showPageAlert('Selecione pelo menos um pedido para excluir.', 'warning', 3500);
-            return;
-        }
-
-        const inactiveIds = selectedIds.filter((saleId) => {
-            const sale = g_sales.find((item) => Number(item?.id) === Number(saleId));
-            return isSaleInactive(sale);
-        });
-        const activeIds = selectedIds.filter((saleId) => !inactiveIds.includes(saleId));
-
-        if (!confirm(`Deseja excluir ${selectedIds.length} pedido(s) selecionado(s)? Pedidos ativos serão inativados e pedidos inativos serão excluídos definitivamente.`)) {
-            return;
-        }
-        const btnDeleteSelected = getEl('btnDeleteSelectedPicking');
-        if (btnDeleteSelected) {
-            btnDeleteSelected.disabled = true;
-            btnDeleteSelected.textContent = 'Excluindo...';
-        }
-        let inactivatedCount = 0;
-        let permanentDeletedCount = 0;
-        let failedCount = 0;
-        try {
-            await Promise.all(activeIds.map(async (saleId) => {
-                try {
-                    await api(`/sales/${saleId}/active`, {
-                        method: 'PATCH',
-                        body: JSON.stringify({ is_active: false }),
-                    });
-                    inactivatedCount += 1;
-                    g_selectedSaleIds.delete(saleId);
-                }
-                catch (_e) {
-                    failedCount += 1;
-                }
-            }));
-
-            await Promise.all(inactiveIds.map(async (saleId) => {
-                try {
-                    await api(`/sales/${saleId}/permanent`, { method: 'DELETE' });
-                    permanentDeletedCount += 1;
-                    g_selectedSaleIds.delete(saleId);
-                }
-                catch (_e) {
-                    failedCount += 1;
-                }
-            }));
-
-            const totalDone = inactivatedCount + permanentDeletedCount;
-            if (failedCount === 0) {
-                showPageAlert(`Processo concluído. ${inactivatedCount} pedido(s) inativado(s) e ${permanentDeletedCount} pedido(s) inativo(s) excluído(s) definitivamente.`, 'success', 5000);
-            }
-            else {
-                showPageAlert(`Processo parcial. ${totalDone} pedido(s) processado(s) (${inactivatedCount} inativado(s), ${permanentDeletedCount} excluído(s) definitivamente) e ${failedCount} falha(s).`, 'warning', 5500);
-            }
-            await loadSales();
-        }
-        finally {
-            syncBulkSelectionUi();
-        }
     }
     function setupModal() {
         const btnCloseTop = getEl('btnCloseModalTop');
@@ -261,12 +130,6 @@
             const res = await api('/sales/sales?include_inactive=1');
             if (res && res.status === 'success') {
                 g_sales = (res.data || []).filter((s) => (s.status === 'progress' || s.status === 'completed' || s.status === 'pending') && (s.items || []).length > 0);
-                const validIds = new Set(g_sales.map((sale) => Number(sale?.id)).filter((id) => Number.isFinite(id)));
-                Array.from(g_selectedSaleIds).forEach((id) => {
-                    if (!validIds.has(id)) {
-                        g_selectedSaleIds.delete(id);
-                    }
-                });
                 applyFilters();
             }
         }
@@ -290,9 +153,7 @@
             }
             return true;
         });
-        g_visibleSales = filtered;
         renderGrid(filtered);
-        syncBulkSelectionUi();
         window.GridSummaryFooter?.update({
             footerId: 'pickingResultsFooter',
             anchorId: 'ordersGrid',
@@ -326,28 +187,6 @@
         }
         catch (err) {
             alert(err.message || 'Erro ao atualizar pedido na separação.');
-        }
-    }
-    async function hardDeleteInactiveSaleFromPicking(saleId) {
-        const sale = g_sales.find((item) => String(item.id) === String(saleId));
-        if (!saleId || !sale || !isSaleInactive(sale)) {
-            showPageAlert('Somente pedidos inativos podem ser excluídos definitivamente.', 'warning', 4000);
-            return;
-        }
-
-        const message = `Excluir definitivamente o pedido #${saleId}? Essa ação não pode ser desfeita.`;
-        if (!confirm(message)) {
-            return;
-        }
-
-        try {
-            await api(`/sales/${saleId}/permanent`, { method: 'DELETE' });
-            g_selectedSaleIds.delete(Number(saleId));
-            showPageAlert(`Pedido #${saleId} excluído definitivamente.`, 'success', 4000);
-            await loadSales();
-        }
-        catch (err) {
-            showPageAlert(err?.message || 'Erro ao excluir pedido inativo definitivamente.', 'error', 4500);
         }
     }
     function getPickingItemKey(saleId, itemId) {
@@ -438,7 +277,6 @@
         if (sales.length === 0) {
             grid.innerHTML =
                 '<div class="col-span-full py-8 text-center text-gray-500 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">Nenhum pedido recente encontrado.</div>';
-            syncBulkSelectionUi();
             return;
         }
         let html = '';
@@ -447,18 +285,13 @@
             const orderDate = DateUtilsRef?.formatDateTime?.(s.created_at || s.date) || '';
             const total = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(getActiveSaleTotal(s));
             const qtyItems = getActiveSaleItems(s).length;
-                        const saleId = Number(s?.id);
-                        const isSelected = Number.isFinite(saleId) && g_selectedSaleIds.has(saleId);
             html += `
             <div class="${isInactive ? 'bg-red-50/80 dark:bg-red-900/20 border-red-200 dark:border-red-800/40' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'} border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                 <div>
                     <div class="flex justify-between items-start mb-4">
-                                            <div class="flex items-center gap-2">
-                                                <input type="checkbox" class="sale-select-checkbox h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 dark:bg-slate-800" data-sale-id="${s.id}" ${isSelected ? 'checked' : ''}>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isInactive ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'}">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isInactive ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'}">
                             #${s.id}
-                                                </span>
-                                            </div>
+                        </span>
                         <span class="text-xs text-gray-400 dark:text-gray-500 font-mono">${orderDate}</span>
                     </div>
                     <h3 class="font-bold ${isInactive ? 'text-red-600 dark:text-red-400 line-through' : 'text-gray-900 dark:text-gray-100'} text-lg mb-1 leading-tight line-clamp-2">${s.customer_name || 'Consumidor Final'}</h3>
@@ -471,9 +304,6 @@
                     <button type="button" class="btn-remove-sale p-2 rounded-lg ${isInactive ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300' : 'text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-300'} transition-colors" title="${isInactive ? 'Ativar pedido' : 'Inativar pedido'}" data-sale-id="${s.id}">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
-                                        <button type="button" class="btn-hard-delete-inactive-sale p-2 rounded-lg ${isInactive ? 'text-red-600 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-300' : 'text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60'} transition-colors" title="${isInactive ? 'Excluir pedido inativo definitivamente' : 'Inative o pedido para habilitar exclusao definitiva'}" data-sale-id="${s.id}" ${isInactive ? '' : 'disabled'}>
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                        </button>
                     <button type="button" class="btn-open-picking bg-brand-50 text-brand-600 hover:bg-brand-600 hover:text-white dark:bg-brand-900/20 dark:text-brand-400 dark:hover:bg-brand-600 dark:hover:text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm" data-sale-id="${s.id}">
                       Separar
                     </button>
@@ -495,29 +325,6 @@
                 removeSaleFromPicking(saleId);
             });
         });
-        document.querySelectorAll('.btn-hard-delete-inactive-sale').forEach((btn) => {
-            btn.addEventListener('click', (e) => {
-                const saleId = e.currentTarget?.dataset?.saleId;
-                hardDeleteInactiveSaleFromPicking(saleId);
-            });
-        });
-        document.querySelectorAll('.sale-select-checkbox').forEach((checkbox) => {
-            checkbox.addEventListener('change', (e) => {
-                const target = e.currentTarget;
-                const saleId = Number(target?.dataset?.saleId);
-                if (!Number.isFinite(saleId)) {
-                    return;
-                }
-                if (target?.checked) {
-                    g_selectedSaleIds.add(saleId);
-                }
-                else {
-                    g_selectedSaleIds.delete(saleId);
-                }
-                syncBulkSelectionUi();
-            });
-        });
-        syncBulkSelectionUi();
     }
     function openPickingModal(saleId) {
         const sale = g_sales.find((s) => String(s.id) === String(saleId));

@@ -445,13 +445,7 @@
             }
             const userGreeting = getById('userGreeting');
             if (userGreeting && currentUser.full_name) {
-                const rawName = String(currentUser.full_name || '').trim();
-                const normalizedName = rawName.toLowerCase();
-                const isGenericName = normalizedName === 'usuario' || normalizedName === 'usuário';
-                const greetingName = currentUser.role === 'super_admin' && (!rawName || isGenericName)
-                    ? 'Super Admin'
-                    : (rawName || 'Usuário');
-                userGreeting.textContent = `Olá, ${greetingName}`;
+                userGreeting.textContent = `Olá, ${currentUser.full_name}`;
             }
         }
         catch (error) {

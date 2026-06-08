@@ -490,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderGrid: (items) => {
             const grid = getById('customersGridSection');
+            if (!grid) return;
             if (items.length === 0) {
                 grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 gap-2">
                     <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

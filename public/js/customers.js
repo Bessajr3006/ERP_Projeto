@@ -62,83 +62,6 @@
             return 'Não informado';
         return [city, state].filter(Boolean).join(' / ');
     }
-
-    function getSelectedCustomerIds() {
-        return Array.from(qsa('.item-checkbox:checked'))
-            .map((cb) => String(cb.value || '').trim())
-            .filter(Boolean);
-    }
-
-    function updateBulkCustomersButton() {
-        const btnBulkDelete = getById('btnBulkDeleteCustomers');
-        const countSpan = getById('bulkCustomersCount');
-        if (!btnBulkDelete)
-            return;
-
-        const selectedCount = getSelectedCustomerIds().length;
-        if (selectedCount > 0) {
-            btnBulkDelete.classList.remove('hidden');
-            btnBulkDelete.classList.add('inline-flex', 'items-center', 'justify-center');
-        }
-        else {
-            btnBulkDelete.classList.add('hidden');
-            btnBulkDelete.classList.remove('inline-flex', 'items-center', 'justify-center');
-        }
-
-        if (countSpan)
-            countSpan.textContent = String(selectedCount);
-    }
-
-    async function handleBulkDeleteCustomers() {
-        const selectedIds = getSelectedCustomerIds();
-        if (selectedIds.length === 0) {
-            UI.showAlert('alertMessage', 'Selecione ao menos um cliente para excluir.', 'error');
-            return;
-        }
-
-        if (!window.confirm(`Deseja excluir ${selectedIds.length} cliente(s)?`)) {
-            return;
-        }
-
-        const btnBulkDelete = getById('btnBulkDeleteCustomers');
-        const originalText = btnBulkDelete?.innerHTML;
-        if (btnBulkDelete) {
-            btnBulkDelete.disabled = true;
-            btnBulkDelete.innerHTML = 'Excluindo...';
-        }
-
-        try {
-            const results = await Promise.allSettled(
-                selectedIds.map((id) => api(`/entities/customers/${id}`, { method: 'DELETE' }))
-            );
-
-            const successCount = results.filter((result) => result.status === 'fulfilled').length;
-            const errorCount = results.length - successCount;
-
-            if (errorCount > 0) {
-                UI.showAlert('alertMessage', `${successCount} cliente(s) excluído(s) e ${errorCount} com erro.`, 'error');
-            }
-            else {
-                UI.showAlert('alertMessage', `${successCount} cliente(s) excluído(s) com sucesso!`, 'success');
-            }
-
-            const selectAll = getById('selectAll');
-            if (selectAll)
-                selectAll.checked = false;
-
-            await customersManager.loadData();
-        }
-        catch (error) {
-            UI.showAlert('alertMessage', error.message || 'Erro ao excluir clientes em lote.', 'error');
-        }
-        finally {
-            if (btnBulkDelete) {
-                btnBulkDelete.disabled = false;
-                btnBulkDelete.innerHTML = originalText || 'Excluir em Lote';
-            }
-            updateBulkCustomersButton();
-        }
-    }
     const getBase64 = (file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -445,16 +368,7 @@
         const openSolidconCustomersModal = () => getById('solidconCustomersModal')?.classList.remove('hidden');
         const closeSolidconCustomersModal = () => getById('solidconCustomersModal')?.classList.add('hidden');
         getById('btnOpenSolidconCustomersModal')?.addEventListener('click', openSolidconCustomersModal);
-        getById('btnBulkDeleteCustomers')?.addEventListener('click', handleBulkDeleteCustomers);
         getById('btnCloseSolidconCustomersModal')?.addEventListener('click', closeSolidconCustomersModal);
-        document.addEventListener('change', (event) => {
-            const target = event.target;
-            if (!(target instanceof Element))
-                return;
-            if (target.matches('.item-checkbox') || target.id === 'selectAll') {
-                updateBulkCustomersButton();
-            }
-        });
         const solidconCustomersModalBackdrop = getById('solidconCustomersModalBackdrop');
         if (solidconCustomersModalBackdrop) {
             solidconCustomersModalBackdrop.addEventListener('click', (e) => {
@@ -519,6 +433,12 @@
                         .map((value) => onlyDigitsFn(value))
                         .some((value) => value.includes(searchDigits));
                 });
+                window.GridSummaryFooter?.update({
+                    footerId: 'customersResultsFooter',
+                    anchorId: 'customersGridSection',
+                    count: filtered.length,
+                    label: 'cliente(s) exibido(s)'
+                });
                 return filtered;
             },
             renderTable: (items) => {
@@ -550,6 +470,57 @@
                         </button>
                     </td>
                 </tr>
+            `).join('');
+            },
+            renderGrid: (items) => {
+                const grid = getById('customersGridSection');
+                if (!grid)
+                    return;
+                if (items.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 gap-2">
+                    <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum cliente encontrado.</p>
+                </div>`;
+                    return;
+                }
+                grid.innerHTML = items.map((item, index) => `
+                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center mb-3">
+                            <input type="checkbox" value="${item.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
+                        </div>
+                        <div class="flex justify-between items-start gap-3">
+                            <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2" title="${item.name}">${item.name}</h4>
+                        </div>
+                        <div class="text-xs font-mono text-gray-500 mb-4">${formatDoc(item.cnpj_cpf) || 'S/ Documento'}</div>
+
+                        <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                            ${item.email ? `<div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                <span class="truncate">${item.email}</span>
+                            </div>` : ''}
+                            ${item.phone ? `<div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                <span>${formatPhone(item.phone)}</span>
+                            </div>` : ''}
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-8 0v2m8 0H9m8 0H9m4-9a4 4 0 100-8 4 4 0 000 8z"></path></svg>
+                                <span class="truncate">${item.seller_name || 'S/ Vendedor'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-2">
+                        <button type="button" title="Editar" class="p-2 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                        <button type="button" title="Excluir" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors delete-btn" data-id="${item.public_id}">
+                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
             `).join('');
             },
             onEdit: (data) => {
@@ -584,13 +555,7 @@
                         docSavedIndicator?.classList.remove('hidden');
                     }
                     else {
-                const originalLoadData = customersManager.loadData.bind(customersManager);
-                customersManager.loadData = async () => {
-                    await originalLoadData();
-                    updateBulkCustomersButton();
-                };
                         cnpjFileInput.dataset.hasDoc = 'false';
-                updateBulkCustomersButton();
                         docSavedIndicator?.classList.add('hidden');
                     }
                     if (data.certificate_base64) {

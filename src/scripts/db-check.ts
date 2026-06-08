@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { checkDbConnection } from '../config/db';
 
 async function runDbCheck() {

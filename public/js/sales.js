@@ -172,7 +172,7 @@
                     </div>
                     <div class="p-6 space-y-6 flex-1 overflow-y-auto">
                         <div class="space-y-4">
-                            <label for="selectCustomer" class="block text-sm font-semibold dark:text-gray-300">Cliente</label>
+                            <label class="block text-sm font-semibold dark:text-gray-300">Cliente</label>
                             <select id="selectCustomer" class="w-full border p-2 rounded-lg bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:text-white">
                                 <option value="">Consumidor Final</option>
                                 ${state.customers
@@ -419,8 +419,8 @@
         function attachGridListeners() {
             document.querySelectorAll('.product-card').forEach((card) => {
                 card.addEventListener('click', (e) => {
-                    // Não adicionar ao clicar nos controles de quantidade
-                    if (e.target.closest('.card-qty-minus, .card-qty-plus, .card-add-btn'))
+                    // Não adicionar ao clicar nos controles de quantidade.
+                    if (e.target?.closest('.card-qty-minus, .card-qty-plus, .card-add-btn'))
                         return;
                     const id = card.dataset.id;
                     const p = state.products.find((x) => x.public_id === id);
@@ -432,9 +432,12 @@
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const id = btn.dataset.id;
+                    if (!id)
+                        return;
                     state.cardQty[id] = Math.max(0, (state.cardQty[id] || 0) - 1);
                     const grid = document.getElementById('productGrid');
-                    if (grid) grid.innerHTML = renderProductGrid();
+                    if (grid)
+                        grid.innerHTML = renderProductGrid();
                     attachGridListeners();
                 });
             });
@@ -442,9 +445,12 @@
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const id = btn.dataset.id;
+                    if (!id)
+                        return;
                     state.cardQty[id] = (state.cardQty[id] || 0) + 1;
                     const grid = document.getElementById('productGrid');
-                    if (grid) grid.innerHTML = renderProductGrid();
+                    if (grid)
+                        grid.innerHTML = renderProductGrid();
                     attachGridListeners();
                 });
             });
@@ -454,7 +460,7 @@
                     const id = btn.dataset.id;
                     const p = state.products.find((x) => x.public_id === id);
                     if (p) {
-                        const qty = state.cardQty[id] || 1;
+                        const qty = state.cardQty[id || ''] || 1;
                         addToCart(p, qty);
                     }
                 });

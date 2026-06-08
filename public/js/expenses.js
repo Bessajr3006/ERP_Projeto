@@ -7,11 +7,8 @@
     let expensesData = [];
     let categoriesData = [];
     let banksData = [];
-    let filteredExpensesData = [];
     let g_editId = null;
     let currentView = (localStorage.getItem('expensesView') || 'list') === 'grid' ? 'grid' : 'list';
-    let tablePageState = null;
-    let gridPageState = null;
     function getInputValue(id) {
         return document.getElementById(id)?.value || '';
     }
@@ -112,7 +109,6 @@
                 currentView = 'list';
                 localStorage.setItem('expensesView', 'list');
                 updateViewToggle();
-                updateFooter(filteredExpensesData);
             });
         }
         const btnGridView = document.getElementById('btnGridView');
@@ -121,7 +117,6 @@
                 currentView = 'grid';
                 localStorage.setItem('expensesView', 'grid');
                 updateViewToggle();
-                updateFooter(filteredExpensesData);
             });
         }
         const toggleFilterBtn = document.getElementById('toggleFilterBtn');
@@ -221,16 +216,12 @@
             }
             return match;
         });
-        filteredExpensesData = filtered;
         if (!_tablePager) {
             _tablePager = new Paginator({
                 containerId: 'expensesPaginationContainer',
                 pageSize: 20,
-                onChange: (pageItems, state) => {
-                    tablePageState = { ...state, visibleCount: pageItems.length };
+                onChange: (pageItems) => {
                     renderTable(pageItems);
-                    if (currentView === 'list')
-                        updateFooter(filtered);
                 },
             });
         }
@@ -238,11 +229,8 @@
             _gridPager = new Paginator({
                 containerId: 'expensesGridPaginationContainer',
                 pageSize: 20,
-                onChange: (pageItems, state) => {
-                    gridPageState = { ...state, visibleCount: pageItems.length };
+                onChange: (pageItems) => {
                     renderGrid('expensesGridContainer', pageItems);
-                    if (currentView === 'grid')
-                        updateFooter(filtered);
                 },
             });
         }
@@ -257,13 +245,7 @@
             return;
         const count = data.length;
         const total = data.reduce((sum, expense) => sum + (parseFloat(String(expense.amount)) || 0), 0);
-        const state = currentView === 'grid' ? gridPageState : tablePageState;
-        const visibleCount = Number(state?.visibleCount || 0);
-        const pageSize = Number(state?.pageSize || 20);
-        const currentPage = Number(state?.currentPage || 1);
-        const start = visibleCount > 0 ? ((currentPage - 1) * pageSize) + 1 : 0;
-        const end = visibleCount > 0 ? start + visibleCount - 1 : 0;
-        countEl.textContent = `${start}-${end} de ${count}`;
+        countEl.textContent = String(count);
         totalEl.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
     function renderTable(items = expensesData) {

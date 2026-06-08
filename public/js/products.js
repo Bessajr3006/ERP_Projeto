@@ -4,7 +4,6 @@
     const qsa = (selector) => document.querySelectorAll(selector);
     let productsData = [];
     let g_allLoadedProducts = [];
-    let pendingBulkDeleteIds = [];
     const PRODUCTS_FILTER_STORAGE_KEY = 'products_filter_open';
     const PRODUCT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
     const PRODUCT_IMAGE_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
@@ -33,14 +32,6 @@
     }
     function normalizeFilterText(value) {
         return String(value || '').trim().toLowerCase();
-    }
-    function escapeHtml(value) {
-        return String(value ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
     }
     function getProductImageFileName(source) {
         if (!source)
@@ -134,13 +125,18 @@
         }).catch(err => {
             console.error('Falha ao carregar usuário', err);
         });
+        let currentView = 'list';
         localStorage.setItem('productsView', 'list');
         function updateViewToggle() {
+            const btnList = getById('btnListView');
             const tableSection = getById('productsSection');
             const gridSection = getById('productsGridSection');
-            if (!tableSection || !gridSection)
+            if (!btnList || !tableSection || !gridSection)
                 return;
+            currentView = 'list';
             localStorage.setItem('productsView', 'list');
+            btnList.className = "flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1";
+            btnList.querySelector('.check-icon')?.classList.remove('hidden');
             tableSection.classList.remove('hidden');
             gridSection.classList.add('products-grid-section--hidden');
         }
@@ -171,15 +167,27 @@
                     closeSolidconModal();
             });
         }
+        // Bind Toggle events
+        const btnListView = getById('btnListView');
+        if (btnListView) {
+            btnListView.addEventListener('click', () => {
+                currentView = 'list';
+                localStorage.setItem('productsView', 'list');
+                updateViewToggle();
+            });
+        }
         // Modal Tabs logic
         const tabBtnData = getById('tabBtn-data');
         const tabBtnComplemento = getById('tabBtn-complemento');
         const tabBtnImage = getById('tabBtn-image');
+        const tabBtnSolidcon = getById('tabBtn-solidcon');
         if (tabBtnData && tabBtnImage) {
             tabBtnData.addEventListener('click', () => switchTab('data'));
             if (tabBtnComplemento)
                 tabBtnComplemento.addEventListener('click', () => switchTab('complemento'));
             tabBtnImage.addEventListener('click', () => switchTab('image'));
+            if (tabBtnSolidcon)
+                tabBtnSolidcon.addEventListener('click', () => switchTab('solidcon'));
         }
         // Image Upload Logic
         const imageInput = getById('productImageFile');
@@ -430,117 +438,6 @@
                     modal.classList.remove('hidden');
             });
         }
-        const btnBulkDelete = getById('btnBulkDelete');
-        if (btnBulkDelete) {
-            btnBulkDelete.addEventListener('click', () => {
-                const selectedIds = Array.from(qsa('.product-checkbox:checked')).map((cb) => cb.value);
-                if (selectedIds.length === 0)
-                    return;
-
-                pendingBulkDeleteIds = selectedIds;
-
-                const summary = getById('bulkDeleteSummary');
-                const list = getById('bulkDeleteList');
-                const modal = getById('bulkDeleteModal');
-
-                if (!summary || !list || !modal)
-                    return;
-
-                const selectedProducts = selectedIds
-                    .map((id) => productsData.find((item) => item.public_id === id))
-                    .filter(Boolean);
-
-                summary.textContent = `Você está prestes a excluir ${selectedIds.length} produto(s). Esta ação não pode ser desfeita.`;
-
-                const maxVisible = 20;
-                const visibleItems = selectedProducts.slice(0, maxVisible);
-                list.innerHTML = visibleItems
-                    .map((product) => `
-                        <li class="px-3 py-2 flex items-center justify-between gap-2">
-                            <span class="truncate text-gray-700 dark:text-gray-200">${escapeHtml(product.name || 'Sem nome')}</span>
-                            <span class="text-xs font-mono text-gray-500 dark:text-gray-400">#${String(product.id || '').padStart(4, '0')}</span>
-                        </li>
-                    `)
-                    .join('');
-
-                if (selectedProducts.length > maxVisible) {
-                    list.innerHTML += `
-                        <li class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                            ... e mais ${selectedProducts.length - maxVisible} produto(s)
-                        </li>
-                    `;
-                }
-
-                modal.classList.remove('hidden');
-            });
-        }
-
-        const closeBulkDeleteModal = () => {
-            pendingBulkDeleteIds = [];
-            const modal = getById('bulkDeleteModal');
-            if (modal)
-                modal.classList.add('hidden');
-        };
-
-        const btnCancelBulkDeleteModal = getById('btnCancelBulkDeleteModal');
-        if (btnCancelBulkDeleteModal) {
-            btnCancelBulkDeleteModal.addEventListener('click', closeBulkDeleteModal);
-        }
-
-        const bulkDeleteModalBackdrop = getById('bulkDeleteModalBackdrop');
-        if (bulkDeleteModalBackdrop) {
-            bulkDeleteModalBackdrop.addEventListener('click', (e) => {
-                if (e.target === bulkDeleteModalBackdrop)
-                    closeBulkDeleteModal();
-            });
-        }
-
-        const btnConfirmBulkDelete = getById('btnConfirmBulkDelete');
-        if (btnConfirmBulkDelete) {
-            btnConfirmBulkDelete.addEventListener('click', async () => {
-                const selectedIds = [...pendingBulkDeleteIds];
-                if (selectedIds.length === 0)
-                    return;
-
-                const originalHtml = btnConfirmBulkDelete.innerHTML;
-                btnConfirmBulkDelete.disabled = true;
-                btnConfirmBulkDelete.innerHTML = 'Excluindo...';
-
-                try {
-                    const results = await Promise.allSettled(
-                        selectedIds.map((id) => api(`/products/${id}`, { method: 'DELETE' }))
-                    );
-
-                    const successCount = results.filter((r) => r.status === 'fulfilled').length;
-                    const failureCount = results.length - successCount;
-
-                    if (failureCount === 0) {
-                        UI.showAlert('alertMessage', `${successCount} produto(s) excluído(s) com sucesso!`, 'success');
-                    }
-                    else if (successCount > 0) {
-                        UI.showAlert('alertMessage', `${successCount} produto(s) excluído(s) e ${failureCount} não puderam ser excluídos.`, 'error');
-                    }
-                    else {
-                        UI.showAlert('alertMessage', 'Não foi possível excluir os produtos selecionados.', 'error');
-                    }
-
-                    closeBulkDeleteModal();
-
-                    const selectAll = getById('selectAllCheckbox');
-                    if (selectAll)
-                        selectAll.checked = false;
-
-                    window.loadProducts();
-                }
-                catch (error) {
-                    alert(error.message || 'Erro ao excluir produtos em lote.');
-                }
-                finally {
-                    btnConfirmBulkDelete.disabled = false;
-                    btnConfirmBulkDelete.innerHTML = originalHtml;
-                }
-            });
-        }
         const bulkUpdateForm = getById('bulkUpdateForm');
         if (bulkUpdateForm) {
             bulkUpdateForm.addEventListener('submit', async (e) => {
@@ -551,7 +448,6 @@
                     return;
                 const parseNumber = (val) => val ? parseFloat(String(val).replace(',', '.')) : undefined;
                 const category_id = getById('bulkCategory').value ? parseInt(getById('bulkCategory').value) : undefined;
-                const stock_type_id = getById('bulkStockType').value ? parseInt(getById('bulkStockType').value) : undefined;
                 const manufacturer_id = getById('bulkManufacturer').value ? parseInt(getById('bulkManufacturer').value) : undefined;
                 const tax_rule_id = getById('bulkTaxRule').value ? parseInt(getById('bulkTaxRule').value) : undefined;
                 const measure_id = getById('bulkMeasure').value ? parseInt(getById('bulkMeasure').value) : undefined;
@@ -562,7 +458,6 @@
                 const payload = {
                     productIds: selectedIds,
                     category_id,
-                    stock_type_id,
                     manufacturer_id,
                     tax_rule_id,
                     measure_id,
@@ -585,9 +480,6 @@
                     const bulkBtn = getById('btnBulkUpdate');
                     if (bulkBtn)
                         bulkBtn.classList.add('hidden');
-                    const bulkDeleteBtn = getById('btnBulkDelete');
-                    if (bulkDeleteBtn)
-                        bulkDeleteBtn.classList.add('hidden');
                     const selectAll = getById('selectAllCheckbox');
                     if (selectAll)
                         selectAll.checked = false;
@@ -658,7 +550,8 @@
         const tabs = {
             data: { btn: getById('tabBtn-data'), content: getById('tabContent-data') },
             complemento: { btn: getById('tabBtn-complemento'), content: getById('tabContent-complemento') },
-            image: { btn: getById('tabBtn-image'), content: getById('tabContent-image') }
+            image: { btn: getById('tabBtn-image'), content: getById('tabContent-image') },
+            solidcon: { btn: getById('tabBtn-solidcon'), content: getById('tabContent-solidcon') }
         };
         if (!tabs.data.btn || !tabs.image.btn)
             return;
@@ -717,9 +610,6 @@
                 getById('markupPercentage').value = '0.00';
             }
             getById('productCategory').value = data.category_id || '';
-            const productStockTypeSelect = getById('productStockType');
-            if (productStockTypeSelect)
-                productStockTypeSelect.value = data.stock_type_id || '';
             getById('productManufacturer').value = data.manufacturer_id || '';
             getById('productTaxRule').value = data.tax_rule_id || '';
             getById('productMeasure').value = data.measure_id || '';
@@ -785,8 +675,8 @@
     // Form Logic
     getById('productForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const saveBtn = getById('saveBtn');
         const form = getById('productForm');
-        const saveBtn = getById('saveBtn') || form.querySelector('button[type="submit"]');
         // Convert comma to dot if user types Brazilian format manually although it's a number field
         const parseNumber = (val) => parseFloat(String(val).replace(',', '.')) || 0;
         // Monta payload de imagem:
@@ -826,16 +716,13 @@
             min_stock: parseInt(getById('minStock').value) || 0,
             max_stock: parseInt(getById('maxStock').value) || 0,
             category_id: parseInt(getById('productCategory').value) || null,
-            stock_type_id: parseInt(getById('productStockType')?.value || '') || null,
             manufacturer_id: parseInt(getById('productManufacturer').value) || null,
             tax_rule_id: parseInt(getById('productTaxRule').value) || null,
             measure_id: parseInt(getById('productMeasure').value) || null,
             ...imagePayload
         };
-        if (saveBtn) {
-            saveBtn.disabled = true;
-            saveBtn.textContent = 'Salvando...';
-        }
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
         try {
             if (form.dataset.id) {
                 // Edit Mode
@@ -860,10 +747,8 @@
             alert(error.message);
         }
         finally {
-            if (saveBtn) {
-                saveBtn.disabled = false;
-                saveBtn.textContent = 'Salvar';
-            }
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Salvar';
         }
     });
     // Data Loading Logic
@@ -942,7 +827,7 @@
     function renderTable(elementId, items) {
         const tbody = getById(elementId);
         if (items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="17" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="16" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td></tr>`;
             return;
         }
         tbody.innerHTML = items.map(p => `
@@ -956,7 +841,6 @@
             <td class="px-6 py-4 whitespace-nowrap">${getProductImageMarkup(p)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">${p.name}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.category_name || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.stock_type_name || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${formatCurrency(p.cost_price || 0)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-center">${p.cost_price > 0 ? (((p.selling_price / p.cost_price) - 1) * 100).toFixed(2) + '%' : '0.00%'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-bold">${formatCurrency(p.selling_price)}</td>
@@ -1032,7 +916,6 @@
                     <h4 class="text-base font-bold leading-tight text-gray-900 dark:text-gray-100 wrap-break-word">${product.name}</h4>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         <span class="max-w-full truncate text-xs text-brand-600 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 px-2 py-0.5 rounded font-medium">${product.category_name || 'Sem Categoria'}</span>
-                        ${product.stock_type_name ? `<span class="max-w-full truncate text-xs text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/30 px-2 py-0.5 rounded font-medium">Tipo: ${product.stock_type_name}</span>` : ''}
                         <span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">SKU: ${product.sku || 'N/A'}</span>
                         ${product.ean ? `<span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">EAN: ${product.ean}</span>` : ''}
                         ${product.external_code ? `<span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">Ext: ${product.external_code}</span>` : ''}
@@ -1126,9 +1009,7 @@
         const updateBulkActionsButton = () => {
             const checkedCount = qsa('.product-checkbox:checked').length;
             const btnBulk = getById('btnBulkUpdate');
-            const btnBulkDelete = getById('btnBulkDelete');
             const countSpan = getById('bulkCount');
-            const deleteCountSpan = getById('bulkDeleteCount');
             if (btnBulk) {
                 if (checkedCount > 0) {
                     btnBulk.classList.remove('hidden');
@@ -1139,18 +1020,6 @@
                 else {
                     btnBulk.classList.add('hidden');
                     btnBulk.classList.remove('inline-flex', 'items-center', 'justify-center');
-                }
-            }
-            if (btnBulkDelete) {
-                if (checkedCount > 0) {
-                    btnBulkDelete.classList.remove('hidden');
-                    btnBulkDelete.classList.add('inline-flex', 'items-center', 'justify-center');
-                    if (deleteCountSpan)
-                        deleteCountSpan.textContent = checkedCount;
-                }
-                else {
-                    btnBulkDelete.classList.add('hidden');
-                    btnBulkDelete.classList.remove('inline-flex', 'items-center', 'justify-center');
                 }
             }
         };
@@ -1182,18 +1051,15 @@
     // Loads Categories, Manufacturers, and TaxRules into the selects
     async function loadRelations() {
         try {
-            const [catsRes, stockTypesRes, manufsRes, taxesRes, measuresRes] = await Promise.all([
+            const [catsRes, manufsRes, taxesRes, measuresRes] = await Promise.all([
                 api('/estoque/categories'),
-                api('/estoque/stock-types'),
                 api('/estoque/manufacturers'),
                 api('/estoque/taxes'),
                 api('/estoque/measures')
             ]);
             const categories = catsRes.data || [];
-            const stockTypes = stockTypesRes.data || [];
             const manufacturers = manufsRes.data || [];
             populateSelect('productCategory', categories, 'Nenhuma');
-            populateSelect('productStockType', stockTypes, 'Nenhum');
             populateSelect('productManufacturer', manufacturers, 'Nenhum');
             populateSelect('productTaxRule', taxesRes.data, 'Nenhuma');
             populateSelect('productMeasure', measuresRes.data, 'Nenhuma');
@@ -1201,7 +1067,6 @@
             populateSelect('filterManufacturer', manufacturers, 'Todos os Fabricantes');
             // Also populate bulk update modal dropdowns
             populateSelect('bulkCategory', categories, '-- Não alterar --');
-            populateSelect('bulkStockType', stockTypes, '-- Não alterar --');
             populateSelect('bulkManufacturer', manufacturers, '-- Não alterar --');
             populateSelect('bulkTaxRule', taxesRes.data, '-- Não alterar --');
             populateSelect('bulkMeasure', measuresRes.data, '-- Não alterar --');

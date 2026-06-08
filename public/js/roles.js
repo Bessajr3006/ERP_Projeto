@@ -177,23 +177,19 @@
                 <h5 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 opacity-70">${group.groupName}</h5>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-6">
                     ${group.links.map(link => {
-                const isAdminServiceTypesDefault = roleId === 'admin' && (
-                    link.id === 'service_types'
+                const isAdminServiceTypesDefault = roleId === 'admin' && (link.id === 'service_types'
                     || link.id === 'services'
                     || link.id === 'service_launches'
                     || link.id === 'service_tax_municipal'
-                    || link.id === 'service_tax_federal'
-                );
+                    || link.id === 'service_tax_federal');
                 const hasPermission = state.currentPermissions.some((p) => {
                     if (!p.can_view) {
                         return false;
                     }
-
                     // Compatibilidade com base antiga em nuvem: Tipo de Estoque era acoplado a "categories".
                     if (link.id === 'stock_types') {
                         return p.module === 'stock_types' || p.module === 'categories';
                     }
-
                     return p.module === link.id;
                 }) || isAdminServiceTypesDefault;
                 const canEdit = canEditTargetRole(roleId);

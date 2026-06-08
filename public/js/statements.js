@@ -1,13 +1,10 @@
 (() => {
     // ─── Controller: Extrato e Movimentações ─────────────────────────────────────
     let statementsData = []; // Todos os lançamentos mesclados (receitas + despesas)
-    let filteredStatementsData = [];
     let banksData = [];
     let currentView = localStorage.getItem('statementsView') || 'list';
     let _tablePager = null;
     let _gridPager = null;
-    let tablePageState = null;
-    let gridPageState = null;
     // Banco
     let bankStatementsData = [];
     const getById = (id) => document.getElementById(id);
@@ -156,14 +153,7 @@
         if (!footerCount || !footerTotalIn || !footerTotalOut || !footerBalance)
             return;
         const { totalIn, totalOut, balance } = summarizeItems(items);
-        const totalCount = items.length;
-        const state = currentView === 'grid' ? gridPageState : tablePageState;
-        const visibleCount = Number(state?.visibleCount || 0);
-        const pageSize = Number(state?.pageSize || 20);
-        const currentPage = Number(state?.currentPage || 1);
-        const start = visibleCount > 0 ? ((currentPage - 1) * pageSize) + 1 : 0;
-        const end = visibleCount > 0 ? start + visibleCount - 1 : 0;
-        footerCount.textContent = `${start}-${end} de ${totalCount}`;
+        footerCount.textContent = String(items.length);
         footerTotalIn.textContent = formatCurrency(totalIn);
         footerTotalOut.textContent = formatCurrency(totalOut);
         footerBalance.textContent = formatCurrency(balance);
@@ -325,17 +315,13 @@
     // ─── Render principal ─────────────────────────────────────────────────────────
     function renderAll() {
         const items = getFiltered();
-        filteredStatementsData = items;
         updateFooter(items);
         if (!_tablePager) {
             _tablePager = new Paginator({
                 containerId: 'statementsPaginationContainer',
                 pageSize: 20,
-                onChange: (pageItems, state) => {
-                    tablePageState = { ...state, visibleCount: pageItems.length };
+                onChange: (pageItems) => {
                     renderTable(pageItems);
-                    if (currentView === 'list')
-                        updateFooter(filteredStatementsData);
                 },
             });
         }
@@ -343,11 +329,8 @@
             _gridPager = new Paginator({
                 containerId: 'statementsGridPaginationContainer',
                 pageSize: 20,
-                onChange: (pageItems, state) => {
-                    gridPageState = { ...state, visibleCount: pageItems.length };
+                onChange: (pageItems) => {
                     renderGrid(pageItems);
-                    if (currentView === 'grid')
-                        updateFooter(filteredStatementsData);
                 },
             });
         }
@@ -632,13 +615,11 @@
             currentView = 'list';
             localStorage.setItem('statementsView', 'list');
             updateViewToggle();
-            updateFooter(filteredStatementsData);
         });
         getById('btnGridView')?.addEventListener('click', () => {
             currentView = 'grid';
             localStorage.setItem('statementsView', 'grid');
             updateViewToggle();
-            updateFooter(filteredStatementsData);
         });
         getById('btnSyncBankApi')?.addEventListener('click', syncBankStatementsViaApi);
         getById('btnSyncBankApiCenter')?.addEventListener('click', syncBankStatementsViaApi);

@@ -6,12 +6,9 @@
     const CrudManager = window.CrudManager;
     const FilterPanel = window.FilterPanel;
     const Paginator = window.Paginator;
-    const GridSummaryFooter = window.GridSummaryFooter;
     const forge = window.forge;
     let suppliersData = [];
     let suppliersManager;
-    let tablePageState = null;
-    let gridPageState = null;
     document.addEventListener('DOMContentLoaded', () => {
         if (!Auth.isAuthenticated()) {
             window.location.href = '/';
@@ -39,7 +36,6 @@
             gridSectionId: 'suppliersGridSection',
             tableSectionId: 'suppliersSection',
             modalId: 'entityModal',
-            disableSummaryFooter: true,
             filterConfig: {
                 storageKey: 'suppliers_filter_panel',
                 footerId: 'suppliersResultsFooter',
@@ -90,9 +86,7 @@
                         containerId: 'suppliersPaginationContainer',
                         pageSize: 20,
                         onChange: (pageItems, state) => {
-                            tablePageState = { ...state, visibleCount: pageItems.length };
                             renderTable('suppliersTable', pageItems, (state.currentPage - 1) * state.pageSize);
-                            syncSuppliersSummaryFooter();
                             suppliersManager._bindActionEvents();
                         },
                     });
@@ -102,9 +96,7 @@
                         containerId: 'suppliersGridPaginationContainer',
                         pageSize: 20,
                         onChange: (pageItems, state) => {
-                            gridPageState = { ...state, visibleCount: pageItems.length };
                             renderGrid('suppliersGridSection', pageItems, (state.currentPage - 1) * state.pageSize);
-                            syncSuppliersSummaryFooter();
                             suppliersManager._bindActionEvents();
                         },
                     });
@@ -123,50 +115,11 @@
                 window.openModal('supplier');
             });
         }
-
-        document.getElementById('btnListView')?.addEventListener('click', syncSuppliersSummaryFooter);
-        document.getElementById('btnGridView')?.addEventListener('click', syncSuppliersSummaryFooter);
-
         applySupplierPrefillFromQuery();
     });
     // ── Paginadores ─────────────────────────────────────────────
     let _tablePager = null;
     let _gridPager = null;
-
-    function syncSuppliersSummaryFooter() {
-        if (!GridSummaryFooter || !suppliersManager)
-            return;
-
-        const state = suppliersManager.currentView === 'grid' ? gridPageState : tablePageState;
-        if (!state) {
-            GridSummaryFooter.update({
-                footerId: 'suppliersResultsFooter',
-                anchorId: 'suppliersGridSection',
-                visibleCount: 0,
-                totalCount: 0,
-                start: 0,
-                end: 0,
-                label: 'fornecedor(es) filtrado(s)',
-            });
-            return;
-        }
-
-        const visibleCount = Number(state.visibleCount || 0);
-        const totalCount = Number(state.totalItems || 0);
-        const start = visibleCount > 0 ? ((Number(state.currentPage || 1) - 1) * Number(state.pageSize || 20)) + 1 : 0;
-        const end = visibleCount > 0 ? start + visibleCount - 1 : 0;
-
-        GridSummaryFooter.update({
-            footerId: 'suppliersResultsFooter',
-            anchorId: 'suppliersGridSection',
-            visibleCount,
-            totalCount,
-            start,
-            end,
-            label: 'fornecedor(es) filtrado(s)',
-        });
-    }
-
     const makeMask = window.createMaskAdapter || ((input, options) => window.IMask(input, options));
     let docMask = null;
     let phoneMask = null;

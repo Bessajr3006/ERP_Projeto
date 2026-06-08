@@ -4,14 +4,10 @@
     let categoriesData = [];
     let banksData = [];
     let customersData = [];
-    let filteredRevenuesData = [];
-    let selectedRevenueIds = new Set();
     let g_deleteId = null;
     let g_editId = null;
     let g_baixaId = null;
     let currentView = localStorage.getItem('revenuesView') || 'list';
-    let tablePageState = null;
-    let gridPageState = null;
     function setCurrencyValue(inputId, numValue) {
         const el = document.getElementById(inputId);
         if (!el)
@@ -119,7 +115,6 @@
                 currentView = 'list';
                 localStorage.setItem('revenuesView', 'list');
                 updateViewToggle();
-                updateFooter(filteredRevenuesData);
             });
         }
         const btnGridView = document.getElementById('btnGridView');
@@ -128,7 +123,6 @@
                 currentView = 'grid';
                 localStorage.setItem('revenuesView', 'grid');
                 updateViewToggle();
-                updateFooter(filteredRevenuesData);
             });
         }
         const btnBatchGenerateBillet = document.getElementById('btnBatchGenerateBillet');
@@ -138,10 +132,6 @@
         const btnBatchCancelBillet = document.getElementById('btnBatchCancelBillet');
         if (btnBatchCancelBillet) {
             btnBatchCancelBillet.addEventListener('click', handleBatchCancelBillet);
-        }
-        const btnBatchDeleteRevenue = document.getElementById('btnBatchDeleteRevenue');
-        if (btnBatchDeleteRevenue) {
-            btnBatchDeleteRevenue.addEventListener('click', handleBatchDeleteRevenue);
         }
         // Filter toggle (collapse/expand)
         const toggleFilterBtn = document.getElementById('toggleFilterBtn');
@@ -295,7 +285,6 @@
         try {
             const res = await api('/finance/revenues');
             revenuesData = res.data || [];
-            selectedRevenueIds = new Set();
             populateUserFilter();
             applyFilters();
         }
@@ -344,38 +333,19 @@
             }
             return match;
         });
-
-        filteredRevenuesData = filtered;
-        // Remove seleções que não existem mais no conjunto filtrado.
-        const filteredIds = new Set(filteredRevenuesData.map((row) => row.public_id));
-        selectedRevenueIds.forEach((id) => {
-            if (!filteredIds.has(id)) {
-                selectedRevenueIds.delete(id);
-            }
-        });
         // Alimenta os paginadores com os dados filtrados
         if (!_tablePager) {
             _tablePager = new Paginator({
                 containerId: 'revenuesPaginationContainer',
                 pageSize: 20,
-                onChange: (pageItems, state) => {
-                    tablePageState = { ...state, visibleCount: pageItems.length };
-                    renderTable(pageItems);
-                    if (currentView === 'list')
-                        updateFooter(filtered);
-                },
+                onChange: (pageItems) => { renderTable(pageItems); },
             });
         }
         if (!_gridPager) {
             _gridPager = new Paginator({
                 containerId: 'revenuesGridPaginationContainer',
                 pageSize: 20,
-                onChange: (pageItems, state) => {
-                    gridPageState = { ...state, visibleCount: pageItems.length };
-                    renderGrid('revenuesGridContainer', pageItems);
-                    if (currentView === 'grid')
-                        updateFooter(filtered);
-                },
+                onChange: (pageItems) => { renderGrid('revenuesGridContainer', pageItems); },
             });
         }
         _tablePager.setData(filtered);
@@ -393,13 +363,7 @@
         const total = data.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
         const pendingTotal = data.filter(r => !isRevenuePaid(r)).reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
         const paidTotal = data.filter(r => isRevenuePaid(r)).reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
-        const state = currentView === 'grid' ? gridPageState : tablePageState;
-        const visibleCount = Number(state?.visibleCount || 0);
-        const pageSize = Number(state?.pageSize || 20);
-        const currentPage = Number(state?.currentPage || 1);
-        const start = visibleCount > 0 ? ((currentPage - 1) * pageSize) + 1 : 0;
-        const end = visibleCount > 0 ? start + visibleCount - 1 : 0;
-        countEl.textContent = `${start}-${end} de ${count}`;
+        countEl.textContent = count;
         totalEl.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         pendingEl.textContent = pendingTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         paidEl.textContent = paidTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -444,7 +408,7 @@
             return `
         <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group">
             <td class="px-2 py-4 whitespace-nowrap text-left w-8">
-                <input type="checkbox" value="${r.public_id}" class="revenue-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" ${selectedRevenueIds.has(r.public_id) ? 'checked' : ''}>
+                <input type="checkbox" value="${r.public_id}" class="revenue-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
             </td>
             <td class="px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono hidden sm:table-cell">
                 #${String(index + 1).padStart(4, '0')}
@@ -560,7 +524,7 @@
             
             <div class="flex justify-between items-start mb-3">
                 <div class="flex items-center z-10 pt-1">
-                    <input type="checkbox" value="${r.public_id}" class="revenue-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" ${selectedRevenueIds.has(r.public_id) ? 'checked' : ''}>
+                    <input type="checkbox" value="${r.public_id}" class="revenue-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
                     <span class="ml-2 text-xs font-mono font-medium text-gray-500 dark:text-gray-400">#${String(index + 1).padStart(4, '0')}</span>
                 </div>
 
@@ -942,42 +906,22 @@
     // Select All Checkbox Logic
     document.addEventListener('change', (e) => {
         if (e.target.id === 'selectAllCheckbox') {
-            if (e.target.checked) {
-                filteredRevenuesData.forEach((row) => selectedRevenueIds.add(row.public_id));
-            }
-            else {
-                selectedRevenueIds.clear();
-            }
             const checkboxes = document.querySelectorAll('.revenue-checkbox');
-            checkboxes.forEach((cb) => {
-                cb.checked = selectedRevenueIds.has(cb.value);
-            });
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
             updateSelectedCount();
         }
         if (e.target.classList.contains('revenue-checkbox')) {
-            if (e.target.checked) {
-                selectedRevenueIds.add(e.target.value);
-            }
-            else {
-                selectedRevenueIds.delete(e.target.value);
-            }
-
-            const allFilteredChecked = filteredRevenuesData.length > 0
-                && filteredRevenuesData.every((row) => selectedRevenueIds.has(row.public_id));
+            const checkboxes = document.querySelectorAll('.revenue-checkbox');
+            const allChecked = Array.from(checkboxes).length > 0 && Array.from(checkboxes).every(cb => cb.checked);
             const selectAllCheckbox = document.getElementById('selectAllCheckbox');
             if (selectAllCheckbox)
-                selectAllCheckbox.checked = allFilteredChecked;
+                selectAllCheckbox.checked = allChecked;
             updateSelectedCount();
         }
     });
     function updateSelectedCount() {
-        const selectedIds = Array.from(selectedRevenueIds);
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        if (selectAllCheckbox) {
-            const allFilteredChecked = filteredRevenuesData.length > 0
-                && filteredRevenuesData.every((row) => selectedRevenueIds.has(row.public_id));
-            selectAllCheckbox.checked = allFilteredChecked;
-        }
+        const selected = document.querySelectorAll('.revenue-checkbox:checked');
+        const selectedIds = Array.from(selected).map(cb => cb.value);
         const batchActions = document.getElementById('batchActions');
         if (batchActions) {
             if (selectedIds.length > 0) {
@@ -987,78 +931,6 @@
             else {
                 batchActions.classList.add('opacity-0');
                 setTimeout(() => batchActions.classList.add('hidden'), 300);
-            }
-        }
-    }
-
-    function clearRevenueBatchSelection() {
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        if (selectAllCheckbox)
-            selectAllCheckbox.checked = false;
-        selectedRevenueIds.clear();
-        document.querySelectorAll('.revenue-checkbox').forEach(cb => cb.checked = false);
-        updateSelectedCount();
-    }
-
-    function getSelectedRevenueRows() {
-        const selectedIds = Array.from(selectedRevenueIds);
-        return selectedIds
-            .map((id) => revenuesData.find((row) => row.public_id === id))
-            .filter(Boolean);
-    }
-
-    async function handleBatchDeleteRevenue() {
-        const selectedRows = getSelectedRevenueRows();
-        if (selectedRows.length === 0)
-            return;
-
-        const notPaidRows = selectedRows.filter((row) => !isRevenuePaid(row));
-        const paidRowsCount = selectedRows.length - notPaidRows.length;
-
-        if (notPaidRows.length === 0) {
-            UI.showAlert('alertMessage', 'Somente receitas não baixadas podem ser excluídas em lote.', 'warning');
-            return;
-        }
-
-        const confirmMessage = paidRowsCount > 0
-            ? `Você selecionou ${selectedRows.length} receita(s). ${paidRowsCount} já baixada(s) serão ignoradas. Excluir ${notPaidRows.length} não baixada(s)?`
-            : `Deseja excluir ${notPaidRows.length} receita(s) não baixada(s)?`;
-
-        if (!confirm(confirmMessage))
-            return;
-
-        const btn = document.getElementById('btnBatchDeleteRevenue');
-        const oldText = btn?.textContent || 'Excluir em Lote';
-        if (btn) {
-            btn.textContent = 'Excluindo...';
-            btn.disabled = true;
-        }
-
-        try {
-            const results = await Promise.allSettled(
-                notPaidRows.map((row) => api(`/finance/transactions/${row.public_id}`, { method: 'DELETE' }))
-            );
-
-            const successCount = results.filter((result) => result.status === 'fulfilled').length;
-            const failedCount = results.length - successCount;
-
-            if (failedCount === 0) {
-                UI.showAlert('alertMessage', `${successCount} receita(s) excluída(s) com sucesso.`, 'success');
-            } else {
-                UI.showAlert('alertMessage', `${successCount} receita(s) excluída(s) e ${failedCount} falha(s).`, 'warning');
-            }
-
-            clearRevenueBatchSelection();
-            await fetchRevenues();
-            await loadDependencies();
-        }
-        catch (err) {
-            UI.showAlert('alertMessage', 'Erro ao excluir em lote: ' + err.message, 'error');
-        }
-        finally {
-            if (btn) {
-                btn.textContent = oldText;
-                btn.disabled = false;
             }
         }
     }
@@ -1079,7 +951,12 @@
                 body: JSON.stringify({ ids: selectedIds })
             });
             UI.showAlert('alertMessage', 'Boletos gerados com sucesso!', 'success');
-            clearRevenueBatchSelection();
+            // Remove checkboxes selection
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            if (selectAllCheckbox)
+                selectAllCheckbox.checked = false;
+            document.querySelectorAll('.revenue-checkbox').forEach(cb => cb.checked = false);
+            updateSelectedCount();
             fetchRevenues();
         }
         catch (err) {
@@ -1107,7 +984,12 @@
                 body: JSON.stringify({ ids: selectedIds })
             });
             UI.showAlert('alertMessage', 'Boletos cancelados com sucesso!', 'success');
-            clearRevenueBatchSelection();
+            // Remove checkboxes selection
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            if (selectAllCheckbox)
+                selectAllCheckbox.checked = false;
+            document.querySelectorAll('.revenue-checkbox').forEach(cb => cb.checked = false);
+            updateSelectedCount();
             fetchRevenues();
         }
         catch (err) {

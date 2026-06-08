@@ -87,9 +87,50 @@
       if (action === 'view-id') {
         const pid = btn.getAttribute('data-pid') || '';
         navigator.clipboard.writeText(pid).then(() => {
+          if (btn.classList.contains('animating')) return;
+          btn.classList.add('animating');
+
           const orig = btn.innerHTML;
-          btn.innerHTML = '<svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-          setTimeout(() => { btn.innerHTML = orig; }, 1500);
+          const svgSize = 'h-3.5 w-3.5 inline';
+
+          // Step 1: Fade out and shrink original icon
+          btn.classList.add('scale-75', 'opacity-0');
+
+          // Step 2: Show spinning loader
+          setTimeout(() => {
+            btn.innerHTML = `<svg class="animate-spin h-3.5 w-3.5 text-brand-600 dark:text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+            btn.classList.remove('scale-75', 'opacity-0');
+
+            // Step 3: Fade out loader after 400ms
+            setTimeout(() => {
+              btn.classList.add('scale-75', 'opacity-0');
+
+              // Step 4: Show checkmark and pop
+              setTimeout(() => {
+                btn.innerHTML = `<svg class="${svgSize} text-green-500 transition-all duration-300 transform scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+                btn.classList.remove('scale-75', 'opacity-0');
+                btn.classList.add('scale-110', 'opacity-100');
+
+                // Revert checkmark back to normal scale
+                setTimeout(() => {
+                  btn.classList.remove('scale-110');
+                }, 100);
+
+                // Step 5: Fade out checkmark after 1000ms
+                setTimeout(() => {
+                  btn.classList.add('scale-75', 'opacity-0');
+
+                  // Step 6: Restore original icon
+                  setTimeout(() => {
+                    btn.innerHTML = orig;
+                    btn.classList.remove('scale-75', 'opacity-0', 'animating');
+                  }, 150);
+                }, 1000);
+
+              }, 150);
+            }, 400);
+
+          }, 150);
         });
       }
     }
@@ -250,7 +291,15 @@
               cat.id || ''
             ).padStart(4, '0')}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100">
-                ${cat.name || ''}
+                <div>${cat.name || ''}</div>
+                <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <span class="font-mono text-[10px] select-all">${cat.public_id || ''}</span>
+                    <button type="button" data-action="view-id" data-id="${cat.public_id || ''}" data-pid="${cat.public_id || ''}" class="view-id-btn text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transform transition-all duration-200 ease-out" title="Copiar ID: ${cat.public_id || ''}">
+                        <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                        </svg>
+                    </button>
+                </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${typeBadge}
@@ -260,9 +309,6 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                 <div class="flex items-center justify-center space-x-3">
-                    <button data-action="view-id" data-id="${cat.public_id || ''}" data-pid="${cat.public_id || ''}" class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Ver / Copiar ID: ${cat.public_id || ''}">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
                     <button data-action="edit" data-id="${cat.public_id || ''}" class="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300 transition-colors" title="Editar">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -336,9 +382,6 @@
                 </div>
 
                 <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
-                    <button data-action="view-id" data-id="${cat.public_id || ''}" data-pid="${cat.public_id || ''}" class="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-md transition-colors" title="Ver / Copiar ID: ${cat.public_id || ''}">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
                     <button data-action="edit" data-id="${cat.public_id || ''}" class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-md transition-colors" title="Editar">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -364,6 +407,15 @@
 
                 <div class="mt-2 flex flex-col gap-1 items-start">
                     ${typeBadge}
+                </div>
+
+                <div class="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <span class="font-mono text-[10px] select-all">${cat.public_id || ''}</span>
+                    <button type="button" data-action="view-id" data-id="${cat.public_id || ''}" data-pid="${cat.public_id || ''}" class="text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transform transition-all duration-200 ease-out" title="Copiar ID: ${cat.public_id || ''}">
+                        <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <div class="mt-4 pt-3 flex justify-end space-x-2 text-xs text-gray-500">

@@ -391,27 +391,40 @@
           // Step 1: Fade out and shrink original icon
           b.classList.add('scale-75', 'opacity-0');
 
+          // Step 2: Show spinning loader
           setTimeout(() => {
-            // Step 2: Swap innerHTML to checkmark and pop
-            b.innerHTML = `<svg class="${svgSize} text-green-500 transition-all duration-300 transform scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+            const spinnSize = isGrid ? 'h-4 w-4' : 'h-5 w-5 inline';
+            b.innerHTML = `<svg class="animate-spin ${spinnSize} text-brand-600 dark:text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
             b.classList.remove('scale-75', 'opacity-0');
-            b.classList.add('scale-110', 'opacity-100');
 
-            // Step 3: Revert checkmark back to normal scale
-            setTimeout(() => {
-              b.classList.remove('scale-110');
-            }, 100);
-
-            // Step 4: After 1500ms, fade out checkmark
+            // Step 3: Fade out loader after 400ms
             setTimeout(() => {
               b.classList.add('scale-75', 'opacity-0');
 
+              // Step 4: Show checkmark and pop
               setTimeout(() => {
-                // Step 5: Restore original icon
-                b.innerHTML = orig;
-                b.classList.remove('scale-75', 'opacity-0', 'animating');
+                b.innerHTML = `<svg class="${svgSize} text-green-500 transition-all duration-300 transform scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+                b.classList.remove('scale-75', 'opacity-0');
+                b.classList.add('scale-110', 'opacity-100');
+
+                // Revert checkmark back to normal scale
+                setTimeout(() => {
+                  b.classList.remove('scale-110');
+                }, 100);
+
+                // Step 5: Fade out checkmark after 1000ms
+                setTimeout(() => {
+                  b.classList.add('scale-75', 'opacity-0');
+
+                  // Step 6: Restore original icon
+                  setTimeout(() => {
+                    b.innerHTML = orig;
+                    b.classList.remove('scale-75', 'opacity-0', 'animating');
+                  }, 150);
+                }, 1000);
+
               }, 150);
-            }, 1500);
+            }, 400);
 
           }, 150);
         });

@@ -17,7 +17,7 @@ window.initUserRoleDirectory({
     resultsFooterId: 'serviceProvidersResultsFooter',
     createdMessage: 'Prestador de serviço cadastrado com sucesso!',
     updatedMessage: 'Prestador de serviço atualizado com sucesso!',
-    toggledMessage(active) {
+    toggledMessage(active: boolean) {
         return `Prestador de serviço ${active ? 'ativado' : 'desativado'} com sucesso!`;
     },
 });

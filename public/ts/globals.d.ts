@@ -36,7 +36,7 @@ declare global {
     currentImageBase64?: string | null;
     currentImageUrl?: string | null;
 
-    initUserRoleDirectory?: any;
+    initUserRoleDirectory: any;
   }
 }
 

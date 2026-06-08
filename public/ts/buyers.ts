@@ -17,7 +17,7 @@ window.initUserRoleDirectory({
     resultsFooterId: 'buyersResultsFooter',
     createdMessage: 'Comprador cadastrado com sucesso!',
     updatedMessage: 'Comprador atualizado com sucesso!',
-    toggledMessage(active) {
+    toggledMessage(active: boolean) {
         return `Comprador ${active ? 'ativado' : 'desativado'} com sucesso!`;
     },
 });

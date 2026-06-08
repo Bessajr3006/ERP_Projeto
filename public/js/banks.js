@@ -389,13 +389,13 @@
     };
     const loadBanks = async () => {
         try {
-            const response = await api('/bank-accounts');
+            const response = await window.api('/bank-accounts');
             _banksData = response.data || [];
             applyFilters();
         }
         catch (error) {
             console.error('Failed to load banks', error);
-            UI.showAlert('alertMessage', 'Erro ao carregar dados. Verifique a conexão.');
+            window.UI.showAlert('alertMessage', 'Erro ao carregar dados. Verifique a conexão.');
         }
     };
     const editBank = (id) => {
@@ -450,8 +450,8 @@
         if (!confirm('Tem certeza que deseja excluir esta conta bancária? Esta ação não pode ser desfeita.'))
             return;
         try {
-            await api(`/bank-accounts/${id}`, { method: 'DELETE' });
-            UI.showAlert('alertMessage', 'Conta bancária excluída com sucesso!', 'success');
+            await window.api(`/bank-accounts/${id}`, { method: 'DELETE' });
+            window.UI.showAlert('alertMessage', 'Conta bancária excluída com sucesso!', 'success');
             loadBanks();
         }
         catch (error) {
@@ -467,20 +467,20 @@
         const requiredFields = ['apiClientId', 'apiClientSecret', 'apiCertificado', 'apiKey'];
         const missingFields = requiredFields.some((id) => !getById(id).value);
         if (missingFields) {
-            UI.showAlert('alertMessage', 'Por favor, preencha as 4 credenciais (ID, Secret, Certificado e Chave) e SALVE antes de testar.', 'error');
+            window.UI.showAlert('alertMessage', 'Por favor, preencha as 4 credenciais (ID, Secret, Certificado e Chave) e SALVE antes de testar.', 'error');
             return;
         }
         btn.disabled = true;
         btn.innerHTML =
             '<svg class="animate-spin h-5 w-5 text-amber-700 dark:text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
         try {
-            const response = await api(`/bank-accounts/${bankId}/test-connection`, {
+            const response = await window.api(`/bank-accounts/${bankId}/test-connection`, {
                 method: 'POST',
             });
-            UI.showAlert('alertMessage', response.message || 'Conexão estabelecida com sucesso!', 'success');
+            window.UI.showAlert('alertMessage', response.message || 'Conexão estabelecida com sucesso!', 'success');
         }
         catch (error) {
-            UI.showAlert('alertMessage', error.message || 'Falha ao testar conexão com a API.', 'error');
+            window.UI.showAlert('alertMessage', error.message || 'Falha ao testar conexão com a API.', 'error');
         }
         finally {
             btn.disabled = false;
@@ -499,12 +499,12 @@
     window.deleteBank = deleteBank;
     // Wire events
     document.addEventListener('DOMContentLoaded', () => {
-        if (!Auth.isAuthenticated()) {
+        if (!window.Auth.isAuthenticated()) {
             window.location.href = '/';
             return;
         }
         loadBanks();
-        api('/auth/me')
+        window.api('/auth/me')
             .then((res) => {
             const userGreeting = getById('userGreeting');
             if (userGreeting && res.data && res.data.user) {
@@ -596,7 +596,7 @@
         saveBtn.textContent = 'Salvando...';
         try {
             if (bankId) {
-                await api(`/bank-accounts/${bankId}`, {
+                await window.api(`/bank-accounts/${bankId}`, {
                     method: 'PUT',
                     body: JSON.stringify({
                         name: payload.name,
@@ -612,14 +612,14 @@
                         api_key: payload.api_key,
                     }),
                 });
-                UI.showAlert('alertMessage', 'Conta bancária atualizada com sucesso!', 'success');
+                window.UI.showAlert('alertMessage', 'Conta bancária atualizada com sucesso!', 'success');
             }
             else {
-                await api('/bank-accounts', {
+                await window.api('/bank-accounts', {
                     method: 'POST',
                     body: JSON.stringify(payload),
                 });
-                UI.showAlert('alertMessage', 'Conta bancária adicionada com sucesso!', 'success');
+                window.UI.showAlert('alertMessage', 'Conta bancária adicionada com sucesso!', 'success');
             }
             closeModal();
             loadBanks();

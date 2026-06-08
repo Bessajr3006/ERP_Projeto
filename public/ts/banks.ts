@@ -441,7 +441,7 @@
   };
 
   const applyFilters = (): void => {
-    const FilterPanel: any = window.FilterPanel;
+    const FilterPanel: any = (window as any).FilterPanel;
     const search = FilterPanel.normalizeText(getById('filterSearch')?.value);
     const type = getById('filterType')?.value || '';
 
@@ -457,7 +457,7 @@
 
     renderTable('banksTable', filtered);
     renderGrid('banksGridSection', filtered);
-    window.GridSummaryFooter?.update({
+    (window as any).GridSummaryFooter?.update({
       footerId: 'banksResultsFooter',
       anchorId: 'banksGridSection',
       count: filtered.length,
@@ -468,12 +468,12 @@
 
   const loadBanks = async (): Promise<void> => {
     try {
-      const response = await (api as any)('/bank-accounts');
+      const response = await (window as any).api('/bank-accounts');
       _banksData = response.data || [];
       applyFilters();
     } catch (error) {
       console.error('Failed to load banks', error);
-      (UI as any).showAlert('alertMessage', 'Erro ao carregar dados. Verifique a conexão.');
+      (window as any).UI.showAlert('alertMessage', 'Erro ao carregar dados. Verifique a conexão.');
     }
   };
 
@@ -542,8 +542,8 @@
     if (!confirm('Tem certeza que deseja excluir esta conta bancária? Esta ação não pode ser desfeita.')) return;
 
     try {
-      await (api as any)(`/bank-accounts/${id}`, { method: 'DELETE' });
-      (UI as any).showAlert('alertMessage', 'Conta bancária excluída com sucesso!', 'success');
+      await (window as any).api(`/bank-accounts/${id}`, { method: 'DELETE' });
+      (window as any).UI.showAlert('alertMessage', 'Conta bancária excluída com sucesso!', 'success');
       loadBanks();
     } catch (error: any) {
       alert(error.message || 'Erro ao excluir conta.');
@@ -561,7 +561,7 @@
     const missingFields = requiredFields.some((id) => !getById(id).value);
 
     if (missingFields) {
-      (UI as any).showAlert(
+      (window as any).UI.showAlert(
         'alertMessage',
         'Por favor, preencha as 4 credenciais (ID, Secret, Certificado e Chave) e SALVE antes de testar.',
         'error'
@@ -574,13 +574,13 @@
       '<svg class="animate-spin h-5 w-5 text-amber-700 dark:text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
 
     try {
-      const response = await (api as any)(`/bank-accounts/${bankId}/test-connection`, {
+      const response = await (window as any).api(`/bank-accounts/${bankId}/test-connection`, {
         method: 'POST',
       });
 
-      (UI as any).showAlert('alertMessage', response.message || 'Conexão estabelecida com sucesso!', 'success');
+      (window as any).UI.showAlert('alertMessage', response.message || 'Conexão estabelecida com sucesso!', 'success');
     } catch (error: any) {
-      (UI as any).showAlert('alertMessage', error.message || 'Falha ao testar conexão com a API.', 'error');
+      (window as any).UI.showAlert('alertMessage', error.message || 'Falha ao testar conexão com a API.', 'error');
     } finally {
       btn.disabled = false;
       btn.innerHTML = originalText;
@@ -600,14 +600,14 @@
 
   // Wire events
   document.addEventListener('DOMContentLoaded', () => {
-    if (!(Auth as any).isAuthenticated()) {
+    if (!(window as any).Auth.isAuthenticated()) {
       window.location.href = '/';
       return;
     }
 
     loadBanks();
 
-    (api as any)('/auth/me')
+    (window as any).api('/auth/me')
       .then((res: any) => {
         const userGreeting = getById('userGreeting');
         if (userGreeting && res.data && res.data.user) {
@@ -654,7 +654,7 @@
 
     updateViewToggle();
 
-    (window.FilterPanel as any).mount({
+    (window as any).FilterPanel.mount({
       storageKey: 'banks_filter_panel',
       fields: [
         { id: 'filterSearch', type: 'text', label: 'Busca', placeholder: 'Nome, instituição, agência ou conta' },
@@ -713,7 +713,7 @@
 
     try {
       if (bankId) {
-        await (api as any)(`/bank-accounts/${bankId}`, {
+        await (window as any).api(`/bank-accounts/${bankId}`, {
           method: 'PUT',
           body: JSON.stringify({
             name: payload.name,
@@ -729,13 +729,13 @@
             api_key: payload.api_key,
           }),
         });
-        (UI as any).showAlert('alertMessage', 'Conta bancária atualizada com sucesso!', 'success');
+        (window as any).UI.showAlert('alertMessage', 'Conta bancária atualizada com sucesso!', 'success');
       } else {
-        await (api as any)('/bank-accounts', {
+        await (window as any).api('/bank-accounts', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        (UI as any).showAlert('alertMessage', 'Conta bancária adicionada com sucesso!', 'success');
+        (window as any).UI.showAlert('alertMessage', 'Conta bancária adicionada com sucesso!', 'success');
       }
 
       closeModal();

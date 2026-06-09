@@ -411,6 +411,8 @@
                         form_accent: formPattern.cor,
                         form_header_size: formPattern.cabecalho,
                         sales_cards_per_row: getSalesCardsPerRowValue(),
+                        sales_layout: getSalesLayoutValue(),
+                        split_cart_size: getSplitCartSizeValue(),
                     }),
                 });
                 return null;
@@ -605,6 +607,12 @@
             }
             if (data.sales_cards_per_row) {
                 localStorage.setItem(SALES_CARDS_PER_ROW_KEY, data.sales_cards_per_row);
+            }
+            if (data.sales_layout === 'drawer' || data.sales_layout === 'split') {
+                localStorage.setItem(SALES_LAYOUT_KEY, data.sales_layout);
+            }
+            if (data.split_cart_size === 'small' || data.split_cart_size === 'medium' || data.split_cart_size === 'large') {
+                localStorage.setItem(SPLIT_CART_SIZE_KEY, data.split_cart_size);
             }
             if (
                 Object.prototype.hasOwnProperty.call(data, 'form_company_name')

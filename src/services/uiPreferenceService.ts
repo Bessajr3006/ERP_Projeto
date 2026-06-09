@@ -17,6 +17,8 @@ export interface UiPreference {
     form_header_size: 'pequeno' | 'medio' | 'grande';
     theme_toggle_visible: boolean;
     sales_cards_per_row?: string | null;
+    sales_layout?: 'drawer' | 'split';
+    split_cart_size?: 'small' | 'medium' | 'large';
     created_at?: string | Date;
     updated_at?: string | Date;
 }
@@ -35,6 +37,8 @@ export interface UiPreferenceInput {
     form_header_size: UiPreference['form_header_size'];
     theme_toggle_visible: boolean;
     sales_cards_per_row?: string | null;
+    sales_layout?: 'drawer' | 'split';
+    split_cart_size?: 'small' | 'medium' | 'large';
 }
 
 type UiPreferenceRow = RowDataPacket & Omit<UiPreference, 'theme_toggle_visible'> & { theme_toggle_visible: number | boolean };
@@ -111,6 +115,8 @@ export class UiPreferenceService {
         await UiPreferenceService.addColumnIfMissing('form_header_size', `form_header_size VARCHAR(20) NOT NULL DEFAULT 'medio' AFTER form_accent`);
         await UiPreferenceService.addColumnIfMissing('theme_toggle_visible', `theme_toggle_visible TINYINT(1) NOT NULL DEFAULT 1 AFTER form_header_size`);
         await UiPreferenceService.addColumnIfMissing('sales_cards_per_row', `sales_cards_per_row VARCHAR(120) DEFAULT NULL AFTER theme_toggle_visible`);
+        await UiPreferenceService.addColumnIfMissing('sales_layout', `sales_layout VARCHAR(10) NOT NULL DEFAULT 'drawer' AFTER sales_cards_per_row`);
+        await UiPreferenceService.addColumnIfMissing('split_cart_size', `split_cart_size VARCHAR(10) NOT NULL DEFAULT 'medium' AFTER sales_layout`);
 
         UiPreferenceService.schemaReady = true;
     }
@@ -121,7 +127,7 @@ export class UiPreferenceService {
         const [rows] = await pool.query<UiPreferenceRow[]>(
                 `SELECT company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color,
                     form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible, sales_cards_per_row,
-                    created_at, updated_at
+                    sales_layout, split_cart_size, created_at, updated_at
              FROM ui_preferences
              WHERE company_id = ? AND user_public_id = ?
              LIMIT 1`,
@@ -136,8 +142,8 @@ export class UiPreferenceService {
 
         await pool.query<ResultSetHeader>(
             `INSERT INTO ui_preferences
-                     (company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color, form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible, sales_cards_per_row)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     (company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color, form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible, sales_cards_per_row, sales_layout, split_cart_size)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 theme = VALUES(theme),
                 layout_align = VALUES(layout_align),
@@ -152,6 +158,8 @@ export class UiPreferenceService {
                 form_header_size = VALUES(form_header_size),
                 theme_toggle_visible = VALUES(theme_toggle_visible),
                 sales_cards_per_row = VALUES(sales_cards_per_row),
+                sales_layout = VALUES(sales_layout),
+                split_cart_size = VALUES(split_cart_size),
                 updated_at = NOW()`,
             [
                 companyId,
@@ -169,6 +177,8 @@ export class UiPreferenceService {
                 data.form_header_size,
                 data.theme_toggle_visible ? 1 : 0,
                 data.sales_cards_per_row || null,
+                data.sales_layout || 'drawer',
+                data.split_cart_size || 'medium',
             ]
         );
 

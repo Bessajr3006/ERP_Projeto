@@ -18,6 +18,8 @@ const uiPreferenceSchema = z.object({
     form_header_size: z.enum(['pequeno', 'medio', 'grande']).optional(),
     theme_toggle_visible: z.boolean().optional(),
     sales_cards_per_row: z.string().trim().max(120).nullable().optional(),
+    sales_layout: z.enum(['drawer', 'split']).optional(),
+    split_cart_size: z.enum(['small', 'medium', 'large']).optional(),
 });
 
 export class UiPreferenceController {
@@ -44,6 +46,8 @@ export class UiPreferenceController {
             form_header_size: validated.form_header_size || 'medio',
             theme_toggle_visible: validated.theme_toggle_visible !== false,
             sales_cards_per_row: (validated.sales_cards_per_row || '').trim() || null,
+            sales_layout: validated.sales_layout || 'drawer',
+            split_cart_size: validated.split_cart_size || 'medium',
         };
 
         const data = await UiPreferenceService.upsert(companyId, userPublicId, normalized);

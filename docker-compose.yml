@@ -34,7 +34,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: projeto_erp_bessa-app:latest
+    image: projeto_erp_bessa-app:v2
     restart: unless-stopped
     depends_on:
       db:
@@ -80,7 +80,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: projeto_erp_bessa-app:latest
+    image: projeto_erp_bessa-app:v2
     restart: unless-stopped
     depends_on:
       backend:

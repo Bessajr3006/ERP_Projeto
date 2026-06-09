@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { randomUUID } from 'crypto';
 import { readFile } from 'fs/promises';
 import path from 'path';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import mysql, { ConnectionOptions, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import pool from '../config/db';
 import { runMigration18 } from './run_migration_18';

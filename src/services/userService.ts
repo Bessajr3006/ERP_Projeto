@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { UserRole } from '../types/User';
 import { AppError } from '../errors/AppError';

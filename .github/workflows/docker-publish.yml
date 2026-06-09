@@ -1,0 +1,86 @@
+name: Build & Publish Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # permite acionar manualmente pelo GitHub
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: bessajr3006
+  APP_IMAGE: ghcr.io/bessajr3006/erp_projeto-app
+  FRONTEND_IMAGE: ghcr.io/bessajr3006/erp_projeto-frontend
+
+jobs:
+  build-and-push:
+    name: Build & Push to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # necessário para publicar no ghcr.io
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Log in no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configurar Docker Buildx (multi-platform)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extrair metadata — App (backend)
+        id: meta-app
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.APP_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Extrair metadata — Frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Build & Push — App (backend + worker)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.portainer
+          push: true
+          tags: ${{ steps.meta-app.outputs.tags }}
+          labels: ${{ steps.meta-app.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push — Frontend (Nginx)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Resumo do deploy
+        run: |
+          echo "### ✅ Imagens publicadas no GHCR" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Imagem | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| App    | \`${{ env.APP_IMAGE }}:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`${{ env.FRONTEND_IMAGE }}:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Faça **Pull and redeploy** no Portainer para aplicar." >> $GITHUB_STEP_SUMMARY

@@ -28,10 +28,7 @@ services:
           - mariadb
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.portainer
-    image: projeto_erp_bessa-app:portainer
+    image: ghcr.io/bessajr3006/erp_projeto-app:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -71,10 +68,7 @@ services:
       - erp-internal
 
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.portainer
-    image: projeto_erp_bessa-app:portainer
+    image: ghcr.io/bessajr3006/erp_projeto-app:latest
     restart: unless-stopped
     depends_on:
       backend:
@@ -110,10 +104,7 @@ services:
       - erp-internal
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    image: projeto_erp_bessa-frontend:portainer
+    image: ghcr.io/bessajr3006/erp_projeto-frontend:latest
     restart: unless-stopped
     depends_on:
       backend:

@@ -286,9 +286,12 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 
+// Redirecionar a rota raiz para o index.html (página de login)
+// Garante que o scanner de boas práticas do Render receba HTML com <meta viewport>
+// em vez de texto puro, eliminando avisos de "viewport not specified".
 app.get('/', (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).send('Bessa ERP API is running.');
+    res.redirect(301, '/index.html');
 });
 
 // ── Global Error Handler ──────────────────────────────────────────────────────

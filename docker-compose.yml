@@ -31,10 +31,8 @@ services:
           - mariadb
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.portainer
-    pull_policy: build
+    image: ghcr.io/bessajr3006/erp-app:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       db:
@@ -74,10 +72,8 @@ services:
       - erp-internal
 
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.portainer
-    pull_policy: build
+    image: ghcr.io/bessajr3006/erp-app:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       backend:
@@ -113,10 +109,8 @@ services:
       - erp-internal
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    pull_policy: build
+    image: ghcr.io/bessajr3006/erp-frontend:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       backend:

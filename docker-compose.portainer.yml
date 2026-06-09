@@ -28,7 +28,7 @@ services:
           - mariadb
 
   backend:
-    image: ghcr.io/bessajr3006/erp_projeto-app:latest
+    image: bessasidney/erp-app:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -68,7 +68,7 @@ services:
       - erp-internal
 
   worker:
-    image: ghcr.io/bessajr3006/erp_projeto-app:latest
+    image: bessasidney/erp-app:latest
     restart: unless-stopped
     depends_on:
       backend:
@@ -104,7 +104,7 @@ services:
       - erp-internal
 
   frontend:
-    image: ghcr.io/bessajr3006/erp_projeto-frontend:latest
+    image: bessasidney/erp-frontend:latest
     restart: unless-stopped
     depends_on:
       backend:

@@ -1,7 +1,7 @@
 # Stack de produção para Portainer (via repositório Git) + Traefik
-# Imagens construídas pelo GitHub Actions e publicadas no GHCR:
-#   ghcr.io/bessajr3006/erp_projeto-app:latest
-#   ghcr.io/bessajr3006/erp_projeto-frontend:latest
+# Imagens construídas pelo GitHub Actions e publicadas no Docker Hub:
+#   bessasidney/erp-app:latest
+#   bessasidney/erp-frontend:latest
 # - App: erp.keystones.dev
 # - phpMyAdmin: phpmyadmin.erp.keystones.dev
 
@@ -33,7 +33,7 @@ services:
           - mariadb
 
   backend:
-    image: ghcr.io/bessajr3006/erp_projeto-app:latest
+    image: bessasidney/erp-app:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -73,7 +73,7 @@ services:
       - erp-internal
 
   worker:
-    image: ghcr.io/bessajr3006/erp_projeto-app:latest
+    image: bessasidney/erp-app:latest
     restart: unless-stopped
     depends_on:
       backend:
@@ -109,7 +109,7 @@ services:
       - erp-internal
 
   frontend:
-    image: ghcr.io/bessajr3006/erp_projeto-frontend:latest
+    image: bessasidney/erp-frontend:latest
     restart: unless-stopped
     depends_on:
       backend:

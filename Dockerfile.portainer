@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copia os manifests primeiro para aproveitar cache de dependencias
 COPY package*.json ./
-RUN npm ci
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm install --no-audit --no-fund
 
 # Copia o projeto e gera os artefatos de producao
 COPY . .
@@ -21,7 +21,7 @@ RUN apt-get update \
 
 # Instala somente dependencias de runtime
 COPY package*.json ./
-RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true npm ci --omit=dev
+RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true NODE_OPTIONS="--max-old-space-size=4096" npm install --omit=dev --no-audit --no-fund
 
 # Copia build, arquivos publicos e scripts de banco
 COPY --from=builder /app/dist ./dist

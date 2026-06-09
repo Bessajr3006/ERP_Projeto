@@ -64,12 +64,13 @@ services:
       - "3001:3000"
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
+    image: nginx:1.27-alpine
     restart: unless-stopped
     depends_on:
       - backend
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "8080:80"
 

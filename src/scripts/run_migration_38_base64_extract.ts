@@ -64,7 +64,14 @@ export async function runMigration38(): Promise<void> {
 
                 // Drop da antiga
                 console.log(`[DROP] Removendo coluna legada ${col.old} da tabela ${table}...`);
-                await pool.query(`ALTER TABLE ?? DROP COLUMN ??`, [table, col.old]);
+                const conn = await pool.getConnection();
+                try {
+                    await conn.query('SET SESSION innodb_strict_mode = OFF');
+                    await conn.query('ALTER TABLE ?? ROW_FORMAT=DYNAMIC', [table]);
+                    await conn.query(`ALTER TABLE ?? DROP COLUMN ??`, [table, col.old]);
+                } finally {
+                    conn.release();
+                }
             }
         }
     } catch (error: any) {

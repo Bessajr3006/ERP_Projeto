@@ -5,7 +5,9 @@ WORKDIR /app
 
 COPY package*.json ./
 # Evita downloads pesados de binários C++ (puppeteer, ffmpeg) durante o build do frontend
-RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm install --no-audit --no-fund --ignore-scripts
+RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true \
+    NODE_OPTIONS="--max-old-space-size=512" \
+    npm ci --no-audit --no-fund
 
 COPY . .
 

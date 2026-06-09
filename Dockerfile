@@ -7,8 +7,8 @@ COPY package*.json ./
 
 # PUPPETEER_SKIP_DOWNLOAD=true evita que o puppeteer baixe o Chromium
 # FFMPEG_STATIC_SKIP_DOWNLOAD=true evita que o ffmpeg baixe o binário de 80MB
-# (não precisamos deles aqui — apenas compilamos TypeScript)
-RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm ci
+# Instalar dependências (PUPPETEER e FFMPEG bloqueados por env vars, evita OOM e downloads pesados)
+RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm install --no-audit --no-fund
 
 # Copiar todo o restante do projeto para construir a aplicação
 COPY . .

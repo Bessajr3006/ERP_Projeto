@@ -25,13 +25,21 @@ export async function runMigration38(): Promise<void> {
         `);
         const existingColumnNames = existingColumns.map((c: any) => c.COLUMN_NAME);
 
-        for (const col of columnsToAdd) {
-            if (!existingColumnNames.includes(col.name)) {
-                await pool.query(`ALTER TABLE companies ADD COLUMN ${col.name} ${col.type} COMMENT '${col.comment}'`);
-                console.log(`[OK] Added column ${col.name} to companies table.`);
-            } else {
-                console.log(`[SKIP] Column ${col.name} already exists in companies table.`);
+        const conn = await pool.getConnection();
+        try {
+            await conn.query('SET SESSION innodb_strict_mode = OFF');
+            await conn.query(`ALTER TABLE companies ROW_FORMAT=DYNAMIC`);
+            
+            for (const col of columnsToAdd) {
+                if (!existingColumnNames.includes(col.name)) {
+                    await conn.query(`ALTER TABLE companies ADD COLUMN ${col.name} ${col.type} COMMENT '${col.comment}'`);
+                    console.log(`[OK] Added column ${col.name} to companies table.`);
+                } else {
+                    console.log(`[SKIP] Column ${col.name} already exists in companies table.`);
+                }
             }
+        } finally {
+            conn.release();
         }
 
         console.log('[OK] Migration 38 completed successfully.');

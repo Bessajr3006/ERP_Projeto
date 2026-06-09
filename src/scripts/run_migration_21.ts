@@ -57,7 +57,18 @@ async function addCompanyColumnIfMissing(columnName: string, columnDefinition: s
         return;
     }
 
-    await runSql(`add companies.${columnName}`, `ALTER TABLE companies ADD COLUMN ${columnName} ${columnDefinition}`);
+    const conn = await pool.getConnection();
+    try {
+        await conn.query('SET SESSION innodb_strict_mode = OFF');
+        await conn.query(`ALTER TABLE companies ROW_FORMAT=DYNAMIC`);
+        await conn.query(`ALTER TABLE companies ADD COLUMN ${columnName} ${columnDefinition}`);
+        console.log(`[OK] add companies.${columnName}`);
+    } catch (err: any) {
+        console.error(`[ERROR] Falha ao adicionar companies.${columnName}:`, err.message);
+        throw err;
+    } finally {
+        conn.release();
+    }
 }
 
 async function ensureIsSystemIndex(): Promise<void> {

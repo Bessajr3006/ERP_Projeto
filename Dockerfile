@@ -15,6 +15,10 @@ COPY . .
 # Compilar o TypeScript e o Tailwind CSS
 RUN npm run build && npm run build:css
 
+# Limpar as dependências de desenvolvimento para economizar espaço
+# Assim evitamos rodar um segundo "npm ci" pesado no stage runner que causa OOM (Out Of Memory)
+RUN PUPPETEER_SKIP_DOWNLOAD=true npm prune --omit=dev
+
 FROM node:22 AS runner
 
 WORKDIR /app
@@ -24,15 +28,9 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation \
   && rm -rf /var/lib/apt/lists/*
 
-# Variáveis definidas antes do npm ci para que o puppeteer use o Chromium do sistema
-# e não tente baixar o binário próprio (evita timeout e falha de build no Render)
+# Variáveis para que o puppeteer use o Chromium do sistema
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
-# Instalar apenas dependências de produção no stage final
-# FFMPEG_STATIC_SKIP_DOWNLOAD evita re-download do binário (copiado do builder)
-COPY package*.json ./
-RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true npm ci --omit=dev
 
 # Copiar artefatos de build, schema do banco e ativos estáticos
 COPY --from=builder /app/dist ./dist
@@ -41,8 +39,8 @@ COPY --from=builder /app/database ./database
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
 
-# Copiar o binário do ffmpeg já baixado no stage de build
-COPY --from=builder /app/node_modules/ffmpeg-static/ffmpeg ./node_modules/ffmpeg-static/ffmpeg
+# Copiar os node_modules já enxutos do builder (evita crash do npm ci no Render)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Entry point: cria symlinks para uploads/.runtime quando usamos volume único
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh

@@ -84,6 +84,16 @@ app.use('/api', limiter);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// ── Cache-Control para rotas de API ───────────────────────────────────────────
+// Impede que navegadores e proxies façam cache de respostas da API,
+// evitando que dados sensíveis (tokens, financeiro) fiquem armazenados.
+app.use('/api', (_req: Request, res: Response, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
+
 // ── Static Files ──────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '../public'), {
     etag: false,
@@ -101,6 +111,12 @@ app.use(express.static(path.join(__dirname, '../public'), {
             res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');
+        } else if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif' || ext === '.webp' || ext === '.svg' || ext === '.ico') {
+            // Imagens podem ser cacheadas por 7 dias
+            res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+        } else {
+            // Qualquer outro arquivo estático: sem cache por segurança
+            res.setHeader('Cache-Control', 'no-store');
         }
         if (fileName === 'manifest.json') {
             res.setHeader('Content-Type', 'application/manifest+json; charset=UTF-8');
@@ -265,11 +281,13 @@ app.use('/api/v1/ui-preferences', uiPreferenceRoutes);
 
 // ── Utility Routes ────────────────────────────────────────────────────────────
 app.get('/health', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ status: 'ok', timestamp: toBrazilIsoDateTime() });
 });
 
 
 app.get('/', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).send('Bessa ERP API is running.');
 });
 

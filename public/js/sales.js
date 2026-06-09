@@ -53,23 +53,13 @@
         const getCartTotal = () => Math.max(0, getCartSubtotal() - state.discount);
         const getTotalPaid = () => Object.values(state.payments).reduce((sum, val) => sum + (Number(val) || 0), 0);
         const getMissingAmount = () => getCartTotal() - getTotalPaid();
-        const isSplitMode = () => localStorage.getItem('sales_layout') === 'split';
-        // Largura do carrinho no modo Split — lida diretamente da preferência
-        const getSplitCartWidthPx = () => {
-            const size = localStorage.getItem('split_cart_size') || 'medium';
-            if (size === 'small')  return '280px';
-            if (size === 'large')  return '480px';
-            return '360px'; // medium (padrão)
-        };
         // --- Template Renders ---
         function render() {
             const app = document.getElementById('vue-app');
             if (!app)
                 return;
             app.innerHTML = `
-            <div class="${isSplitMode()
-                ? 'flex flex-row flex-1 min-h-0 w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm overflow-hidden'
-                : 'flex flex-col md:flex-row flex-1 min-h-0 w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm overflow-hidden relative'}">
+            <div class="flex flex-col md:flex-row flex-1 min-h-0 w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm overflow-hidden relative">
                 <!-- Catalog Section -->
                 <section class="flex flex-col flex-1 min-h-0 overflow-hidden md:order-first bg-white dark:bg-slate-900 md:border-r border-gray-200 dark:border-slate-700">
                     <div class="shrink-0 px-4 md:px-8 pt-6 pb-0 bg-white dark:bg-slate-800">
@@ -82,7 +72,7 @@
                                     <input id="searchInput" type="text" value="${state.searchQuery}" placeholder="Buscar código, nome..." class="peer h-full w-full outline-none text-[16px] md:text-sm font-medium text-gray-700 dark:text-gray-300 pr-2 bg-transparent placeholder-gray-400">
                                 </div>
                             </div>
-                            <div class="shrink-0 ${isSplitMode() ? 'hidden' : ''}">
+                            <div class="shrink-0">
                                 <button type="button" id="btnToggleCartMobile" class="flex items-center justify-center px-3.5 h-12 min-w-12 sm:min-w-12 bg-linear-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-xl border border-brand-500/40 relative transition-all duration-300 active:scale-[0.98] ${state.cart.length > 0
                 ? 'shadow-lg ring-2 ring-brand-300/70 animate-pulse'
                 : 'shadow-md hover:shadow-lg'}" title="Abrir bolsa de compras" aria-label="Abrir bolsa de compras">
@@ -126,17 +116,14 @@
                     </div>
                 </section>
 
-                ${!isSplitMode() && state.isCartOpen
-                ? '<button type="button" id="cartBackdrop" class="absolute inset-0 z-30 bg-slate-900/45 backdrop-blur-[2px] transition-opacity duration-300 ease-out" aria-label="Fechar carrinho"></button>'
+                ${state.isCartOpen
+                ? `<button type="button" id="cartBackdrop" class="absolute inset-0 z-30 bg-slate-900/45 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${getSalesLayout() === 'split' ? 'md:hidden' : ''}" aria-label="Fechar carrinho"></button>`
                 : ''}
 
                 <!-- Cart Section -->
-                <section id="cartSidebar" class="${isSplitMode()
-                ? 'relative flex flex-col shrink-0 bg-white dark:bg-slate-800 border-l border-gray-200 dark:border-slate-700'
-                : (state.isCartOpen
-                    ? 'translate-x-0 opacity-100'
-                    : 'translate-x-full opacity-0 pointer-events-none') + ' absolute inset-y-0 right-0 h-full w-[90%] sm:w-112.5 z-40 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform'}" ${isSplitMode() ? `style="width:${getSplitCartWidthPx()};min-width:${getSplitCartWidthPx()}"` : ''}>
-
+                <section id="cartSidebar" class="${getSalesLayout() === 'split'
+                ? (state.isCartOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none md:translate-x-0 md:opacity-100 md:pointer-events-auto') + ' absolute md:static inset-y-0 right-0 h-full w-[90%] sm:w-112.5 ' + getSplitCartSizeClass() + ' z-40 md:z-10 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] md:shadow-none border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform md:shrink-0'
+                : (state.isCartOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none') + ' absolute inset-y-0 right-0 h-full w-[90%] sm:w-112.5 z-40 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform'}">
                     <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700">
                         <div class="flex justify-between items-center mb-3">
                             <h1 class="text-[22px] font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
@@ -145,7 +132,7 @@
                             </h1>
                             <div class="flex items-center gap-2 lg:gap-3">
                                 <span class="text-[14px] font-normal text-gray-400 hidden md:block">${state.currentDate}</span>
-                                <button type="button" id="btnCloseCartMobile" class="${isSplitMode() ? 'hidden' : ''} text-gray-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700" title="Fechar bolsa de compras" aria-label="Fechar bolsa de compras"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                                <button type="button" id="btnCloseCartMobile" class="text-gray-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700" title="Fechar bolsa de compras" aria-label="Fechar bolsa de compras"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                             </div>
                         </div>
                     </div>
@@ -239,6 +226,20 @@
         `;
             attachEventListeners();
         }
+        function getSalesLayout() {
+            const pref = localStorage.getItem('sales_layout');
+            if (pref === 'split' || pref === 'drawer')
+                return pref;
+            return 'drawer';
+        }
+        function getSplitCartSizeClass() {
+            const pref = localStorage.getItem('split_cart_size') || 'medium';
+            if (pref === 'small')
+                return 'md:w-80 lg:w-96';
+            if (pref === 'large')
+                return 'md:w-[26rem] lg:w-[32rem]';
+            return 'md:w-96 lg:w-[26rem]'; // medium (default)
+        }
         function getSalesCardsPerRowClass() {
             const pref = localStorage.getItem('sales_cards_per_row');
             const valid = [
@@ -247,7 +248,7 @@
                 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
                 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6',
                 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7',
-                'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8'
+                'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8',
             ];
             if (pref && valid.includes(pref)) {
                 return pref;
@@ -361,17 +362,14 @@
                 });
             }
             document.getElementById('btnToggleCartMobile')?.addEventListener('click', () => {
-                if (isSplitMode()) return;
                 state.isCartOpen = !state.isCartOpen;
                 render();
             });
             document.getElementById('btnCloseCartMobile')?.addEventListener('click', () => {
-                if (isSplitMode()) return;
                 state.isCartOpen = false;
                 render();
             });
             document.getElementById('cartBackdrop')?.addEventListener('click', () => {
-                if (isSplitMode()) return;
                 state.isCartOpen = false;
                 render();
             });

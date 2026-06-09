@@ -657,6 +657,14 @@ async function syncUiPreferencesFromServer() {
             localStorage.setItem('sales_cards_per_row', data.sales_cards_per_row);
         }
 
+        if (data.sales_layout === 'drawer' || data.sales_layout === 'split') {
+            localStorage.setItem('sales_layout', data.sales_layout);
+        }
+
+        if (data.split_cart_size === 'small' || data.split_cart_size === 'medium' || data.split_cart_size === 'large') {
+            localStorage.setItem('split_cart_size', data.split_cart_size);
+        }
+
         if (
             Object.prototype.hasOwnProperty.call(data, 'form_company_name')
             || Object.prototype.hasOwnProperty.call(data, 'form_profile')

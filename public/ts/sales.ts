@@ -192,16 +192,16 @@
 
                 ${
                   state.isCartOpen
-                    ? '<button type="button" id="cartBackdrop" class="absolute inset-0 z-30 bg-slate-900/45 backdrop-blur-[2px] transition-opacity duration-300 ease-out" aria-label="Fechar carrinho"></button>'
+                    ? `<button type="button" id="cartBackdrop" class="absolute inset-0 z-30 bg-slate-900/45 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${getSalesLayout() === 'split' ? 'md:hidden' : ''}" aria-label="Fechar carrinho"></button>`
                     : ''
                 }
 
                 <!-- Cart Section -->
                 <section id="cartSidebar" class="${
-                  state.isCartOpen
-                    ? 'translate-x-0 opacity-100'
-                    : 'translate-x-full opacity-0 pointer-events-none'
-                } absolute inset-y-0 right-0 h-full w-[90%] sm:w-112.5 z-40 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform">
+                  getSalesLayout() === 'split'
+                    ? (state.isCartOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none md:translate-x-0 md:opacity-100 md:pointer-events-auto') + ' absolute md:static inset-y-0 right-0 h-full w-[90%] sm:w-112.5 ' + getSplitCartSizeClass() + ' z-40 md:z-10 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] md:shadow-none border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform md:shrink-0'
+                    : (state.isCartOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none') + ' absolute inset-y-0 right-0 h-full w-[90%] sm:w-112.5 z-40 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform'
+                }">
                     <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700">
                         <div class="flex justify-between items-center mb-3">
                             <h1 class="text-[22px] font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
@@ -337,13 +337,28 @@
       attachEventListeners();
     }
 
+    function getSalesLayout(): string {
+      const pref = localStorage.getItem('sales_layout');
+      if (pref === 'split' || pref === 'drawer') return pref;
+      return 'drawer';
+    }
+
+    function getSplitCartSizeClass(): string {
+      const pref = localStorage.getItem('split_cart_size') || 'medium';
+      if (pref === 'small') return 'md:w-80 lg:w-96';
+      if (pref === 'large') return 'md:w-[26rem] lg:w-[32rem]';
+      return 'md:w-96 lg:w-[26rem]'; // medium (default)
+    }
+
     function getSalesCardsPerRowClass(): string {
       const pref = localStorage.getItem('sales_cards_per_row');
       const valid = [
         'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3',
         'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4',
         'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-        'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6'
+        'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6',
+        'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7',
+        'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8',
       ];
       if (pref && valid.includes(pref)) {
         return pref;

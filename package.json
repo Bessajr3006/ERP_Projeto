@@ -42,6 +42,7 @@
     "watch:css": "tsx src/scripts/tailwind_css_compat.ts --watch",
     "bump:build-version": "tsx src/scripts/bump_build_version.ts",
     "build:sw": "tsc -p tsconfig.sw.json",
+    "dev:public": "tsc -w -p tsconfig.public.json",
     "build:public": "tsc -p tsconfig.public.json && npm run --silent build:sw",
     "db:generate": "npx kysely-codegen --dialect mysql --out-file src/types/database.ts"
   },

@@ -727,6 +727,9 @@
   .block {
     display: block;
   }
+  .contents {
+    display: contents;
+  }
   .flex {
     display: flex;
   }
@@ -4590,6 +4593,21 @@
       box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
     }
   }
+  .md\:pointer-events-auto {
+    @media (width >= 48rem) {
+      pointer-events: auto;
+    }
+  }
+  .md\:static {
+    @media (width >= 48rem) {
+      position: static;
+    }
+  }
+  .md\:z-10 {
+    @media (width >= 48rem) {
+      z-index: 10;
+    }
+  }
   .md\:order-first {
     @media (width >= 48rem) {
       order: -9999;
@@ -4605,6 +4623,11 @@
       display: block;
     }
   }
+  .md\:hidden {
+    @media (width >= 48rem) {
+      display: none;
+    }
+  }
   .md\:table-cell {
     @media (width >= 48rem) {
       display: table-cell;
@@ -4615,6 +4638,16 @@
       width: calc(var(--spacing) * 24);
     }
   }
+  .md\:w-80 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 80);
+    }
+  }
+  .md\:w-96 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 96);
+    }
+  }
   .md\:w-\[15\%\] {
     @media (width >= 48rem) {
       width: 15%;
@@ -4623,6 +4656,11 @@
   .md\:w-\[25\%\] {
     @media (width >= 48rem) {
       width: 25%;
+    }
+  }
+  .md\:w-\[26rem\] {
+    @media (width >= 48rem) {
+      width: 26rem;
     }
   }
   .md\:w-\[60\%\] {
@@ -4653,6 +4691,17 @@
   .md\:flex-none {
     @media (width >= 48rem) {
       flex: none;
+    }
+  }
+  .md\:shrink-0 {
+    @media (width >= 48rem) {
+      flex-shrink: 0;
+    }
+  }
+  .md\:translate-x-0 {
+    @media (width >= 48rem) {
+      --tw-translate-x: calc(var(--spacing) * 0);
+      translate: var(--tw-translate-x) var(--tw-translate-y);
     }
   }
   .md\:grid-cols-2 {
@@ -4718,6 +4767,17 @@
       font-size: 13px;
     }
   }
+  .md\:opacity-100 {
+    @media (width >= 48rem) {
+      opacity: 100%;
+    }
+  }
+  .md\:shadow-none {
+    @media (width >= 48rem) {
+      --tw-shadow: 0 0 #0000;
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
   .lg\:col-span-1 {
     @media (width >= 64rem) {
       grid-column: span 1 / span 1;
@@ -4766,6 +4826,21 @@
   .lg\:table-cell {
     @media (width >= 64rem) {
       display: table-cell;
+    }
+  }
+  .lg\:w-96 {
+    @media (width >= 64rem) {
+      width: calc(var(--spacing) * 96);
+    }
+  }
+  .lg\:w-\[26rem\] {
+    @media (width >= 64rem) {
+      width: 26rem;
+    }
+  }
+  .lg\:w-\[32rem\] {
+    @media (width >= 64rem) {
+      width: 32rem;
     }
   }
   .lg\:grid-cols-2 {

@@ -93,33 +93,6 @@ const certPath = path.join(process.cwd(), 'certs', 'cert.pem');
 const keyPath  = path.join(process.cwd(), 'certs', 'key.pem');
 const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
-const runMigrations = () => {
-    import('./scripts/run_migration_41_chart_of_accounts').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_42_nature').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_43_accounting_entries').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_44_chart_of_accounts_easy_code').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_46_whatsapp_phone_aliases').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_47_whatsapp_normalize_alias_history').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_48_tasks').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_49_organizer_states').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_50_whatsapp_sessions').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_51_bank_accounts_pix_key').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_51_swagger_token').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_52_company_logo').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_53_product_images').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_54_customers_credit_fields').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_55_soft_delete_sales_picking').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_56_audit_logs').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_57_email_config').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_58_sales_progress_status').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_60_sales_nfe_xml_fields').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_70_email_config_imap').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_71_stock_vision_permissions').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_72_finance_vision_permissions').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_73_stock_types').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-    import('./scripts/run_migration_74_product_stock_type').then(m => m.default()).catch(err => logger.error({ err }, 'Migration failed'));
-};
-
 if (hasCerts) {
     const httpsOptions = {
         key:  fs.readFileSync(keyPath),
@@ -127,12 +100,10 @@ if (hasCerts) {
     };
     server = https.createServer(httpsOptions, app).listen(HTTPS_PORT, () => {
         logger.info({ port: HTTPS_PORT, protocol: 'https' }, `Servidor Bessa ERP iniciado em https://localhost:${HTTPS_PORT}`);
-        runMigrations();
     });
 } else {
     server = app.listen(PORT, () => {
         logger.info({ port: PORT }, `Servidor Bessa ERP iniciado na porta ${PORT}`);
-        runMigrations();
     });
 }
 

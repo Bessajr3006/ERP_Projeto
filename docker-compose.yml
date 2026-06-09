@@ -1,7 +1,5 @@
 # Stack de produção para Portainer (via repositório Git) + Traefik
-# Imagens construídas pelo GitHub Actions e publicadas no Docker Hub:
-#   bessasidney/erp-app:latest
-#   bessasidney/erp-frontend:latest
+# Build local na VPS a partir do repositório — sem registry externo
 # - App: erp.keystones.dev
 # - phpMyAdmin: phpmyadmin.erp.keystones.dev
 
@@ -33,7 +31,9 @@ services:
           - mariadb
 
   backend:
-    image: bessasidney/erp-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.portainer
     restart: unless-stopped
     depends_on:
       db:
@@ -73,7 +73,9 @@ services:
       - erp-internal
 
   worker:
-    image: bessasidney/erp-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.portainer
     restart: unless-stopped
     depends_on:
       backend:
@@ -109,7 +111,9 @@ services:
       - erp-internal
 
   frontend:
-    image: bessasidney/erp-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     restart: unless-stopped
     depends_on:
       backend:

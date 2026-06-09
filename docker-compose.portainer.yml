@@ -1,5 +1,5 @@
-# Stack de producao para Portainer (deploy via repositorio)
-# Dominios:
+# Stack de produção para Portainer (deploy via repositório Git)
+# Build local na VPS — sem registry externo
 # - erp.keystones.dev
 # - phpmyadmin.erp.keystones.dev
 
@@ -28,7 +28,9 @@ services:
           - mariadb
 
   backend:
-    image: bessasidney/erp-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.portainer
     restart: unless-stopped
     depends_on:
       db:
@@ -68,7 +70,9 @@ services:
       - erp-internal
 
   worker:
-    image: bessasidney/erp-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.portainer
     restart: unless-stopped
     depends_on:
       backend:
@@ -104,7 +108,9 @@ services:
       - erp-internal
 
   frontend:
-    image: bessasidney/erp-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     restart: unless-stopped
     depends_on:
       backend:

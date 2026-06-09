@@ -1,4 +1,4 @@
-FROM node:22 AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY package*.json ./
 # PUPPETEER_SKIP_DOWNLOAD=true evita que o puppeteer baixe o Chromium
 # FFMPEG_STATIC_SKIP_DOWNLOAD=true evita que o ffmpeg baixe o binário de 80MB
 # Instalar dependências (PUPPETEER e FFMPEG bloqueados por env vars, evita OOM e downloads pesados)
-RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm install --no-audit --no-fund
+RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm ci --no-audit --no-fund
 
 # Copiar todo o restante do projeto para construir a aplicação
 COPY . .
@@ -20,7 +20,7 @@ RUN npm run build && npm run build:css
 # Assim evitamos rodar um segundo "npm ci" pesado no stage runner que causa OOM (Out Of Memory)
 RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm prune --omit=dev
 
-FROM node:22 AS runner
+FROM node:20 AS runner
 
 WORKDIR /app
 

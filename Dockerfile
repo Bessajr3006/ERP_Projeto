@@ -5,8 +5,9 @@ WORKDIR /app
 # Copiar os arquivos de pacote primeiro para aproveitar o cache da camada do Docker
 COPY package*.json ./
 
-# Instalar dependências de build (TypeScript, Tailwind, etc.)
-RUN npm ci
+# PUPPETEER_SKIP_DOWNLOAD=true evita que o puppeteer baixe o Chromium durante
+# o npm ci do stage de build (não precisamos do Chromium aqui — apenas compilamos TypeScript)
+RUN PUPPETEER_SKIP_DOWNLOAD=true npm ci
 
 # Copiar todo o restante do projeto para construir a aplicação
 COPY . .
@@ -22,6 +23,11 @@ WORKDIR /app
 RUN apt-get update \
   && apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation \
   && rm -rf /var/lib/apt/lists/*
+
+# Variáveis definidas antes do npm ci para que o puppeteer use o Chromium do sistema
+# e não tente baixar o binário próprio (evita timeout e falha de build no Render)
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Instalar apenas dependências de produção no stage final
 # FFMPEG_STATIC_SKIP_DOWNLOAD evita re-download do binário (copiado do builder)
@@ -44,7 +50,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=5 \

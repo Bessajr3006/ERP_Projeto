@@ -55,6 +55,7 @@ import runMigration71StockVisionPermissions from './run_migration_71_stock_visio
 import runMigration72FinanceVisionPermissions from './run_migration_72_finance_vision_permissions';
 import runMigration73StockTypes from './run_migration_73_stock_types';
 import runMigration74ProductStockType from './run_migration_74_product_stock_type';
+import runMigration75ServiceLaunchesNfseStatus from './run_migration_75_service_launches_nfse_status';
 
 type SeedRole = 'admin' | 'operator' | 'financial' | 'seller' | 'contact' | 'accountant' | 'buyer' | 'service_provider' | 'user' | 'super_admin';
 
@@ -376,6 +377,7 @@ async function runInitDb(): Promise<void> {
     await runMigration72FinanceVisionPermissions();
     await runMigration73StockTypes();
     await runMigration74ProductStockType();
+    await runMigration75ServiceLaunchesNfseStatus();
 
     const systemCompany = await ensureSystemCompany();
     await ensureAtLeastOneVisibleCompany();

@@ -4,6 +4,7 @@
    * Frente de Caixa (PDV) - KEYSTONE ERP
    * Implementação em Vanilla JS (render string) portada para TS.
    */
+  const api = (window as any).api;
 
   type PaymentMethodId = 'cash' | 'pix' | 'credit' | 'debit' | 'boleto';
 
@@ -336,6 +337,20 @@
       attachEventListeners();
     }
 
+    function getSalesCardsPerRowClass(): string {
+      const pref = localStorage.getItem('sales_cards_per_row');
+      const valid = [
+        'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3',
+        'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4',
+        'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+        'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6'
+      ];
+      if (pref && valid.includes(pref)) {
+        return pref;
+      }
+      return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
+    }
+
     function renderProductGrid(): string {
       if (state.loading) return '<div class="text-center py-8">Carregando catálogo...</div>';
 
@@ -347,9 +362,9 @@
         const term = state.searchQuery.toLowerCase();
         filtered = filtered.filter(
           (p) =>
-            p.name.toLowerCase().includes(term) ||
-            (!!p.sku && p.sku.toLowerCase().includes(term)) ||
-            (!!p.ean && p.ean.toLowerCase() === term)
+              p.name.toLowerCase().includes(term) ||
+              (!!p.sku && p.sku.toLowerCase().includes(term)) ||
+              (!!p.ean && p.ean.toLowerCase() === term)
         );
       }
 
@@ -357,7 +372,7 @@
         return '<div class="text-center py-8 text-gray-500">Nenhum produto encontrado.</div>';
 
       return `
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+            <div class="grid ${getSalesCardsPerRowClass()} gap-3 sm:gap-4">
                 ${filtered
                   .map(
                     (p) => `
@@ -718,7 +733,7 @@
       state.saving = true;
       render();
       try {
-        await (api as any)('/sales/sales', { method: 'POST', body: JSON.stringify(payload) });
+        await api('/sales/sales', { method: 'POST', body: JSON.stringify(payload) });
         alert('Venda realizada com sucesso!');
         state.cart = [];
         state.discount = 0;
@@ -735,12 +750,12 @@
     // --- Init ---
     try {
       const [pRes, cRes, cuRes, bRes, fRes, _aRes] = await Promise.all([
-        (api as any)('/products'),
-        (api as any)('/estoque/categories'),
-        (api as any)('/entities/customers'),
-        (api as any)('/bank-accounts'),
-        (api as any)('/finance/categories?type=income'),
-        (api as any)('/auth/me'),
+        api('/products'),
+        api('/estoque/categories'),
+        api('/entities/customers'),
+        api('/bank-accounts'),
+        api('/finance/categories?type=income'),
+        api('/auth/me'),
       ]);
 
       state.products = pRes.data || [];

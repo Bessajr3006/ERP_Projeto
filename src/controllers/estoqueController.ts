@@ -646,4 +646,117 @@ export class EstoqueController {
             res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
         }
     }
+
+    static async transmitServiceLaunch(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const id = req.params.id as string;
+            const launch = await EstoqueService.transmitServiceLaunch(id, companyId);
+            res.status(200).json({ status: 'success', data: launch });
+        } catch (error: any) {
+            if (error.message === 'ServiceLaunch not found') {
+                res.status(404).json({ status: 'error', message: error.message });
+                return;
+            }
+            if (error.message === 'Esta nota fiscal de serviço já foi transmitida.') {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
+        }
+    }
+
+    static async cancelServiceLaunch(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const id = req.params.id as string;
+            const launch = await EstoqueService.cancelServiceLaunch(id, companyId);
+            res.status(200).json({ status: 'success', data: launch });
+        } catch (error: any) {
+            if (error.message === 'ServiceLaunch not found') {
+                res.status(404).json({ status: 'error', message: error.message });
+                return;
+            }
+            if (error.message === 'Esta nota fiscal de serviço não foi transmitida e não pode ser cancelada.') {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
+        }
+    }
+
+    static async getServiceLaunchNfsePdf(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const id = req.params.id as string;
+            const launch = await EstoqueService.getServiceLaunchByPublicId(id, companyId);
+
+            if (launch.nfse_status !== 'transmitted') {
+                res.status(400).send('Esta nota fiscal de serviço ainda não foi transmitida.');
+                return;
+            }
+
+            const totalAmount = Number(launch.total_price || 0).toFixed(2);
+
+            const streamContent = `BT
+/F1 14 Tf
+72 750 Td
+(Nota Fiscal de Servico Eletronica - NFS-e) Tj
+/F1 10 Tf
+0 -30 Td
+(Nota Numero: ${launch.nfse_number || ''}) Tj
+0 -20 Td
+(Codigo de Verificacao: ${launch.nfse_verification_code || ''}) Tj
+0 -20 Td
+(Data de Emissao: ${launch.nfse_issued_at ? new Date(launch.nfse_issued_at).toLocaleString('pt-BR') : ''}) Tj
+0 -30 Td
+(Tomador: ${launch.customer_name || ''}) Tj
+0 -20 Td
+(Servico: ${launch.service_name || ''}) Tj
+0 -20 Td
+(Quantidade: ${launch.quantity || 1}) Tj
+0 -20 Td
+(Valor Total: R$ ${totalAmount}) Tj
+0 -40 Td
+(Documento auxiliar de NFS-e homologada com sucesso.) Tj
+ET`;
+
+            const pdfContent = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /MediaBox [0 0 595.27 841.89] /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length ${streamContent.length} >>
+stream
+${streamContent}
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000056 00000 n 
+0000000111 00000 n 
+0000000282 00000 n 
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+${453 + streamContent.length}
+%%EOF`;
+
+            const pdfBuffer = Buffer.from(pdfContent, 'utf-8');
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="NFSe_${launch.nfse_number}.pdf"`);
+            res.status(200).send(pdfBuffer);
+        } catch (error: any) {
+            res.status(500).send('Erro ao obter PDF da NFS-e.');
+        }
+    }
 }

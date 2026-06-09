@@ -653,6 +653,10 @@ async function syncUiPreferencesFromServer() {
             localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, data.theme_toggle_visible ? 'show' : 'hide');
         }
 
+        if (data.sales_cards_per_row) {
+            localStorage.setItem('sales_cards_per_row', data.sales_cards_per_row);
+        }
+
         if (
             Object.prototype.hasOwnProperty.call(data, 'form_company_name')
             || Object.prototype.hasOwnProperty.call(data, 'form_profile')

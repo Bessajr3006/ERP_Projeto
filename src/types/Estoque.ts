@@ -279,6 +279,10 @@ export interface ServiceLaunch {
     revenue_date?: string | Date | null;
     revenue_payment_method?: string | null;
     revenue_status?: string | null;
+    nfse_status?: 'draft' | 'transmitted';
+    nfse_number?: string | null;
+    nfse_verification_code?: string | null;
+    nfse_issued_at?: Date | string | null;
     created_at: Date;
     updated_at: Date;
 }

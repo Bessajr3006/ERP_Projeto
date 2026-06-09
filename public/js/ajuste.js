@@ -9,8 +9,37 @@
     const FOOTER_COLOR_KEY = 'footer_color';
     const FORM_PATTERN_KEY = 'form_pattern_preferences';
     const THEME_TOGGLE_VISIBLE_KEY = 'theme_toggle_visible';
+    const SALES_CARDS_PER_ROW_KEY = 'sales_cards_per_row';
+    const SALES_LAYOUT_KEY = 'sales_layout';
+    const SPLIT_CART_SIZE_KEY = 'split_cart_size';
 
     const qsa = (selector) => document.querySelectorAll(selector);
+
+    function getSalesCardsPerRowValue() {
+        const raw = localStorage.getItem(SALES_CARDS_PER_ROW_KEY);
+        const valid = [
+            'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3',
+            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4',
+            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6',
+            'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7',
+            'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8',
+        ];
+        if (valid.includes(raw)) {
+            return raw;
+        }
+        return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
+    }
+    function getSalesLayoutValue() {
+        const raw = localStorage.getItem(SALES_LAYOUT_KEY);
+        if (raw === 'split' || raw === 'drawer') return raw;
+        return 'drawer';
+    }
+    function getSplitCartSizeValue() {
+        const raw = localStorage.getItem(SPLIT_CART_SIZE_KEY);
+        if (raw === 'small' || raw === 'medium' || raw === 'large') return raw;
+        return 'medium';
+    }
     const qs = (selector) => document.querySelector(selector);
 
     function getThemeValue() {
@@ -381,6 +410,7 @@
                         form_profile: formPattern.perfil,
                         form_accent: formPattern.cor,
                         form_header_size: formPattern.cabecalho,
+                        sales_cards_per_row: getSalesCardsPerRowValue(),
                     }),
                 });
                 return null;
@@ -573,6 +603,9 @@
             if (typeof data.theme_toggle_visible === 'boolean') {
                 localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, data.theme_toggle_visible ? 'show' : 'hide');
             }
+            if (data.sales_cards_per_row) {
+                localStorage.setItem(SALES_CARDS_PER_ROW_KEY, data.sales_cards_per_row);
+            }
             if (
                 Object.prototype.hasOwnProperty.call(data, 'form_company_name')
                 || Object.prototype.hasOwnProperty.call(data, 'form_profile')
@@ -607,6 +640,7 @@
         const currentNavColor = getNavColorValue();
         const currentFooterColor = getFooterColorValue();
         const currentThemeToggleVisibility = getThemeToggleVisibilityValue();
+        const currentSalesCardsPerRow = getSalesCardsPerRowValue();
         const navColorPicker = document.getElementById('navColorPicker');
         const navColorHexLabel = document.getElementById('navColorHexLabel');
         const resetNavColorBtn = document.getElementById('resetNavColorBtn');
@@ -640,6 +674,9 @@
         setChecked('navAlign', currentNavAlign);
         setChecked('layoutWidth', currentWidth);
         setChecked('navWidth', currentNavWidth);
+        setChecked('salesCardsPerRow', currentSalesCardsPerRow);
+        setChecked('salesLayout', getSalesLayoutValue());
+        setChecked('splitCartSize', getSplitCartSizeValue());
         updateNavColorUI(currentNavColor);
         updateFooterColorUI(currentFooterColor);
         applyTheme(currentTheme);
@@ -725,6 +762,29 @@
             });
         });
 
+        qsa('input[name="salesCardsPerRow"]').forEach((input) => {
+            input.addEventListener('change', () => {
+                localStorage.setItem(SALES_CARDS_PER_ROW_KEY, qs('input[name="salesCardsPerRow"]:checked')?.value || 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5');
+                updateChoiceCards();
+            });
+        });
+
+        qsa('input[name="salesLayout"]').forEach((input) => {
+            input.addEventListener('change', () => {
+                const val = qs('input[name="salesLayout"]:checked')?.value || 'drawer';
+                localStorage.setItem(SALES_LAYOUT_KEY, val);
+                updateChoiceCards();
+            });
+        });
+
+        qsa('input[name="splitCartSize"]').forEach((input) => {
+            input.addEventListener('change', () => {
+                const val = qs('input[name="splitCartSize"]:checked')?.value || 'medium';
+                localStorage.setItem(SPLIT_CART_SIZE_KEY, val);
+                updateChoiceCards();
+            });
+        });
+
         if (navColorPicker) {
             navColorPicker.addEventListener('input', () => {
                 const color = String(navColorPicker.value || '#0f172a').toLowerCase();
@@ -776,6 +836,7 @@
             const widthChoice = qs('input[name="layoutWidth"]:checked')?.value || 'system';
             const navWidthChoice = qs('input[name="navWidth"]:checked')?.value || 'system';
             const themeToggleVisibilityChoice = qs('input[name="themeToggleVisibility"]:checked')?.value || 'show';
+            const salesCardsPerRowChoice = qs('input[name="salesCardsPerRow"]:checked')?.value || 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
             const navColorChoice = String(navColorPicker?.value || '#0f172a').toLowerCase();
             const footerColorChoice = String(footerColorPicker?.value || '#0f172a').toLowerCase();
 
@@ -788,6 +849,9 @@
                 localStorage.setItem(WIDTH_KEY, widthChoice);
                 localStorage.setItem(NAV_WIDTH_KEY, navWidthChoice);
                 localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, themeToggleVisibilityChoice === 'hide' ? 'hide' : 'show');
+                localStorage.setItem(SALES_CARDS_PER_ROW_KEY, salesCardsPerRowChoice);
+                localStorage.setItem(SALES_LAYOUT_KEY, qs('input[name="salesLayout"]:checked')?.value || 'drawer');
+                localStorage.setItem(SPLIT_CART_SIZE_KEY, qs('input[name="splitCartSize"]:checked')?.value || 'medium');
                 localStorage.setItem(NAV_COLOR_KEY, navColorChoice);
                 localStorage.setItem(FOOTER_COLOR_KEY, footerColorChoice);
 
@@ -827,6 +891,7 @@
                                 form_profile: formPattern.perfil,
                                 form_accent: formPattern.cor,
                                 form_header_size: formPattern.cabecalho,
+                                sales_cards_per_row: salesCardsPerRowChoice,
                             }),
                         });
                     }

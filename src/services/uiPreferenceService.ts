@@ -16,6 +16,7 @@ export interface UiPreference {
     form_accent: string;
     form_header_size: 'pequeno' | 'medio' | 'grande';
     theme_toggle_visible: boolean;
+    sales_cards_per_row?: string | null;
     created_at?: string | Date;
     updated_at?: string | Date;
 }
@@ -33,6 +34,7 @@ export interface UiPreferenceInput {
     form_accent: string;
     form_header_size: UiPreference['form_header_size'];
     theme_toggle_visible: boolean;
+    sales_cards_per_row?: string | null;
 }
 
 type UiPreferenceRow = RowDataPacket & Omit<UiPreference, 'theme_toggle_visible'> & { theme_toggle_visible: number | boolean };
@@ -42,6 +44,7 @@ function mapPreferenceRow(row: UiPreferenceRow): UiPreference {
     return {
         ...row,
         theme_toggle_visible: Boolean(row.theme_toggle_visible),
+        sales_cards_per_row: row.sales_cards_per_row || null,
     };
 }
 
@@ -107,6 +110,7 @@ export class UiPreferenceService {
         await UiPreferenceService.addColumnIfMissing('form_accent', `form_accent VARCHAR(30) NOT NULL DEFAULT 'brand' AFTER form_profile`);
         await UiPreferenceService.addColumnIfMissing('form_header_size', `form_header_size VARCHAR(20) NOT NULL DEFAULT 'medio' AFTER form_accent`);
         await UiPreferenceService.addColumnIfMissing('theme_toggle_visible', `theme_toggle_visible TINYINT(1) NOT NULL DEFAULT 1 AFTER form_header_size`);
+        await UiPreferenceService.addColumnIfMissing('sales_cards_per_row', `sales_cards_per_row VARCHAR(120) DEFAULT NULL AFTER theme_toggle_visible`);
 
         UiPreferenceService.schemaReady = true;
     }
@@ -116,7 +120,7 @@ export class UiPreferenceService {
 
         const [rows] = await pool.query<UiPreferenceRow[]>(
                 `SELECT company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color,
-                    form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible,
+                    form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible, sales_cards_per_row,
                     created_at, updated_at
              FROM ui_preferences
              WHERE company_id = ? AND user_public_id = ?
@@ -132,8 +136,8 @@ export class UiPreferenceService {
 
         await pool.query<ResultSetHeader>(
             `INSERT INTO ui_preferences
-                     (company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color, form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     (company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color, form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible, sales_cards_per_row)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 theme = VALUES(theme),
                 layout_align = VALUES(layout_align),
@@ -146,7 +150,8 @@ export class UiPreferenceService {
                 form_profile = VALUES(form_profile),
                 form_accent = VALUES(form_accent),
                 form_header_size = VALUES(form_header_size),
-                     theme_toggle_visible = VALUES(theme_toggle_visible),
+                theme_toggle_visible = VALUES(theme_toggle_visible),
+                sales_cards_per_row = VALUES(sales_cards_per_row),
                 updated_at = NOW()`,
             [
                 companyId,
@@ -163,6 +168,7 @@ export class UiPreferenceService {
                 data.form_accent,
                 data.form_header_size,
                 data.theme_toggle_visible ? 1 : 0,
+                data.sales_cards_per_row || null,
             ]
         );
 

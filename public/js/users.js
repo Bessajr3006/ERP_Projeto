@@ -214,6 +214,9 @@
                 ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>'
                 : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'}
                         </button>
+                        ${u.is_deletable ? `<button type="button" class="btn-delete text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" data-id="${u.public_id}" data-name="${u.full_name}" title="Excluir usuário (sem atividade)">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>` : ''}
                     </div>
                 </td>
             </tr>
@@ -227,6 +230,9 @@
             });
             tbody.querySelectorAll('.btn-status').forEach((btn) => {
                 btn.addEventListener('click', () => toggleStatus(btn.dataset.id, btn.dataset.active === 'false'));
+            });
+            tbody.querySelectorAll('.btn-delete').forEach((btn) => {
+                btn.addEventListener('click', () => deleteUser(btn.dataset.id, btn.dataset.name));
             });
             bindCopyEvents();
             window.GridSummaryFooter?.update({
@@ -271,6 +277,9 @@
                     <button type="button" class="btn-edit-card p-2 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 rounded-lg hover:bg-brand-100 transition-colors" data-id="${u.public_id}" title="Editar">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     </button>
+                    ${u.is_deletable ? `<button type="button" class="btn-delete-card p-2 bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-400 rounded-lg hover:bg-red-100 hover:text-red-600 transition-colors" data-id="${u.public_id}" data-name="${u.full_name}" title="Excluir usuário (sem atividade)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>` : ''}
                 </div>
             </div>
         `).join('');
@@ -280,6 +289,9 @@
                     if (user)
                         openModalDeferred(user);
                 });
+            });
+            grid.querySelectorAll('.btn-delete-card').forEach((btn) => {
+                btn.addEventListener('click', () => deleteUser(btn.dataset.id, btn.dataset.name));
             });
             bindCopyEvents();
             window.GridSummaryFooter?.update({
@@ -344,15 +356,19 @@
             // Populate role select and set value
             populateRoleSelects();
             getById('formRole').value = user?.role || '';
-            // WhatsApp tab (only when editing)
+            // WhatsApp + E-mail tabs (only when editing)
             const tabsList = getById('userModalTabs');
             const existingWaTab = tabsList.querySelector('[data-tab="whatsapp"]')?.closest('li');
-            if (existingWaTab)
-                existingWaTab.remove();
+            if (existingWaTab) existingWaTab.remove();
+            const existingEmailTab = tabsList.querySelector('[data-tab="email"]')?.closest('li');
+            if (existingEmailTab) existingEmailTab.remove();
             if (user) {
-                const li = document.createElement('li');
-                li.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp Web / QR</button>`;
-                tabsList.appendChild(li);
+                const liWa = document.createElement('li');
+                liWa.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp Web / QR</button>`;
+                tabsList.appendChild(liWa);
+                const liEmail = document.createElement('li');
+                liEmail.innerHTML = `<button type="button" data-tab="email" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">E-mail</button>`;
+                tabsList.appendChild(liEmail);
             }
             switchTab('data');
             getById('userModal').classList.remove('hidden');
@@ -378,10 +394,13 @@
             activeTab = tab;
             const tabData = getById('tabData');
             const tabWhatsapp = getById('tabWhatsapp');
+            const tabEmail = getById('tabEmail');
             const footer = getById('userModalFooter');
             tabData.classList.toggle('hidden', tab !== 'data');
             tabWhatsapp.classList.toggle('hidden', tab !== 'whatsapp');
-            footer.classList.remove('hidden');
+            if (tabEmail) tabEmail.classList.toggle('hidden', tab !== 'email');
+            // Na aba de e-mail, ocultar o footer do form principal
+            footer.classList.toggle('hidden', tab === 'email');
             qsa('.tab-btn').forEach((btn) => {
                 const isActive = btn.dataset.tab === tab;
                 btn.classList.toggle('border-brand-600', isActive);
@@ -394,10 +413,12 @@
                 if (!waSessionLoadedOnce) {
                     waSessionLoadedOnce = true;
                     void loadWaSession({ autoStart: true });
-                }
-                else {
+                } else {
                     scheduleWaPolling();
                 }
+            }
+            if (tab === 'email') {
+                void loadEmailConfig();
             }
         }
         function runDeferredAsync(action) {
@@ -664,6 +685,95 @@
                 }
             }
         }
+        // --- Email Config ---
+        async function loadEmailConfig() {
+            if (!editingUserId) return;
+            const alertEl = getById('emailConfigAlert');
+            try {
+                const res = await api(`/users/${editingUserId}/email-config`);
+                const cfg = res?.data;
+                if (cfg) {
+                    const g = (id) => getById(id);
+                    if (g('userSmtpHost'))     g('userSmtpHost').value     = cfg.smtp_host     || '';
+                    if (g('userSmtpPort'))     g('userSmtpPort').value     = cfg.smtp_port     || 587;
+                    if (g('userSmtpSecure'))   g('userSmtpSecure').checked = Boolean(cfg.smtp_secure);
+                    if (g('userImapHost'))     g('userImapHost').value     = cfg.imap_host     || '';
+                    if (g('userImapPort'))     g('userImapPort').value     = cfg.imap_port     || 993;
+                    if (g('userImapSecure'))   g('userImapSecure').checked = cfg.imap_secure !== false;
+                    if (g('userSmtpUser'))     g('userSmtpUser').value     = cfg.smtp_user     || '';
+                    if (g('userSmtpPassword')) g('userSmtpPassword').value = '';
+                    if (g('userHasPasswordHint')) {
+                        g('userHasPasswordHint').classList.toggle('hidden', !cfg.has_password);
+                    }
+                    if (g('userSenderName'))  g('userSenderName').value  = cfg.sender_name  || '';
+                    if (g('userSenderEmail')) g('userSenderEmail').value = cfg.sender_email || '';
+                    if (g('userEmailIsActive')) g('userEmailIsActive').checked = cfg.is_active !== false;
+                }
+                if (alertEl) alertEl.classList.add('hidden');
+            } catch (e) {
+                if (alertEl) {
+                    alertEl.className = 'mb-4 rounded-lg px-4 py-3 text-sm bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+                    alertEl.textContent = e.message || 'Erro ao carregar configuração de e-mail.';
+                    alertEl.classList.remove('hidden');
+                }
+            }
+        }
+        async function saveEmailConfig(event) {
+            event.preventDefault();
+            if (!editingUserId) return;
+            const alertEl = getById('emailConfigAlert');
+            const btn = getById('saveUserEmailConfigBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+            try {
+                const g = (id) => getById(id);
+                const payload = {
+                    smtp_host:     (g('userSmtpHost')?.value     || '').trim(),
+                    smtp_port:     Number(g('userSmtpPort')?.value    || 587),
+                    smtp_secure:   g('userSmtpSecure')?.checked || false,
+                    smtp_user:     (g('userSmtpUser')?.value     || '').trim(),
+                    smtp_password: (g('userSmtpPassword')?.value || '').trim() || undefined,
+                    imap_host:     (g('userImapHost')?.value     || '').trim(),
+                    imap_port:     Number(g('userImapPort')?.value    || 993),
+                    imap_secure:   g('userImapSecure')?.checked || false,
+                    sender_name:   (g('userSenderName')?.value  || '').trim(),
+                    sender_email:  (g('userSenderEmail')?.value || '').trim(),
+                    is_active:     g('userEmailIsActive')?.checked !== false,
+                };
+                await api(`/users/${editingUserId}/email-config`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                });
+                if (alertEl) {
+                    alertEl.className = 'mb-4 rounded-lg px-4 py-3 text-sm bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400';
+                    alertEl.textContent = 'Configuração de e-mail salva com sucesso!';
+                    alertEl.classList.remove('hidden');
+                }
+                if (g('userSmtpPassword')) g('userSmtpPassword').value = '';
+                if (g('userHasPasswordHint')) g('userHasPasswordHint').classList.remove('hidden');
+            } catch (e) {
+                if (alertEl) {
+                    alertEl.className = 'mb-4 rounded-lg px-4 py-3 text-sm bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+                    alertEl.textContent = e.message || 'Erro ao salvar configuração de e-mail.';
+                    alertEl.classList.remove('hidden');
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Salvar E-mail'; }
+            }
+        }
+        // --- Delete User ---
+        async function deleteUser(id, name) {
+            if (!confirm(`Excluir o usuário "${name}"? Esta ação não pode ser desfeita.`))
+                return;
+            try {
+                await api(`/users/${id}`, { method: 'DELETE' });
+                UI.showAlert('alertMessage', 'Usuário excluído com sucesso!', 'success');
+                await loadData();
+                renderTable();
+                renderGrid();
+            } catch (e) {
+                UI.showAlert('alertMessage', e.message || 'Falha ao excluir usuário.', 'error');
+            }
+        }
         // --- Toggle Status ---
         async function toggleStatus(id, isActive) {
             if (!confirm('Deseja realmente alterar o status deste usuário?'))
@@ -688,6 +798,12 @@
         getById('btnCancelModal')?.addEventListener('click', closeModal);
         getById('userModalBackdrop')?.addEventListener('click', closeModal);
         getById('userForm')?.addEventListener('submit', saveUser);
+        getById('userEmailConfigForm')?.addEventListener('submit', saveEmailConfig);
+        getById('toggleUserSmtpPassword')?.addEventListener('click', () => {
+            const input = getById('userSmtpPassword');
+            if (!input) return;
+            input.type = input.type === 'password' ? 'text' : 'password';
+        });
         getById('filterSearch')?.addEventListener('input', (e) => {
             const target = e.target;
             const nextSearch = target?.value || '';

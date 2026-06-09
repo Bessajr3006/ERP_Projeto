@@ -916,4 +916,33 @@ export class EstoqueRepository {
 
         await pool.query('DELETE FROM service_launches WHERE public_id = ? AND company_id = ?', [publicId, companyId]);
     }
+
+    static async transmitServiceLaunch(
+        publicId: string,
+        companyId: number,
+        data: {
+            nfse_status: 'transmitted';
+            nfse_number: string;
+            nfse_verification_code: string;
+            nfse_issued_at: Date;
+        }
+    ): Promise<ServiceLaunch> {
+        await pool.query(
+            `UPDATE service_launches
+             SET nfse_status = ?, nfse_number = ?, nfse_verification_code = ?, nfse_issued_at = ?
+             WHERE public_id = ? AND company_id = ?`,
+            [data.nfse_status, data.nfse_number, data.nfse_verification_code, data.nfse_issued_at, publicId, companyId]
+        );
+        return this.getServiceLaunchByPublicId(publicId, companyId);
+    }
+
+    static async cancelServiceLaunch(publicId: string, companyId: number): Promise<ServiceLaunch> {
+        await pool.query(
+            `UPDATE service_launches
+             SET nfse_status = 'cancelled', nfse_number = NULL, nfse_verification_code = NULL, nfse_issued_at = NULL
+             WHERE public_id = ? AND company_id = ?`,
+            [publicId, companyId]
+        );
+        return this.getServiceLaunchByPublicId(publicId, companyId);
+    }
 }

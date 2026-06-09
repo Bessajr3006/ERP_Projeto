@@ -541,5 +541,8 @@ router.post('/service-launches', (req, res, next) => EstoqueController.createSer
 router.get('/service-launches', (req, res, next) => EstoqueController.listServiceLaunches(req, res).catch(next));
 router.put('/service-launches/:id', (req, res, next) => EstoqueController.updateServiceLaunch(req, res).catch(next));
 router.delete('/service-launches/:id', (req, res, next) => EstoqueController.deleteServiceLaunch(req, res).catch(next));
+router.post('/service-launches/:id/transmit', (req, res, next) => EstoqueController.transmitServiceLaunch(req, res).catch(next));
+router.post('/service-launches/:id/cancel', (req, res, next) => EstoqueController.cancelServiceLaunch(req, res).catch(next));
+router.get('/service-launches/:id/nfse-pdf', (req, res, next) => EstoqueController.getServiceLaunchNfsePdf(req, res).catch(next));
 
 export default router;

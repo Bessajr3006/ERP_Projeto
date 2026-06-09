@@ -5,149 +5,226 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Ajuste</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20260608163800" rel="stylesheet">
 
+    <!-- PWA: manifesto e ícone para instalação como app -->
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
     <script src="/js/pwa.js"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-800 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <!-- Navbar gerada dinamicamente pelo componente navbar.js -->
     <div id="app-navbar"></div>
 
     <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
-        <div class="px-4 sm:px-0 grid grid-cols-1 xl:grid-cols-3 gap-4 pb-6">
-            <section data-animate="section" class="xl:col-span-3 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl shadow-sm opacity-0 translate-y-2 transition-all duration-500">
-                <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-600">
-                    <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Preferências do Sistema</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-200 mt-1">Defina modo visual e alinhamento padrão com prévia imediata.</p>
+        <div class="px-4 sm:px-0 grid grid-cols-1 lg:grid-cols-3 gap-4 pb-6 items-start">
+
+            <!-- =====================================================================
+                 SEÇÃO 1 — APARÊNCIA
+                 Controla o tema visual (claro/escuro/sistema) e a visibilidade
+                 do botão de alternância de tema exibido na barra de navegação.
+                 Aplicado imediatamente ao trocar, com prévia em tempo real.
+            ====================================================================== -->
+            <section data-animate="section" class="lg:col-span-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl shadow-sm opacity-0 translate-y-2 transition-all duration-500">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-600 flex items-center gap-3">
+                    <!-- Ícone: sol/lua — representa tema visual -->
+                    <svg class="w-5 h-5 text-brand-600 dark:text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07-6.07-.707.707M6.34 17.66l-.707.707m12.02 0-.707-.707M6.34 6.34l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z"/></svg>
+                    <div>
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Aparência</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-300 mt-0.5">Tema visual do sistema e visibilidade do botão de tema na navbar.</p>
+                    </div>
                 </div>
 
-                <div class="p-4 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+                <div class="p-4 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                    <!-- Modo do Tema: define se o sistema usa modo Claro, Escuro ou segue o SO -->
                     <div>
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Modo do Tema</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-2 auto-rows-fr" id="themeModeGroup">
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Modo do Tema</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Escolha entre modo claro, escuro ou automático conforme o sistema operacional.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 auto-rows-fr" id="themeModeGroup">
                             <label data-choice-card="theme" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <div class="flex items-center gap-2 min-w-0">
                                     <input type="radio" name="themeMode" value="light" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                    <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Claro</span>
+                                    <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">☀️ Claro</span>
                                 </div>
                             </label>
                             <label data-choice-card="theme" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <div class="flex items-center gap-2 min-w-0">
                                     <input type="radio" name="themeMode" value="dark" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                    <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Escuro</span>
+                                    <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">🌙 Escuro</span>
                                 </div>
                             </label>
                             <label data-choice-card="theme" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <div class="flex items-center gap-2 min-w-0">
                                     <input type="radio" name="themeMode" value="system" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                    <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Sistema</span>
+                                    <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">💻 Sistema</span>
                                 </div>
                             </label>
                         </div>
+                    </div>
 
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-5 mb-3">Botão de Tema na Navbar</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 auto-rows-fr" id="themeToggleVisibilityGroup">
+                    <!-- Botão de Tema na Navbar: exibe ou oculta o ícone de alternância rápida de tema -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Botão de Tema na Navbar</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Controla se o botão de troca rápida de tema aparece na barra superior.</p>
+                        <div class="grid grid-cols-2 gap-2 auto-rows-fr" id="themeToggleVisibilityGroup">
                             <label data-choice-card="themebtn" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="themeToggleVisibility" value="show" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Exibir</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">👁️ Exibir</span>
                             </label>
                             <label data-choice-card="themebtn" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="themeToggleVisibility" value="hide" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Ocultar</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">🚫 Ocultar</span>
                             </label>
                         </div>
                     </div>
 
+                </div>
+            </section>
+
+            <!-- =====================================================================
+                 SEÇÃO 2 — LAYOUT GERAL
+                 Controla o alinhamento horizontal do conteúdo das páginas e da navbar,
+                 além da largura máxima do conteúdo e da barra de navegação.
+                 Útil para monitores ultrawide ou layouts personalizados.
+            ====================================================================== -->
+            <section data-animate="section" class="lg:col-span-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl shadow-sm opacity-0 translate-y-2 transition-all duration-500">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-600 flex items-center gap-3">
+                    <!-- Ícone: retângulos alinhados — representa layout -->
+                    <svg class="w-5 h-5 text-brand-600 dark:text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h16"/></svg>
                     <div>
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Alinhamento da Forma do Sistema</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 auto-rows-fr" id="layoutAlignGroup">
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Layout Geral</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-300 mt-0.5">Alinhamento e largura máxima do conteúdo e da navbar em todas as páginas.</p>
+                    </div>
+                </div>
+
+                <div class="p-4 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                    <!-- Alinhamento do Conteúdo: posição horizontal das páginas internas -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Alinhamento do Conteúdo</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Define a posição horizontal das páginas internas (formulários, listas, etc.).</p>
+                        <div class="grid grid-cols-2 gap-2 auto-rows-fr" id="layoutAlignGroup">
                             <label data-choice-card="align" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="layoutAlign" value="left" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Esquerdo</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Esquerdo</span>
                             </label>
                             <label data-choice-card="align" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="layoutAlign" value="center" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Centralizado</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Centralizado</span>
                             </label>
                             <label data-choice-card="align" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="layoutAlign" value="right" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Direito</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Direito</span>
                             </label>
                             <label data-choice-card="align" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="layoutAlign" value="responsive" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Responsivo</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Responsivo</span>
                             </label>
                         </div>
+                    </div>
 
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-5 mb-3">Alinhamento da Navbar</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 auto-rows-fr" id="navAlignGroup">
+                    <!-- Alinhamento da Navbar: posição horizontal da barra de navegação superior -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Alinhamento da Navbar</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Define a posição horizontal da barra de navegação superior.</p>
+                        <div class="grid grid-cols-2 gap-2 auto-rows-fr" id="navAlignGroup">
                             <label data-choice-card="navalign" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="navAlign" value="left" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Esquerdo</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Esquerdo</span>
                             </label>
                             <label data-choice-card="navalign" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="navAlign" value="center" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Centralizado</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Centralizado</span>
                             </label>
                             <label data-choice-card="navalign" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="navAlign" value="right" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Direito</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Direito</span>
                             </label>
                             <label data-choice-card="navalign" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="navAlign" value="responsive" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Responsivo</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Responsivo</span>
                             </label>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-2">
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Largura do Conteúdo</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-2 auto-rows-fr" id="layoutWidthGroup">
+                    <!-- Largura do Conteúdo: limita a largura máxima das páginas internas -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Largura do Conteúdo</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Limita a largura máxima de todas as páginas internas do sistema.</p>
+                        <div class="grid grid-cols-1 gap-2 auto-rows-fr" id="layoutWidthGroup">
                             <label title="Padrão do Sistema (max-w-7xl)" data-choice-card="width" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="layoutWidth" value="system" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Padrão (7xl)</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Padrão (7xl)</span>
                             </label>
                             <label title="max-w-screen-2xl" data-choice-card="width" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="layoutWidth" value="max-w-screen-2xl" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">2xl (screen)</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">2xl (screen)</span>
                             </label>
                             <label title="Ajustar à tela toda (max-w-none)" data-choice-card="width" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="layoutWidth" value="max-w-none" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Tela Toda</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Tela Toda</span>
                             </label>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-2">
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Largura da Navbar</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-2 auto-rows-fr" id="navWidthGroup">
+                    <!-- Largura da Navbar: limita a largura máxima da barra de navegação superior -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Largura da Navbar</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Limita a largura máxima da barra de navegação superior.</p>
+                        <div class="grid grid-cols-1 gap-2 auto-rows-fr" id="navWidthGroup">
                             <label title="Padrão do Sistema (max-w-7xl)" data-choice-card="navwidth" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="navWidth" value="system" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Padrão (7xl)</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Padrão (7xl)</span>
                             </label>
                             <label title="max-w-screen-2xl" data-choice-card="navwidth" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="navWidth" value="max-w-screen-2xl" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">2xl (screen)</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">2xl (screen)</span>
                             </label>
                             <label title="Ajustar à tela toda (max-w-none)" data-choice-card="navwidth" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="navWidth" value="max-w-none" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
-                                <span class="flex-1 text-xs xl:text-sm leading-tight wrap-break-word text-center sm:text-left text-gray-700 dark:text-gray-200">Tela Toda</span>
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Tela Toda</span>
                             </label>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-2">
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Cor da Navbar</h3>
-                        <div data-animate="card" class="rounded-lg px-2.5 sm:px-3 py-3 min-h-10 sm:min-h-11 hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
-                            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                </div>
+            </section>
+
+            <!-- =====================================================================
+                 SEÇÃO 3 — CORES
+                 Define a cor de fundo da Navbar e do Footer.
+                 Ao selecionar, a cor é aplicada imediatamente nos componentes.
+                 O botão "Padrão" restaura a cor original do sistema (#0f172a).
+            ====================================================================== -->
+            <section data-animate="section" class="lg:col-span-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl shadow-sm opacity-0 translate-y-2 transition-all duration-500">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-600 flex items-center gap-3">
+                    <!-- Ícone: paleta de cores -->
+                    <svg class="w-5 h-5 text-brand-600 dark:text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                    <div>
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Cores</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-300 mt-0.5">Cor de fundo da Navbar e do Footer. Aplicado em tempo real.</p>
+                    </div>
+                </div>
+
+                <div class="p-4 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                    <!-- Cor da Navbar: seletor de cor HEX para o fundo da barra superior -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Cor da Navbar</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Cor de fundo da barra de navegação superior exibida em todas as páginas.</p>
+                        <div data-animate="card" class="rounded-lg px-2.5 sm:px-3 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                            <div class="flex flex-wrap items-center gap-3">
                                 <label for="navColorPicker" class="text-xs xl:text-sm text-gray-700 dark:text-gray-200">Selecionar cor</label>
                                 <div class="flex items-center gap-3">
+                                    <!-- Input color nativo do browser — valor em HEX -->
                                     <input id="navColorPicker" name="navColorPicker" type="color" value="#0f172a"
                                         class="h-10 w-14 cursor-pointer rounded-md border border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-700"
                                         data-bwignore="true" data-lpignore="true" placeholder="">
+                                    <!-- Exibe o código HEX selecionado -->
                                     <span id="navColorHexLabel" class="inline-flex items-center rounded-md bg-gray-100 dark:bg-slate-700/80 border border-gray-200 dark:border-slate-400 px-2 py-1 text-xs font-mono text-gray-700 dark:text-gray-100">#0f172a</span>
+                                    <!-- Restaura a cor padrão do sistema -->
                                     <button type="button" id="resetNavColorBtn"
                                         class="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-slate-500 px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                                         Padrão
@@ -157,16 +234,21 @@
                         </div>
                     </div>
 
-                    <div class="lg:col-span-2">
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Cor do Footer</h3>
-                        <div data-animate="card" class="rounded-lg px-2.5 sm:px-3 py-3 min-h-10 sm:min-h-11 hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
-                            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                    <!-- Cor do Footer: seletor de cor HEX para o fundo do rodapé -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Cor do Footer</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Cor de fundo do rodapé exibido na parte inferior de todas as páginas.</p>
+                        <div data-animate="card" class="rounded-lg px-2.5 sm:px-3 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                            <div class="flex flex-wrap items-center gap-3">
                                 <label for="footerColorPicker" class="text-xs xl:text-sm text-gray-700 dark:text-gray-200">Selecionar cor</label>
                                 <div class="flex items-center gap-3">
+                                    <!-- Input color nativo do browser — valor em HEX -->
                                     <input id="footerColorPicker" name="footerColorPicker" type="color" value="#0f172a"
                                         class="h-10 w-14 cursor-pointer rounded-md border border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-700"
                                         data-bwignore="true" data-lpignore="true" placeholder="">
+                                    <!-- Exibe o código HEX selecionado -->
                                     <span id="footerColorHexLabel" class="inline-flex items-center rounded-md bg-gray-100 dark:bg-slate-700/80 border border-gray-200 dark:border-slate-400 px-2 py-1 text-xs font-mono text-gray-700 dark:text-gray-100">#0f172a</span>
+                                    <!-- Restaura a cor padrão do sistema -->
                                     <button type="button" id="resetFooterColorBtn"
                                         class="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-slate-500 px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                                         Padrão
@@ -176,23 +258,128 @@
                         </div>
                     </div>
 
-                    <div class="lg:col-span-2 flex flex-wrap gap-3">
-                        <button type="button" id="saveSystemPreferencesBtn"
-                            class="inline-flex items-center justify-center rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 shadow-sm transition-colors">
-                            Salvar Preferências
-                        </button>
-                        <span id="systemPreferencesMessage" class="hidden items-center rounded-md px-3 py-2 text-xs font-medium"></span>
+                </div>
+            </section>
+
+            <!-- =====================================================================
+                 SEÇÃO 4 — FRENTE DE CAIXA (PDV)
+                 Configurações exclusivas da página sales.html (Frente de Caixa).
+                 - Cards por Linha: número de produtos exibidos por linha no catálogo
+                 - Layout do PDV: Gaveta (carrinho deslizante) ou Split (carrinho fixo)
+                 - Largura do Carrinho: tamanho da coluna do carrinho no modo Split
+            ====================================================================== -->
+            <section data-animate="section" class="lg:col-span-3 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl shadow-sm opacity-0 translate-y-2 transition-all duration-500">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-600 flex items-center gap-3">
+                    <!-- Ícone: caixa registradora / PDV -->
+                    <svg class="w-5 h-5 text-brand-600 dark:text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <div>
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Frente de Caixa (PDV)</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-300 mt-0.5">Configurações exclusivas da página de vendas: catálogo, layout e carrinho.</p>
+                    </div>
+                </div>
+
+                <div class="p-4 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                    <!-- Cards por Linha: quantos produtos aparecem por linha no grid do catálogo PDV -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Cards por Linha no Catálogo</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Quantos produtos são exibidos por linha no grid de produtos da Frente de Caixa.</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 auto-rows-fr" id="salesCardsPerRowGroup">
+                            <label title="Exibir 3 cards por linha" data-choice-card="sales_cards_per_row" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="salesCardsPerRow" value="grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">3 Cards</span>
+                            </label>
+                            <label title="Exibir 4 cards por linha" data-choice-card="sales_cards_per_row" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="salesCardsPerRow" value="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">4 Cards</span>
+                            </label>
+                            <label title="Exibir 5 cards por linha (Padrão)" data-choice-card="sales_cards_per_row" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="salesCardsPerRow" value="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">5 Cards (Padrão)</span>
+                            </label>
+                            <label title="Exibir 6 cards por linha" data-choice-card="sales_cards_per_row" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="salesCardsPerRow" value="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">6 Cards</span>
+                            </label>
+                            <label title="Exibir 7 cards por linha" data-choice-card="sales_cards_per_row" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="salesCardsPerRow" value="grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">7 Cards</span>
+                            </label>
+                            <label title="Exibir 8 cards por linha" data-choice-card="sales_cards_per_row" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="salesCardsPerRow" value="grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">8 Cards</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Layout do PDV: Gaveta = carrinho desliza como painel sobreposto aos cards;
+                         Split = carrinho fica fixo à direita, visível sempre ao lado do catálogo -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Layout do PDV</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">
+                            <strong>Gaveta:</strong> carrinho abre deslizando sobre os cards.<br>
+                            <strong>PDV Split:</strong> carrinho fica fixo ao lado — ideal para uso profissional em caixa.
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 auto-rows-fr" id="salesLayoutGroup">
+                            <label title="Carrinho abre em gaveta deslizante sobre os cards" data-choice-card="sales_layout" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="salesLayout" value="drawer" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">🗂 Gaveta (Padrão)</span>
+                            </label>
+                            <label title="Carrinho fixo ao lado — modo PDV profissional" data-choice-card="sales_layout" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="salesLayout" value="split" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">⚡ PDV Split (sempre aberto)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Largura do Carrinho no modo Split: define quantos pixels ocupa a coluna lateral do carrinho.
+                         Pequeno = mais espaço para os cards; Grande = carrinho mais visível -->
+                    <div id="splitCartSizeWrapper">
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Largura do Carrinho <span class="font-normal text-gray-400">(modo Split)</span></h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Tamanho da coluna do carrinho quando o PDV Split está ativado. Pequeno = mais cards visíveis; Grande = carrinho mais largo.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 auto-rows-fr" id="splitCartSizeGroup">
+                            <label title="Carrinho estreito — mais espaço para os cards (280px)" data-choice-card="split_cart_size" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="splitCartSize" value="small" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Pequeno (280px)</span>
+                            </label>
+                            <label title="Carrinho médio — equilíbrio padrão (360px)" data-choice-card="split_cart_size" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="splitCartSize" value="medium" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Médio (360px) — Padrão</span>
+                            </label>
+                            <label title="Carrinho largo — mais visível para operação intensiva (480px)" data-choice-card="split_cart_size" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="splitCartSize" value="large" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">Grande (480px)</span>
+                            </label>
+                        </div>
                     </div>
 
                 </div>
             </section>
 
+            <!-- =====================================================================
+                 AÇÃO PRINCIPAL — SALVAR PREFERÊNCIAS
+                 O botão abaixo persiste TODAS as preferências acima no localStorage
+                 e sincroniza com o servidor via POST /ui-preferences (quando autenticado).
+                 As alterações de tema, cor e alinhamento já são aplicadas em tempo real,
+                 mas o botão garante a sincronia com o banco de dados do usuário.
+            ====================================================================== -->
+            <div class="lg:col-span-3 flex flex-wrap items-center gap-3 px-1">
+                <button type="button" id="saveSystemPreferencesBtn"
+                    class="inline-flex items-center justify-center rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-5 py-2.5 shadow-sm transition-colors">
+                    Salvar Preferências
+                </button>
+                <!-- Mensagem de feedback: aparece após salvar (sucesso ou erro) -->
+                <span id="systemPreferencesMessage" class="hidden items-center rounded-md px-3 py-2 text-xs font-medium"></span>
+            </div>
+
         </div>
     </main>
 
-    <script src="/js/api.js"></script>
+    <!-- Scripts: api.js deve ser carregado antes dos demais para disponibilizar window.api -->
+    <script src="/js/api.js?v=20260608163800"></script>
     <script src="/js/components/navbar.js"></script>
-    <script src="/js/ajuste.js?v=20260607175929"></script>
+    <!-- ajuste.js: lógica de persistência, hidratação do servidor e listeners de preferência -->
+    <script src="/js/ajuste.js?v=20260608163800"></script>
 
     <div id="app-footer" class="shrink-0"></div>
     <script src="/js/components/footer.js"></script>

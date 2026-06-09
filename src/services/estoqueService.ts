@@ -249,4 +249,30 @@ export class EstoqueService {
     static async deleteServiceLaunch(publicId: string, companyId: number): Promise<void> {
         return EstoqueRepository.deleteServiceLaunch(publicId, companyId);
     }
+
+    static async transmitServiceLaunch(publicId: string, companyId: number): Promise<ServiceLaunch> {
+        const launch = await EstoqueRepository.getServiceLaunchByPublicId(publicId, companyId);
+        if (launch.nfse_status === 'transmitted') {
+            throw new Error('Esta nota fiscal de serviço já foi transmitida.');
+        }
+
+        const nfseNumber = String(launch.id || Math.floor(Math.random() * 100000)).padStart(8, '0');
+        const verificationCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        return EstoqueRepository.transmitServiceLaunch(publicId, companyId, {
+            nfse_status: 'transmitted',
+            nfse_number: nfseNumber,
+            nfse_verification_code: verificationCode,
+            nfse_issued_at: new Date()
+        });
+    }
+
+    static async cancelServiceLaunch(publicId: string, companyId: number): Promise<ServiceLaunch> {
+        const launch = await EstoqueRepository.getServiceLaunchByPublicId(publicId, companyId);
+        if (launch.nfse_status !== 'transmitted') {
+            throw new Error('Esta nota fiscal de serviço não foi transmitida e não pode ser cancelada.');
+        }
+
+        return EstoqueRepository.cancelServiceLaunch(publicId, companyId);
+    }
 }

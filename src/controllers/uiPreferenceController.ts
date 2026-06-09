@@ -17,6 +17,7 @@ const uiPreferenceSchema = z.object({
     form_accent: z.string().trim().max(30).optional(),
     form_header_size: z.enum(['pequeno', 'medio', 'grande']).optional(),
     theme_toggle_visible: z.boolean().optional(),
+    sales_cards_per_row: z.string().trim().max(120).nullable().optional(),
 });
 
 export class UiPreferenceController {
@@ -42,6 +43,7 @@ export class UiPreferenceController {
             form_accent: (validated.form_accent || 'brand').trim().toLowerCase(),
             form_header_size: validated.form_header_size || 'medio',
             theme_toggle_visible: validated.theme_toggle_visible !== false,
+            sales_cards_per_row: (validated.sales_cards_per_row || '').trim() || null,
         };
 
         const data = await UiPreferenceService.upsert(companyId, userPublicId, normalized);

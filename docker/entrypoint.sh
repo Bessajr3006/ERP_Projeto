@@ -61,7 +61,7 @@ const canConnect = () => new Promise((resolve) => {
     }
 
     try {
-      await dns.lookup(host);
+      await dns.lookup(host, { family: 4 });
       if (await canConnect()) {
         console.log('[entrypoint] banco disponível em ' + host + ':' + port);
         process.exit(0);

@@ -41,6 +41,7 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
 
 # Copiar os node_modules já enxutos do builder (evita crash do npm ci no Render)
+COPY --from=builder /app/crash-wrapper.js ./crash-wrapper.js
 COPY --from=builder /app/node_modules ./node_modules
 
 # Fazer o ffmpeg-static apontar para o ffmpeg do sistema (economiza 80MB)

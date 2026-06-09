@@ -900,6 +900,8 @@
                                 form_accent: formPattern.cor,
                                 form_header_size: formPattern.cabecalho,
                                 sales_cards_per_row: salesCardsPerRowChoice,
+                                sales_layout: qs('input[name="salesLayout"]:checked')?.value || 'drawer',
+                                split_cart_size: qs('input[name="splitCartSize"]:checked')?.value || 'medium',
                             }),
                         });
                     }

@@ -2151,6 +2151,9 @@
   .bg-yellow-100 {
     background-color: var(--color-yellow-100);
   }
+  .bg-yellow-400 {
+    background-color: var(--color-yellow-400);
+  }
   .bg-linear-to-r {
     --tw-gradient-position: to right;
     @supports (background-image: linear-gradient(in lab, red, red)) {
@@ -4725,6 +4728,11 @@
       grid-column: span 2 / span 2;
     }
   }
+  .lg\:col-span-3 {
+    @media (width >= 64rem) {
+      grid-column: span 3 / span 3;
+    }
+  }
   .lg\:mx-0 {
     @media (width >= 64rem) {
       margin-inline: calc(var(--spacing) * 0);
@@ -4778,6 +4786,11 @@
   .lg\:grid-cols-5 {
     @media (width >= 64rem) {
       grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+  .lg\:grid-cols-6 {
+    @media (width >= 64rem) {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
   .lg\:flex-row {
@@ -4834,11 +4847,6 @@
       text-align: right;
     }
   }
-  .xl\:col-span-3 {
-    @media (width >= 80rem) {
-      grid-column: span 3 / span 3;
-    }
-  }
   .xl\:max-w-90 {
     @media (width >= 80rem) {
       max-width: calc(var(--spacing) * 90);
@@ -4869,6 +4877,16 @@
       grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
+  .xl\:grid-cols-7 {
+    @media (width >= 80rem) {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+  }
+  .xl\:grid-cols-8 {
+    @media (width >= 80rem) {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+  }
   .xl\:flex-row {
     @media (width >= 80rem) {
       flex-direction: row;
@@ -4888,16 +4906,6 @@
     @media (width >= 80rem) {
       font-size: var(--text-sm);
       line-height: var(--tw-leading, var(--text-sm--line-height));
-    }
-  }
-  .\32 xl\:grid-cols-3 {
-    @media (width >= 96rem) {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-  .\32 xl\:grid-cols-5 {
-    @media (width >= 96rem) {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
   .\32 xl\:flex-row {
@@ -5488,6 +5496,11 @@
       }
     }
   }
+  .dark\:bg-green-400 {
+    &:where(.dark, .dark *) {
+      background-color: var(--color-green-400);
+    }
+  }
   .dark\:bg-green-900\/10 {
     &:where(.dark, .dark *) {
       background-color: #0d542b1a;
@@ -5566,6 +5579,11 @@
       @supports (color: color-mix(in lab, red, red)) {
         background-color: color-mix(in oklab, var(--color-purple-900) 30%, transparent);
       }
+    }
+  }
+  .dark\:bg-red-400 {
+    &:where(.dark, .dark *) {
+      background-color: var(--color-red-400);
     }
   }
   .dark\:bg-red-500 {

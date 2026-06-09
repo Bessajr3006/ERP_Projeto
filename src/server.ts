@@ -94,16 +94,21 @@ const keyPath  = path.join(process.cwd(), 'certs', 'key.pem');
 const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 const useHttps = hasCerts && process.env.NODE_ENV !== 'production';
 
+console.log(`[BOOT] NODE_ENV is: ${process.env.NODE_ENV}`);
+console.log(`[BOOT] hasCerts: ${hasCerts} | useHttps: ${useHttps}`);
+
 if (useHttps) {
     const httpsOptions = {
         key:  fs.readFileSync(keyPath),
         cert: fs.readFileSync(certPath),
     };
     server = https.createServer(httpsOptions, app).listen(HTTPS_PORT, () => {
+        console.log(`[BOOT] Servidor subiu via HTTPS na porta ${HTTPS_PORT}`);
         logger.info({ port: HTTPS_PORT, protocol: 'https' }, `Servidor Bessa ERP iniciado em https://localhost:${HTTPS_PORT}`);
     });
 } else {
     server = app.listen(PORT, () => {
+        console.log(`[BOOT] Servidor subiu via HTTP na porta ${PORT}`);
         logger.info({ port: PORT }, `Servidor Bessa ERP iniciado na porta ${PORT}`);
     });
 }

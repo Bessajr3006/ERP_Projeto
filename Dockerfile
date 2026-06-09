@@ -5,9 +5,10 @@ WORKDIR /app
 # Copiar os arquivos de pacote primeiro para aproveitar o cache da camada do Docker
 COPY package*.json ./
 
-# PUPPETEER_SKIP_DOWNLOAD=true evita que o puppeteer baixe o Chromium durante
-# o npm ci do stage de build (não precisamos do Chromium aqui — apenas compilamos TypeScript)
-RUN PUPPETEER_SKIP_DOWNLOAD=true npm ci
+# PUPPETEER_SKIP_DOWNLOAD=true evita que o puppeteer baixe o Chromium
+# FFMPEG_STATIC_SKIP_DOWNLOAD=true evita que o ffmpeg baixe o binário de 80MB
+# (não precisamos deles aqui — apenas compilamos TypeScript)
+RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm ci
 
 # Copiar todo o restante do projeto para construir a aplicação
 COPY . .
@@ -17,15 +18,15 @@ RUN npm run build && npm run build:css
 
 # Limpar as dependências de desenvolvimento para economizar espaço
 # Assim evitamos rodar um segundo "npm ci" pesado no stage runner que causa OOM (Out Of Memory)
-RUN PUPPETEER_SKIP_DOWNLOAD=true npm prune --omit=dev
+RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm prune --omit=dev
 
 FROM node:22 AS runner
 
 WORKDIR /app
 
-# Chromium para whatsapp-web.js em ambiente container/cloud
+# Chromium para whatsapp-web.js em ambiente container/cloud e ffmpeg nativo
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation \
+  && apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
 # Variáveis para que o puppeteer use o Chromium do sistema
@@ -41,6 +42,10 @@ COPY --from=builder /app/package-lock.json ./package-lock.json
 
 # Copiar os node_modules já enxutos do builder (evita crash do npm ci no Render)
 COPY --from=builder /app/node_modules ./node_modules
+
+# Fazer o ffmpeg-static apontar para o ffmpeg do sistema (economiza 80MB)
+RUN mkdir -p /app/node_modules/ffmpeg-static \
+    && ln -sf /usr/bin/ffmpeg /app/node_modules/ffmpeg-static/ffmpeg
 
 # Entry point: cria symlinks para uploads/.runtime quando usamos volume único
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh

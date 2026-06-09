@@ -92,8 +92,9 @@ process.on('SIGINT', () => {
 const certPath = path.join(process.cwd(), 'certs', 'cert.pem');
 const keyPath  = path.join(process.cwd(), 'certs', 'key.pem');
 const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
+const useHttps = hasCerts && process.env.NODE_ENV !== 'production';
 
-if (hasCerts) {
+if (useHttps) {
     const httpsOptions = {
         key:  fs.readFileSync(keyPath),
         cert: fs.readFileSync(certPath),

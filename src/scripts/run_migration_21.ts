@@ -89,7 +89,12 @@ async function ensureUsersRoleEnum(): Promise<void> {
 
     try {
         await runSql(
-            'sanitize users.role legacy values',
+            'trim users.role to remove trailing spaces',
+            `UPDATE users SET role = TRIM(REPLACE(REPLACE(role, '\\r', ''), '\\n', ''))`
+        );
+
+        await runSql(
+            'sanitize legacy role administrador',
             `UPDATE users SET role = 'admin' WHERE role = 'administrador'`
         );
         

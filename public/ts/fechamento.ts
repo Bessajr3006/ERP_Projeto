@@ -12,8 +12,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const tabCompraBtn = document.getElementById('tabCompraBtn') as HTMLButtonElement;
     const tabVendaBtn = document.getElementById('tabVendaBtn') as HTMLButtonElement;
+    const tabApuracaoBtn = document.getElementById('tabApuracaoBtn') as HTMLButtonElement;
     const tabCompraPanel = document.getElementById('tabCompraPanel') as HTMLElement;
     const tabVendaPanel = document.getElementById('tabVendaPanel') as HTMLElement;
+    const tabApuracaoPanel = document.getElementById('tabApuracaoPanel') as HTMLElement;
     
     const companyParam = document.getElementById('companyParam') as HTMLSelectElement;
     const fechamentoForm = document.getElementById('fechamentoForm') as HTMLFormElement;
@@ -57,23 +59,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         fechamentoModal.classList.add('hidden');
     }
 
-    function switchTab(tab: 'compra' | 'venda') {
+    function switchTab(tab: 'compra' | 'venda' | 'apuracao') {
+        [tabCompraBtn, tabVendaBtn, tabApuracaoBtn].forEach(btn => {
+            btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            btn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+        });
+        [tabCompraPanel, tabVendaPanel, tabApuracaoPanel].forEach(panel => {
+            panel.classList.add('hidden');
+        });
+
         if (tab === 'compra') {
-            tabCompraBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
             tabCompraBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            tabVendaBtn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            tabVendaBtn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
-            
+            tabCompraBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
             tabCompraPanel.classList.remove('hidden');
-            tabVendaPanel.classList.add('hidden');
-        } else {
-            tabVendaBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+        } else if (tab === 'venda') {
             tabVendaBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            tabCompraBtn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            tabCompraBtn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
-            
+            tabVendaBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
             tabVendaPanel.classList.remove('hidden');
-            tabCompraPanel.classList.add('hidden');
+        } else if (tab === 'apuracao') {
+            tabApuracaoBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            tabApuracaoBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+            tabApuracaoPanel.classList.remove('hidden');
         }
     }
 
@@ -91,6 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     tabCompraBtn.addEventListener('click', () => switchTab('compra'));
     tabVendaBtn.addEventListener('click', () => switchTab('venda'));
+    tabApuracaoBtn.addEventListener('click', () => switchTab('apuracao'));
 
     fechamentoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -119,6 +126,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 outros: parseFloat(formData.get('venda_outros') as string) || 0,
                 pis: parseFloat(formData.get('venda_pis') as string) || 0,
                 cofins: parseFloat(formData.get('venda_cofins') as string) || 0,
+            },
+            apuracao: {
+                valor: parseFloat(formData.get('apuracao_valor') as string) || 0,
             }
         };
 

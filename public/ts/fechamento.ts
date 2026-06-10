@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         'compra_valor', 'compra_bs_icms', 'compra_isento', 'compra_outros', 'compra_pis', 'compra_cofins',
         'venda_valor', 'venda_bs_icms', 'venda_isento', 'venda_outros', 'venda_pis', 'venda_cofins',
         'apuracao_icms', 'apuracao_pis', 'apuracao_cofins',
-        'despesa_adm', 'despesa_operacional', 'despesa_folha', 'despesa_cmv',
+        'despesa_adm', 'despesa_operacional', 'despesa_folha', 'despesa_cmv', 'despesa_ir_aluguel',
         'imposto_irpj', 'imposto_csll'
     ];
 
@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 operacional: parseCurrency(formData.get('despesa_operacional') as string),
                 folha: parseCurrency(formData.get('despesa_folha') as string),
                 cmv: parseCurrency(formData.get('despesa_cmv') as string),
+                ir_aluguel: parseCurrency(formData.get('despesa_ir_aluguel') as string),
             },
             imposto_federal: {
                 irpj: parseCurrency(formData.get('imposto_irpj') as string),

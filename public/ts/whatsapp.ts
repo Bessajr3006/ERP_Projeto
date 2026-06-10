@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- Helpers ---
-    function avatarInitials(name) {
+    function avatarInitials(name: string | null | undefined) {
         const clean = String(name || '').trim();
         if (!clean) return '?';
         const parts = clean.split(' ').filter(Boolean);
@@ -187,14 +187,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
 
-    function avatarColor(str) {
+    function avatarColor(str: string) {
         const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#14b8a6'];
         let hash = 0;
         for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
         return colors[Math.abs(hash) % colors.length];
     }
 
-    function formatTime(ts, createdAt) {
+    function formatTime(ts: any, createdAt: any) {
         let date;
         if (ts) {
             date = new Date(Number(ts) * 1000);
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.addEventListener('click', registerTypeMenuCloseHandler, true);
     }
 
-    function escapeHtml(str) {
+    function escapeHtml(str: string | null | undefined) {
         return String(str || '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -857,8 +857,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function setStatus(status: any, sessionData?: any) {
         if (!statusBadge) return;
-            currentSessionStatus = status || 'idle';
-        const map = {
+        const prevStatus = currentSessionStatus;
+        currentSessionStatus = status || 'idle';
+        if (prevStatus !== currentSessionStatus) {
+            renderConversations();
+        }
+        const map: Record<string, { cls: string; label: string }> = {
             ready:         { cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300', label: 'Conectado' },
             authenticated: { cls: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300', label: 'Autenticado' },
             awaiting_qr:   { cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', label: 'Aguardando QR' },
@@ -975,6 +979,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderConversations() {
         if (!convList) return;
+
+        if (currentSessionStatus !== 'ready') {
+            convList.innerHTML = '<div class="py-10 px-4 text-center text-sm text-gray-400 dark:text-gray-500">O WhatsApp não está sincronizado. Conecte para visualizar os contatos.</div>';
+            return;
+        }
+
         const mergedConversations = getMergedConversationList();
         const registeredPhones = new Set(Array.from(registeredContactRolesByPhone.keys()));
         const filtered = searchTerm
@@ -1021,12 +1031,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`;
         }).join('');
 
-        convList.querySelectorAll('.wa-conv-item').forEach(el => {
+        convList.querySelectorAll('.wa-conv-item').forEach((el: any) => {
             el.addEventListener('click', () => selectConversation(el.dataset.phone, el.dataset.name, el.dataset.phones, el.dataset.chatId));
         });
 
-        convList.querySelectorAll('.wa-register-contact-btn').forEach((btn) => {
-            btn.addEventListener('click', (event) => {
+        convList.querySelectorAll('.wa-register-contact-btn').forEach((btn: any) => {
+            btn.addEventListener('click', (event: Event) => {
                 event.stopPropagation();
                 const target = event.currentTarget as HTMLElement;
                 showRegisterTypeMenu(target, target?.dataset?.name || '', target?.dataset?.phone || '');
@@ -1134,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- Selecionar conversa ---
-    async function selectConversation(phone, name, phonesRaw?, chatIdRaw?) {
+    async function selectConversation(phone: string, name: string, phonesRaw?: string, chatIdRaw?: string) {
         markUserActivity();
         clearAttachment();
         currentPreferredChatId = isPersonalChatId(chatIdRaw) ? String(chatIdRaw).trim() : null;
@@ -1476,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        messageInput?.addEventListener('keydown', (e) => {
+        messageInput?.addEventListener('keydown', (e: KeyboardEvent) => {
             markUserActivity();
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

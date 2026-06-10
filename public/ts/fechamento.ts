@@ -105,11 +105,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const payload = {
             customerId: formData.get('customerId'),
             compra: {
+                valor: parseFloat(formData.get('compra_valor') as string) || 0,
                 bs_icms: parseFloat(formData.get('compra_bs_icms') as string) || 0,
                 isento: parseFloat(formData.get('compra_isento') as string) || 0,
                 outros: parseFloat(formData.get('compra_outros') as string) || 0,
             },
             venda: {
+                valor: parseFloat(formData.get('venda_valor') as string) || 0,
                 bs_icms: parseFloat(formData.get('venda_bs_icms') as string) || 0,
                 isento: parseFloat(formData.get('venda_isento') as string) || 0,
                 outros: parseFloat(formData.get('venda_outros') as string) || 0,

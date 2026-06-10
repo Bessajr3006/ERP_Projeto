@@ -100,7 +100,7 @@
                                 
                                 <!-- Aba Compra -->
                                 <div id="tabCompraPanel" class="fechamento-tab-panel mt-4 space-y-4" role="tabpanel">
-                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                         <div>
                                             <label for="compra_valor" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Compra</label>
                                             <input type="number" step="0.01" id="compra_valor" name="compra_valor" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0.00">
@@ -117,12 +117,20 @@
                                             <label for="compra_outros" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Outros</label>
                                             <input type="number" step="0.01" id="compra_outros" name="compra_outros" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0.00">
                                         </div>
+                                        <div>
+                                            <label for="compra_pis" class="block text-sm font-medium text-gray-700 dark:text-gray-300">PIS</label>
+                                            <input type="number" step="0.01" id="compra_pis" name="compra_pis" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0.00">
+                                        </div>
+                                        <div>
+                                            <label for="compra_cofins" class="block text-sm font-medium text-gray-700 dark:text-gray-300">COFINS</label>
+                                            <input type="number" step="0.01" id="compra_cofins" name="compra_cofins" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0.00">
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- Aba Venda -->
                                 <div id="tabVendaPanel" class="fechamento-tab-panel hidden mt-4 space-y-4" role="tabpanel">
-                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                         <div>
                                             <label for="venda_valor" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Venda</label>
                                             <input type="number" step="0.01" id="venda_valor" name="venda_valor" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0.00">
@@ -138,6 +146,14 @@
                                         <div>
                                             <label for="venda_outros" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Outros</label>
                                             <input type="number" step="0.01" id="venda_outros" name="venda_outros" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0.00">
+                                        </div>
+                                        <div>
+                                            <label for="venda_pis" class="block text-sm font-medium text-gray-700 dark:text-gray-300">PIS</label>
+                                            <input type="number" step="0.01" id="venda_pis" name="venda_pis" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0.00">
+                                        </div>
+                                        <div>
+                                            <label for="venda_cofins" class="block text-sm font-medium text-gray-700 dark:text-gray-300">COFINS</label>
+                                            <input type="number" step="0.01" id="venda_cofins" name="venda_cofins" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0.00">
                                         </div>
                                     </div>
                                 </div>

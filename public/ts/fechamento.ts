@@ -21,6 +21,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tabDespesaPanel = document.getElementById('tabDespesaPanel') as HTMLElement;
     const tabImpostoPanel = document.getElementById('tabImpostoPanel') as HTMLElement;
     
+    // Filter Elements
+    const toggleFilterBtn = document.getElementById('toggleFilterBtn') as HTMLButtonElement;
+    const filterBody = document.getElementById('filterBody') as HTMLElement;
+    const filterChevron = document.getElementById('filterChevron') as HTMLElement;
+    const filterForm = document.getElementById('filterForm') as HTMLFormElement;
+    const btnClearFilters = document.getElementById('btnClearFilters') as HTMLButtonElement;
+    const filterCompanyParam = document.getElementById('filterCompanyParam') as HTMLSelectElement;
+    const filterCompetencia = document.getElementById('filterCompetencia') as HTMLInputElement;
+
     const companyParam = document.getElementById('companyParam') as HTMLSelectElement;
     const fechamentoForm = document.getElementById('fechamentoForm') as HTMLFormElement;
 
@@ -70,6 +79,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     option.value = customer.id;
                     option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
                     companyParam.appendChild(option);
+
+                    if (filterCompanyParam) {
+                        const filterOption = option.cloneNode(true);
+                        filterCompanyParam.appendChild(filterOption);
+                    }
                 });
             } else if (response && Array.isArray(response)) {
                 response.forEach((customer: any) => {
@@ -77,6 +91,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     option.value = customer.id;
                     option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
                     companyParam.appendChild(option);
+
+                    if (filterCompanyParam) {
+                        const filterOption = option.cloneNode(true);
+                        filterCompanyParam.appendChild(filterOption);
+                    }
                 });
             }
         } catch (error) {
@@ -138,6 +157,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnOpenModal.addEventListener('click', openModal);
     btnCancelModal.addEventListener('click', closeModal);
     modalBackdrop.addEventListener('click', closeModal);
+
+    // Event Listeners for Filters
+    let filterIsOpen = false;
+    if (toggleFilterBtn && filterBody) {
+        filterBody.style.maxHeight = '0px';
+        filterBody.style.overflow = 'hidden';
+        if (filterChevron) filterChevron.style.transform = 'rotate(-90deg)';
+        
+        toggleFilterBtn.addEventListener('click', () => {
+            filterIsOpen = !filterIsOpen;
+            filterBody.style.maxHeight = filterIsOpen ? `${filterBody.scrollHeight}px` : '0px';
+            if (filterChevron) {
+                filterChevron.style.transform = filterIsOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+            }
+        });
+    }
+
+    if (filterForm) {
+        filterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Stub for loadFechamentos when endpoint is ready
+            console.log('Aplicando filtros:', {
+                company: filterCompanyParam?.value,
+                competencia: filterCompetencia?.value
+            });
+        });
+    }
+
+    if (btnClearFilters) {
+        btnClearFilters.addEventListener('click', () => {
+            if (filterForm) filterForm.reset();
+            // Stub for loadFechamentos when endpoint is ready
+        });
+    }
 
     tabCompraBtn.addEventListener('click', () => switchTab('compra'));
     tabVendaBtn.addEventListener('click', () => switchTab('venda'));

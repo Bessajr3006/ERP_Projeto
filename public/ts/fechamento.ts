@@ -24,19 +24,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const parseCurrency = (str: string | null): number => {
         if (!str) return 0;
-        return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+        const clean = str.replace('R$', '').trim();
+        return parseFloat(clean.replace(/\./g, '').replace(',', '.')) || 0;
     };
 
     const makeMask: any = (window as any).createMaskAdapter || ((input: any, options: any) => (window as any).IMask?.(input, options));
     const moneyOptions = {
-        mask: Number,
-        scale: 2,
-        signed: true,
-        thousandsSeparator: '.',
-        padFractionalZeros: true,
-        normalizeZeros: true,
-        radix: ',',
-        mapToRadix: ['.']
+        mask: 'R$ num',
+        blocks: {
+            num: {
+                mask: Number,
+                scale: 2,
+                signed: true,
+                thousandsSeparator: '.',
+                padFractionalZeros: true,
+                normalizeZeros: true,
+                radix: ',',
+                mapToRadix: ['.']
+            }
+        }
     };
 
     const fieldsToMask = [

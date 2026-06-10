@@ -34,6 +34,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         last_error: null,
     };
 
+    // --- Delete User ---
+    async function deleteUser(id: string) {
+        if (!confirm('Deseja realmente excluir este usuário? Somente usuários que nunca tiveram operações no sistema podem ser excluídos.')) return;
+        
+        try {
+            await api(`/users/${id}`, { method: 'DELETE' });
+            UI.showToast('Usuário excluído com sucesso!', 'success');
+            await loadData();
+            renderTable();
+            renderGrid();
+        } catch (e: any) {
+            UI.showToast(e.message || 'Erro ao excluir usuário', 'error');
+        }
+    }
+
     // --- Helpers ---
     const formatPhone = (phone: any) => {
         if (!phone) return '-';
@@ -237,6 +252,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>'
                                 : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'}
                         </button>
+                        <button type="button" class="btn-delete text-red-600 hover:text-red-800" data-id="${u.public_id}" title="Excluir">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -251,6 +269,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tbody.querySelectorAll('.btn-status').forEach((btn: any) => {
             btn.addEventListener('click', () => toggleStatus((btn as any).dataset.id, (btn as any).dataset.active === 'false'));
+        });
+
+        tbody.querySelectorAll('.btn-delete').forEach((btn: any) => {
+            btn.addEventListener('click', () => deleteUser((btn as any).dataset.id));
         });
 
         bindCopyEvents();
@@ -299,6 +321,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <button type="button" class="btn-edit-card p-2 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 rounded-lg hover:bg-brand-100 transition-colors" data-id="${u.public_id}" title="Editar">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     </button>
+                    <button type="button" class="btn-delete-card p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors" data-id="${u.public_id}" title="Excluir">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -308,6 +333,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const user = usersData.find(u => u.public_id === (btn as any).dataset.id);
                 if (user) openModalDeferred(user);
             });
+        });
+
+        grid.querySelectorAll('.btn-delete-card').forEach((btn: any) => {
+            btn.addEventListener('click', () => deleteUser((btn as any).dataset.id));
         });
 
         bindCopyEvents();
@@ -350,7 +379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeClasses.forEach(c => btnGrid.classList.add(c));
             inactiveClasses.forEach(c => btnGrid.classList.remove(c));
             inactiveClasses.forEach(c => btnList.classList.add(c));
-            activeClasses.forEach(c => btnList.classList.remove(c));
+            activeClasses.forEach(c => btnGrid.classList.remove(c));
         }
 
         renderTable();
@@ -383,15 +412,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         populateRoleSelects();
         getById('formRole').value = user?.role || '';
 
-        // WhatsApp tab (only when editing)
+        // WhatsApp/Email tabs
         const tabsList = getById('userModalTabs');
         const existingWaTab = tabsList.querySelector('[data-tab="whatsapp"]')?.closest('li');
         if (existingWaTab) existingWaTab.remove();
+        
+        const existingEmailTab = tabsList.querySelector('[data-tab="email"]')?.closest('li');
+        if (existingEmailTab) existingEmailTab.remove();
 
         if (user) {
-            const li = document.createElement('li');
-            li.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp Web / QR</button>`;
-            tabsList.appendChild(li);
+            const liWhatsapp = document.createElement('li');
+            liWhatsapp.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp</button>`;
+            tabsList.appendChild(liWhatsapp);
+            
+            const liEmail = document.createElement('li');
+            liEmail.innerHTML = `<button type="button" data-tab="email" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">E-mail</button>`;
+            tabsList.appendChild(liEmail);
         }
 
         switchTab('data');
@@ -423,10 +459,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const tabData      = getById('tabData');
         const tabWhatsapp  = getById('tabWhatsapp');
+        const tabEmail     = getById('tabEmail');
         const footer       = getById('userModalFooter');
 
-        tabData.classList.toggle('hidden', tab !== 'data');
-        tabWhatsapp.classList.toggle('hidden', tab !== 'whatsapp');
+        if (tabData) tabData.classList.toggle('hidden', tab !== 'data');
+        if (tabWhatsapp) tabWhatsapp.classList.toggle('hidden', tab !== 'whatsapp');
+        if (tabEmail) tabEmail.classList.toggle('hidden', tab !== 'email');
         footer.classList.remove('hidden');
 
         qsa('.tab-btn').forEach((btn: any) => {
@@ -651,6 +689,103 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e: any) { alert(e.message); }
     }
 
+    // --- Email Config ---
+    async function loadUserEmailConfig(userId: string) {
+        if (!userId) return;
+        const btn = getById('saveUserEmailConfigBtn');
+        const alertBox = getById('emailConfigAlert');
+        if (alertBox) alertBox.classList.add('hidden');
+        
+        try {
+            if (btn) btn.disabled = true;
+            const res = await api(`/users/${userId}/email-config`);
+            const config = res.data || {};
+            
+            getById('userSmtpHost').value = config.smtp_host || '';
+            getById('userSmtpPort').value = config.smtp_port || 587;
+            getById('userSmtpSecure').checked = !!config.smtp_secure;
+            getById('userImapHost').value = config.imap_host || '';
+            getById('userImapPort').value = config.imap_port || 993;
+            getById('userImapSecure').checked = config.imap_secure !== false; // default true
+            getById('userSmtpUser').value = config.smtp_user || '';
+            getById('userSmtpPassword').value = ''; // Don't show password
+            getById('userSenderName').value = config.sender_name || '';
+            getById('userSenderEmail').value = config.sender_email || '';
+            getById('userEmailIsActive').checked = config.is_active !== false; // default true
+
+            const hint = getById('userHasPasswordHint');
+            if (hint) hint.classList.toggle('hidden', !config.has_password);
+        } catch (e: any) {
+            if (e.status !== 404) {
+                if (alertBox) {
+                    alertBox.className = 'mb-4 rounded-lg px-4 py-3 text-sm bg-red-50 text-red-700 border border-red-200';
+                    alertBox.textContent = e.message || 'Falha ao carregar configuração de e-mail.';
+                    alertBox.classList.remove('hidden');
+                }
+            }
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function saveEmailConfig(event: any) {
+        event.preventDefault();
+        if (!editingUserId) return;
+        
+        const payload: any = {
+            smtp_host: getById('userSmtpHost').value.trim(),
+            smtp_port: parseInt(getById('userSmtpPort').value) || 587,
+            smtp_secure: getById('userSmtpSecure').checked,
+            imap_host: getById('userImapHost').value.trim(),
+            imap_port: parseInt(getById('userImapPort').value) || 993,
+            imap_secure: getById('userImapSecure').checked,
+            smtp_user: getById('userSmtpUser').value.trim(),
+            smtp_password: getById('userSmtpPassword').value,
+            sender_name: getById('userSenderName').value.trim(),
+            sender_email: getById('userSenderEmail').value.trim(),
+            is_active: getById('userEmailIsActive').checked
+        };
+        
+        if (!payload.smtp_password) delete payload.smtp_password;
+
+        const btn = getById('saveUserEmailConfigBtn');
+        const alertBox = getById('emailConfigAlert');
+        if (alertBox) alertBox.classList.add('hidden');
+        
+        try {
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Salvando...`;
+            }
+            
+            await api(`/users/${editingUserId}/email-config`, { 
+                method: 'POST', 
+                body: JSON.stringify(payload) 
+            });
+            
+            if (alertBox) {
+                alertBox.className = 'mb-4 rounded-lg px-4 py-3 text-sm bg-green-50 text-green-700 border border-green-200';
+                alertBox.textContent = 'Configuração de e-mail salva com sucesso!';
+                alertBox.classList.remove('hidden');
+            }
+            getById('userSmtpPassword').value = '';
+            const hint = getById('userHasPasswordHint');
+            if (hint) hint.classList.remove('hidden');
+            
+        } catch (e: any) {
+            if (alertBox) {
+                alertBox.className = 'mb-4 rounded-lg px-4 py-3 text-sm bg-red-50 text-red-700 border border-red-200';
+                alertBox.textContent = e.message || 'Falha ao salvar configuração.';
+                alertBox.classList.remove('hidden');
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Salvar Configuração';
+            }
+        }
+    }
+
     // --- Save ---
     async function saveUser(event: any) {
         event.preventDefault();
@@ -744,6 +879,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     getById('btnCancelModal')?.addEventListener('click', closeModal);
     getById('userModalBackdrop')?.addEventListener('click', closeModal);
     getById('userForm')?.addEventListener('submit', saveUser);
+    getById('userEmailConfigForm')?.addEventListener('submit', saveEmailConfig);
+    
+    getById('toggleUserSmtpPassword')?.addEventListener('click', (e: any) => {
+        const input = getById('userSmtpPassword');
+        if (input) {
+            if (input.type === 'password') {
+                input.type = 'text';
+                e.currentTarget.innerHTML = `<svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.29 3.29m0 0a10.05 10.05 0 015.71-1.58c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>`;
+            } else {
+                input.type = 'password';
+                e.currentTarget.innerHTML = `<svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+            }
+        }
+    });
 
     getById('filterSearch')?.addEventListener('input', (e: any) => {
         const target = e.target as HTMLInputElement;

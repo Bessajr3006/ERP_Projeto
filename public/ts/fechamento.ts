@@ -30,14 +30,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 response.data.forEach((customer: any) => {
                     const option = document.createElement('option');
                     option.value = customer.id;
-                    option.textContent = customer.nome || customer.razao_social || `Cliente ${customer.id}`;
+                    option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
                     companyParam.appendChild(option);
                 });
             } else if (response && Array.isArray(response)) {
                 response.forEach((customer: any) => {
                     const option = document.createElement('option');
                     option.value = customer.id;
-                    option.textContent = customer.nome || customer.razao_social || `Cliente ${customer.id}`;
+                    option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
                     companyParam.appendChild(option);
                 });
             }

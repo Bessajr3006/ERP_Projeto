@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         'compra_valor', 'compra_bs_icms', 'compra_isento', 'compra_outros', 'compra_pis', 'compra_cofins',
         'venda_valor', 'venda_bs_icms', 'venda_isento', 'venda_outros', 'venda_pis', 'venda_cofins',
         'apuracao_icms', 'apuracao_pis', 'apuracao_cofins',
-        'despesa_valor', 'despesa_bs_icms', 'despesa_isento', 'despesa_outros', 'despesa_pis', 'despesa_cofins'
+        'despesa_adm', 'despesa_operacional', 'despesa_folha', 'despesa_cmv'
     ];
 
     fieldsToMask.forEach(id => {
@@ -172,12 +172,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 cofins: parseCurrency(formData.get('apuracao_cofins') as string),
             },
             despesa: {
-                valor: parseCurrency(formData.get('despesa_valor') as string),
-                bs_icms: parseCurrency(formData.get('despesa_bs_icms') as string),
-                isento: parseCurrency(formData.get('despesa_isento') as string),
-                outros: parseCurrency(formData.get('despesa_outros') as string),
-                pis: parseCurrency(formData.get('despesa_pis') as string),
-                cofins: parseCurrency(formData.get('despesa_cofins') as string),
+                adm: parseCurrency(formData.get('despesa_adm') as string),
+                operacional: parseCurrency(formData.get('despesa_operacional') as string),
+                folha: parseCurrency(formData.get('despesa_folha') as string),
+                cmv: parseCurrency(formData.get('despesa_cmv') as string),
             }
         };
 

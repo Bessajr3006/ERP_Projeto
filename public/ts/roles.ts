@@ -1,7 +1,3 @@
-declare const Auth: any;
-declare const api: any;
-declare const CrudManager: any;
-
 (() => {
     const getById = (id: string): any => document.getElementById(id);
     const qs = (selector: string): any => document.querySelector(selector);

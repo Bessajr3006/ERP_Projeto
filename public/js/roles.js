@@ -377,7 +377,7 @@
                     tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum perfil encontrado.</td></tr>';
                     return;
                 }
-                tbody.innerHTML = items.map(role => `
+                tbody.innerHTML = items.map((role) => `
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                             ${role.name}
@@ -403,7 +403,7 @@
                     grid.innerHTML = '<div class="col-span-full text-center py-8 text-sm text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-lg">Nenhum perfil encontrado.</div>';
                     return;
                 }
-                grid.innerHTML = items.map(role => `
+                grid.innerHTML = items.map((role) => `
                     <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700">
                         <div class="flex-1">
                             <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100">${role.name}</h4>

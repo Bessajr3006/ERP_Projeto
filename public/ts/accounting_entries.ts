@@ -83,10 +83,13 @@
     }
 
     // --- Filter toggle (setup imediato, antes do carregamento de dados) ---
-    let filterIsOpen = true;
+    let filterIsOpen = false;
     if (els.filterBody && els.toggleFilterBtn) {
-      els.filterBody.style.maxHeight = els.filterBody.scrollHeight + 'px';
+      els.filterBody.style.maxHeight = '0px';
       els.filterBody.style.overflow = 'hidden';
+      if (els.filterChevron) {
+        (els.filterChevron as HTMLElement).style.transform = 'rotate(-90deg)';
+      }
       els.toggleFilterBtn.addEventListener('click', () => {
         filterIsOpen = !filterIsOpen;
         els.filterBody!.style.maxHeight = filterIsOpen ? `${els.filterBody!.scrollHeight}px` : '0px';

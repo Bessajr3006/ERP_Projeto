@@ -300,7 +300,11 @@ const SyncManager = {
     },
     getQueue: () => {
         try {
-            return JSON.parse(localStorage.getItem('erp_sync_queue') || '[]');
+            const queue = JSON.parse(localStorage.getItem('erp_sync_queue') || '[]');
+            return queue.filter((req: any) => {
+                const ep = String(req?.endpoint || '');
+                return !ep.includes('/proxy-consulta') && !ep.includes('/import') && !ep.includes('/upload');
+            });
         } catch (e) {
             return [];
         }

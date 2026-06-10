@@ -24,25 +24,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const parseCurrency = (str: string | null): number => {
         if (!str) return 0;
-        const clean = str.replace('R$', '').trim();
+        const clean = str.replace(/[^\d.,-]/g, '');
         return parseFloat(clean.replace(/\./g, '').replace(',', '.')) || 0;
     };
 
-    const makeMask: any = (window as any).createMaskAdapter || ((input: any, options: any) => (window as any).IMask?.(input, options));
-    const moneyOptions = {
-        mask: 'R$ num',
-        blocks: {
-            num: {
-                mask: Number,
-                scale: 2,
-                signed: true,
-                thousandsSeparator: '.',
-                padFractionalZeros: true,
-                normalizeZeros: true,
-                radix: ',',
-                mapToRadix: ['.']
-            }
+    const formatCurrencyInput = (e: Event) => {
+        const input = e.target as HTMLInputElement;
+        let value = input.value.replace(/\D/g, '');
+        if (value === '') {
+            input.value = '';
+            return;
         }
+        const numberValue = parseInt(value, 10) / 100;
+        input.value = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numberValue);
     };
 
     const fieldsToMask = [
@@ -52,8 +46,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     ];
 
     fieldsToMask.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) makeMask(el, moneyOptions);
+        const el = document.getElementById(id) as HTMLInputElement;
+        if (el) {
+            el.addEventListener('input', formatCurrencyInput);
+        }
     });
 
     // Load Customers for the select

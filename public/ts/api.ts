@@ -334,8 +334,14 @@ const SyncManager = {
                 const response = await fetch(`${API_BASE}${req.endpoint}`, config);
                 if (!response.ok) {
                     console.error(`Falha na sincronização do endpoint: ${req.endpoint}`);
-                    hasErrors = true;
-                    remainingQueue.push(req);
+                    // Se for um erro do cliente (400-499), a requisição é inválida e nunca vai passar.
+                    // Descartamos para não travar a fila para sempre.
+                    if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                        console.warn(`Descartando requisição da fila devido a erro do cliente (${response.status})`);
+                    } else {
+                        hasErrors = true;
+                        remainingQueue.push(req);
+                    }
                 }
             } catch (error) {
                 console.error(`A rede falhou novamente ao sincronizar: ${req.endpoint}`);
@@ -488,6 +494,11 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
         const method = options.method ? options.method.toUpperCase() : 'GET';
         const isGet = (method === 'GET');
         const isAuthMutation = !isGet && /^\/auth\/(login|register)$/.test(endpoint);
+        const isVolatileMutation = !isGet && (
+            endpoint.includes('/proxy-consulta') ||
+            endpoint.includes('/import') ||
+            endpoint.includes('/upload')
+        );
 
         const isNetworkError = !navigator.onLine
             || (error instanceof TypeError)
@@ -510,11 +521,13 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
             } else if (isAuthMutation) {
                 Auth.clearToken();
                 throw new Error('Não foi possível conectar ao servidor para autenticar o usuário. Verifique a conexão e tente novamente.');
+            } else if (isVolatileMutation) {
+                throw new Error('Você está offline e esta operação exige conexão com a internet.');
             } else {
                  // Sincronização offline
                  console.warn(`[Offline Mode] Salvando requisição ${method} localmente na fila: ${endpoint}`);
                  
-                  SyncManager.enqueue({ endpoint, method, headers: config.headers, body: options.body });
+                 SyncManager.enqueue({ endpoint, method, headers: config.headers, body: options.body });
                  
                  setTimeout(() => {
                      if (typeof UI !== 'undefined' && UI.showAlert) {

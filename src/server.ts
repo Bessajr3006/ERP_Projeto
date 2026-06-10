@@ -102,12 +102,12 @@ if (useHttps) {
         key:  fs.readFileSync(keyPath),
         cert: fs.readFileSync(certPath),
     };
-    server = https.createServer(httpsOptions, app).listen(HTTPS_PORT, () => {
+    server = https.createServer(httpsOptions, app).listen(HTTPS_PORT, '0.0.0.0', () => {
         console.log(`[BOOT] Servidor subiu via HTTPS na porta ${HTTPS_PORT}`);
-        logger.info({ port: HTTPS_PORT, protocol: 'https' }, `Servidor Bessa ERP iniciado em https://localhost:${HTTPS_PORT}`);
+        logger.info({ port: HTTPS_PORT, protocol: 'https' }, `Servidor Bessa ERP iniciado em https://0.0.0.0:${HTTPS_PORT}`);
     });
 } else {
-    server = app.listen(PORT, () => {
+    server = app.listen(PORT, '0.0.0.0', () => {
         console.log(`[BOOT] Servidor subiu via HTTP na porta ${PORT}`);
         logger.info({ port: PORT }, `Servidor Bessa ERP iniciado na porta ${PORT}`);
     });

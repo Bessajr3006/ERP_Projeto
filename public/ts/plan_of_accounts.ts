@@ -152,7 +152,7 @@
                     <!-- Content Block -->
                     <div class="flex-1 flex flex-col mt-0">
                         <div class="flex justify-between items-start gap-2 mb-2">
-                            <h4 class="text-base font-bold ${account.type === 'synthetic' ? 'text-brand-600 dark:text-brand-400' : 'text-gray-900 dark:text-gray-100'} leading-tight break-words flex-1">
+                            <h4 class="text-base font-bold ${account.type === 'synthetic' ? 'text-brand-600 dark:text-brand-400' : 'text-gray-900 dark:text-gray-100'} leading-tight flex-1">
                                 ${account.name}
                             </h4>
                             <span class="text-xs font-mono px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded text-gray-600 dark:text-gray-300 shrink-0 border border-gray-200 dark:border-slate-600">${account.code}</span>

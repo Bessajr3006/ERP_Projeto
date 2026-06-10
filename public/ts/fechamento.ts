@@ -128,7 +128,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 cofins: parseFloat(formData.get('venda_cofins') as string) || 0,
             },
             apuracao: {
-                valor: parseFloat(formData.get('apuracao_valor') as string) || 0,
+                icms: parseFloat(formData.get('apuracao_icms') as string) || 0,
+                pis: parseFloat(formData.get('apuracao_pis') as string) || 0,
+                cofins: parseFloat(formData.get('apuracao_cofins') as string) || 0,
             }
         };
 

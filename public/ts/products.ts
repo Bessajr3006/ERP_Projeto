@@ -956,7 +956,7 @@ function renderGrid(elementId, items) {
         const productJson = JSON.stringify(product).replace(/'/g, "&#39;");
 
         return `
-        <div data-product-card class="bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden flex flex-col relative border ${isLowStock(product) ? 'border-red-300 dark:border-red-800/50 bg-red-50/50 dark:bg-red-900/10' : 'border-gray-200 dark:border-slate-700'} hover:border-brand-200 dark:hover:border-brand-700 transition-colors group min-w-0">
+        <div data-product-card class="bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden flex flex-col relative border ${isLowStock(product) ? 'border-red-300 dark:border-red-800/50 bg-red-50/50 dark:bg-red-900/10' : 'border-gray-200 dark:border-slate-700'} hover:border-brand-200 dark:hover:border-brand-700 transition-colors group min-w-0 h-full">
             <div class="w-full h-36 bg-gray-50 dark:bg-slate-900/60 border-b border-gray-100 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                 ${imageSrc
                     ? `<img src="${imageSrc}" alt="${product.name}" class="w-full h-full object-contain p-2" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-gray-300 dark:text-slate-600\'><svg class=\'w-12 h-12\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\'></path></svg></div>'">`
@@ -1017,7 +1017,7 @@ function renderGrid(elementId, items) {
                     </div>
                 </div>
 
-                <div class="mt-4 pt-4 border-t ${isLowStock(product) ? 'border-red-200 dark:border-red-800/30' : 'border-gray-100 dark:border-slate-700'} flex justify-between items-center gap-3">
+                <div class="mt-auto pt-4 border-t ${isLowStock(product) ? 'border-red-200 dark:border-red-800/30' : 'border-gray-100 dark:border-slate-700'} flex justify-between items-center gap-3">
                     <div class="text-xs text-gray-500 dark:text-gray-400">
                         Min ${product.min_stock || 0} / Max ${product.max_stock || 0}
                     </div>

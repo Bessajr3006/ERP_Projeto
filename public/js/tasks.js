@@ -323,8 +323,8 @@
             // If list is completely empty AND mode is not calendar
             if (filtered.length === 0 && currentViewMode !== 'calendar') {
                 tasksListContainer.innerHTML = `
-            <ul id="tasksList" class="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-8">
-                <li class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl p-8 text-center border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-slate-750">
+            <ul id="tasksList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-8">
+                <li class="sm:col-span-2 bg-white dark:bg-slate-800 rounded-2xl p-8 text-center border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-slate-750">
                     <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/30 mb-4 text-brand-600 dark:text-brand-400">
                         <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -439,10 +439,10 @@
                         </button>
                     </div>
                     
-                    <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                    <div class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
                         <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
                     </div>
-                    <div class="grid grid-cols-7 gap-1 auto-rows-fr">
+                    <div class="grid grid-cols-7 gap-1 sm:gap-2 auto-rows-fr min-h-[65vh] sm:min-h-[75vh]">
             `;
                 for (let i = 0; i < firstDay; i++) {
                     calendarGrid += `<div class="p-2 bg-gray-50/50 dark:bg-slate-800/50 rounded-lg border border-transparent min-h-20"></div>`;
@@ -505,7 +505,7 @@
             else {
                 // Normal List
                 tasksListContainer.innerHTML = `
-            <ul id="tasksList" class="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-8">
+            <ul id="tasksList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-8">
                 ${filtered.map(t => createTaskCardHTML(t, todayStr)).join('')}
             </ul>`;
             }

@@ -42,6 +42,8 @@ export interface Entity {
     cnpj_document_url?: string;
     seller_public_id?: string | null;
     seller_name?: string | null;
+    discount_type?: 'percentage' | 'fixed' | null;
+    discount_value?: number | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -72,6 +74,8 @@ export interface CreateEntityData {
     cnpj_document_base64?: string | null | undefined;
     cnpj_document_url?: string | null | undefined;
     seller_public_id?: string | null | undefined;
+    discount_type?: 'percentage' | 'fixed' | null | undefined;
+    discount_value?: number | null | undefined;
 }
 
 export type UpdateEntityData = Partial<CreateEntityData>;

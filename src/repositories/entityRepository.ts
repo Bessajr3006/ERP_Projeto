@@ -18,7 +18,7 @@ const BASE_ENTITY_FIELDS = [
     'social_contract_url', 'cnpj_document_url',
 ] as const;
 
-const CUSTOMER_ENTITY_FIELDS = [...BASE_ENTITY_FIELDS, 'vencimento_dia', 'limite', 'seller_user_id'] as const;
+const CUSTOMER_ENTITY_FIELDS = [...BASE_ENTITY_FIELDS, 'vencimento_dia', 'limite', 'seller_user_id', 'discount_type', 'discount_value'] as const;
 const CONTACT_ENTITY_FIELDS = [...BASE_ENTITY_FIELDS, 'birth_date'] as const;
 
 function getPersistedFields(table: EntityTable): readonly string[] {

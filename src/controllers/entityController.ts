@@ -50,6 +50,8 @@ const customerCreateSchema = baseEntitySchema.extend({
     seller_public_id: optionalSellerPublicId,
     vencimento_dia: z.number().int().min(1).max(31).nullable().optional(),
     limite: z.number().min(0).optional(),
+    discount_type: z.enum(['percentage', 'fixed']).nullable().optional(),
+    discount_value: z.number().min(0).nullable().optional(),
 });
 
 const customerUpdateSchema = customerCreateSchema.partial();

@@ -26,6 +26,37 @@ export interface AccountingEntries {
   updated_at: Generated<Date | null>;
 }
 
+export interface AuditLogs {
+  action: string;
+  company_id: number;
+  created_at: Generated<Date | null>;
+  description: string;
+  entity_id: Generated<string | null>;
+  entity_type: Generated<string | null>;
+  id: Generated<number>;
+  ip_address: Generated<string | null>;
+  metadata: Generated<string | null>;
+  method: Generated<string | null>;
+  module: string;
+  path: Generated<string | null>;
+  user_agent: Generated<string | null>;
+  user_id: Generated<number | null>;
+}
+
+export interface AuditoriaOperacoes {
+  acao: string;
+  criado_em: Generated<Date | null>;
+  detalhes: Generated<string | null>;
+  entidade: string;
+  entidade_id: Generated<string | null>;
+  id: Generated<number>;
+  origem: Generated<string | null>;
+  usuario_email: Generated<string | null>;
+  usuario_id: Generated<number | null>;
+  usuario_nome: Generated<string | null>;
+  usuario_perfil: Generated<string | null>;
+}
+
 export interface BankAccounts {
   account_number: Generated<string | null>;
   agency_number: Generated<string | null>;
@@ -40,25 +71,9 @@ export interface BankAccounts {
   initial_balance: Generated<Decimal>;
   institution: Generated<string | null>;
   name: string;
+  pix_key: Generated<string | null>;
   public_id: string;
   type: Generated<"cash" | "checking" | "savings">;
-  updated_at: Generated<Date | null>;
-}
-
-export interface BankStatements {
-  amount: Decimal;
-  bank_account_id: number;
-  company_id: number;
-  created_at: Generated<Date | null>;
-  date: Date;
-  description: string;
-  id: Generated<number>;
-  public_id: string;
-  raw_data: Generated<string | null>;
-  reconciled_transaction_id: Generated<number | null>;
-  status: Generated<"ignored" | "pending" | "reconciled" | null>;
-  transaction_id: Generated<string | null>;
-  type: "expense" | "income";
   updated_at: Generated<Date | null>;
 }
 
@@ -129,6 +144,9 @@ export interface Companies {
   im: Generated<string | null>;
   is_active: Generated<number>;
   is_system: Generated<number>;
+  logo_base64: Generated<string | null>;
+  logo_filename: Generated<string | null>;
+  logo_url: Generated<string | null>;
   neighborhood: Generated<string | null>;
   /**
    * Número da NFCe
@@ -164,6 +182,7 @@ export interface Companies {
   solidcon_url_5: Generated<string | null>;
   state: Generated<string | null>;
   street: Generated<string | null>;
+  swagger_api_token: Generated<string | null>;
   tax_regime: Generated<string | null>;
   /**
    * Nome Fantasia
@@ -175,7 +194,8 @@ export interface Companies {
   zipcode: Generated<string | null>;
 }
 
-export interface Customers {
+export interface Contacts {
+  birth_date: Generated<Date | null>;
   certificate_expiration: Generated<Date | null>;
   certificate_password: Generated<string | null>;
   certificate_url: Generated<string | null>;
@@ -192,12 +212,147 @@ export interface Customers {
   number: Generated<string | null>;
   phone: Generated<string | null>;
   public_id: string;
-  seller_user_id: Generated<number | null>;
   social_contract_url: Generated<string | null>;
   state: Generated<string | null>;
   street: Generated<string | null>;
   updated_at: Generated<Date | null>;
   zipcode: Generated<string | null>;
+}
+
+export interface Contas {
+  conta: string;
+  criado_em: Generated<Date | null>;
+  id: Generated<number>;
+  tipo: string;
+}
+
+export interface ControleMei {
+  ano: number;
+  criado_em: Generated<Date | null>;
+  das_status: Generated<string | null>;
+  das_valor: Generated<Decimal | null>;
+  empresa_id: number;
+  id: Generated<number>;
+  mes: number;
+  observacao: Generated<string | null>;
+  receita: Generated<Decimal | null>;
+}
+
+export interface ControlePresumido {
+  ano: number;
+  base_calculo: Generated<Decimal | null>;
+  cofins: Generated<Decimal | null>;
+  criado_em: Generated<Date | null>;
+  csll: Generated<Decimal | null>;
+  empresa_id: number;
+  id: Generated<number>;
+  irpj: Generated<Decimal | null>;
+  observacao: Generated<string | null>;
+  pis: Generated<Decimal | null>;
+  receita: Generated<Decimal | null>;
+  status: Generated<string | null>;
+  trimestre: number;
+  vencimento: Generated<Date | null>;
+}
+
+export interface ControleReal {
+  adicional_ir: Generated<Decimal | null>;
+  ano: number;
+  cofins: Generated<Decimal | null>;
+  criado_em: Generated<Date | null>;
+  csll: Generated<Decimal | null>;
+  deducoes: Generated<Decimal | null>;
+  empresa_id: number;
+  id: Generated<number>;
+  irpj: Generated<Decimal | null>;
+  lucro_base: Generated<Decimal | null>;
+  mes: number;
+  observacao: Generated<string | null>;
+  pis: Generated<Decimal | null>;
+  receita: Generated<Decimal | null>;
+  status: Generated<string | null>;
+  vencimento: Generated<Date | null>;
+}
+
+export interface ControleSimples {
+  aliquota: Generated<Decimal | null>;
+  ano: number;
+  criado_em: Generated<Date | null>;
+  das_status: Generated<string | null>;
+  das_valor: Generated<Decimal | null>;
+  empresa_id: number;
+  id: Generated<number>;
+  mes: number;
+  observacao: Generated<string | null>;
+  receita: Generated<Decimal | null>;
+  vencimento: Generated<Date | null>;
+}
+
+export interface Customers {
+  certificate_expiration: Generated<Date | null>;
+  certificate_password: Generated<string | null>;
+  certificate_url: Generated<string | null>;
+  city: Generated<string | null>;
+  cnpj_cpf: Generated<string | null>;
+  cnpj_document_url: Generated<string | null>;
+  company_id: number;
+  complement: Generated<string | null>;
+  created_at: Generated<Date | null>;
+  discount_type: Generated<"fixed" | "percentage" | null>;
+  discount_value: Generated<Decimal | null>;
+  email: Generated<string | null>;
+  id: Generated<number>;
+  /**
+   * Limite de credito
+   */
+  limite: Generated<Decimal>;
+  name: string;
+  neighborhood: Generated<string | null>;
+  number: Generated<string | null>;
+  phone: Generated<string | null>;
+  public_id: string;
+  seller_user_id: Generated<number | null>;
+  social_contract_url: Generated<string | null>;
+  state: Generated<string | null>;
+  street: Generated<string | null>;
+  updated_at: Generated<Date | null>;
+  /**
+   * Dia do mes para vencimento (1-31)
+   */
+  vencimento_dia: Generated<number | null>;
+  zipcode: Generated<string | null>;
+}
+
+export interface EmailConfig {
+  company_id: Generated<number | null>;
+  created_at: Generated<Date | null>;
+  id: Generated<number>;
+  imap_host: Generated<string>;
+  imap_port: Generated<number>;
+  imap_secure: Generated<number>;
+  is_active: Generated<number>;
+  sender_email: Generated<string>;
+  sender_name: Generated<string>;
+  smtp_host: Generated<string>;
+  smtp_password: Generated<string | null>;
+  smtp_port: Generated<number>;
+  smtp_secure: Generated<number>;
+  smtp_user: Generated<string>;
+  updated_at: Generated<Date | null>;
+  user_public_id: Generated<string | null>;
+}
+
+export interface FaturamentoDia {
+  credito: Generated<Decimal | null>;
+  criado_em: Generated<Date | null>;
+  data: Date;
+  debito: Generated<Decimal | null>;
+  descricao: Generated<string | null>;
+  dinheiro: Generated<Decimal | null>;
+  empresa_id: number;
+  id: Generated<number>;
+  pix: Generated<Decimal | null>;
+  valor: Generated<Decimal | null>;
 }
 
 export interface IbgeCities {
@@ -230,6 +385,7 @@ export interface Manufacturers {
   created_at: Generated<Date | null>;
   email: Generated<string | null>;
   id: Generated<number>;
+  image_base64: Generated<string | null>;
   name: string;
   phone: Generated<string | null>;
   public_id: string;
@@ -244,6 +400,65 @@ export interface Measures {
   name: string;
   public_id: string;
   updated_at: Generated<Date | null>;
+}
+
+export interface OrganizerStates {
+  company_id: number;
+  created_at: Generated<Date | null>;
+  id: Generated<number>;
+  state_json: string;
+  updated_at: Generated<Date | null>;
+}
+
+export interface Pagamentos {
+  conta_id: number;
+  criado_em: Generated<Date | null>;
+  data_baixa: Generated<Date | null>;
+  data_pagamento: Date;
+  id: Generated<number>;
+  observacao: Generated<string | null>;
+  valor: Decimal;
+  valor_baixa: Generated<Decimal | null>;
+}
+
+export interface PessoaFisica {
+  bairro: Generated<string | null>;
+  cep: Generated<string | null>;
+  cidade: Generated<string | null>;
+  complemento: Generated<string | null>;
+  cpf: string;
+  criado_em: Generated<Date | null>;
+  email: Generated<string | null>;
+  estado_civil: Generated<string | null>;
+  id: Generated<number>;
+  logradouro: Generated<string | null>;
+  nascimento: Generated<Date | null>;
+  nome: string;
+  numero: Generated<string | null>;
+  rg: Generated<string | null>;
+  sexo: Generated<string | null>;
+  telefone: Generated<string | null>;
+  uf: Generated<string | null>;
+}
+
+export interface PessoaJuridica {
+  bairro: Generated<string | null>;
+  cep: Generated<string | null>;
+  cidade: Generated<string | null>;
+  cnpj: Generated<string | null>;
+  complemento: Generated<string | null>;
+  criado_em: Generated<Date | null>;
+  email: Generated<string | null>;
+  id: Generated<number>;
+  inscricao_est: Generated<string | null>;
+  logradouro: Generated<string | null>;
+  nome_fantasia: Generated<string | null>;
+  numero: Generated<string | null>;
+  porte: Generated<string | null>;
+  razao_social: string;
+  regime: Generated<string | null>;
+  telefone: Generated<string | null>;
+  uf: Generated<string | null>;
 }
 
 export interface PriceTables {
@@ -262,6 +477,7 @@ export interface ProductCategories {
   created_at: Generated<Date | null>;
   description: Generated<string | null>;
   id: Generated<number>;
+  image_base64: Generated<string | null>;
   name: string;
   public_id: string;
   updated_at: Generated<Date | null>;
@@ -280,15 +496,19 @@ export interface Products {
   id: Generated<number>;
   image_base64: Generated<string | null>;
   image_url: Generated<string | null>;
+  is_imported: Generated<number>;
+  is_promotional: Generated<number>;
   manufacturer_id: Generated<number | null>;
   max_stock: Generated<number | null>;
   measure_id: Generated<number | null>;
   min_stock: Generated<number | null>;
   name: string;
   ncm: Generated<string | null>;
+  promotional_price: Generated<Decimal>;
   public_id: string;
   selling_price: Generated<Decimal>;
   sku: Generated<string | null>;
+  stock_type_id: Generated<number | null>;
   tax_rule_id: Generated<number | null>;
   updated_at: Generated<Date | null>;
 }
@@ -312,6 +532,18 @@ export interface PurchaseOrders {
   supplier_id: number;
   total_amount: Generated<Decimal>;
   updated_at: Generated<Date | null>;
+}
+
+export interface Recebimentos {
+  conta_id: number;
+  criado_em: Generated<Date | null>;
+  data_baixa: Generated<Date | null>;
+  data_recebimento: Date;
+  id: Generated<number>;
+  observacao: Generated<string | null>;
+  pessoa_juridica_id: Generated<number | null>;
+  valor: Decimal;
+  valor_baixa: Generated<Decimal | null>;
 }
 
 export interface RolePermissions {
@@ -338,11 +570,13 @@ export interface Roles {
 
 export interface SalesItems {
   id: Generated<number>;
+  is_deleted: Generated<number>;
   product_id: number;
   quantity: Decimal;
   sale_id: number;
   total_price: Decimal;
   unit_price: Decimal;
+  xml_item_data: Generated<string | null>;
 }
 
 export interface SalesOrders {
@@ -352,10 +586,89 @@ export interface SalesOrders {
   date: Date;
   delivery_address: Generated<string | null>;
   id: Generated<number>;
+  is_deleted: Generated<number>;
   nfe_emitted_at: Generated<Date | null>;
+  nfe_header_json: Generated<string | null>;
+  nfe_issue_date: Generated<Date | null>;
+  nfe_key: Generated<string | null>;
   public_id: string;
-  status: Generated<"cancelled" | "completed" | "invoiced" | "pending" | "separated">;
+  status: Generated<"cancelled" | "completed" | "invoiced" | "pending" | "progress" | "separated">;
   total_amount: Generated<Decimal>;
+  updated_at: Generated<Date | null>;
+}
+
+export interface SchemaMigrations {
+  aplicado_em: Generated<Date | null>;
+  description: string;
+  version: number;
+}
+
+export interface SefazJobs {
+  company_id: number;
+  created_at: Generated<Date | null>;
+  error_message: Generated<string | null>;
+  id: Generated<number>;
+  payload: string;
+  processed_at: Generated<Date | null>;
+  result: Generated<string | null>;
+  status: Generated<"completed" | "failed" | "pending" | "processing" | null>;
+  type: string;
+}
+
+export interface ServiceLaunches {
+  company_id: number;
+  created_at: Generated<Date | null>;
+  customer_id: number;
+  id: Generated<number>;
+  nfse_issued_at: Generated<Date | null>;
+  nfse_number: Generated<string | null>;
+  nfse_status: Generated<string>;
+  nfse_verification_code: Generated<string | null>;
+  observation: Generated<string | null>;
+  public_id: string;
+  quantity: Generated<Decimal>;
+  service_id: number;
+  total_price: Generated<Decimal>;
+  unit_price: Generated<Decimal>;
+  updated_at: Generated<Date | null>;
+}
+
+export interface Services {
+  company_id: number;
+  created_at: Generated<Date | null>;
+  description: Generated<string | null>;
+  federal_tax_reference_id: Generated<string | null>;
+  federal_tax_reference_name: Generated<string | null>;
+  id: Generated<number>;
+  municipal_tax_code: Generated<string | null>;
+  municipal_tax_reference_id: Generated<string | null>;
+  municipal_tax_reference_name: Generated<string | null>;
+  name: string;
+  national_tax_code: Generated<string | null>;
+  nbs_item: Generated<string | null>;
+  price: Generated<Decimal>;
+  public_id: string;
+  service_type_id: Generated<number | null>;
+  updated_at: Generated<Date | null>;
+}
+
+export interface ServiceTypes {
+  company_id: number;
+  created_at: Generated<Date | null>;
+  description: Generated<string | null>;
+  id: Generated<number>;
+  name: string;
+  public_id: string;
+  updated_at: Generated<Date | null>;
+}
+
+export interface StockTypes {
+  company_id: number;
+  created_at: Generated<Date | null>;
+  description: Generated<string | null>;
+  id: Generated<number>;
+  name: string;
+  public_id: string;
   updated_at: Generated<Date | null>;
 }
 
@@ -381,6 +694,22 @@ export interface Suppliers {
   street: Generated<string | null>;
   updated_at: Generated<Date | null>;
   zipcode: Generated<string | null>;
+}
+
+export interface Tasks {
+  assigned_user_public_id: Generated<string | null>;
+  attachments_json: Generated<string | null>;
+  company_id: number;
+  completed_at: Generated<Date | null>;
+  created_at: Generated<Date | null>;
+  due_date: Generated<Date | null>;
+  id: Generated<number>;
+  person_id: Generated<string | null>;
+  person_type: Generated<string | null>;
+  public_id: string;
+  status: Generated<"completed" | "pending" | "progress">;
+  title: string;
+  updated_at: Generated<Date | null>;
 }
 
 export interface TaxRules {
@@ -439,11 +768,12 @@ export interface Transactions {
    * Vinculo com ordem de compra (Despesa)
    */
   purchase_id: Generated<number | null>;
+  received_at: Generated<Date | null>;
   /**
    * Vinculo com ordem de venda (Receita)
    */
   sale_id: Generated<number | null>;
-  status: Generated<"cancelled" | "paid" | "pending">;
+  status: Generated<"cancelled" | "paid" | "pending" | "progress">;
   /**
    * Vinculo com fornecedor (Despesa)
    */
@@ -456,12 +786,36 @@ export interface Transactions {
   user_id: number;
 }
 
+export interface UiPreferences {
+  company_id: number;
+  created_at: Generated<Date | null>;
+  footer_color: Generated<string>;
+  form_accent: Generated<string>;
+  form_company_name: Generated<string | null>;
+  form_header_size: Generated<string>;
+  form_profile: Generated<string>;
+  id: Generated<number>;
+  layout_align: Generated<string>;
+  layout_width: Generated<string>;
+  nav_align: Generated<string>;
+  nav_color: Generated<string>;
+  nav_width: Generated<string>;
+  sales_cards_per_row: Generated<string | null>;
+  sales_layout: Generated<string>;
+  split_cart_size: Generated<string>;
+  theme: Generated<string>;
+  theme_toggle_visible: Generated<number>;
+  updated_at: Generated<Date | null>;
+  user_public_id: string;
+}
+
 export interface Users {
   city: Generated<string | null>;
   company_id: number;
   complement: Generated<string | null>;
   cpf_cnpj: Generated<string | null>;
   created_at: Generated<Date | null>;
+  default_page: Generated<string | null>;
   email: string;
   full_name: string;
   id: Generated<number>;
@@ -478,7 +832,19 @@ export interface Users {
   state: Generated<string | null>;
   street: Generated<string | null>;
   updated_at: Generated<Date | null>;
+  whatsapp_auto_reply_mode: Generated<"automatic" | "manual">;
   zipcode: Generated<string | null>;
+}
+
+export interface Usuarios {
+  criado_em: Generated<Date | null>;
+  email: string;
+  id: Generated<number>;
+  nome: string;
+  perfil: Generated<string | null>;
+  senha: string;
+  status: Generated<string | null>;
+  ultimo_acesso: Generated<Date | null>;
 }
 
 export interface WhatsappBusinessMessages {
@@ -506,6 +872,41 @@ export interface WhatsappBusinessMessages {
   user_id: Generated<number | null>;
 }
 
+export interface WhatsappBusinessPhoneAliases {
+  alias_phone: string;
+  canonical_phone: string;
+  company_id: number;
+  created_at: Generated<Date | null>;
+  id: Generated<number>;
+  owner_id: number;
+  owner_type: Generated<"company" | "user">;
+  source_chat_id: Generated<string | null>;
+  source_chat_user: Generated<string | null>;
+  updated_at: Generated<Date | null>;
+}
+
+export interface WhatsappBusinessSessions {
+  company_id: number;
+  company_key: string;
+  connected_name: Generated<string | null>;
+  connected_number: Generated<string | null>;
+  created_at: Generated<Date | null>;
+  has_qr_code: Generated<number>;
+  id: Generated<number>;
+  last_error: Generated<string | null>;
+  last_event_at: Generated<Date | null>;
+  owner_id: number;
+  owner_key: string;
+  owner_type: Generated<"company" | "user">;
+  persisted_session: Generated<number>;
+  platform: Generated<string | null>;
+  session_key: string;
+  status: Generated<"auth_failure" | "authenticated" | "awaiting_qr" | "disconnected" | "error" | "idle" | "initializing" | "ready">;
+  updated_at: Generated<Date | null>;
+  user_id: Generated<number | null>;
+  wid: Generated<string | null>;
+}
+
 export interface WhatsappJobs {
   created_at: Generated<Date | null>;
   error_message: Generated<string | null>;
@@ -518,30 +919,55 @@ export interface WhatsappJobs {
 
 export interface DB {
   accounting_entries: AccountingEntries;
+  audit_logs: AuditLogs;
+  auditoria_operacoes: AuditoriaOperacoes;
   bank_accounts: BankAccounts;
-  bank_statements: BankStatements;
   categories: Categories;
   chart_of_accounts: ChartOfAccounts;
   companies: Companies;
+  contacts: Contacts;
+  contas: Contas;
+  controle_mei: ControleMei;
+  controle_presumido: ControlePresumido;
+  controle_real: ControleReal;
+  controle_simples: ControleSimples;
   customers: Customers;
+  email_config: EmailConfig;
+  faturamento_dia: FaturamentoDia;
   ibge_cities: IbgeCities;
   ibge_states: IbgeStates;
   inventory_movements: InventoryMovements;
   manufacturers: Manufacturers;
   measures: Measures;
+  organizer_states: OrganizerStates;
+  pagamentos: Pagamentos;
+  pessoa_fisica: PessoaFisica;
+  pessoa_juridica: PessoaJuridica;
   price_tables: PriceTables;
   product_categories: ProductCategories;
   products: Products;
   purchase_items: PurchaseItems;
   purchase_orders: PurchaseOrders;
+  recebimentos: Recebimentos;
   role_permissions: RolePermissions;
   roles: Roles;
   sales_items: SalesItems;
   sales_orders: SalesOrders;
+  schema_migrations: SchemaMigrations;
+  sefaz_jobs: SefazJobs;
+  service_launches: ServiceLaunches;
+  service_types: ServiceTypes;
+  services: Services;
+  stock_types: StockTypes;
   suppliers: Suppliers;
+  tasks: Tasks;
   tax_rules: TaxRules;
   transactions: Transactions;
+  ui_preferences: UiPreferences;
   users: Users;
+  usuarios: Usuarios;
   whatsapp_business_messages: WhatsappBusinessMessages;
+  whatsapp_business_phone_aliases: WhatsappBusinessPhoneAliases;
+  whatsapp_business_sessions: WhatsappBusinessSessions;
   whatsapp_jobs: WhatsappJobs;
 }

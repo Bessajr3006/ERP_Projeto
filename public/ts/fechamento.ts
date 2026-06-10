@@ -13,9 +13,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tabCompraBtn = document.getElementById('tabCompraBtn') as HTMLButtonElement;
     const tabVendaBtn = document.getElementById('tabVendaBtn') as HTMLButtonElement;
     const tabApuracaoBtn = document.getElementById('tabApuracaoBtn') as HTMLButtonElement;
+    const tabDespesaBtn = document.getElementById('tabDespesaBtn') as HTMLButtonElement;
     const tabCompraPanel = document.getElementById('tabCompraPanel') as HTMLElement;
     const tabVendaPanel = document.getElementById('tabVendaPanel') as HTMLElement;
     const tabApuracaoPanel = document.getElementById('tabApuracaoPanel') as HTMLElement;
+    const tabDespesaPanel = document.getElementById('tabDespesaPanel') as HTMLElement;
     
     const companyParam = document.getElementById('companyParam') as HTMLSelectElement;
     const fechamentoForm = document.getElementById('fechamentoForm') as HTMLFormElement;
@@ -42,7 +44,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fieldsToMask = [
         'compra_valor', 'compra_bs_icms', 'compra_isento', 'compra_outros', 'compra_pis', 'compra_cofins',
         'venda_valor', 'venda_bs_icms', 'venda_isento', 'venda_outros', 'venda_pis', 'venda_cofins',
-        'apuracao_icms', 'apuracao_pis', 'apuracao_cofins'
+        'apuracao_icms', 'apuracao_pis', 'apuracao_cofins',
+        'despesa_valor', 'despesa_bs_icms', 'despesa_isento', 'despesa_outros', 'despesa_pis', 'despesa_cofins'
     ];
 
     fieldsToMask.forEach(id => {
@@ -89,12 +92,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         fechamentoModal.classList.add('hidden');
     }
 
-    function switchTab(tab: 'compra' | 'venda' | 'apuracao') {
-        [tabCompraBtn, tabVendaBtn, tabApuracaoBtn].forEach(btn => {
+    function switchTab(tab: 'compra' | 'venda' | 'apuracao' | 'despesa') {
+        [tabCompraBtn, tabVendaBtn, tabApuracaoBtn, tabDespesaBtn].forEach(btn => {
             btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
             btn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
         });
-        [tabCompraPanel, tabVendaPanel, tabApuracaoPanel].forEach(panel => {
+        [tabCompraPanel, tabVendaPanel, tabApuracaoPanel, tabDespesaPanel].forEach(panel => {
             panel.classList.add('hidden');
         });
 
@@ -110,6 +113,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabApuracaoBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
             tabApuracaoBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
             tabApuracaoPanel.classList.remove('hidden');
+        } else if (tab === 'despesa') {
+            tabDespesaBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            tabDespesaBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+            tabDespesaPanel.classList.remove('hidden');
         }
     }
 
@@ -128,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabCompraBtn.addEventListener('click', () => switchTab('compra'));
     tabVendaBtn.addEventListener('click', () => switchTab('venda'));
     tabApuracaoBtn.addEventListener('click', () => switchTab('apuracao'));
+    tabDespesaBtn.addEventListener('click', () => switchTab('despesa'));
 
     fechamentoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -162,6 +170,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 icms: parseCurrency(formData.get('apuracao_icms') as string),
                 pis: parseCurrency(formData.get('apuracao_pis') as string),
                 cofins: parseCurrency(formData.get('apuracao_cofins') as string),
+            },
+            despesa: {
+                valor: parseCurrency(formData.get('despesa_valor') as string),
+                bs_icms: parseCurrency(formData.get('despesa_bs_icms') as string),
+                isento: parseCurrency(formData.get('despesa_isento') as string),
+                outros: parseCurrency(formData.get('despesa_outros') as string),
+                pis: parseCurrency(formData.get('despesa_pis') as string),
+                cofins: parseCurrency(formData.get('despesa_cofins') as string),
             }
         };
 

@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const payload = {
             customerId: formData.get('customerId'),
+            competencia: formData.get('competencia'),
             compra: {
                 valor: parseCurrency(formData.get('compra_valor') as string),
                 bs_icms: parseCurrency(formData.get('compra_bs_icms') as string),

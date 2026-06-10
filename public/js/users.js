@@ -37,13 +37,13 @@
                 return;
             try {
                 await api(`/users/${id}`, { method: 'DELETE' });
-                UI.showToast('Usuário excluído com sucesso!', 'success');
+                UI.showAlert('alertMessage', 'Usuário excluído com sucesso!', 'success');
                 await loadData();
                 renderTable();
                 renderGrid();
             }
             catch (e) {
-                UI.showToast(e.message || 'Erro ao excluir usuário', 'error');
+                UI.showAlert('alertMessage', e.message || 'Erro ao excluir usuário', 'error');
             }
         }
         // --- Helpers ---

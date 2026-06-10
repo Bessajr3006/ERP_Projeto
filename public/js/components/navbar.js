@@ -110,6 +110,7 @@ function highlightActiveLink() {
     const mobileOverviewDropdownLinks = document.querySelectorAll('#mobileOverviewDropdown a');
     const mobileReportsDropdownLinks = document.querySelectorAll('#mobileReportsDropdown a');
     const mobileConfigDropdownLinks = document.querySelectorAll('#mobileConfigDropdown a');
+    const mobileControleDropdownLinks = document.querySelectorAll('#mobileControleDropdown a');
     mobileLinks.forEach(link => {
         const href = link.getAttribute('href');
         if (href && href.split('?')[0] === currentPath) {
@@ -146,7 +147,8 @@ function highlightActiveLink() {
     highlightMobileDropdown(mobileAccountingDropdownLinks, 'mobileAccountingDropdownBtn', 'mobileAccountingDropdown', 'mobileAccountingDropdownIcon');
     highlightMobileDropdown(mobileOverviewDropdownLinks, 'mobileOverviewDropdownBtn', 'mobileOverviewDropdown', 'mobileOverviewDropdownIcon');
     highlightMobileDropdown(mobileReportsDropdownLinks, 'mobileReportsDropdownBtn', 'mobileReportsDropdown', 'mobileReportsDropdownIcon');
-    highlightMobileDropdown(mobileConfigDropdownLinks, 'mobileConfigDropdownBtn', 'mobileConfigDropdown', 'mobileConfigDropdownIcon');
+    highlightMobileDropdown(mobileConfigDropdownLinks, 'mobileConfigDropdownBtn', 'mobileControleDropdownBtn', 'mobileConfigDropdown', 'mobileConfigDropdownIcon');
+    highlightMobileDropdown(mobileControleDropdownLinks, 'mobileControleDropdownBtn', 'mobileControleDropdown', 'mobileControleDropdownIcon');
     highlightMobileDropdown(mobilePurchasesDropdownLinks, 'mobilePurchasesDropdownBtn', 'mobilePurchasesDropdown', 'mobilePurchasesDropdownIcon');
 }
 function initMobileMenu() {
@@ -196,6 +198,7 @@ function initMobileMenu() {
     setupMobileDropdown('mobileOverviewDropdownBtn', 'mobileOverviewDropdown', 'mobileOverviewDropdownIcon');
     setupMobileDropdown('mobileReportsDropdownBtn', 'mobileReportsDropdown', 'mobileReportsDropdownIcon');
     setupMobileDropdown('mobileConfigDropdownBtn', 'mobileConfigDropdown', 'mobileConfigDropdownIcon');
+    setupMobileDropdown('mobileControleDropdownBtn', 'mobileControleDropdown', 'mobileControleDropdownIcon');
     setupMobileDropdown('mobileUserSubmenuBtn', 'mobileUserSubmenu', 'mobileUserSubmenuIcon');
     setupMobileDropdown('mobileOrdersDropdownBtn', 'mobileOrdersDropdown', 'mobileOrdersDropdownIcon');
     setupMobileDropdown('mobilePurchasesDropdownBtn', 'mobilePurchasesDropdown', 'mobilePurchasesDropdownIcon');
@@ -484,6 +487,7 @@ async function loadUserGreeting() {
                     { btn: 'mobileOverviewDropdownBtn', menu: 'mobileOverviewDropdown' },
                     { btn: 'mobileReportsDropdownBtn', menu: 'mobileReportsDropdown' },
                     { btn: 'mobileConfigDropdownBtn', menu: 'mobileConfigDropdown' },
+                    { btn: 'mobileControleDropdownBtn', menu: 'mobileControleDropdown' },
                     { btn: 'mobileOrdersDropdownBtn', menu: 'mobileOrdersDropdown' },
                     { btn: 'mobilePurchasesDropdownBtn', menu: 'mobilePurchasesDropdown' },
                 ];

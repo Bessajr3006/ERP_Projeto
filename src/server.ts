@@ -92,7 +92,7 @@ process.on('SIGINT', () => {
 const certPath = path.join(process.cwd(), 'certs', 'cert.pem');
 const keyPath  = path.join(process.cwd(), 'certs', 'key.pem');
 const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
-const useHttps = hasCerts && process.env.NODE_ENV !== 'production';
+const useHttps = hasCerts;
 
 console.log(`[BOOT] NODE_ENV is: ${process.env.NODE_ENV}`);
 console.log(`[BOOT] hasCerts: ${hasCerts} | useHttps: ${useHttps}`);

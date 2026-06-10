@@ -175,6 +175,10 @@
                     { id: 'email', label: 'E-mail' },
                     { id: 'swagger', label: 'Swagger' }
                 ]
+            },
+            {
+                groupName: 'Controle',
+                links: []
             }
         ];
 

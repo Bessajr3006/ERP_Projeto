@@ -14,10 +14,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tabVendaBtn = document.getElementById('tabVendaBtn') as HTMLButtonElement;
     const tabApuracaoBtn = document.getElementById('tabApuracaoBtn') as HTMLButtonElement;
     const tabDespesaBtn = document.getElementById('tabDespesaBtn') as HTMLButtonElement;
+    const tabImpostoBtn = document.getElementById('tabImpostoBtn') as HTMLButtonElement;
     const tabCompraPanel = document.getElementById('tabCompraPanel') as HTMLElement;
     const tabVendaPanel = document.getElementById('tabVendaPanel') as HTMLElement;
     const tabApuracaoPanel = document.getElementById('tabApuracaoPanel') as HTMLElement;
     const tabDespesaPanel = document.getElementById('tabDespesaPanel') as HTMLElement;
+    const tabImpostoPanel = document.getElementById('tabImpostoPanel') as HTMLElement;
     
     const companyParam = document.getElementById('companyParam') as HTMLSelectElement;
     const fechamentoForm = document.getElementById('fechamentoForm') as HTMLFormElement;
@@ -45,7 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         'compra_valor', 'compra_bs_icms', 'compra_isento', 'compra_outros', 'compra_pis', 'compra_cofins',
         'venda_valor', 'venda_bs_icms', 'venda_isento', 'venda_outros', 'venda_pis', 'venda_cofins',
         'apuracao_icms', 'apuracao_pis', 'apuracao_cofins',
-        'despesa_adm', 'despesa_operacional', 'despesa_folha', 'despesa_cmv'
+        'despesa_adm', 'despesa_operacional', 'despesa_folha', 'despesa_cmv',
+        'imposto_irpj', 'imposto_csll'
     ];
 
     fieldsToMask.forEach(id => {
@@ -92,12 +95,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         fechamentoModal.classList.add('hidden');
     }
 
-    function switchTab(tab: 'compra' | 'venda' | 'apuracao' | 'despesa') {
-        [tabCompraBtn, tabVendaBtn, tabApuracaoBtn, tabDespesaBtn].forEach(btn => {
+    function switchTab(tab: 'compra' | 'venda' | 'apuracao' | 'despesa' | 'imposto') {
+        [tabCompraBtn, tabVendaBtn, tabApuracaoBtn, tabDespesaBtn, tabImpostoBtn].forEach(btn => {
             btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
             btn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
         });
-        [tabCompraPanel, tabVendaPanel, tabApuracaoPanel, tabDespesaPanel].forEach(panel => {
+        [tabCompraPanel, tabVendaPanel, tabApuracaoPanel, tabDespesaPanel, tabImpostoPanel].forEach(panel => {
             panel.classList.add('hidden');
         });
 
@@ -117,6 +120,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabDespesaBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
             tabDespesaBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
             tabDespesaPanel.classList.remove('hidden');
+        } else if (tab === 'imposto') {
+            tabImpostoBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            tabImpostoBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+            tabImpostoPanel.classList.remove('hidden');
         }
     }
 
@@ -136,6 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabVendaBtn.addEventListener('click', () => switchTab('venda'));
     tabApuracaoBtn.addEventListener('click', () => switchTab('apuracao'));
     tabDespesaBtn.addEventListener('click', () => switchTab('despesa'));
+    tabImpostoBtn.addEventListener('click', () => switchTab('imposto'));
 
     fechamentoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -176,6 +184,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 operacional: parseCurrency(formData.get('despesa_operacional') as string),
                 folha: parseCurrency(formData.get('despesa_folha') as string),
                 cmv: parseCurrency(formData.get('despesa_cmv') as string),
+            },
+            imposto_federal: {
+                irpj: parseCurrency(formData.get('imposto_irpj') as string),
+                csll: parseCurrency(formData.get('imposto_csll') as string),
             }
         };
 

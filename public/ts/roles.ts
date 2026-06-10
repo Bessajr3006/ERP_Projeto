@@ -1,3 +1,6 @@
+/// <reference path="./api.ts" />
+/// <reference path="./components/crud-manager.ts" />
+
 (() => {
     const getById = (id: string): any => document.getElementById(id);
     const qs = (selector: string): any => document.querySelector(selector);

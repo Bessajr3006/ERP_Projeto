@@ -1,3 +1,7 @@
+declare const Auth: any;
+declare const api: any;
+declare const CrudManager: any;
+
 (() => {
     const getById = (id: string): any => document.getElementById(id);
     const qs = (selector: string): any => document.querySelector(selector);
@@ -55,7 +59,7 @@
         return currentUserRole === 'admin' || currentUserRole === 'super_admin';
     }
 
-    function showAlert(id, msg, type = 'success', timeoutMs = 4000) {
+    function showAlert(id: string, msg: string, type: string = 'success', timeoutMs: number = 4000) {
         const el = getById(id);
         if (!el) return;
         el.textContent = msg;
@@ -64,7 +68,7 @@
         setTimeout(() => el.classList.add('hidden'), timeoutMs);
     }
 
-    function renderModuleCheckboxes(roleId) {
+    function renderModuleCheckboxes(roleId: string) {
         const container = getById('modulesCheckboxesContainer');
         if (!container) return;
 
@@ -241,7 +245,7 @@
         container.classList.remove('grid', 'grid-cols-1', 'sm:grid-cols-2', 'md:grid-cols-3', 'gap-4');
     }
 
-    function setBulkPermissionButtonsState(roleId) {
+    function setBulkPermissionButtonsState(roleId: string) {
         const canEdit = canEditTargetRole(roleId);
         const enableAllBtn = getById('btnEnableAllModules');
         const disableAllBtn = getById('btnDisableAllModules');
@@ -254,14 +258,14 @@
         });
     }
 
-    function setAllModulesChecked(checked) {
+    function setAllModulesChecked(checked: boolean) {
         const roleId = getById('entityRole')?.value || '';
         if (!canEditTargetRole(roleId)) {
             showAlert('alertMessage', 'Acesso negado para alterar as permissões deste perfil.', 'error');
             return;
         }
 
-        qsa('.module-checkbox').forEach((checkbox) => {
+        qsa('.module-checkbox').forEach((checkbox: any) => {
             if (!checkbox.disabled) {
                 checkbox.checked = checked;
             }
@@ -320,7 +324,7 @@
             getById('newRoleName').focus();
         });
 
-        getById('newRoleForm')?.addEventListener('submit', async (e) => {
+        getById('newRoleForm')?.addEventListener('submit', async (e: any) => {
             e.preventDefault();
             const btn = getById('saveNewRoleBtn');
              
@@ -346,7 +350,7 @@
                 showAlert('alertMessage', 'Perfil criado com sucesso!', 'success');
                 closeNewRoleModal();
                 rolesManager.loadData();
-            } catch (error) {
+            } catch (error: any) {
                 alert(error.message || 'Erro ao criar perfil');
             } finally {
                 btn.disabled = false;
@@ -362,7 +366,7 @@
             setAllModulesChecked(false);
         });
 
-        getById('entityForm')?.addEventListener('submit', async (e) => {
+        getById('entityForm')?.addEventListener('submit', async (e: any) => {
             e.preventDefault();
             const saveBtn = getById('saveBtn');
             const roleId = getById('entityRole').value;
@@ -390,7 +394,7 @@
                 
                 showAlert('alertMessage', 'Permissões atualizadas com sucesso!', 'success');
                 rolesManager.closeModal();
-            } catch (error) {
+            } catch (error: any) {
                 showAlert('alertMessage', error.message || 'Erro ao atualizar permissões.', 'error');
             } finally {
                 saveBtn.disabled = false;
@@ -406,7 +410,7 @@
             tableSectionId: 'rolesSection',
             modalId: 'entityModal',
 
-            renderTable: (items) => {
+            renderTable: (items: any[]) => {
                 const tbody = getById('rolesTable');
                 if (!tbody) return;
                 
@@ -415,7 +419,7 @@
                     return;
                 }
 
-                tbody.innerHTML = items.map(role => `
+                tbody.innerHTML = items.map((role: any) => `
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                             ${role.name}
@@ -434,7 +438,7 @@
                 `).join('');
             },
 
-            renderGrid: (items) => {
+            renderGrid: (items: any[]) => {
                 const grid = getById('rolesGridSection');
                 if (!grid) return;
 
@@ -443,7 +447,7 @@
                     return;
                 }
 
-                grid.innerHTML = items.map(role => `
+                grid.innerHTML = items.map((role: any) => `
                     <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700">
                         <div class="flex-1">
                             <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100">${role.name}</h4>
@@ -460,7 +464,7 @@
                 `).join('');
             },
 
-            onEdit: async (role) => {
+            onEdit: async (role: any) => {
                 const roleId = role.id;
                 getById('modalTitle').textContent = `Permissões: ${role.name}`;
                 getById('entityRole').value = roleId;

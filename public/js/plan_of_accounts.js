@@ -95,41 +95,45 @@
                 }
                 grid.innerHTML = items
                     .map((account) => `
-                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col border border-gray-100 dark:border-slate-700 relative group">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-mono px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600">${account.code}</span>
-                            ${account.easy_code
-                    ? `<span class="text-xs font-mono px-2 py-1 bg-brand-50 dark:bg-brand-900/30 rounded text-brand-600 dark:text-brand-400 border border-brand-100 dark:border-brand-800/50">${account.easy_code}</span>`
-                    : ''}
-                            <span class="text-xs font-bold ${account.nature === 'credit'
-                    ? 'text-orange-600 dark:text-orange-400'
-                    : 'text-blue-600 dark:text-blue-400'}">${account.nature === 'credit' ? 'Credor' : 'Devedor'}</span>
+                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col border border-gray-100 dark:border-slate-700 relative group h-full">
+                    <!-- Header Row (Checkbox, ID, and Actions) -->
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center pt-1 z-10">
+                            <input type="checkbox" class="item-checkbox h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer" value="${account.public_id}" data-bwignore="true" data-lpignore="true">
+                            <span class="ml-2 text-xs font-mono text-gray-400 dark:text-gray-500">#${String(account.id).padStart(4, '0')}</span>
                         </div>
-                        ${account.status === 'active'
-                    ? '<span class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-sm" title="Ativo"></span>'
-                    : '<span class="w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm" title="Inativo"></span>'}
-                    </div>
-                    <h4 class="text-lg font-bold ${account.type === 'synthetic'
-                    ? 'text-brand-600 dark:text-brand-400'
-                    : 'text-gray-900 dark:text-gray-100'} truncate mb-1">
-                        ${account.name}
-                    </h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4 line-clamp-1 uppercase tracking-wide font-semibold mt-1">
-                        ${account.type === 'synthetic' ? 'S - Sintética (Agrupadora)' : 'A - Analítica (Lançamentos)'}
-                    </p>
-                    <div class="mt-auto pt-3 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center text-xs text-gray-400">
-                        <span>ID: ${String(account.id).padStart(4, '0')}</span>
-                        <div class="flex space-x-2">
-                            <button type="button" title="Editar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 edit-btn" data-item='${JSON.stringify(account).replace(/'/g, '&#39;')}'>
+                        <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
+                            <button type="button" title="Editar" class="p-1.5 text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 edit-btn" data-item='${JSON.stringify(account).replace(/'/g, '&#39;')}'>
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                             </button>
-                            <button type="button" title="Duplicar" class="text-gray-500 hover:bg-gray-100 p-1.5 rounded-full dark:hover:bg-slate-700 dark:text-gray-400 duplicate-btn" data-item='${JSON.stringify(account).replace(/'/g, '&#39;')}'>
+                            <button type="button" title="Duplicar" class="p-1.5 text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 duplicate-btn" data-item='${JSON.stringify(account).replace(/'/g, '&#39;')}'>
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             </button>
-                            <button type="button" title="Excluir" class="text-red-500 hover:bg-red-50 p-1.5 rounded-full dark:hover:bg-red-900/30 delete-btn" data-id="${account.public_id}">
+                            <button type="button" title="Excluir" class="p-1.5 text-gray-500 hover:text-red-600 dark:hover:text-red-400 delete-btn" data-id="${account.public_id}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Block -->
+                    <div class="flex-1 flex flex-col mt-0">
+                        <div class="flex justify-between items-start gap-2 mb-2">
+                            <h4 class="text-base font-bold ${account.type === 'synthetic' ? 'text-brand-600 dark:text-brand-400' : 'text-gray-900 dark:text-gray-100'} leading-tight flex-1">
+                                ${account.name}
+                            </h4>
+                            <span class="text-xs font-mono px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded text-gray-600 dark:text-gray-300 shrink-0 border border-gray-200 dark:border-slate-600">${account.code}</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 mb-4">
+                            ${account.easy_code ? `<span class="text-xs font-mono px-2 py-1 bg-brand-50 dark:bg-brand-900/30 rounded text-brand-600 dark:text-brand-400 border border-brand-100 dark:border-brand-800/50">${account.easy_code}</span>` : ''}
+                            <span class="text-xs font-bold ${account.nature === 'credit' ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400'}">${account.nature === 'credit' ? 'Credor' : 'Devedor'}</span>
+                        </div>
+                        
+                        <div class="mt-auto pt-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold">
+                                ${account.type === 'synthetic' ? 'S - Sintética' : 'A - Analítica'}
+                            </p>
+                            ${account.status === 'active' ? '<span class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-sm" title="Ativo"></span>' : '<span class="w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm" title="Inativo"></span>'}
                         </div>
                     </div>
                 </div>

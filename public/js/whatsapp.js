@@ -749,7 +749,11 @@
         function setStatus(status, sessionData) {
             if (!statusBadge)
                 return;
+            const prevStatus = currentSessionStatus;
             currentSessionStatus = status || 'idle';
+            if (prevStatus !== currentSessionStatus) {
+                renderConversations();
+            }
             const map = {
                 ready: { cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300', label: 'Conectado' },
                 authenticated: { cls: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300', label: 'Autenticado' },
@@ -874,6 +878,10 @@
         function renderConversations() {
             if (!convList)
                 return;
+            if (currentSessionStatus !== 'ready') {
+                convList.innerHTML = '<div class="py-10 px-4 text-center text-sm text-gray-400 dark:text-gray-500">O WhatsApp não está sincronizado. Conecte para visualizar os contatos.</div>';
+                return;
+            }
             const mergedConversations = getMergedConversationList();
             const registeredPhones = new Set(Array.from(registeredContactRolesByPhone.keys()));
             const filtered = searchTerm
@@ -916,7 +924,7 @@
                 </div>
             </div>`;
             }).join('');
-            convList.querySelectorAll('.wa-conv-item').forEach(el => {
+            convList.querySelectorAll('.wa-conv-item').forEach((el) => {
                 el.addEventListener('click', () => selectConversation(el.dataset.phone, el.dataset.name, el.dataset.phones, el.dataset.chatId));
             });
             convList.querySelectorAll('.wa-register-contact-btn').forEach((btn) => {

@@ -10,28 +10,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modalBackdrop = document.getElementById('modalBackdrop');
     const tabCompraBtn = document.getElementById('tabCompraBtn');
     const tabVendaBtn = document.getElementById('tabVendaBtn');
+    const tabApuracaoBtn = document.getElementById('tabApuracaoBtn');
+    const tabDespesaBtn = document.getElementById('tabDespesaBtn');
+    const tabImpostoBtn = document.getElementById('tabImpostoBtn');
     const tabCompraPanel = document.getElementById('tabCompraPanel');
     const tabVendaPanel = document.getElementById('tabVendaPanel');
+    const tabApuracaoPanel = document.getElementById('tabApuracaoPanel');
+    const tabDespesaPanel = document.getElementById('tabDespesaPanel');
+    const tabImpostoPanel = document.getElementById('tabImpostoPanel');
+    // Filter Elements
+    const toggleFilterBtn = document.getElementById('toggleFilterBtn');
+    const filterBody = document.getElementById('filterBody');
+    const filterChevron = document.getElementById('filterChevron');
+    const filterForm = document.getElementById('filterForm');
+    const btnClearFilters = document.getElementById('btnClearFilters');
+    const filterCompanyParam = document.getElementById('filterCompanyParam');
+    const filterCompetencia = document.getElementById('filterCompetencia');
     const companyParam = document.getElementById('companyParam');
     const fechamentoForm = document.getElementById('fechamentoForm');
     const alertMessage = document.getElementById('alertMessage');
-    // Load Companies for the select
-    async function loadCompanies() {
+    const parseCurrency = (str) => {
+        if (!str)
+            return 0;
+        const clean = str.replace(/[^\d.,-]/g, '');
+        return parseFloat(clean.replace(/\./g, '').replace(',', '.')) || 0;
+    };
+    const formatCurrencyInput = (e) => {
+        const input = e.target;
+        let value = input.value.replace(/\D/g, '');
+        if (value === '') {
+            input.value = '';
+            return;
+        }
+        const numberValue = parseInt(value, 10) / 100;
+        input.value = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numberValue);
+    };
+    const fieldsToMask = [
+        'compra_valor', 'compra_bs_icms', 'compra_isento', 'compra_outros', 'compra_pis', 'compra_cofins',
+        'venda_valor', 'venda_bs_icms', 'venda_isento', 'venda_outros', 'venda_pis', 'venda_cofins',
+        'apuracao_icms', 'apuracao_pis', 'apuracao_cofins',
+        'despesa_adm', 'despesa_operacional', 'despesa_folha', 'despesa_cmv', 'despesa_ir_aluguel',
+        'imposto_irpj', 'imposto_csll'
+    ];
+    fieldsToMask.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', formatCurrencyInput);
+        }
+    });
+    // Load Customers for the select
+    async function loadCustomers() {
         try {
-            const response = await api('/companies');
-            companyParam.innerHTML = '<option value="">Selecione uma empresa</option>';
-            if (response && Array.isArray(response)) {
-                response.forEach((company) => {
+            const response = await api('/entities/customers');
+            companyParam.innerHTML = '<option value="">Selecione um cliente</option>';
+            if (response && response.data && Array.isArray(response.data)) {
+                response.data.forEach((customer) => {
                     const option = document.createElement('option');
-                    option.value = company.id;
-                    option.textContent = company.nome_fantasia || company.razao_social || `Empresa ${company.id}`;
+                    option.value = customer.id;
+                    option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
                     companyParam.appendChild(option);
+                    if (filterCompanyParam) {
+                        const filterOption = option.cloneNode(true);
+                        filterCompanyParam.appendChild(filterOption);
+                    }
+                });
+            }
+            else if (response && Array.isArray(response)) {
+                response.forEach((customer) => {
+                    const option = document.createElement('option');
+                    option.value = customer.id;
+                    option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
+                    companyParam.appendChild(option);
+                    if (filterCompanyParam) {
+                        const filterOption = option.cloneNode(true);
+                        filterCompanyParam.appendChild(filterOption);
+                    }
                 });
             }
         }
         catch (error) {
-            console.error('Erro ao carregar empresas:', error);
-            companyParam.innerHTML = '<option value="">Erro ao carregar empresas</option>';
+            console.error('Erro ao carregar clientes:', error);
+            companyParam.innerHTML = '<option value="">Erro ao carregar clientes</option>';
         }
     }
     function openModal() {
@@ -43,21 +102,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         fechamentoModal.classList.add('hidden');
     }
     function switchTab(tab) {
+        [tabCompraBtn, tabVendaBtn, tabApuracaoBtn, tabDespesaBtn, tabImpostoBtn].forEach(btn => {
+            btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            btn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+        });
+        [tabCompraPanel, tabVendaPanel, tabApuracaoPanel, tabDespesaPanel, tabImpostoPanel].forEach(panel => {
+            panel.classList.add('hidden');
+        });
         if (tab === 'compra') {
-            tabCompraBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
             tabCompraBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            tabVendaBtn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            tabVendaBtn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+            tabCompraBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
             tabCompraPanel.classList.remove('hidden');
-            tabVendaPanel.classList.add('hidden');
         }
-        else {
-            tabVendaBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+        else if (tab === 'venda') {
             tabVendaBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            tabCompraBtn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
-            tabCompraBtn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+            tabVendaBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
             tabVendaPanel.classList.remove('hidden');
-            tabCompraPanel.classList.add('hidden');
+        }
+        else if (tab === 'apuracao') {
+            tabApuracaoBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            tabApuracaoBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+            tabApuracaoPanel.classList.remove('hidden');
+        }
+        else if (tab === 'despesa') {
+            tabDespesaBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            tabDespesaBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+            tabDespesaPanel.classList.remove('hidden');
+        }
+        else if (tab === 'imposto') {
+            tabImpostoBtn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            tabImpostoBtn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+            tabImpostoPanel.classList.remove('hidden');
         }
     }
     function showAlert(message, isError = false) {
@@ -70,8 +145,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnOpenModal.addEventListener('click', openModal);
     btnCancelModal.addEventListener('click', closeModal);
     modalBackdrop.addEventListener('click', closeModal);
+    // Event Listeners for Filters
+    let filterIsOpen = false;
+    if (toggleFilterBtn && filterBody) {
+        filterBody.style.maxHeight = '0px';
+        filterBody.style.overflow = 'hidden';
+        if (filterChevron)
+            filterChevron.style.transform = 'rotate(-90deg)';
+        toggleFilterBtn.addEventListener('click', () => {
+            filterIsOpen = !filterIsOpen;
+            filterBody.style.maxHeight = filterIsOpen ? `${filterBody.scrollHeight}px` : '0px';
+            if (filterChevron) {
+                filterChevron.style.transform = filterIsOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+            }
+        });
+    }
+    if (filterForm) {
+        filterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Stub for loadFechamentos when endpoint is ready
+            console.log('Aplicando filtros:', {
+                company: filterCompanyParam?.value,
+                competencia: filterCompetencia?.value
+            });
+        });
+    }
+    if (btnClearFilters) {
+        btnClearFilters.addEventListener('click', () => {
+            if (filterForm)
+                filterForm.reset();
+            // Stub for loadFechamentos when endpoint is ready
+        });
+    }
     tabCompraBtn.addEventListener('click', () => switchTab('compra'));
     tabVendaBtn.addEventListener('click', () => switchTab('venda'));
+    tabApuracaoBtn.addEventListener('click', () => switchTab('apuracao'));
+    tabDespesaBtn.addEventListener('click', () => switchTab('despesa'));
+    tabImpostoBtn.addEventListener('click', () => switchTab('imposto'));
     fechamentoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!companyParam.value) {
@@ -80,16 +190,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const formData = new FormData(fechamentoForm);
         const payload = {
-            companyId: formData.get('companyId'),
+            customerId: formData.get('customerId'),
+            competencia: formData.get('competencia'),
             compra: {
-                bs_icms: parseFloat(formData.get('compra_bs_icms')) || 0,
-                isento: parseFloat(formData.get('compra_isento')) || 0,
-                outros: parseFloat(formData.get('compra_outros')) || 0,
+                valor: parseCurrency(formData.get('compra_valor')),
+                bs_icms: parseCurrency(formData.get('compra_bs_icms')),
+                isento: parseCurrency(formData.get('compra_isento')),
+                outros: parseCurrency(formData.get('compra_outros')),
+                pis: parseCurrency(formData.get('compra_pis')),
+                cofins: parseCurrency(formData.get('compra_cofins')),
             },
             venda: {
-                bs_icms: parseFloat(formData.get('venda_bs_icms')) || 0,
-                isento: parseFloat(formData.get('venda_isento')) || 0,
-                outros: parseFloat(formData.get('venda_outros')) || 0,
+                valor: parseCurrency(formData.get('venda_valor')),
+                bs_icms: parseCurrency(formData.get('venda_bs_icms')),
+                isento: parseCurrency(formData.get('venda_isento')),
+                outros: parseCurrency(formData.get('venda_outros')),
+                pis: parseCurrency(formData.get('venda_pis')),
+                cofins: parseCurrency(formData.get('venda_cofins')),
+            },
+            apuracao: {
+                icms: parseCurrency(formData.get('apuracao_icms')),
+                pis: parseCurrency(formData.get('apuracao_pis')),
+                cofins: parseCurrency(formData.get('apuracao_cofins')),
+            },
+            despesa: {
+                adm: parseCurrency(formData.get('despesa_adm')),
+                operacional: parseCurrency(formData.get('despesa_operacional')),
+                folha: parseCurrency(formData.get('despesa_folha')),
+                cmv: parseCurrency(formData.get('despesa_cmv')),
+                ir_aluguel: parseCurrency(formData.get('despesa_ir_aluguel')),
+            },
+            imposto_federal: {
+                irpj: parseCurrency(formData.get('imposto_irpj')),
+                csll: parseCurrency(formData.get('imposto_csll')),
             }
         };
         console.log('Payload do Fechamento a ser enviado:', payload);
@@ -105,5 +238,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     // Initialize
-    loadCompanies();
+    loadCustomers();
 });

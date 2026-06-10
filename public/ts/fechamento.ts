@@ -22,6 +22,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const alertMessage = document.getElementById('alertMessage') as HTMLElement;
 
+    const parseCurrency = (str: string | null): number => {
+        if (!str) return 0;
+        return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+    };
+
+    const makeMask: any = (window as any).createMaskAdapter || ((input: any, options: any) => (window as any).IMask?.(input, options));
+    const moneyOptions = {
+        mask: Number,
+        scale: 2,
+        signed: true,
+        thousandsSeparator: '.',
+        padFractionalZeros: true,
+        normalizeZeros: true,
+        radix: ',',
+        mapToRadix: ['.']
+    };
+
+    const fieldsToMask = [
+        'compra_valor', 'compra_bs_icms', 'compra_isento', 'compra_outros', 'compra_pis', 'compra_cofins',
+        'venda_valor', 'venda_bs_icms', 'venda_isento', 'venda_outros', 'venda_pis', 'venda_cofins',
+        'apuracao_icms', 'apuracao_pis', 'apuracao_cofins'
+    ];
+
+    fieldsToMask.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) makeMask(el, moneyOptions);
+    });
+
     // Load Customers for the select
     async function loadCustomers() {
         try {
@@ -112,25 +140,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const payload = {
             customerId: formData.get('customerId'),
             compra: {
-                valor: parseFloat(formData.get('compra_valor') as string) || 0,
-                bs_icms: parseFloat(formData.get('compra_bs_icms') as string) || 0,
-                isento: parseFloat(formData.get('compra_isento') as string) || 0,
-                outros: parseFloat(formData.get('compra_outros') as string) || 0,
-                pis: parseFloat(formData.get('compra_pis') as string) || 0,
-                cofins: parseFloat(formData.get('compra_cofins') as string) || 0,
+                valor: parseCurrency(formData.get('compra_valor') as string),
+                bs_icms: parseCurrency(formData.get('compra_bs_icms') as string),
+                isento: parseCurrency(formData.get('compra_isento') as string),
+                outros: parseCurrency(formData.get('compra_outros') as string),
+                pis: parseCurrency(formData.get('compra_pis') as string),
+                cofins: parseCurrency(formData.get('compra_cofins') as string),
             },
             venda: {
-                valor: parseFloat(formData.get('venda_valor') as string) || 0,
-                bs_icms: parseFloat(formData.get('venda_bs_icms') as string) || 0,
-                isento: parseFloat(formData.get('venda_isento') as string) || 0,
-                outros: parseFloat(formData.get('venda_outros') as string) || 0,
-                pis: parseFloat(formData.get('venda_pis') as string) || 0,
-                cofins: parseFloat(formData.get('venda_cofins') as string) || 0,
+                valor: parseCurrency(formData.get('venda_valor') as string),
+                bs_icms: parseCurrency(formData.get('venda_bs_icms') as string),
+                isento: parseCurrency(formData.get('venda_isento') as string),
+                outros: parseCurrency(formData.get('venda_outros') as string),
+                pis: parseCurrency(formData.get('venda_pis') as string),
+                cofins: parseCurrency(formData.get('venda_cofins') as string),
             },
             apuracao: {
-                icms: parseFloat(formData.get('apuracao_icms') as string) || 0,
-                pis: parseFloat(formData.get('apuracao_pis') as string) || 0,
-                cofins: parseFloat(formData.get('apuracao_cofins') as string) || 0,
+                icms: parseCurrency(formData.get('apuracao_icms') as string),
+                pis: parseCurrency(formData.get('apuracao_pis') as string),
+                cofins: parseCurrency(formData.get('apuracao_cofins') as string),
             }
         };
 

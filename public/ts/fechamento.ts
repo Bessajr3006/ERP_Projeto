@@ -20,23 +20,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const alertMessage = document.getElementById('alertMessage') as HTMLElement;
 
-    // Load Companies for the select
-    async function loadCompanies() {
+    // Load Customers for the select
+    async function loadCustomers() {
         try {
-            const response = await api('/companies');
-            companyParam.innerHTML = '<option value="">Selecione uma empresa</option>';
+            const response = await api('/entities/customers');
+            companyParam.innerHTML = '<option value="">Selecione um cliente</option>';
             
-            if (response && Array.isArray(response)) {
-                response.forEach((company: any) => {
+            if (response && response.data && Array.isArray(response.data)) {
+                response.data.forEach((customer: any) => {
                     const option = document.createElement('option');
-                    option.value = company.id;
-                    option.textContent = company.nome_fantasia || company.razao_social || `Empresa ${company.id}`;
+                    option.value = customer.id;
+                    option.textContent = customer.nome || customer.razao_social || `Cliente ${customer.id}`;
+                    companyParam.appendChild(option);
+                });
+            } else if (response && Array.isArray(response)) {
+                response.forEach((customer: any) => {
+                    const option = document.createElement('option');
+                    option.value = customer.id;
+                    option.textContent = customer.nome || customer.razao_social || `Cliente ${customer.id}`;
                     companyParam.appendChild(option);
                 });
             }
         } catch (error) {
-            console.error('Erro ao carregar empresas:', error);
-            companyParam.innerHTML = '<option value="">Erro ao carregar empresas</option>';
+            console.error('Erro ao carregar clientes:', error);
+            companyParam.innerHTML = '<option value="">Erro ao carregar clientes</option>';
         }
     }
 
@@ -96,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const formData = new FormData(fechamentoForm);
         
         const payload = {
-            companyId: formData.get('companyId'),
+            customerId: formData.get('customerId'),
             compra: {
                 bs_icms: parseFloat(formData.get('compra_bs_icms') as string) || 0,
                 isento: parseFloat(formData.get('compra_isento') as string) || 0,
@@ -124,5 +131,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Initialize
-    loadCompanies();
+    loadCustomers();
 });

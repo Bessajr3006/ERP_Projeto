@@ -910,6 +910,9 @@
   .min-h-170 {
     min-height: calc(var(--spacing) * 170);
   }
+  .min-h-\[65vh\] {
+    min-height: 65vh;
+  }
   .min-h-\[297mm\] {
     min-height: 297mm;
   }
@@ -4184,6 +4187,11 @@
       min-height: calc(var(--spacing) * 25);
     }
   }
+  .sm\:min-h-\[75vh\] {
+    @media (width >= 40rem) {
+      min-height: 75vh;
+    }
+  }
   .sm\:w-1\/2 {
     @media (width >= 40rem) {
       width: calc(1 / 2 * 100%);
@@ -4387,6 +4395,11 @@
   .sm\:justify-start {
     @media (width >= 40rem) {
       justify-content: flex-start;
+    }
+  }
+  .sm\:gap-2 {
+    @media (width >= 40rem) {
+      gap: calc(var(--spacing) * 2);
     }
   }
   .sm\:gap-3 {

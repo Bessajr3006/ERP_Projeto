@@ -480,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const parseNumber = (val) => val ? parseFloat(String(val).replace(',', '.')) : undefined;
 
             const category_id = getById('bulkCategory').value ? parseInt(getById('bulkCategory').value) : undefined;
+            const stock_type_id = getById('bulkStockType')?.value ? parseInt(getById('bulkStockType').value) : undefined;
             const manufacturer_id = getById('bulkManufacturer').value ? parseInt(getById('bulkManufacturer').value) : undefined;
             const tax_rule_id = getById('bulkTaxRule').value ? parseInt(getById('bulkTaxRule').value) : undefined;
             const measure_id = getById('bulkMeasure').value ? parseInt(getById('bulkMeasure').value) : undefined;
@@ -491,6 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 productIds: selectedIds,
                 category_id,
+                stock_type_id,
                 manufacturer_id,
                 tax_rule_id,
                 measure_id,
@@ -660,6 +662,8 @@ window.openModal = (data: any = null) => {
         }
         
         getById('productCategory').value = data.category_id || '';
+        const stockTypeEl = getById('productStockType');
+        if (stockTypeEl) stockTypeEl.value = data.stock_type_id || '';
         getById('productManufacturer').value = data.manufacturer_id || '';
         getById('productTaxRule').value = data.tax_rule_id || '';
         getById('productMeasure').value = data.measure_id || '';
@@ -770,6 +774,7 @@ getById('productForm').addEventListener('submit', async (e) => {
         min_stock: parseInt(getById('minStock').value) || 0,
         max_stock: parseInt(getById('maxStock').value) || 0,
         category_id: parseInt(getById('productCategory').value) || null,
+        stock_type_id: parseInt(getById('productStockType')?.value) || null,
         manufacturer_id: parseInt(getById('productManufacturer').value) || null,
         tax_rule_id: parseInt(getById('productTaxRule').value) || null,
         measure_id: parseInt(getById('productMeasure').value) || null,
@@ -911,7 +916,7 @@ function renderTable(elementId, items) {
             <td class="px-6 py-4 whitespace-nowrap">${getProductImageMarkup(p)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">${p.name}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.category_name || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.product_type_name || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.stock_type_name || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${formatCurrency(p.cost_price || 0)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-center">${p.cost_price > 0 ? (((p.selling_price / p.cost_price) - 1) * 100).toFixed(2) + '%' : '0.00%'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-bold">${formatCurrency(p.selling_price)}</td>
@@ -1131,16 +1136,18 @@ function bindActionEvents() {
 // Loads Categories, Manufacturers, and TaxRules into the selects
 async function loadRelations() {
     try {
-        const [catsRes, manufsRes, taxesRes, measuresRes] = await Promise.all([
+        const [catsRes, manufsRes, taxesRes, measuresRes, stockTypesRes] = await Promise.all([
             api('/estoque/categories'),
             api('/estoque/manufacturers'),
             api('/estoque/taxes'),
-            api('/estoque/measures')
+            api('/estoque/measures'),
+            api('/estoque/stock-types')
         ]);
         const categories = catsRes.data || [];
         const manufacturers = manufsRes.data || [];
 
         populateSelect('productCategory', categories, 'Nenhuma');
+        populateSelect('productStockType', stockTypesRes.data, 'Nenhum');
         populateSelect('productManufacturer', manufacturers, 'Nenhum');
         populateSelect('productTaxRule', taxesRes.data, 'Nenhuma');
         populateSelect('productMeasure', measuresRes.data, 'Nenhuma');
@@ -1149,6 +1156,7 @@ async function loadRelations() {
 
         // Also populate bulk update modal dropdowns
         populateSelect('bulkCategory', categories, '-- Não alterar --');
+        populateSelect('bulkStockType', stockTypesRes.data, '-- Não alterar --');
         populateSelect('bulkManufacturer', manufacturers, '-- Não alterar --');
         populateSelect('bulkTaxRule', taxesRes.data, '-- Não alterar --');
         populateSelect('bulkMeasure', measuresRes.data, '-- Não alterar --');

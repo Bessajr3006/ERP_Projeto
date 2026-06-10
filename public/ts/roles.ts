@@ -142,7 +142,8 @@
                     { id: 'service_providers', label: 'Prestador de Serviço' },
                     { id: 'suppliers', label: 'Fornecedor' },
                     { id: 'company', label: 'Empresa' },
-                    { id: 'accountant', label: 'Contador' }
+                    { id: 'accountant', label: 'Contador' },
+                    { id: 'users', label: 'Usuário' }
                 ]
             },
             {
@@ -164,7 +165,6 @@
                 groupName: 'Configuração',
                 links: [
                     { id: 'roles', label: 'Config. de Perfis' },
-                    { id: 'users', label: 'Usuário' },
                     { id: 'tasks', label: 'Tarefas' },
                     { id: 'organizer', label: 'Organizador' },
                     { id: 'ajuste', label: 'Ajuste' },

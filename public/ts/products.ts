@@ -901,7 +901,7 @@ function renderTable(elementId, items) {
     const tbody = getById(elementId);
 
     if (items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="16" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="17" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td></tr>`;
         return;
     }
 

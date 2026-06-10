@@ -924,6 +924,7 @@
                     <h4 class="text-base font-bold leading-tight text-gray-900 dark:text-gray-100 wrap-break-word">${product.name}</h4>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         <span class="max-w-full truncate text-xs text-brand-600 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 px-2 py-0.5 rounded font-medium">${product.category_name || 'Sem Categoria'}</span>
+                        <span class="max-w-full truncate text-xs font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">${product.stock_type_name || 'Sem Tipo de Estoque'}</span>
                         <span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">SKU: ${product.sku || 'N/A'}</span>
                         ${product.ean ? `<span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">EAN: ${product.ean}</span>` : ''}
                         ${product.external_code ? `<span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">Ext: ${product.external_code}</span>` : ''}

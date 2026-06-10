@@ -178,7 +178,9 @@
             },
             {
                 groupName: 'Controle',
-                links: []
+                links: [
+                    { id: 'fechamento', label: 'Fechamento' }
+                ]
             }
         ];
 

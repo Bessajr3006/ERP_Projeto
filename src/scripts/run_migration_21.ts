@@ -92,6 +92,11 @@ async function ensureUsersRoleEnum(): Promise<void> {
             'sanitize users.role legacy values',
             `UPDATE users SET role = 'admin' WHERE role = 'administrador'`
         );
+        
+        await runSql(
+            'sanitize unknown roles to default',
+            `UPDATE users SET role = 'user' WHERE role NOT IN ('admin', 'user', 'operator', 'financial', 'manager', 'seller', 'accountant', 'buyer', 'service_provider', 'super_admin')`
+        );
     } catch (e) {
         console.warn('Could not sanitize legacy role values:', e);
     }

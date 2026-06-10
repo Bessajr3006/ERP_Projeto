@@ -911,6 +911,7 @@ function renderTable(elementId, items) {
             <td class="px-6 py-4 whitespace-nowrap">${getProductImageMarkup(p)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">${p.name}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.category_name || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.product_type_name || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${formatCurrency(p.cost_price || 0)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-center">${p.cost_price > 0 ? (((p.selling_price / p.cost_price) - 1) * 100).toFixed(2) + '%' : '0.00%'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-bold">${formatCurrency(p.selling_price)}</td>

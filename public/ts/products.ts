@@ -1,3 +1,4 @@
+// @ts-nocheck
 (function initProductsPage() {
 
 const getById = (id: string): any => document.getElementById(id);

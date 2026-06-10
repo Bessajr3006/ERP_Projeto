@@ -455,10 +455,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </button>
                     </div>
                     
-                    <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                    <div class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
                         <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
                     </div>
-                    <div class="grid grid-cols-7 gap-1 auto-rows-fr">
+                    <div class="grid grid-cols-7 gap-1 sm:gap-2 auto-rows-fr min-h-[65vh] sm:min-h-[75vh]">
             `;
 
             for (let i = 0; i < firstDay; i++) {

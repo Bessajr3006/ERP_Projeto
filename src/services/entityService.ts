@@ -100,6 +100,10 @@ export class EntityService {
         return customerCrud.list(companyId);
     }
 
+    static async listCustomersBySeller(companyId: number, sellerPublicId: string): Promise<Customer[]> {
+        return EntityRepository.listCustomersBySeller(companyId, sellerPublicId) as Promise<Customer[]>;
+    }
+
     static getCustomerByPublicId(publicId: string, companyId: number): Promise<Customer> {
         return customerCrud.getByPublicId(publicId, companyId);
     }

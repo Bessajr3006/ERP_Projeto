@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3. Initialize components
         highlightActiveLink();
         initMobileMenu();
+        initDesktopMenuTouch();
         initThemeToggle();
         initLogout();
         initNotifications();
@@ -217,6 +218,77 @@ function initMobileMenu() {
     setupMobileDropdown('mobileUserSubmenuBtn', 'mobileUserSubmenu', 'mobileUserSubmenuIcon');
     setupMobileDropdown('mobileOrdersDropdownBtn', 'mobileOrdersDropdown', 'mobileOrdersDropdownIcon');
     setupMobileDropdown('mobilePurchasesDropdownBtn', 'mobilePurchasesDropdown', 'mobilePurchasesDropdownIcon');
+}
+
+function initDesktopMenuTouch() {
+    const desktopDropdowns = [
+        { btn: 'desktopPurchasesDropdownBtn', wrapper: 'desktopPurchasesDropdownWrapper' },
+        { btn: 'desktopOrdersDropdownBtn', wrapper: 'desktopOrdersDropdownWrapper' },
+        { btn: 'desktopProductsDropdownBtn', wrapper: 'desktopProductsDropdownWrapper' },
+        { btn: 'desktopFinanceDropdownBtn', wrapper: 'desktopFinanceDropdownWrapper' },
+        { btn: 'desktopServiceDropdownBtn', wrapper: 'desktopServiceDropdownWrapper' },
+        { btn: 'desktopOverviewDropdownBtn', wrapper: 'desktopOverviewDropdownWrapper' },
+        { btn: 'desktopCustomersDropdownBtn', wrapper: 'desktopCustomersDropdownWrapper' },
+        { btn: 'desktopAccountingDropdownBtn', wrapper: 'desktopAccountingDropdownWrapper' },
+        { btn: 'desktopReportsDropdownBtn', wrapper: 'desktopReportsDropdownWrapper' },
+        { btn: 'desktopConfigDropdownBtn', wrapper: 'desktopConfigDropdownWrapper' },
+        { btn: 'desktopControleDropdownBtn', wrapper: 'desktopControleDropdownWrapper' }
+    ];
+
+    desktopDropdowns.forEach(item => {
+        const btn = document.getElementById(item.btn);
+        const wrapper = document.getElementById(item.wrapper);
+
+        if (btn && wrapper) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+
+                const isHidden = wrapper.classList.contains('hidden');
+                
+                // Fechar todos os outros primeiro
+                desktopDropdowns.forEach(other => {
+                    const otherWrapper = document.getElementById(other.wrapper);
+                    const otherBtn = document.getElementById(other.btn);
+                    if (otherWrapper && otherWrapper !== wrapper) {
+                        otherWrapper.classList.add('hidden');
+                        otherWrapper.classList.remove('block');
+                        if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+
+                if (isHidden) {
+                    wrapper.classList.remove('hidden');
+                    wrapper.classList.add('block');
+                    btn.setAttribute('aria-expanded', 'true');
+                } else {
+                    wrapper.classList.add('hidden');
+                    wrapper.classList.remove('block');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+            
+            // Permitir que cliques dentro do submenu não fechem o submenu (se não for um link)
+            wrapper.addEventListener('click', (e) => {
+                if ((e.target as HTMLElement).tagName !== 'A') {
+                    e.stopPropagation();
+                }
+            });
+        }
+    });
+
+    // Fechar ao clicar fora
+    document.addEventListener('click', () => {
+        desktopDropdowns.forEach(item => {
+            const wrapper = document.getElementById(item.wrapper);
+            const btn = document.getElementById(item.btn);
+            if (wrapper && wrapper.classList.contains('block')) {
+                wrapper.classList.add('hidden');
+                wrapper.classList.remove('block');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
 }
 
 function initThemeToggle() {

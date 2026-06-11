@@ -877,6 +877,9 @@
   .max-h-\[90vh\] {
     max-height: 90vh;
   }
+  .max-h-\[400px\] {
+    max-height: 400px;
+  }
   .max-h-\[calc\(100dvh-4rem\)\] {
     max-height: calc(100dvh - 4rem);
   }

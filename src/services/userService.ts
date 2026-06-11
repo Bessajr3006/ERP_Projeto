@@ -60,6 +60,11 @@ export class UserService {
         return PublicUserListSchema.parse(rows);
     }
 
+    static async getAllByRole(companyId: number, role: string) {
+        const rows = await UserRepository.getAllByRole(companyId, role);
+        return PublicUserListSchema.parse(rows);
+    }
+
     static async getById(companyId: number, identifier: string) {
         const publicId = await this.resolveTargetPublicId(companyId, identifier);
         const rows = await UserRepository.getById(companyId, publicId);

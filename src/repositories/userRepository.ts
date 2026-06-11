@@ -169,6 +169,59 @@ export class UserRepository {
         return null;
     }
 
+    static async getAllByRole(companyId: number, role: string): Promise<RowDataPacket[]> {
+        const baseColumns = [
+            'public_id',
+            'email',
+            'full_name',
+            'cpf_cnpj',
+            'phone',
+            'zipcode',
+            'street',
+            'number',
+            'complement',
+            'neighborhood',
+            'city',
+            'state',
+            'default_page',
+            'whatsapp_auto_reply_mode',
+            'role',
+            'is_active',
+            'created_at',
+            'NOT EXISTS (SELECT 1 FROM transactions t WHERE t.company_id = users.company_id AND t.user_id = users.id LIMIT 1) AS is_deletable'
+        ];
+        let currentColumns = [...baseColumns];
+
+        while (true) {
+            try {
+                const [rows] = await pool.query<RowDataPacket[]>(
+                    `SELECT ${currentColumns.join(', ')}
+                     FROM users
+                     WHERE company_id = ? AND role = ?
+                     ORDER BY full_name ASC`,
+                    [companyId, role]
+                );
+                return rows;
+            } catch (error: unknown) {
+                const missingColumn = parseMissingColumnFromError(error);
+                if (!missingColumn) {
+                    throw error;
+                }
+
+                if (await ensureUserColumn(missingColumn)) {
+                    continue;
+                }
+
+                const reduced = removeListItem(currentColumns, (column) => column === missingColumn);
+                if (!reduced.removed) {
+                    throw error;
+                }
+
+                currentColumns = reduced.list;
+            }
+        }
+    }
+
     static async getAllByCompany(companyId: number): Promise<RowDataPacket[]> {
         const baseColumns = [
             'public_id',

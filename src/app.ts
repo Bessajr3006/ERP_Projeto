@@ -24,6 +24,7 @@ import entityRoutes from './routes/entityRoutes';
 import orderRoutes from './routes/orderRoutes';
 import financeRoutes from './routes/financeRoutes';
 import userRoutes from './routes/userRoutes';
+import sellerRoutes from './routes/sellerRoutes';
 import purchaseRoutes from './routes/purchaseRoutes';
 import estoqueRoutes from './routes/estoqueRoutes';
 import permissionRoutes from './routes/permissionRoutes';
@@ -253,6 +254,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
             salesCard.className = 'bessa-swagger-category-card';
             salesCard.innerHTML = '<div class="bessa-swagger-category-header"><div><h2 class="bessa-swagger-category-title">Pedidos de Venda</h2><p class="bessa-swagger-category-description">Criar e listar pedidos de venda com itens, pagamentos e entrega em /orders/sales.</p></div><a href="#/Orders" class="bessa-swagger-category-link">Ver no Swagger</a></div><div class="bessa-swagger-category-grid"><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-post">POST</span><span class="bessa-swagger-route-path">/orders/sales</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-get">GET</span><span class="bessa-swagger-route-path">/orders/sales</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-get">GET</span><span class="bessa-swagger-route-path">/orders/customers/{id}/sales</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-patch">PATCH</span><span class="bessa-swagger-route-path">/orders/{id}/status</span></div></div>';
             container.insertBefore(salesCard, container.firstChild);
+
+            var sellerCard = document.createElement('div');
+            sellerCard.id = 'bessaSellerSwaggerCard';
+            sellerCard.className = 'bessa-swagger-category-card';
+            sellerCard.innerHTML = '<div class="bessa-swagger-category-header"><div><h2 class="bessa-swagger-category-title">Vendedores</h2><p class="bessa-swagger-category-description">Gerenciamento completo de Vendedores em /sellers.</p></div><a href="#/Vendedores" class="bessa-swagger-category-link">Ver no Swagger</a></div><div class="bessa-swagger-category-grid"><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-get">GET</span><span class="bessa-swagger-route-path">/sellers</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-post">POST</span><span class="bessa-swagger-route-path">/sellers</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-get">GET</span><span class="bessa-swagger-route-path">/sellers/{id}</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-get">GET</span><span class="bessa-swagger-route-path">/sellers/{id}/customers</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-patch">PATCH</span><span class="bessa-swagger-route-path">/sellers/{id}</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-delete">DELETE</span><span class="bessa-swagger-route-path">/sellers/{id}</span></div></div>';
+            container.insertBefore(sellerCard, container.firstChild);
         });
     `
 } as any));
@@ -267,6 +274,7 @@ app.use('/api/v1/estoque', estoqueRoutes);
 app.use(['/api/v1/sales', '/api/v1/orders'], orderRoutes);
 app.use('/api/v1/companies', companyRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/sellers', sellerRoutes);
 app.use('/api/v1/tasks', taskRoutes);
 app.use('/api/v1/organizer', organizerRoutes);
 app.use('/api/v1/roles', roleRoutes);

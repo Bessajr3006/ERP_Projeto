@@ -251,6 +251,18 @@ export class EntityRepository {
         return rows as Entity[];
     }
 
+    static async listCustomersBySeller(companyId: number, sellerPublicId: string): Promise<Entity[]> {
+        await this.ensureSchemaForTable('customers');
+        const sellerId = await this.resolveCustomerSellerId(companyId, sellerPublicId);
+        if (!sellerId) return [];
+
+        const [rows] = await pool.query<RowDataPacket[]>(
+            this.buildSelectQuery('customers', `WHERE c.company_id = ? AND c.seller_user_id = ?`, `ORDER BY c.name ASC`),
+            [companyId, sellerId]
+        );
+        return rows as Entity[];
+    }
+
     static async update(table: EntityTable, publicId: string, companyId: number, data: UpdateEntityData): Promise<Entity> {
         await this.ensureSchemaForTable(table);
 

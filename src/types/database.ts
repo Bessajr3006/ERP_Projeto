@@ -11,6 +11,18 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export interface AccountingHistories {
+  active: Generated<number>;
+  code: string;
+  company_id: number;
+  created_at: Generated<Date | null>;
+  description: string;
+  history_text: string;
+  id: Generated<number>;
+  public_id: string;
+  updated_at: Generated<Date | null>;
+}
+
 export interface AccountingEntries {
   amount: Decimal;
   company_id: number;
@@ -288,7 +300,24 @@ export interface ControleSimples {
   vencimento: Generated<Date | null>;
 }
 
+export interface CustomerDeclarations {
+  id: Generated<number>;
+  public_id: string;
+  company_id: number;
+  customer_id: number;
+  competence_month: number;
+  competence_year: number;
+  declaration_type: string;
+  status: Generated<"PENDENTE" | "ENTREGUE" | "SEM_MOVIMENTO" | "NAO_SE_APLICA">;
+  delivery_date: Date | null;
+  receipt_url: string | null;
+  created_at: Generated<Date | null>;
+  updated_at: Generated<Date | null>;
+}
+
 export interface Customers {
+  opening_date: Generated<Date | null>;
+  tax_regime: Generated<string | null>;
   certificate_expiration: Generated<Date | null>;
   certificate_password: Generated<string | null>;
   certificate_url: Generated<string | null>;
@@ -917,7 +946,30 @@ export interface WhatsappJobs {
   type: string;
 }
 
+
+export interface AccountingAutoTemplates {
+  id: Generated<number>;
+  public_id: string;
+  company_id: number;
+  code: string;
+  description: string;
+  active: Generated<number | null>;
+  created_at: Generated<Date | null>;
+}
+
+export interface AccountingAutoTemplateItems {
+  id: Generated<number>;
+  public_id: string;
+  template_id: number;
+  debit_account_id: number | null;
+  credit_account_id: number | null;
+  history_template: string;
+}
+
 export interface DB {
+  accounting_auto_templates: AccountingAutoTemplates;
+  accounting_auto_template_items: AccountingAutoTemplateItems;
+  accounting_histories: AccountingHistories;
   accounting_entries: AccountingEntries;
   audit_logs: AuditLogs;
   auditoria_operacoes: AuditoriaOperacoes;
@@ -931,6 +983,7 @@ export interface DB {
   controle_presumido: ControlePresumido;
   controle_real: ControleReal;
   controle_simples: ControleSimples;
+  customer_declarations: CustomerDeclarations;
   customers: Customers;
   email_config: EmailConfig;
   faturamento_dia: FaturamentoDia;

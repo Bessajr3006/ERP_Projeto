@@ -52,6 +52,8 @@ const customerCreateSchema = baseEntitySchema.extend({
     limite: z.number().min(0).optional(),
     discount_type: z.enum(['percentage', 'fixed']).nullable().optional(),
     discount_value: z.number().min(0).nullable().optional(),
+    opening_date: z.string().nullable().optional(),
+    tax_regime: z.string().nullable().optional(),
 });
 
 const customerUpdateSchema = customerCreateSchema.partial();

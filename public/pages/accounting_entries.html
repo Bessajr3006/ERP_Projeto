@@ -42,6 +42,9 @@
                 <button id="btnOpenImportModal" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
                     Importação
                 </button>
+                <button id="btnOpenAutoModal" class="inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-indigo-600 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                    Lançamento Automático
+                </button>
                 <button id="btnOpenModal" class="inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-brand-600 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
                     Novo Lançamento
                 </button>
@@ -171,6 +174,46 @@
         </div>
     </div>
 
+    <!-- ── MODAL AUTO ENTRY ────────────────────────────────────────── -->
+    <div id="autoEntryModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="autoEntryModalBackdrop"></div>
+            <div class="modal-panel relative bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
+                <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">Aplicar Lançamento Automático</h3>
+                <form id="autoEntryForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="autoEntryCode" class="block text-sm text-gray-700 dark:text-gray-300">Código do Lançamento Padrão *</label>
+                            <input type="text" id="autoEntryCode" name="code" required class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Ex: 1001">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="autoEntryDate" class="block text-sm text-gray-700 dark:text-gray-300">Data *</label>
+                                <input type="date" id="autoEntryDate" name="entry_date" required class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                            </div>
+                            <div>
+                                <label for="autoEntryAmount" class="block text-sm text-gray-700 dark:text-gray-300">Valor Base (R$) *</label>
+                                <input type="number" id="autoEntryAmount" name="amount" step="0.01" required class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="autoDocumentRef" class="block text-sm text-gray-700 dark:text-gray-300">Documento (Opcional)</label>
+                            <input type="text" id="autoDocumentRef" name="document_ref" class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="autoHistoryComplement" class="block text-sm text-gray-700 dark:text-gray-300">Complemento de Histórico (Opcional)</label>
+                            <textarea id="autoHistoryComplement" name="history_complement" class="mt-1 w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Será concatenado ao histórico padrão"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-5 flex justify-end gap-2">
+                        <button type="button" id="btnCancelAutoEntry" class="px-4 py-2 border rounded text-gray-700 dark:text-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700">Cancelar</button>
+                        <button type="submit" id="btnApplyAutoEntry" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Gerar Lançamentos</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- ── MODAL IMPORT ─────────────────────────────────────────── -->
     <div id="importModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -216,7 +259,7 @@
     <!-- Scripts -->
     <script src="/js/api.js"></script>
     <script src="/js/accounting_entries.js"></script>
-    <script src="/js/components/navbar.js"></script>
+    <script src="/js/components/navbar.js?v=20260614201900"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
     <script src="/js/components/footer.js"></script>
 </body>

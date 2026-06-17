@@ -153,7 +153,12 @@
                 groupName: 'Contabilidade',
                 links: [
                     { id: 'accounting', label: 'Plano de Contas' },
-                    { id: 'accounting_entries', label: 'Lançamentos' }
+                    { id: 'accounting_entries', label: 'Lançamentos' },
+                    { id: 'accounting_auto_entries', label: 'Lançamento Automático' },
+                    { id: 'accounting_auto_history', label: 'Histórico Automático' },
+                    { id: 'declaration_registration', label: 'Cadastro de Declaração' },
+                    { id: 'declaration_control', label: 'Controle de Declaração' },
+                    { id: 'fechamento', label: 'Fechamento' }
                 ]
             },
             {
@@ -167,19 +172,14 @@
             {
                 groupName: 'Configuração',
                 links: [
-                    { id: 'roles', label: 'Config. de Perfis' },
+                    { id: 'roles', label: 'Cadastro de Perfis' },
                     { id: 'tasks', label: 'Tarefas' },
                     { id: 'organizer', label: 'Organizador' },
                     { id: 'ajuste', label: 'Ajuste' },
                     { id: 'whatsapp', label: 'WhatsApp' },
                     { id: 'email', label: 'E-mail' },
+                    { id: 'backup_restore', label: 'Backup e Restaurar' },
                     { id: 'swagger', label: 'Swagger' }
-                ]
-            },
-            {
-                groupName: 'Controle',
-                links: [
-                    { id: 'fechamento', label: 'Fechamento' }
                 ]
             }
         ];

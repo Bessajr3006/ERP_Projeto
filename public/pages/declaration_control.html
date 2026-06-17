@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Controle de Declaração</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+<body data-required-module="declaration_control" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 font-sans flex flex-col">
+    <div id="app-navbar"></div>
+
+    <main class="flex-1 w-full pt-4 pb-8 max-w-7xl mx-auto sm:px-6 lg:px-8 flex flex-col">
+        <!-- ── HEADER E FILTROS ────────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-5 flex flex-wrap justify-between items-end gap-3">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Controle de Declaração</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gerencie a entrega de obrigações contábeis e fiscais dos clientes.</p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 p-4 mb-4 px-4 sm:px-4">
+            <form id="filterForm" class="flex flex-wrap gap-4 items-end">
+                <div class="w-full sm:w-auto">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase mb-1">Mês</label>
+                    <select id="filterMonth" class="w-full border border-gray-300 p-2 rounded-lg text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                        <option value="todos">Todos</option>
+                        <option value="1">Janeiro</option>
+                        <option value="2">Fevereiro</option>
+                        <option value="3">Março</option>
+                        <option value="4">Abril</option>
+                        <option value="5">Maio</option>
+                        <option value="6">Junho</option>
+                        <option value="7">Julho</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Setembro</option>
+                        <option value="10">Outubro</option>
+                        <option value="11">Novembro</option>
+                        <option value="12">Dezembro</option>
+                    </select>
+                </div>
+                <div class="w-full sm:w-auto">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase mb-1">Ano</label>
+                    <select id="filterYear" class="w-full border border-gray-300 p-2 rounded-lg text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="w-full sm:w-auto flex-1 min-w-[200px]">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase mb-1">Tipo de Declaração</label>
+                    <input type="text" id="filterType" list="declarationTypes" placeholder="Ex: PGDAS, DEFIS..." class="w-full border border-gray-300 p-2 rounded-lg text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    <datalist id="declarationTypes">
+                        <!-- Populated via JS from the backend -->
+                    </datalist>
+                </div>
+                <div class="w-full sm:w-auto flex-1 min-w-[200px]">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase mb-1">Cliente</label>
+                    <input type="text" id="filterCustomer" list="customersList" placeholder="Nome ou CNPJ..." class="w-full border border-gray-300 p-2 rounded-lg text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    <datalist id="customersList">
+                        <!-- Populated via JS from the backend -->
+                    </datalist>
+                </div>
+                <div class="w-full sm:w-auto flex gap-2">
+                    <button type="submit" class="flex-1 sm:flex-none px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors">
+                        Buscar Clientes
+                    </button>
+                    <button type="button" id="clearFiltersBtn" class="flex-1 sm:flex-none px-4 py-2 bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors">
+                        Limpar
+                    </button>
+                </div>
+                </div>
+            </form>
+
+            <!-- BATCH ACTIONS BAR (Hidden by default) -->
+            <div id="batchActionsBar" class="hidden mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex-wrap items-center justify-between gap-4">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <span id="selectedCount">0</span> itens selecionados
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 mr-2 uppercase font-semibold tracking-wider">Ações em Lote:</span>
+                    <button type="button" class="batch-action-btn text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 text-xs font-medium px-3 py-1.5 border border-green-200 dark:border-green-800 rounded transition-colors" data-status="ENTREGUE">Entregue</button>
+                    <button type="button" class="batch-action-btn text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300 text-xs font-medium px-3 py-1.5 border border-yellow-200 dark:border-yellow-800 rounded transition-colors" data-status="SEM_MOVIMENTO">Sem Mov.</button>
+                    <button type="button" class="batch-action-btn text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 text-xs font-medium px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded transition-colors" data-status="NAO_SE_APLICA">N/A</button>
+                    <button type="button" class="batch-action-btn text-orange-600 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300 text-xs font-medium px-3 py-1.5 border border-orange-200 dark:border-orange-800 rounded transition-colors" data-status="PENDENTE">Pendente</button>
+                    <button type="button" class="batch-action-btn text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-3 py-1.5 border border-red-200 dark:border-red-800 rounded transition-colors" data-action="DELETE">Excluir</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <!-- ── TABLE ─────────────────────────────────────────────── -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl overflow-auto flex-1 border border-gray-200 dark:border-slate-700 relative">
+                <div id="loadingOverlay" class="absolute inset-0 bg-white/50 dark:bg-slate-800/50 z-20 hidden items-center justify-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+                </div>
+                <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
+                    <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-slate-900/50 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)]">
+                        <tr>
+                            <th class="px-4 py-3 text-center w-10">
+                                <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-700 dark:border-slate-600">
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell whitespace-nowrap">Regime</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Status</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell whitespace-nowrap">Apu</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell whitespace-nowrap">Fat</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell whitespace-nowrap">Acum</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell whitespace-nowrap">Imp/Venc</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Comprovante</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Ações (Mudar para)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="declarationsTable" class="bg-white divide-y divide-gray-100 dark:bg-slate-800 dark:divide-slate-700/60">
+                        <tr><td colspan="10" class="text-center py-8 text-gray-500 dark:text-gray-400">Selecione os filtros e clique em Buscar Clientes.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- ── PDF VIEWER MODAL ────────────────────────────────────────────── -->
+    <div id="pdfModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 dark:bg-black/60 items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b border-gray-100 dark:border-slate-700">
+                <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-100">Visualizar Comprovante</h3>
+                <button type="button" id="closePdfModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="flex-1 bg-gray-100 dark:bg-slate-900 overflow-hidden relative">
+                <iframe id="pdfIframe" src="" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/declaration_control.js"></script>
+    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <div id="app-footer" class="shrink-0 mt-auto"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

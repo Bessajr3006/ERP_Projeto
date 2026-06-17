@@ -7,7 +7,10 @@ const createBankAccountSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     institution: z.string().optional(),
     type: z.enum(['checking', 'savings', 'cash']).optional(),
-    initial_balance: z.coerce.number().optional(),
+    initial_balance: z.coerce.number()
+        .refine(n => !Number.isNaN(n), { message: 'Invalid number' })
+        .refine(n => n >= -9999999999999.99 && n <= 9999999999999.99, { message: 'Value out of range for DECIMAL(15,2)' })
+        .optional(),
     agency_number: z.string().nullable().optional(),
     account_number: z.string().nullable().optional(),
     pix_key: z.string().nullable().optional(),
@@ -21,7 +24,10 @@ const updateBankAccountSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters').optional(),
     institution: z.string().optional(),
     type: z.enum(['checking', 'savings', 'cash']).optional(),
-    current_balance: z.coerce.number().optional(),
+    current_balance: z.coerce.number()
+        .refine(n => !Number.isNaN(n), { message: 'Invalid number' })
+        .refine(n => n >= -9999999999999.99 && n <= 9999999999999.99, { message: 'Value out of range for DECIMAL(15,2)' })
+        .optional(),
     agency_number: z.string().nullable().optional(),
     account_number: z.string().nullable().optional(),
     pix_key: z.string().nullable().optional(),
@@ -102,6 +108,7 @@ export class BankAccountController {
                 return;
             }
 
+            console.log('RECEIVED BODY:', req.body);
             const validatedData = updateBankAccountSchema.parse(req.body);
             const account = await BankAccountService.update(id, companyId, validatedData as any);
 

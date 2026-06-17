@@ -283,6 +283,7 @@ export interface ServiceLaunch {
     nfse_number?: string | null;
     nfse_verification_code?: string | null;
     nfse_issued_at?: Date | string | null;
+    checklist?: any | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -293,6 +294,7 @@ export interface CreateServiceLaunchData {
     quantity: number;
     unit_price: number;
     observation?: string | null;
+    checklist?: any | null;
 }
 
 export interface UpdateServiceLaunchData {
@@ -301,4 +303,5 @@ export interface UpdateServiceLaunchData {
     quantity?: number;
     unit_price?: number;
     observation?: string | null;
+    checklist?: any | null;
 }

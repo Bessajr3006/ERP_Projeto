@@ -84,6 +84,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.title = 'KEYSTONE - Receitas';
 
+    const now = new Date();
+    // Use local timezone formatting for yyyy-mm-dd
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    const firstDay = new Date(new Date(now.getFullYear(), now.getMonth(), 1).getTime() - tzOffset).toISOString().split('T')[0];
+    const lastDay = new Date(new Date(now.getFullYear(), now.getMonth() + 1, 0).getTime() - tzOffset).toISOString().split('T')[0];
+    
+    const filterStartDate = document.getElementById('filterStartDate') as HTMLInputElement;
+    const filterEndDate = document.getElementById('filterEndDate') as HTMLInputElement;
+    if (filterStartDate) filterStartDate.value = firstDay;
+    if (filterEndDate) filterEndDate.value = lastDay;
+
     const valueEl = document.getElementById('value');
     if (valueEl) {
         valueEl.addEventListener('input', (e) => {
@@ -460,28 +471,6 @@ function renderTable(data = revenuesData) {
             <td class="px-2 py-4 whitespace-nowrap text-center text-sm font-medium">
                 ${statusBadge}
             </td>
-            <td class="px-3 py-4 whitespace-nowrap text-center text-sm font-medium hidden lg:table-cell">
-                ${r.payment_method === 'boleto'
-                ? (r.barcode
-                    ? `<div class="flex flex-col items-center gap-1 text-xs">
-                             <div class="flex space-x-2 mt-1">
-                               <button type="button" class="copy-pix-btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded px-2 py-0.5 flex items-center dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100" data-pix="${r.pix_code}" title="Copiar PIX">
-                                 <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> PIX
-                               </button>
-                               <button type="button" class="open-pdf-btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded px-2 py-0.5 flex items-center dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100" data-url="${r.billet_url}" data-id="${r.public_id}" title="Ver PDF">
-                                 <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> PDF
-                               </button>
-                             </div>
-                             <span class="text-gray-500 dark:text-gray-400" style="font-size: 10px;" title="${r.barcode}">${r.barcode.substring(0, 15)}...</span>
-                           </div>`
-                    : `<button type="button" class="generate-billet-btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100 px-2 py-1 rounded text-xs font-medium transition-colors" data-id="${r.public_id}">Gerar Boleto</button>`)
-                : (revenueStatus !== 'paid'
-                    ? (r.payment_method === 'pix'
-                        ? `<button type="button" class="open-receipt-btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100 px-2 py-1 rounded text-xs font-medium transition-colors" data-id="${r.public_id}" data-copy-qr-code="true" title="Copiar chave QR Code">Copiar QR Code</button>`
-                        : `<span class="text-gray-400 dark:text-gray-500">-</span>`)
-                    : `<span class="text-gray-400 dark:text-gray-500">-</span>`)
-            }
-            </td>
             <td class="px-2 py-4 whitespace-nowrap text-right text-sm font-medium text-green-600 dark:text-green-400">+ ${formatCurrency(r.amount)}</td>
             <td class="px-2 py-3 whitespace-nowrap text-center text-sm font-medium">
                 ${revenueStatus !== 'paid' ? `
@@ -497,7 +486,25 @@ function renderTable(data = revenuesData) {
                     <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                </button>` : ''}
+                </button>
+                ${r.payment_method === 'boleto' ? `
+                <button type="button" class="${r.billet_url ? 'text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300' : 'text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300'} mr-2 open-boleto-btn" data-id="${r.public_id}" data-nosso-numero="${r.billet_url || ''}" title="${r.billet_url ? 'Visualizar Boleto PDF' : 'Gerar Boleto'}">
+                    ${r.billet_url ? `
+                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    ` : `
+                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                    `}
+                </button>
+                ${r.billet_url ? `
+                <button type="button" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 mr-2 cancel-boleto-btn" data-id="${r.public_id}" title="Cancelar Boleto">
+                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </button>` : ''}` : ''}` : ''}
                 <button type="button" class="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300 mr-2 duplicate-btn" data-id="${r.public_id}" title="Duplicar">
                     <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -570,7 +577,25 @@ function renderGrid(elementId, items) {
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                    </button>` : ''}
+                    </button>
+                    ${r.payment_method === 'boleto' ? `
+                    <button type="button" class="p-1.5 ${r.billet_url ? 'text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30' : 'text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 bg-gray-50 hover:bg-emerald-50 dark:bg-slate-700 dark:hover:bg-emerald-900/30'} rounded open-boleto-btn" data-id="${r.public_id}" data-nosso-numero="${r.billet_url || ''}" title="${r.billet_url ? 'Visualizar Boleto PDF' : 'Gerar Boleto'}">
+                        ${r.billet_url ? `
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        ` : `
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        `}
+                    </button>
+                    ${r.billet_url ? `
+                    <button type="button" class="p-1.5 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 bg-gray-50 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-900/30 rounded cancel-boleto-btn" data-id="${r.public_id}" title="Cancelar Boleto">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                    </button>` : ''}` : ''}` : ''}
                     <button type="button" class="p-1.5 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded edit-btn" data-id="${r.public_id}" title="Editar">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -619,32 +644,6 @@ function renderGrid(elementId, items) {
                             ${statusText}
                         </span>
                     </div>
-                    ${r.payment_method === 'boleto' ? `
-                    <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300 col-span-2">
-                        <span class="text-xs text-gray-500 dark:text-gray-400">Boleto / PIX:</span>
-                        <div class="mt-1">
-                        ${r.barcode
-                    ? `<div class="flex flex-col gap-1 text-xs">
-                                 <div class="flex space-x-2">
-                                   <button type="button" class="copy-pix-btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded px-2 py-0.5 flex items-center dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100" data-pix="${r.pix_code}" title="Copiar PIX">
-                                     <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Copiar PIX
-                                   </button>
-                                   <button type="button" class="open-pdf-btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded px-2 py-0.5 flex items-center dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100" data-url="${r.billet_url}" data-id="${r.public_id}" title="Ver PDF">
-                                     <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> PDF
-                                   </button>
-                                 </div>
-                                 <span class="text-gray-500 dark:text-gray-400" title="${r.barcode}">${r.barcode.substring(0, 20)}...</span>
-                               </div>`
-                    : `<button type="button" class="generate-billet-btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100 px-2 py-1 rounded text-xs font-medium transition-colors" data-id="${r.public_id}">Gerar Boleto</button>`
-                }
-                        </div>
-                    </div>` : (revenueStatus !== 'paid' && r.payment_method === 'pix' ? `
-                    <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300 col-span-2">
-                        <span class="text-xs text-gray-500 dark:text-gray-400">Cobranca:</span>
-                        <div class="mt-1">
-                            <button type="button" class="open-receipt-btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 dark:bg-white dark:text-gray-900 dark:border-gray-200 dark:hover:bg-gray-100 px-2 py-1 rounded text-xs font-medium transition-colors" data-id="${r.public_id}" data-copy-qr-code="true" title="Copiar chave QR Code">Copiar QR Code</button>
-                        </div>
-                    </div>` : '')}
                 </div>
             </div>
         </div>
@@ -917,8 +916,84 @@ document.addEventListener('click', (e) => {
             if (pdfModalTitleText) pdfModalTitleText.textContent = 'Recibo';
             document.getElementById('pdfModal').classList.remove('hidden');
         }
+    } else {
+        const openBoletoBtn = (e.target as HTMLElement).closest('.open-boleto-btn');
+        const cancelBoletoBtn = (e.target as HTMLElement).closest('.cancel-boleto-btn');
+        if (openBoletoBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const pubId = openBoletoBtn.getAttribute('data-id');
+            const nossoNumero = openBoletoBtn.getAttribute('data-nosso-numero');
+            
+            if (pubId) {
+                if (nossoNumero && nossoNumero.trim() !== '') {
+                    openBoletoModal(pubId, nossoNumero);
+                } else {
+                    if (confirm('Esta receita ainda não possui boleto gerado no banco. Deseja emitir agora?')) {
+                        // Faz a emissão
+                        const jwtToken = localStorage.getItem('erp_token') || '';
+                        fetch('/api/v1/finance/revenues/' + pubId + '/generate-billet', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + jwtToken }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                (window as any).UI.showAlert('alertMessage', 'Boleto gerado com sucesso!', 'success');
+                                fetchRevenues();
+                            } else {
+                                (window as any).UI.showAlert('alertMessage', 'Erro: ' + data.message, 'error');
+                            }
+                        })
+                        .catch(err => {
+                            (window as any).UI.showAlert('alertMessage', 'Erro de conexão: ' + err.message, 'error');
+                        });
+                    }
+                }
+            }
+        } else if (cancelBoletoBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const pubId = cancelBoletoBtn.getAttribute('data-id');
+            if (pubId && confirm('Deseja realmente cancelar este boleto no banco? Esta ação não pode ser desfeita.')) {
+                const jwtToken = localStorage.getItem('erp_token') || '';
+                fetch('/api/v1/finance/revenues/batch-cancel-billets', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + jwtToken, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: [pubId] })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        (window as any).UI.showAlert('alertMessage', 'Boleto cancelado com sucesso!', 'success');
+                        fetchRevenues();
+                    } else {
+                        (window as any).UI.showAlert('alertMessage', 'Erro ao cancelar: ' + data.message, 'error');
+                    }
+                })
+                .catch(err => {
+                    (window as any).UI.showAlert('alertMessage', 'Erro de conexão: ' + err.message, 'error');
+                });
+            }
+        }
     }
 });
+
+function openBoletoModal(pubId: string, nossoNumero: string) {
+    let url = '/api/v1/finance/revenues/' + pubId + '/boleto-pdf?nossoNumero=' + encodeURIComponent(nossoNumero);
+    const jwtToken = localStorage.getItem('erp_token');
+    if (jwtToken) {
+        url += '&token=' + jwtToken;
+    }
+    
+    const pdfIframe = document.getElementById('pdfIframe') as HTMLIFrameElement;
+    const printPdfBtn = document.getElementById('printPdfBtn');
+    const pdfModalTitleText = document.getElementById('pdfModalTitleText');
+    if (pdfIframe) pdfIframe.src = url;
+    if (printPdfBtn) printPdfBtn.classList.remove('hidden');
+    if (pdfModalTitleText) pdfModalTitleText.textContent = 'Boleto';
+    document.getElementById('pdfModal').classList.remove('hidden');
+}
 
 document.getElementById('printPdfBtn')?.addEventListener('click', () => {
     const pdfIframe = document.getElementById('pdfIframe') as HTMLIFrameElement | null;

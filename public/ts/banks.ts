@@ -279,6 +279,9 @@
                 <button class="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300 mr-3 edit-btn" data-id="${b.public_id}" title="Editar">
                     <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 </button>
+                <button class="text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 mr-3 test-connection-btn" data-id="${b.public_id}" title="Testar Conexão API">
+                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                </button>
                 <button class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mr-3 duplicate-btn" data-id="${b.public_id}" title="Duplicar">
                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                 </button>
@@ -343,6 +346,9 @@
                 <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
                     <button class="p-1.5 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded edit-btn" data-id="${b.public_id}" title="Editar">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    </button>
+                    <button class="p-1.5 text-gray-500 hover:text-amber-600 dark:text-gray-400 dark:hover:text-amber-400 bg-gray-50 hover:bg-amber-50 dark:bg-slate-700 dark:hover:bg-amber-900/30 rounded test-connection-btn" data-id="${b.public_id}" title="Testar Conexão API">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     </button>
                     <button class="p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30 rounded duplicate-btn" data-id="${b.public_id}" title="Duplicar">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
@@ -461,6 +467,15 @@
         deleteBank(id);
       });
     });
+
+    document.querySelectorAll('.test-connection-btn').forEach((btn: any) => {
+      btn.addEventListener('click', (e: any) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        if (id) {
+            testApiConnectionDirectly(id, e.currentTarget);
+        }
+      });
+    });
   };
 
   const applyFilters = (): void => {
@@ -521,7 +536,7 @@
     populateFileDropzoneUI('Key', !!bank.api_key);
 
     const initialBalanceInput = getById('initialBalance');
-    initialBalanceInput.value = formatCurrencyInput(String(bank.current_balance * 100));
+    initialBalanceInput.value = formatCurrencyInput(Number(bank.current_balance).toFixed(2).replace(/\D/g, ''));
     initialBalanceInput.disabled = false;
 
     getById('modalTitle').textContent = 'Editar Conta Bancária';
@@ -552,7 +567,7 @@
     populateFileDropzoneUI('Key', !!bank.api_key);
 
     const initialBalanceInput = getById('initialBalance');
-    initialBalanceInput.value = formatCurrencyInput(String(bank.current_balance * 100));
+    initialBalanceInput.value = formatCurrencyInput(Number(bank.current_balance).toFixed(2).replace(/\D/g, ''));
     initialBalanceInput.disabled = false;
 
     getById('modalTitle').textContent = 'Duplicar Conta Bancária';
@@ -606,6 +621,25 @@
       (window as any).UI.showAlert('alertMessage', error.message || 'Falha ao testar conexão com a API.', 'error');
     } finally {
       btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  };
+
+  const testApiConnectionDirectly = async (bankId: string, btn: HTMLElement): Promise<void> => {
+    const originalText = btn.innerHTML;
+    btn.setAttribute('disabled', 'true');
+    btn.innerHTML =
+      '<svg class="animate-spin h-5 w-5 inline text-amber-500 dark:text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
+    try {
+      const response = await (window as any).api(`/bank-accounts/${bankId}/test-connection`, {
+        method: 'POST',
+      });
+      (window as any).UI.showAlert('alertMessage', response.message || 'Conexão estabelecida com sucesso!', 'success');
+    } catch (error: any) {
+      (window as any).UI.showAlert('alertMessage', error.message || 'Falha ao testar conexão com a API.', 'error');
+    } finally {
+      btn.removeAttribute('disabled');
       btn.innerHTML = originalText;
     }
   };

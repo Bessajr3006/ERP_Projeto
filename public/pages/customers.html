@@ -205,6 +205,23 @@
                                         <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Dados Comerciais</h4>
                                         <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div>
+                                                <label for="customerTaxRegime" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Regime Tributário</label>
+                                                <select id="customerTaxRegime" name="customerTaxRegime"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                                    <option value="">Selecione...</option>
+                                                    <option value="Simples Nacional">Simples Nacional</option>
+                                                    <option value="MEI">MEI</option>
+                                                    <option value="Lucro Presumido">Lucro Presumido</option>
+                                                    <option value="Lucro Real">Lucro Real</option>
+                                                    <option value="Outros / Isento">Outros / Isento</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="customerOpeningDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data de Abertura</label>
+                                                <input type="date" id="customerOpeningDate" name="customerOpeningDate"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                            </div>
+                                            <div>
                                                 <label for="customerDocument"
                                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF/CNPJ</label>
                                                 <div class="flex">
@@ -354,7 +371,7 @@
     <script src="/js/filter-panel.js"></script>
     <script src="/js/components/crud-manager.js"></script>
     <script src="/js/customers.js"></script>
-    <script src="/js/components/navbar.js"></script>
+    <script src="/js/components/navbar.js?v=20260614201900"></script>
 
     <div id="app-footer" class="shrink-0"></div>
     <script src="/js/components/footer.js"></script>

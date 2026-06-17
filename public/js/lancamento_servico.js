@@ -549,12 +549,14 @@ ${!isTransmitted ? `<div class="draft-bar">⚠️ DOCUMENTO SEM VALOR FISCAL —
         if (!tbody) return;
 
         if (filteredLaunches.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento cadastrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento cadastrado.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = filteredLaunches.map((item) => `
+        tbody.innerHTML = filteredLaunches.map((item) => {
+            return `
             <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300"><input type="checkbox" class="row-checkbox rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50" value="${item.public_id}"></td>
                 <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">${escapeHtml(item.customer_name)}</td>
                 <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">${escapeHtml(item.service_name)}</td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${escapeHtml(String(item.quantity))}</td>
@@ -585,8 +587,8 @@ ${!isTransmitted ? `<div class="draft-bar">⚠️ DOCUMENTO SEM VALOR FISCAL —
                         <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
 
         document.querySelectorAll('.edit-btn').forEach((btn) => {
             btn.addEventListener('click', () => openModal(btn.dataset.id));
@@ -608,6 +610,22 @@ ${!isTransmitted ? `<div class="draft-bar">⚠️ DOCUMENTO SEM VALOR FISCAL —
                 openNfse(btn.dataset.id);
             });
         });
+
+        // Row Selection Logic
+        document.querySelectorAll('.row-checkbox').forEach(chk => {
+            chk.addEventListener('change', updateSelectAllState);
+        });
+        updateSelectAllState();
+    }
+
+    function updateSelectAllState() {
+        const selectAll = getById('selectAllLaunches');
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        if (!selectAll || checkboxes.length === 0) return;
+        const allChecked = Array.from(checkboxes).every(c => c.checked);
+        const someChecked = Array.from(checkboxes).some(c => c.checked);
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = someChecked && !allChecked;
     }
 
     function applyFilters() {
@@ -636,24 +654,27 @@ ${!isTransmitted ? `<div class="draft-bar">⚠️ DOCUMENTO SEM VALOR FISCAL —
         getById('launchCreateRevenue').checked = false;
         toggleRevenueFields();
 
+        let launch = null;
         if (id) {
-            const item = launches.find((entry) => String(entry.public_id) === String(id));
-            if (!item) return;
-            title.textContent = 'Editar Lançamento de Serviço';
-            getById('serviceLaunchId').value = String(item.public_id);
-            getById('launchCustomer').value = item.customer_public_id || '';
-            getById('launchService').value = item.service_public_id || '';
-            getById('launchQuantity').value = String(item.quantity || 1);
-            getById('launchUnitPrice').value = Number(item.unit_price || 0).toFixed(2);
-            getById('launchObservation').value = item.observation || '';
+            launch = launches.find((entry) => String(entry.public_id) === String(id));
+        }
 
-            if (item.revenue_public_id) {
+        if (launch) {
+            title.textContent = 'Editar Lançamento de Serviço';
+            getById('serviceLaunchId').value = String(launch.public_id);
+            getById('launchCustomer').value = launch.customer_public_id || '';
+            getById('launchService').value = launch.service_public_id || '';
+            getById('launchQuantity').value = String(launch.quantity || 1);
+            getById('launchUnitPrice').value = Number(launch.unit_price || 0).toFixed(2);
+            getById('launchObservation').value = launch.observation || '';
+
+            if (launch.revenue_public_id) {
                 getById('launchCreateRevenue').checked = true;
                 toggleRevenueFields();
-                getById('launchRevenueCategory').value = item.revenue_category_public_id || '';
-                getById('launchRevenueBank').value = item.revenue_bank_account_public_id || '';
-                getById('launchRevenueDate').value = toDateInputValue(item.revenue_date);
-                getById('launchRevenuePaymentMethod').value = item.revenue_payment_method || '';
+                getById('launchRevenueCategory').value = launch.revenue_category_public_id || '';
+                getById('launchRevenueBank').value = launch.revenue_bank_account_public_id || '';
+                getById('launchRevenueDate').value = toDateInputValue(launch.revenue_date);
+                getById('launchRevenuePaymentMethod').value = launch.revenue_payment_method || '';
             }
         } else {
             title.textContent = 'Novo Lançamento de Serviço';
@@ -835,6 +856,13 @@ ${!isTransmitted ? `<div class="draft-bar">⚠️ DOCUMENTO SEM VALOR FISCAL —
         getById('serviceLaunchForm')?.addEventListener('submit', handleSubmit);
         getById('filterSearch')?.addEventListener('input', applyFilters);
         getById('launchCreateRevenue')?.addEventListener('change', toggleRevenueFields);
+
+        getById('selectAllLaunches')?.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            document.querySelectorAll('.row-checkbox').forEach(chk => {
+                chk.checked = checked;
+            });
+        });
 
         getById('launchService')?.addEventListener('change', () => {
             const selected = findService(getById('launchService')?.value);

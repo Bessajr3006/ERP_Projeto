@@ -1,3 +1,4 @@
+
 (function initCustomersPage() {
 
 const forge: any = (window as any).forge;
@@ -17,11 +18,11 @@ const makeMask: any =
     (window as any).createMaskAdapter ||
     ((input: any, options: any) => (window as any).IMask(input, options));
 
-function onlyDigits(value) {
+function onlyDigits(value: any) {
     return String(value || '').replace(/\D/g, '');
 }
 
-function setMaskedValue(maskInstance, inputId, value) {
+function setMaskedValue(maskInstance: any, inputId: string, value: any) {
     if (maskInstance) {
         maskInstance.unmaskedValue = onlyDigits(value);
         return;
@@ -30,16 +31,16 @@ function setMaskedValue(maskInstance, inputId, value) {
     if (input) input.value = value || '';
 }
 
-function getMaskedValue(maskInstance, inputId) {
+function getMaskedValue(maskInstance: any, inputId: string) {
     if (maskInstance) return maskInstance.unmaskedValue || '';
     return onlyDigits(getById(inputId)?.value || '');
 }
 
-function getTrimmedValue(inputId) {
+function getTrimmedValue(inputId: string) {
     return String(getById(inputId)?.value || '').trim();
 }
 
-function formatDoc(doc) {
+function formatDoc(doc: any) {
     if (!doc) return '-';
     const clean = String(doc).replace(/\D/g, '');
     if (clean.length === 11) return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
@@ -47,7 +48,7 @@ function formatDoc(doc) {
     return doc;
 }
 
-function formatPhone(phone) {
+function formatPhone(phone: any) {
     if (!phone) return '-';
     const clean = String(phone).replace(/\D/g, '');
     if (clean.length === 10) return clean.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
@@ -57,14 +58,14 @@ function formatPhone(phone) {
     return phone;
 }
 
-function formatCustomerLocation(item) {
+function formatCustomerLocation(item: any) {
     const city = String(item.city || '').trim();
     const state = String(item.state || '').trim();
     if (!city && !state) return 'Não informado';
     return [city, state].filter(Boolean).join(' / ');
 }
 
-const getBase64 = (file) => new Promise((resolve, reject) => {
+const getBase64 = (file: any) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(String(reader.result || '').split(',')[1]);
@@ -98,21 +99,21 @@ function populateSellersDropdown(selectedValue = '') {
 async function loadDependencies(selectedState = '', selectedSeller = '') {
     try {
         const [statesRes, usersRes] = await Promise.all([
-            customerIbgeStates.length ? { data: customerIbgeStates } : api('/companies/states').catch(() => ({ data: [] })),
-            api('/users').catch(() => ({ data: [] }))
+            customerIbgeStates.length ? { data: customerIbgeStates } : ((window as any).api)('/companies/states').catch(() => ({ data: [] })),
+            ((window as any).api)('/users').catch(() => ({ data: [] }))
         ]);
 
         if (!customerIbgeStates.length) customerIbgeStates = statesRes.data || [];
         populateCustomerStateOptions(selectedState);
         
-        allSellers = (usersRes.data || []).filter(u => u.role === 'seller');
+        allSellers = (usersRes.data || []).filter((u: any) => u.role === 'seller');
         populateSellersDropdown(selectedSeller);
     } catch (error) {
         console.error('Falha ao carregar dependências do form', error);
     }
 }
 
-async function lookupAddressByCep(cep) {
+async function lookupAddressByCep(cep: any) {
     const normalizedCep = onlyDigits(cep);
     if (normalizedCep.length !== 8) return null;
 
@@ -140,7 +141,7 @@ async function lookupAddressByCep(cep) {
     return data;
 }
 
-function applyCustomerCepLookupResult(data) {
+function applyCustomerCepLookupResult(data: any) {
     if (!data) return;
     getById('customerStreet').value = data.street || '';
     getById('customerNeighborhood').value = data.neighborhood || '';
@@ -160,7 +161,7 @@ async function handleCustomerCepLookup() {
         if (data && (data.street || data.city)) {
             applyCustomerCepLookupResult(data);
         } else {
-            UI.showAlert('alertMessage', 'CEP do cliente não encontrado ou inválido.', 'error');
+            (window as any).UI.showAlert('alertMessage', 'CEP do cliente não encontrado ou inválido.', 'error');
         }
     } catch (error) {
         console.error('Falha ao consultar CEP', error);
@@ -229,7 +230,7 @@ function extractCertDate() {
                     }
                 }
             }
-        } catch (err) {
+        } catch (err: any) {
             console.warn('Falha no parse do PFX:', err.message);
         }
     };
@@ -350,8 +351,8 @@ function applyCustomerPrefillFromQuery() {
         }
     });
 
-    if (typeof UI !== 'undefined' && UI.showAlert) {
-        UI.showAlert('alertMessage', 'Preenchimento aplicado. Revise os dados e clique em Salvar.', 'success', 4500);
+    if (typeof (window as any).UI !== 'undefined' && (window as any).UI.showAlert) {
+        (window as any).UI.showAlert('alertMessage', 'Preenchimento aplicado. Revise os dados e clique em Salvar.', 'success', 4500);
     }
 
     const cleanUrl = new URL(window.location.href);
@@ -362,7 +363,7 @@ function applyCustomerPrefillFromQuery() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!Auth.isAuthenticated()) {
+    if (!(window as any).Auth.isAuthenticated()) {
         window.location.href = '/';
         return;
     }
@@ -379,12 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const solidconCustomersModalBackdrop = getById('solidconCustomersModalBackdrop');
     if (solidconCustomersModalBackdrop) {
-        solidconCustomersModalBackdrop.addEventListener('click', (e) => {
+        solidconCustomersModalBackdrop.addEventListener('click', (e: any) => {
             if (e.target === solidconCustomersModalBackdrop) closeSolidconCustomersModal();
         });
     }
 
-    api('/auth/me').then((res) => {
+    ((window as any).api)('/auth/me').then((res: any) => {
         const userGreeting = getById('userGreeting');
         if (userGreeting && res.data && res.data.user) {
             userGreeting.textContent = `Olá, ${res.data.user.full_name || 'Usuário'}`;
@@ -404,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }).catch(console.error);
 
-    customersManager = new CrudManager({
+    customersManager = new (window as any).CrudManager({
         entityName: 'Cliente',
         endpoint: '/entities/customers',
         tableId: 'customersTable',
@@ -420,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         },
 
-        applyFilters: (data) => {
+        applyFilters: (data: any[]) => {
             const filterPanel = (window as any).FilterPanel;
             const normalizeText = typeof filterPanel?.normalizeText === 'function'
                 ? filterPanel.normalizeText
@@ -435,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const search = normalizeText(getById('filterSearch')?.value);
             const searchDigits = onlyDigitsFn(search);
 
-            const filtered = data.filter((item) => {
+            const filtered = data.filter((item: any) => {
                 if (!search) return true;
 
                 if (matchesSearch(item, ['name', 'email', 'cnpj_cpf', 'phone', 'city', 'state', 'seller_name'], search)) return true;
@@ -446,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     .some((value) => value.includes(searchDigits));
             });
 
-            window.GridSummaryFooter?.update({
+            (window as any).GridSummaryFooter?.update({
                 footerId: 'customersResultsFooter',
                 anchorId: 'customersGridSection',
                 count: filtered.length,
@@ -455,14 +456,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return filtered;
         },
 
-        renderTable: (items) => {
+        renderTable: (items: any[]) => {
             const tbody = getById('customersTable');
             if (items.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum cliente encontrado.</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = items.map((item, index) => `
+            tbody.innerHTML = items.map((item: any, index: number) => `
                 <tr>
                     <td class="px-3 py-4 whitespace-nowrap text-left w-12">
                         <input type="checkbox" value="${item.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
@@ -488,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         },
 
-        renderGrid: (items) => {
+        renderGrid: (items: any[]) => {
             const grid = getById('customersGridSection');
             if (!grid) return;
             if (items.length === 0) {
@@ -501,14 +502,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            grid.innerHTML = items.map((item, index) => `
-                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center mb-3">
+            grid.innerHTML = items.map((item: any, index: number) => `
+                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700 group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center pt-1 z-10">
                             <input type="checkbox" value="${item.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
+                            <span class="ml-2 text-xs font-mono font-medium text-gray-500 dark:text-gray-400">#${String(index + 1).padStart(4, '0')}</span>
                         </div>
-                        <div class="flex justify-between items-start gap-3">
-                            <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2" title="${item.name}">${item.name}</h4>
+
+                        <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
+                            <button class="p-1.5 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' title="Editar">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            </button>
+                            <button class="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 bg-gray-50 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-900/30 rounded delete-btn" data-id="${item.public_id}" title="Excluir">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 mt-0">
+                        <div class="flex justify-between items-start gap-2">
+                            <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 wrap-break-word flex-1" title="${item.name}">${item.name}</h4>
                         </div>
                         <div class="text-xs font-mono text-gray-500 mb-4">${formatDoc(item.cnpj_cpf) || 'S/ Documento'}</div>
 
@@ -527,20 +541,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     </div>
-
-                    <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-2">
-                        <button type="button" title="Editar" class="p-2 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
-                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        <button type="button" title="Excluir" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors delete-btn" data-id="${item.public_id}">
-                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    </div>
                 </div>
             `).join('');
         },
 
-        onEdit: (data) => {
+        onEdit: (data: any) => {
             getById('entityForm')?.reset();
             resetCustomerModalTabs();
             const customerIdInput = getById('customerId');
@@ -559,6 +564,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 getById('customerComplement').value = data.complement || '';
                 getById('customerNeighborhood').value = data.neighborhood || '';
                 getById('customerCity').value = data.city || '';
+                if(getById('customerTaxRegime')) (getById('customerTaxRegime') as HTMLSelectElement).value = data.tax_regime || '';
+                if(getById('customerOpeningDate')) (getById('customerOpeningDate') as HTMLInputElement).value = data.opening_date ? data.opening_date.split('T')[0] : '';
                 getById('customerCertPassword').value = data.certificate_password || '';
                 getById('customerCertExpiration').value = data.certificate_expiration ? data.certificate_expiration.split('T')[0] : '';
                 (getById('customerDueDay') as HTMLInputElement).value = data.vencimento_dia ?? '';
@@ -611,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnImportSolidconJson = getById('btnImportSolidconCustomers');
     const solidconImportStatus = getById('solidconCustomersStatus');
 
-    const setSolidconStatus = (message, type = 'info') => {
+    const setSolidconStatus = (message: string, type = 'info') => {
         if (!solidconImportStatus) return;
         solidconImportStatus.classList.remove('hidden');
         let classes = 'text-gray-700 bg-gray-100 dark:bg-slate-700 dark:text-gray-200';
@@ -653,14 +660,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btnFetchSolidconJson.textContent = 'Buscando...';
 
             try {
-                const response = await api('/companies/proxy-consulta', {
+                const response = await ((window as any).api)('/companies/proxy-consulta', {
                     method: 'POST',
                     body: JSON.stringify({ url })
                 });
                 const payload = response?.data ?? response;
                 solidconJsonInput.value = JSON.stringify(payload, null, 2);
                 setSolidconStatus('JSON carregado com sucesso.', 'success');
-            } catch (err) {
+            } catch (err: any) {
                 setSolidconStatus(err.message || 'Erro ao buscar JSON da Solidcon.', 'error');
             } finally {
                 btnFetchSolidconJson.textContent = originalText;
@@ -691,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnImportSolidconJson.textContent = 'Importando...';
 
             try {
-                const result = await api('/entities/customers/solidcon-import', {
+                const result = await ((window as any).api)('/entities/customers/solidcon-import', {
                     method: 'POST',
                     body: JSON.stringify({ payload: parsed })
                 });
@@ -701,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const skipped = data.skipped ?? 0;
                 setSolidconStatus(`Importacao concluida: ${created} novos, ${updated} atualizados, ${skipped} ignorados.`, 'success');
                 await customersManager.loadData();
-            } catch (err) {
+            } catch (err: any) {
                 setSolidconStatus(err.message || 'Erro ao importar clientes da Solidcon.', 'error');
             } finally {
                 btnImportSolidconJson.textContent = originalText;
@@ -718,16 +725,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
 
             try {
-                await api(`/entities/customers/${id}`, { method: 'DELETE' });
-                UI.showAlert('alertMessage', 'Cliente excluído com sucesso!', 'success');
+                await ((window as any).api)(`/entities/customers/${id}`, { method: 'DELETE' });
+                (window as any).UI.showAlert('alertMessage', 'Cliente excluído com sucesso!', 'success');
                 await customersManager.loadData();
-            } catch (error) {
-                UI.showAlert('alertMessage', error.message || 'Erro ao excluir o cliente.', 'error');
+            } catch (error: any) {
+                (window as any).UI.showAlert('alertMessage', error.message || 'Erro ao excluir o cliente.', 'error');
             }
         }
     });
 
-    getById('entityForm')?.addEventListener('submit', async (event) => {
+    getById('entityForm')?.addEventListener('submit', async (event: any) => {
         event.preventDefault();
 
         const saveBtn = getById('saveBtn');
@@ -759,6 +766,8 @@ document.addEventListener('DOMContentLoaded', () => {
             neighborhood: getTrimmedValue('customerNeighborhood') || undefined,
             city: getTrimmedValue('customerCity') || undefined,
             state: getById('customerState')?.value || undefined,
+            tax_regime: (getById('customerTaxRegime') as HTMLSelectElement)?.value || undefined,
+            opening_date: getTrimmedValue('customerOpeningDate') || undefined,
             certificate_password: getTrimmedValue('customerCertPassword') || undefined,
             certificate_expiration: getTrimmedValue('customerCertExpiration') || undefined,
             vencimento_dia: (getById('customerDueDay') as HTMLInputElement)?.value !== '' ? Number((getById('customerDueDay') as HTMLInputElement)?.value) : undefined,
@@ -782,16 +791,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const endpoint = isEditing ? `/entities/customers/${customerId}` : '/entities/customers';
             const method = isEditing ? 'PUT' : 'POST';
 
-            await api(endpoint, {
+            await ((window as any).api)(endpoint, {
                 method,
                 body: JSON.stringify(payload),
             });
 
-            UI.showAlert('alertMessage', isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!', 'success');
+            (window as any).UI.showAlert('alertMessage', isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!', 'success');
             customersManager.closeModal();
             await customersManager.loadData();
-        } catch (error) {
-            UI.showAlert('alertMessage', error.message || 'Erro ao salvar cliente.', 'error');
+        } catch (error: any) {
+            (window as any).UI.showAlert('alertMessage', error.message || 'Erro ao salvar cliente.', 'error');
         } finally {
             saveBtn.disabled = false;
             saveBtn.textContent = 'Salvar';

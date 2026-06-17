@@ -15,3 +15,8 @@ cert.pem
 .node/
 *.pem
 certs/
+database.sqlite
+query_test.ts
+test_pdf.ts
+test_pdf2.ts
+update_db_types.js

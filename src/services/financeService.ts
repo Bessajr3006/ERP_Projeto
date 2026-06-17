@@ -423,6 +423,21 @@ export class FinanceService {
             : '';
         const customerName = escapeHtml(tx.cust_name || 'Nao informado');
         const customerDoc = escapeHtml(formatBrazilDocument(tx.cust_doc));
+        const customerAddressObj = {
+            street: tx.cust_street || '',
+            number: tx.cust_num || '',
+            neighborhood: tx.cust_neigh || '',
+            city: tx.cust_city || '',
+            state: tx.cust_uf || '',
+            zip: tx.cust_zip || ''
+        };
+        const customerFullAddress = [
+            customerAddressObj.street ? `${customerAddressObj.street}, ${customerAddressObj.number || 'S/N'}` : '',
+            customerAddressObj.neighborhood,
+            customerAddressObj.city ? `${customerAddressObj.city} - ${customerAddressObj.state}` : '',
+            customerAddressObj.zip ? `CEP: ${customerAddressObj.zip.replace(/\D/g, '').replace(/^(\d{5})(\d{3})?.*$/, '$1-$2')}` : ''
+        ].filter(Boolean).join(' | ');
+        const customerAddressHtml = customerFullAddress ? escapeHtml(customerFullAddress) : 'Nao informado';
         const description = escapeHtml(tx.description || '-');
         const bankName = escapeHtml(tx.bank_name || 'Nao informado');
         const statusLabel = effectiveStatus === 'progress' ? 'Andamento' : (isPending ? 'Pendente' : 'Recebido');
@@ -556,8 +571,10 @@ export class FinanceService {
             <div>
                 <div class="label">Cliente</div>
                 <div class="value">${customerName}</div>
-                <div class="label" style="margin-top:10px;">CNPJ</div>
+                <div class="label" style="margin-top:10px;">CNPJ/CPF</div>
                 <div class="value">${customerDoc}</div>
+                <div class="label" style="margin-top:10px;">Endereço</div>
+                <div class="value" style="font-weight: 500;">${customerAddressHtml}</div>
             </div>
             <div>
                 <div class="label">Valor</div>
@@ -573,10 +590,103 @@ export class FinanceService {
 </body>
 </html>`;
     }
-    static async generateBillet(_companyId: number, _transactionPublicId: string): Promise<any> { return {}; }
-    static async getBoletoPdfBase64(_companyId: number, _id: string, _nosso: string): Promise<string> { return ""; }
+    static async generateBillet(companyId: number, transactionPublicId: string): Promise<any> {
+        const tx = await FinanceDocumentRepository.getTransactionForBillet(pool, companyId, transactionPublicId);
+        if (!tx) throw new Error('Transação não encontrada');
+
+        if (!tx.cust_doc) {
+            throw new Error('Cliente sem CPF/CNPJ. Preencha o cadastro antes de emitir boleto.');
+        }
+
+        // Recuperar conta do Inter (temos que pegar do bank_accounts). Por enquanto pegamos a conta da transação.
+        const bankAccount = await BankAccountService.getByPublicId(tx.bank_acc_public_id, companyId);
+        const inst = String(bankAccount.institution || '').toLowerCase();
+
+        if (inst.includes('inter')) {
+            const { InterService } = await import('./bankAccountApi/interService');
+            
+            const customerData = {
+                document: tx.cust_doc,
+                name: tx.cust_name,
+                address: tx.cust_street,
+                address_number: tx.cust_num,
+                neighborhood: tx.cust_neigh,
+                city: tx.cust_city,
+                state: tx.cust_uf,
+                zip_code: tx.cust_zip
+            };
+
+            const result = await InterService.generateBoleto(bankAccount, tx, customerData);
+            
+            await FinanceDocumentRepository.updateBilletCode(pool, tx.id, result.codigoBarras, null, result.nossoNumero);
+            
+            return {
+                nossoNumero: result.nossoNumero,
+                linhaDigitavel: result.linhaDigitavel,
+                codigoBarras: result.codigoBarras
+            };
+        }
+
+        throw new Error('Geração de boleto ainda não suportada para este banco.');
+    }
+
+    static async getBoletoPdfBase64(companyId: number, id: string, nosso: string): Promise<{ pdfBase64: string, filename: string }> {
+        const tx = await FinanceDocumentRepository.getTransactionForBillet(pool, companyId, id);
+        if (!tx) throw new Error('Transação não encontrada');
+
+        const bankAccount = await BankAccountService.getByPublicId(tx.bank_acc_public_id, companyId);
+        const inst = String(bankAccount.institution || '').toLowerCase();
+
+        let pdfBase64 = '';
+        if (inst.includes('inter')) {
+            const { InterService } = await import('./bankAccountApi/interService');
+            pdfBase64 = await InterService.getBoletoPdfBase64(bankAccount, nosso);
+        } else {
+            throw new Error('Visualização de boleto ainda não suportada para este banco.');
+        }
+
+        const safeName = String(tx.cust_name || 'Cliente').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+        let safeDate = 'Data';
+        if (tx.date) {
+            if (tx.date instanceof Date) {
+                const tzOffset = tx.date.getTimezoneOffset() * 60000;
+                safeDate = new Date(tx.date.getTime() - tzOffset).toISOString().slice(0, 10);
+            } else {
+                safeDate = String(tx.date).slice(0, 10);
+            }
+        }
+        
+        return { pdfBase64, filename: `Boleto_${safeName}_${safeDate}.pdf` };
+    }
     static async batchGenerateBillets(_c: number, _i: string[]): Promise<any> { return {}; }
-    static async batchCancelBillets(_c: number, _i: string[]): Promise<any> { return {}; }
+    static async batchCancelBillets(companyId: number, publicIds: string[]): Promise<any> {
+        let successCount = 0;
+        let errors = [];
+        for (const pubId of publicIds) {
+            try {
+                const tx = await FinanceDocumentRepository.getTransactionForBillet(pool, companyId, pubId);
+                if (!tx || !tx.billet_url) {
+                    throw new Error('Transação não encontrada ou sem boleto gerado.');
+                }
+                const inst = String(tx.institution || '').toLowerCase();
+                if (inst.includes('inter')) {
+                    const { InterService } = await import('./bankAccountApi/interService');
+                    const bankAccount = await BankAccountService.getByPublicId(tx.bank_acc_public_id, companyId);
+                    await InterService.cancelBoleto(bankAccount, tx.billet_url);
+                    await FinanceDocumentRepository.updateBilletCode(pool, tx.id, null, null, null);
+                    successCount++;
+                } else {
+                    throw new Error('Banco não suportado para cancelamento.');
+                }
+            } catch (err: any) {
+                errors.push(`Erro na receita ${pubId}: ${err.message}`);
+            }
+        }
+        if (errors.length > 0) {
+            throw new Error(`Cancelados: ${successCount}. Erros: ${errors.join(', ')}`);
+        }
+        return { success: true, count: successCount };
+    }
     static async syncBankStatements(companyId: number, bankAccountPublicId: string, startDate: string, endDate: string): Promise<number> {
         // 1. Busca a conta específica
         const bankAccount = await BankAccountService.getByPublicId(bankAccountPublicId, companyId);

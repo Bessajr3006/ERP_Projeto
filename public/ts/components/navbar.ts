@@ -584,8 +584,8 @@ async function loadUserGreeting() {
                     // Ocultar com força (style.display) recursos sem permissão
                     // Obs: admin agora pode ter permissões customizadas; então NÃO devemos fazer bypass.
                     // Mantemos apenas um bypass de segurança para o super_admin não ficar trancado.
-                    const isSuperAdminBypass = (role === 'super_admin' || role === 'admin')
-                        && (moduleName === 'tasks' || moduleName === 'roles' || moduleName === 'accounting' || moduleName === 'organizer' || moduleName === 'users' || moduleName === 'company' || moduleName === 'email-config' || moduleName === 'email' || moduleName === 'ajuste' || moduleName === 'service_types' || moduleName === 'services' || moduleName === 'service_launches' || moduleName === 'service_tax_municipal' || moduleName === 'service_tax_federal');
+                    const isSuperAdminBypass = (role === 'super_admin')
+                        && (moduleName === 'tasks' || moduleName === 'roles' || moduleName === 'accounting' || moduleName === 'accounting_entries' || moduleName === 'accounting_auto_entries' || moduleName === 'accounting_auto_history' || moduleName === 'declaration_control' || moduleName === 'declaration_registration' || moduleName === 'fechamento' || moduleName === 'organizer' || moduleName === 'users' || moduleName === 'company' || moduleName === 'email-config' || moduleName === 'email' || moduleName === 'ajuste' || moduleName === 'backup_restore' || moduleName === 'service_types' || moduleName === 'services' || moduleName === 'service_launches' || moduleName === 'service_tax_municipal' || moduleName === 'service_tax_federal');
                     const hasModuleAccess = moduleName === 'stock_types'
                         ? hasStockTypesAccess
                         : effectivePerms.includes(moduleName);
@@ -654,8 +654,8 @@ async function loadUserGreeting() {
 
                 const currentModule = normalizeModule(document.body?.dataset?.requiredModule || currentFile);
                 
-                const isBypassed = (role === 'super_admin' || role === 'admin')
-                    && (currentModule === 'tasks' || currentModule === 'roles' || currentModule === 'accounting' || currentModule === 'organizer' || currentModule === 'users' || currentModule === 'company' || currentModule === 'email-config' || currentModule === 'email' || currentModule === 'ajuste' || currentModule === 'service_types' || currentModule === 'services' || currentModule === 'service_launches');
+                const isBypassed = (role === 'super_admin')
+                    && (currentModule === 'tasks' || currentModule === 'roles' || currentModule === 'accounting' || currentModule === 'organizer' || currentModule === 'users' || currentModule === 'company' || currentModule === 'email-config' || currentModule === 'email' || currentModule === 'ajuste' || currentModule === 'service_types' || currentModule === 'services' || currentModule === 'service_launches' || currentModule === 'backup_restore' || currentModule === 'declaration_registration');
                 const hasCurrentModuleAccess = currentModule === 'stock_types'
                     ? hasStockTypesAccess
                     : effectivePerms.includes(currentModule);

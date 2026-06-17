@@ -58,15 +58,23 @@ export class PermissionController {
                 return res.status(400).json({ status: 'error', message: 'Permissions array required' });
             }
 
+            const uniquePermissionsMap = new Map<string, { module: string, can_view: boolean }>();
+            for (const p of permissions) {
+                if (p && typeof p.module === 'string') {
+                    uniquePermissionsMap.set(p.module, p);
+                }
+            }
+            const dedupedPermissions = Array.from(uniquePermissionsMap.values());
+
             if (role === 'admin' && realRole === 'super_admin') {
-                const result = await PermissionService.updateByRoleAllCompanies(role, permissions, companyId);
+                const result = await PermissionService.updateByRoleAllCompanies(role, dedupedPermissions, companyId);
                 return res.status(200).json({
                     status: 'success',
                     message: `Permissions updated globally for admin role in ${result.updatedCompanies} companies`
                 });
             }
 
-            await PermissionService.updateByRole(companyId, role, permissions);
+            await PermissionService.updateByRole(companyId, role, dedupedPermissions);
             return res.status(200).json({ status: 'success', message: 'Permissions updated' });
         } catch (error: any) {
             return res.status(500).json({ status: 'error', message: error.message });

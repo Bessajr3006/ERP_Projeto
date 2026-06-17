@@ -67,3 +67,12 @@ export const requireSuperAdmin = (req: Request, res: Response, next: NextFunctio
         return;
     }
 };
+
+export const requireAdminOrSuperAdmin = (req: Request, res: Response, next: NextFunction): void => {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'super_admin')) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Acesso restrito a administradores.' });
+        return;
+    }
+};

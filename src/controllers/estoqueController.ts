@@ -570,6 +570,7 @@ export class EstoqueController {
                 quantity: Number(data.quantity),
                 unit_price: Number(data.unit_price),
                 observation: data.observation || null,
+                checklist: data.checklist || null,
             });
             res.status(201).json({ status: 'success', data: launch });
         } catch (error: any) {
@@ -612,6 +613,7 @@ export class EstoqueController {
             if (data.quantity !== undefined) payload.quantity = Number(data.quantity);
             if (data.unit_price !== undefined) payload.unit_price = Number(data.unit_price);
             if (data.observation !== undefined) payload.observation = data.observation || null;
+            if (data.checklist !== undefined) payload.checklist = data.checklist;
 
             const launch = await EstoqueService.updateServiceLaunch(id, companyId, payload);
             res.status(200).json({ status: 'success', data: launch });

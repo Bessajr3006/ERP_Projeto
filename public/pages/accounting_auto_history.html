@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Histórico Automático</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+<body data-required-module="accounting" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 font-sans flex flex-col">
+    <!-- Navbar Dinâmica -->
+    <div id="app-navbar"></div>
+
+    <main class="flex-1 w-full pt-4 pb-8 max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <!-- ── HEADER ────────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-5 flex flex-wrap justify-between items-center gap-3">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Histórico Automático (Padrão)</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gerencie textos de históricos padronizados para lançamentos contábeis.</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="btnOpenModal" class="inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-brand-600 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                    Novo Histórico
+                </button>
+            </div>
+        </div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <!-- ── TABLE ─────────────────────────────────────────────── -->
+            <div id="templatesSection" class="bg-white dark:bg-slate-800 shadow-sm rounded-xl overflow-auto flex-1 h-full border border-gray-200 dark:border-slate-700">
+                <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
+                    <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Código</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descrição</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Status</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historiesTable" class="divide-y divide-gray-100 dark:divide-slate-700/40">
+                        <tr><td colspan="4" class="text-center py-4">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- ── MODAL ────────────────────────── -->
+    <div id="historyModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="historyModalBackdrop"></div>
+            <div class="modal-panel relative bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl p-6 border border-gray-200 dark:border-slate-700">
+                <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100" id="historyModalTitle">Novo Histórico Automático</h3>
+                <form id="historyForm">
+                    <input type="hidden" id="historyId" name="public_id">
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                        <div class="sm:col-span-1">
+                            <label for="historyCode" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Código *</label>
+                            <input type="text" id="historyCode" name="code" required placeholder="Ex: 101" class="mt-1 w-full border border-gray-300 p-2.5 rounded-lg text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="historyDescription" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Descrição (Uso Interno) *</label>
+                            <input type="text" id="historyDescription" name="description" required placeholder="Ex: Compra de Mercadoria" class="mt-1 w-full border border-gray-300 p-2.5 rounded-lg text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="historyText" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Texto do Histórico Automático *</label>
+                        <textarea id="historyText" name="history_text" rows="3" required placeholder="Ex: Pagamento referente a nota fiscal {nf} de {fornecedor}" class="mt-1 w-full border border-gray-300 p-2.5 rounded-lg text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-brand-500 focus:border-brand-500"></textarea>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Dica: Utilize textos dinâmicos (tags como {nf}) caso haja integração de substituição configurada na contabilidade.</p>
+                    </div>
+
+                    <div class="mb-6 flex items-center">
+                        <label class="flex items-center h-10">
+                            <input type="checkbox" id="historyActive" name="active" class="rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 w-5 h-5">
+                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Ativo no sistema</span>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <button type="button" id="btnCancelHistory" class="px-4 py-2 border rounded-lg font-medium text-gray-700 dark:text-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
+                        <button type="submit" id="btnSaveHistory" class="px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js"></script>
+    <script src="/js/accounting_auto_history.js"></script>
+    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <div id="app-footer" class="shrink-0 mt-auto"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+</html>

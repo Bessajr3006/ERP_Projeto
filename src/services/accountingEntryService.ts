@@ -198,4 +198,43 @@ export class AccountingEntryService {
         
         return result;
     }
+
+    static async applyAutoTemplate(companyId: number, templateCode: string, data: { amount: number, entry_date: string, document_ref?: string, history_complement?: string }) {
+        const [templateRows] = await pool.query<RowDataPacket[]>(
+            `SELECT id FROM accounting_auto_templates WHERE company_id = ? AND code = ? AND active = 1`,
+            [companyId, templateCode]
+        );
+        const template = templateRows[0];
+        if (!template) throw new Error("Template de Lançamento Automático não encontrado ou está inativo para o código informado.");
+        
+        const templateId = template.id;
+        const [items] = await pool.query<RowDataPacket[]>(
+            `SELECT debit_account_id, credit_account_id, history_template FROM accounting_auto_template_items WHERE template_id = ?`,
+            [templateId]
+        );
+        
+        if (items.length === 0) throw new Error("O template selecionado não possui itens configurados.");
+        
+        const generatedEntries = [];
+        for (const item of items) {
+            if (!item.debit_account_id || !item.credit_account_id) {
+                throw new Error("Um dos itens do template não possui as contas de débito e crédito definidas corretamente.");
+            }
+
+            const publicId = randomUUID();
+            const fullHistory = data.history_complement ? `${item.history_template} ${data.history_complement}`.trim() : item.history_template;
+            
+            await pool.query(
+                `INSERT INTO accounting_entries (company_id, public_id, entry_date, debit_account_id, credit_account_id, amount, document_ref, history, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+                [
+                    companyId, publicId, data.entry_date, item.debit_account_id, item.credit_account_id, 
+                    data.amount, data.document_ref || null, fullHistory
+                ]
+            );
+            generatedEntries.push(publicId);
+        }
+        
+        return { success: true, count: generatedEntries.length };
+    }
 }

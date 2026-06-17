@@ -22,6 +22,8 @@ export interface Entity {
     public_id: string;       // UUID
     company_id: number;
     name: string;
+    opening_date?: string | null;
+    tax_regime?: string | null;
     cnpj_cpf?: string;
     email?: string;
     birth_date?: string | null;
@@ -52,6 +54,8 @@ export interface Entity {
 
 export interface CreateEntityData {
     name: string;
+    opening_date?: string | null | undefined;
+    tax_regime?: string | null | undefined;
     cnpj_cpf?: string | undefined;
     email?: string | undefined;
     birth_date?: string | null | undefined;

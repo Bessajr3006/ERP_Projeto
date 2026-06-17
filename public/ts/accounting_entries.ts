@@ -64,6 +64,12 @@
       btnCancelEntry: getEl<HTMLButtonElement>('btnCancelEntry'),
       entryForm: getEl<HTMLFormElement>('entryForm'),
 
+      btnOpenAutoModal: getEl<HTMLButtonElement>('btnOpenAutoModal'),
+      autoEntryModal: getEl('autoEntryModal'),
+      autoEntryModalBackdrop: getEl('autoEntryModalBackdrop'),
+      btnCancelAutoEntry: getEl<HTMLButtonElement>('btnCancelAutoEntry'),
+      autoEntryForm: getEl<HTMLFormElement>('autoEntryForm'),
+
       btnOpenImportModal: getEl<HTMLButtonElement>('btnOpenImportModal'),
       importModal: getEl('importModal'),
       importModalBackdrop: getEl('importModalBackdrop'),
@@ -366,6 +372,10 @@
       els.btnCancelEntry?.addEventListener('click', closeModal);
       els.entryModalBackdrop?.addEventListener('click', closeModal);
 
+      els.btnOpenAutoModal?.addEventListener('click', openAutoModal);
+      els.btnCancelAutoEntry?.addEventListener('click', closeAutoModal);
+      els.autoEntryModalBackdrop?.addEventListener('click', closeAutoModal);
+
       els.btnOpenImportModal?.addEventListener('click', openImportModal);
       els.importModalBackdrop?.addEventListener('click', closeImportModal);
       els.btnCancelImports.forEach((b) => b.addEventListener('click', closeImportModal));
@@ -395,6 +405,31 @@
             await api('/accounting/entries', { method: 'POST', body: JSON.stringify(payload) });
           }
           closeModal();
+          await loadData();
+        } catch (e: any) {
+          alert(e?.message || String(e));
+        }
+      });
+
+      els.autoEntryForm?.addEventListener('submit', async (e: Event) => {
+        e.preventDefault();
+        const amountRaw = parseFloat(getEl<HTMLInputElement>('autoEntryAmount')?.value || '0');
+        if (!amountRaw || amountRaw <= 0) {
+          alert('Informe um valor positivo para o lançamento base.');
+          return;
+        }
+        const payload = {
+          code: getEl<HTMLInputElement>('autoEntryCode')?.value || '',
+          entry_date: getEl<HTMLInputElement>('autoEntryDate')?.value || '',
+          document_ref: getEl<HTMLInputElement>('autoDocumentRef')?.value || undefined,
+          history_complement: getEl<HTMLTextAreaElement>('autoHistoryComplement')?.value || undefined,
+          amount: amountRaw,
+        };
+
+        try {
+          const res = await api('/accounting/entries/apply-auto', { method: 'POST', body: JSON.stringify(payload) });
+          alert(res.message || 'Lançamentos gerados com sucesso!');
+          closeAutoModal();
           await loadData();
         } catch (e: any) {
           alert(e?.message || String(e));
@@ -440,6 +475,17 @@
 
     function closeModal(): void {
       els.entryModal?.classList.add('hidden');
+    }
+
+    function openAutoModal(): void {
+      els.autoEntryForm?.reset();
+      const dateEl = getEl<HTMLInputElement>('autoEntryDate');
+      if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+      els.autoEntryModal?.classList.remove('hidden');
+    }
+
+    function closeAutoModal(): void {
+      els.autoEntryModal?.classList.add('hidden');
     }
 
     async function deleteEntry(id: string): Promise<void> {

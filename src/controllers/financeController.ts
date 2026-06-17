@@ -292,11 +292,15 @@ export class FinanceController {
                 return;
             }
 
-            const pdfBase64 = await FinanceService.getBoletoPdfBase64(companyId, transactionPublicId, nossoNumero);
-            const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+            const result = await FinanceService.getBoletoPdfBase64(companyId, transactionPublicId, nossoNumero);
+            if (!result || !result.pdfBase64) {
+                res.status(404).send('PDF do Boleto não encontrado.');
+                return;
+            }
+            const pdfBuffer = Buffer.from(result.pdfBase64, 'base64');
 
             res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `inline; filename="Boleto_${nossoNumero}.pdf"`);
+            res.setHeader('Content-Disposition', `inline; filename="${result.filename}"`);
             res.send(pdfBuffer);
         } catch (error: any) {
             if (error instanceof Error) {

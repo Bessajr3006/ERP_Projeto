@@ -11,6 +11,7 @@ export class FinanceDocumentRepository {
         const [rows] = await client.query<RowDataPacket[]>(
             `SELECT t.*, 
              c.name as cust_name, c.cnpj_cpf as cust_doc,
+             c.street as cust_street, c.number as cust_num, c.neighborhood as cust_neigh, c.city as cust_city, c.state as cust_uf, c.zipcode as cust_zip,
              comp.trade_name as comp_name, comp.cnpj as comp_doc, comp.logo_url as comp_logo_url, comp.logo_base64 as comp_logo_base64, comp.street as comp_address, comp.city as comp_city, comp.state as comp_state,
              b.name as bank_name, b.pix_key as pix_key,
              so.status as sale_status
@@ -44,7 +45,7 @@ export class FinanceDocumentRepository {
      */
     static async getTransactionForBillet(client: DBClient, companyId: number, transactionPublicId: string): Promise<RowDataPacket | null> {
         const [rows] = await client.query<RowDataPacket[]>(
-            `SELECT t.*, b.api_certificate, b.api_key, b.api_client_id, b.api_client_secret, b.account_number,
+            `SELECT t.*, b.api_certificate, b.api_key, b.api_client_id, b.api_client_secret, b.account_number, b.public_id as bank_acc_public_id, b.institution,
              c.name as cust_name, c.cnpj_cpf as cust_doc,
              c.street as cust_street, c.number as cust_num, c.neighborhood as cust_neigh,
              c.city as cust_city, c.state as cust_uf, c.zipcode as cust_zip

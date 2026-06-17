@@ -100,4 +100,41 @@ export class AccountingEntryController {
             throw error;
         }
     }
+
+    static async applyAutoTemplate(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const schema = z.object({
+                code: z.string().min(1, 'Código é obrigatório'),
+                amount: z.number().positive('O valor deve ser positivo'),
+                entry_date: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Data inválida" }),
+                document_ref: z.string().max(100).optional(),
+                history_complement: z.string().max(500).optional()
+            });
+
+            const data = schema.parse(req.body);
+            
+            const serviceData = {
+                amount: data.amount,
+                entry_date: data.entry_date,
+            } as any;
+            if (data.document_ref) serviceData.document_ref = data.document_ref;
+            if (data.history_complement) serviceData.history_complement = data.history_complement;
+
+            const result = await AccountingEntryService.applyAutoTemplate(companyId, data.code, serviceData);
+            
+            res.status(200).json({ 
+                status: 'success', 
+                data: result,
+                message: `Lançamentos automáticos gerados com sucesso (${result.count} linhas).` 
+            });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) { res.status(400).json({ status: 'error', message: error.errors[0]?.message, errors: error.errors }); return; }
+            if (error instanceof Error) {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
+            throw error;
+        }
+    }
 }

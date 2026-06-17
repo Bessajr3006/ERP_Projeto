@@ -52,6 +52,11 @@
             entryModalBackdrop: getEl('entryModalBackdrop'),
             btnCancelEntry: getEl('btnCancelEntry'),
             entryForm: getEl('entryForm'),
+            btnOpenAutoModal: getEl('btnOpenAutoModal'),
+            autoEntryModal: getEl('autoEntryModal'),
+            autoEntryModalBackdrop: getEl('autoEntryModalBackdrop'),
+            btnCancelAutoEntry: getEl('btnCancelAutoEntry'),
+            autoEntryForm: getEl('autoEntryForm'),
             btnOpenImportModal: getEl('btnOpenImportModal'),
             importModal: getEl('importModal'),
             importModalBackdrop: getEl('importModalBackdrop'),
@@ -329,6 +334,9 @@
             els.btnOpenModal?.addEventListener('click', () => openModal());
             els.btnCancelEntry?.addEventListener('click', closeModal);
             els.entryModalBackdrop?.addEventListener('click', closeModal);
+            els.btnOpenAutoModal?.addEventListener('click', openAutoModal);
+            els.btnCancelAutoEntry?.addEventListener('click', closeAutoModal);
+            els.autoEntryModalBackdrop?.addEventListener('click', closeAutoModal);
             els.btnOpenImportModal?.addEventListener('click', openImportModal);
             els.importModalBackdrop?.addEventListener('click', closeImportModal);
             els.btnCancelImports.forEach((b) => b.addEventListener('click', closeImportModal));
@@ -357,6 +365,30 @@
                         await api('/accounting/entries', { method: 'POST', body: JSON.stringify(payload) });
                     }
                     closeModal();
+                    await loadData();
+                }
+                catch (e) {
+                    alert(e?.message || String(e));
+                }
+            });
+            els.autoEntryForm?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const amountRaw = parseFloat(getEl('autoEntryAmount')?.value || '0');
+                if (!amountRaw || amountRaw <= 0) {
+                    alert('Informe um valor positivo para o lançamento base.');
+                    return;
+                }
+                const payload = {
+                    code: getEl('autoEntryCode')?.value || '',
+                    entry_date: getEl('autoEntryDate')?.value || '',
+                    document_ref: getEl('autoDocumentRef')?.value || undefined,
+                    history_complement: getEl('autoHistoryComplement')?.value || undefined,
+                    amount: amountRaw,
+                };
+                try {
+                    const res = await api('/accounting/entries/apply-auto', { method: 'POST', body: JSON.stringify(payload) });
+                    alert(res.message || 'Lançamentos gerados com sucesso!');
+                    closeAutoModal();
                     await loadData();
                 }
                 catch (e) {
@@ -407,6 +439,16 @@
         }
         function closeModal() {
             els.entryModal?.classList.add('hidden');
+        }
+        function openAutoModal() {
+            els.autoEntryForm?.reset();
+            const dateEl = getEl('autoEntryDate');
+            if (dateEl)
+                dateEl.value = new Date().toISOString().split('T')[0];
+            els.autoEntryModal?.classList.remove('hidden');
+        }
+        function closeAutoModal() {
+            els.autoEntryModal?.classList.add('hidden');
         }
         async function deleteEntry(id) {
             if (!confirm('Deseja excluir este lançamento?'))

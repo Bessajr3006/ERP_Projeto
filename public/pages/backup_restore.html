@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Backup e Restaurar</title>
+    <link href="/css/style.css?v=20260609211500" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-800 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
+        <div class="px-4 sm:px-0 pb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Backup e Restauração</h1>
+            
+            <div class="bg-white dark:bg-slate-700 shadow sm:rounded-lg mb-6 max-w-3xl">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100" id="main-title">Gerar Novo Backup</h3>
+                            <div class="mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-300">
+                                <p id="backupDesc">Faça o download de uma cópia de segurança de todos os dados do sistema. Ao iniciar, o sistema irá compilar todos os dados em um arquivo seguro. Recomenda-se realizar backups periodicamente.</p>
+                                
+                                <div id="backupProgressContainer" class="hidden mt-6 mb-4">
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-600">
+                                      <div id="backupProgressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                    <p id="backupProgressText" class="mt-2 text-xs text-gray-500 text-center">Preparando banco de dados...</p>
+                                </div>
+                                
+                                <div id="backupSuccessContainer" class="hidden mt-6 mb-2 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-md">
+                                    <p class="text-sm text-green-800 dark:text-green-300 font-medium mb-3">Backup gerado com sucesso!</p>
+                                    <a href="#" id="downloadBackupBtn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                        <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        Baixar Arquivo .ZIP
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex items-center justify-end border-t border-gray-200 dark:border-slate-600 pt-5">
+                        <button type="button" id="startBackupBtn" class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:text-sm">
+                            Iniciar Backup Agora
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-700 shadow sm:rounded-lg mb-6 max-w-3xl">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100" id="restore-title">Restaurar Backup</h3>
+                            <div class="mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-300">
+                                <p id="restoreDesc">Selecione um arquivo <strong>.zip</strong> de backup previamente gerado pelo sistema. <br><strong class="text-red-500">Atenção:</strong> Essa operação apagará os dados atuais e os substituirá pelo conteúdo do backup.</p>
+                                
+                                <input type="file" id="restoreFileInput" accept=".zip" class="mt-4 block w-full text-sm text-gray-500 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-900/30 dark:file:text-red-300 dark:hover:file:bg-red-900/50" />
+
+                                <div id="restoreProgressContainer" class="hidden mt-6 mb-4">
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-600">
+                                      <div id="restoreProgressBar" class="bg-red-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                    <p id="restoreProgressText" class="mt-2 text-xs text-gray-500 text-center">Enviando e restaurando banco de dados...</p>
+                                </div>
+                                
+                                <div id="restoreSuccessContainer" class="hidden mt-6 mb-2 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-md">
+                                    <p class="text-sm text-green-800 dark:text-green-300 font-medium mb-3">Backup restaurado com sucesso! Recarregue a página para ver os dados.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex items-center justify-end border-t border-gray-200 dark:border-slate-600 pt-5">
+                        <button type="button" id="startRestoreBtn" disabled class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            Restaurar Agora
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js?v=20260609211500"></script>
+    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <script src="/js/backup_restore.js?v=20260615115000"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

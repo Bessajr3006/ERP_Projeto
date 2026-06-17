@@ -92,13 +92,13 @@
     async function loadDependencies(selectedState = '', selectedSeller = '') {
         try {
             const [statesRes, usersRes] = await Promise.all([
-                customerIbgeStates.length ? { data: customerIbgeStates } : api('/companies/states').catch(() => ({ data: [] })),
-                api('/users').catch(() => ({ data: [] }))
+                customerIbgeStates.length ? { data: customerIbgeStates } : (window.api)('/companies/states').catch(() => ({ data: [] })),
+                (window.api)('/users').catch(() => ({ data: [] }))
             ]);
             if (!customerIbgeStates.length)
                 customerIbgeStates = statesRes.data || [];
             populateCustomerStateOptions(selectedState);
-            allSellers = (usersRes.data || []).filter(u => u.role === 'seller');
+            allSellers = (usersRes.data || []).filter((u) => u.role === 'seller');
             populateSellersDropdown(selectedSeller);
         }
         catch (error) {
@@ -154,7 +154,7 @@
                 applyCustomerCepLookupResult(data);
             }
             else {
-                UI.showAlert('alertMessage', 'CEP do cliente não encontrado ou inválido.', 'error');
+                window.UI.showAlert('alertMessage', 'CEP do cliente não encontrado ou inválido.', 'error');
             }
         }
         catch (error) {
@@ -348,8 +348,8 @@
                 setMaskedValue(customerPhoneMask, 'customerPhone', prefillPhone);
             }
         });
-        if (typeof UI !== 'undefined' && UI.showAlert) {
-            UI.showAlert('alertMessage', 'Preenchimento aplicado. Revise os dados e clique em Salvar.', 'success', 4500);
+        if (typeof window.UI !== 'undefined' && window.UI.showAlert) {
+            window.UI.showAlert('alertMessage', 'Preenchimento aplicado. Revise os dados e clique em Salvar.', 'success', 4500);
         }
         const cleanUrl = new URL(window.location.href);
         cleanUrl.searchParams.delete('prefill');
@@ -358,7 +358,7 @@
         window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
     }
     document.addEventListener('DOMContentLoaded', () => {
-        if (!Auth.isAuthenticated()) {
+        if (!window.Auth.isAuthenticated()) {
             window.location.href = '/';
             return;
         }
@@ -376,7 +376,7 @@
                     closeSolidconCustomersModal();
             });
         }
-        api('/auth/me').then((res) => {
+        (window.api)('/auth/me').then((res) => {
             const userGreeting = getById('userGreeting');
             if (userGreeting && res.data && res.data.user) {
                 userGreeting.textContent = `Olá, ${res.data.user.full_name || 'Usuário'}`;
@@ -395,7 +395,7 @@
                 ];
             }
         }).catch(console.error);
-        customersManager = new CrudManager({
+        customersManager = new window.CrudManager({
             entityName: 'Cliente',
             endpoint: '/entities/customers',
             tableId: 'customersTable',
@@ -486,13 +486,26 @@
                     return;
                 }
                 grid.innerHTML = items.map((item, index) => `
-                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center mb-3">
+                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700 group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center pt-1 z-10">
                             <input type="checkbox" value="${item.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
+                            <span class="ml-2 text-xs font-mono font-medium text-gray-500 dark:text-gray-400">#${String(index + 1).padStart(4, '0')}</span>
                         </div>
-                        <div class="flex justify-between items-start gap-3">
-                            <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2" title="${item.name}">${item.name}</h4>
+
+                        <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
+                            <button class="p-1.5 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' title="Editar">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            </button>
+                            <button class="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 bg-gray-50 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-900/30 rounded delete-btn" data-id="${item.public_id}" title="Excluir">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 mt-0">
+                        <div class="flex justify-between items-start gap-2">
+                            <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 wrap-break-word flex-1" title="${item.name}">${item.name}</h4>
                         </div>
                         <div class="text-xs font-mono text-gray-500 mb-4">${formatDoc(item.cnpj_cpf) || 'S/ Documento'}</div>
 
@@ -510,15 +523,6 @@
                                 <span class="truncate">${item.seller_name || 'S/ Vendedor'}</span>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-2">
-                        <button type="button" title="Editar" class="p-2 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
-                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        <button type="button" title="Excluir" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors delete-btn" data-id="${item.public_id}">
-                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
                     </div>
                 </div>
             `).join('');
@@ -541,6 +545,10 @@
                     getById('customerComplement').value = data.complement || '';
                     getById('customerNeighborhood').value = data.neighborhood || '';
                     getById('customerCity').value = data.city || '';
+                    if (getById('customerTaxRegime'))
+                        getById('customerTaxRegime').value = data.tax_regime || '';
+                    if (getById('customerOpeningDate'))
+                        getById('customerOpeningDate').value = data.opening_date ? data.opening_date.split('T')[0] : '';
                     getById('customerCertPassword').value = data.certificate_password || '';
                     getById('customerCertExpiration').value = data.certificate_expiration ? data.certificate_expiration.split('T')[0] : '';
                     getById('customerDueDay').value = data.vencimento_dia ?? '';
@@ -632,7 +640,7 @@
                 const originalText = btnFetchSolidconJson.textContent;
                 btnFetchSolidconJson.textContent = 'Buscando...';
                 try {
-                    const response = await api('/companies/proxy-consulta', {
+                    const response = await (window.api)('/companies/proxy-consulta', {
                         method: 'POST',
                         body: JSON.stringify({ url })
                     });
@@ -669,7 +677,7 @@
                 const originalText = btnImportSolidconJson.textContent;
                 btnImportSolidconJson.textContent = 'Importando...';
                 try {
-                    const result = await api('/entities/customers/solidcon-import', {
+                    const result = await (window.api)('/entities/customers/solidcon-import', {
                         method: 'POST',
                         body: JSON.stringify({ payload: parsed })
                     });
@@ -697,12 +705,12 @@
                 if (!confirm('Tem certeza que deseja excluir este cliente?'))
                     return;
                 try {
-                    await api(`/entities/customers/${id}`, { method: 'DELETE' });
-                    UI.showAlert('alertMessage', 'Cliente excluído com sucesso!', 'success');
+                    await (window.api)(`/entities/customers/${id}`, { method: 'DELETE' });
+                    window.UI.showAlert('alertMessage', 'Cliente excluído com sucesso!', 'success');
                     await customersManager.loadData();
                 }
                 catch (error) {
-                    UI.showAlert('alertMessage', error.message || 'Erro ao excluir o cliente.', 'error');
+                    window.UI.showAlert('alertMessage', error.message || 'Erro ao excluir o cliente.', 'error');
                 }
             }
         });
@@ -735,6 +743,8 @@
                 neighborhood: getTrimmedValue('customerNeighborhood') || undefined,
                 city: getTrimmedValue('customerCity') || undefined,
                 state: getById('customerState')?.value || undefined,
+                tax_regime: getById('customerTaxRegime')?.value || undefined,
+                opening_date: getTrimmedValue('customerOpeningDate') || undefined,
                 certificate_password: getTrimmedValue('customerCertPassword') || undefined,
                 certificate_expiration: getTrimmedValue('customerCertExpiration') || undefined,
                 vencimento_dia: getById('customerDueDay')?.value !== '' ? Number(getById('customerDueDay')?.value) : undefined,
@@ -753,16 +763,16 @@
                 }
                 const endpoint = isEditing ? `/entities/customers/${customerId}` : '/entities/customers';
                 const method = isEditing ? 'PUT' : 'POST';
-                await api(endpoint, {
+                await (window.api)(endpoint, {
                     method,
                     body: JSON.stringify(payload),
                 });
-                UI.showAlert('alertMessage', isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!', 'success');
+                window.UI.showAlert('alertMessage', isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!', 'success');
                 customersManager.closeModal();
                 await customersManager.loadData();
             }
             catch (error) {
-                UI.showAlert('alertMessage', error.message || 'Erro ao salvar cliente.', 'error');
+                window.UI.showAlert('alertMessage', error.message || 'Erro ao salvar cliente.', 'error');
             }
             finally {
                 saveBtn.disabled = false;

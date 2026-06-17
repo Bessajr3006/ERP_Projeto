@@ -827,8 +827,9 @@ export class EstoqueRepository {
                 quantity,
                 unit_price,
                 total_price,
-                observation
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                observation,
+                checklist
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 publicId,
                 companyId,
@@ -838,6 +839,7 @@ export class EstoqueRepository {
                 unitPrice,
                 totalPrice,
                 data.observation || null,
+                data.checklist ? JSON.stringify(data.checklist) : null,
             ]
         );
 
@@ -857,6 +859,7 @@ export class EstoqueRepository {
         const quantityToSave = data.quantity !== undefined ? Number(data.quantity) : Number(existing.quantity);
         const unitPriceToSave = data.unit_price !== undefined ? Number(data.unit_price) : Number(existing.unit_price);
         const observationToSave = data.observation !== undefined ? data.observation : existing.observation;
+        const checklistToSave = data.checklist !== undefined ? (data.checklist ? JSON.stringify(data.checklist) : null) : existing.checklist;
         const totalPriceToSave = quantityToSave * unitPriceToSave;
 
         await pool.query(
@@ -866,7 +869,8 @@ export class EstoqueRepository {
                  quantity = ?,
                  unit_price = ?,
                  total_price = ?,
-                 observation = ?
+                 observation = ?,
+                 checklist = ?
              WHERE public_id = ? AND company_id = ?`,
             [
                 customer.id,
@@ -875,6 +879,7 @@ export class EstoqueRepository {
                 unitPriceToSave,
                 totalPriceToSave,
                 observationToSave || null,
+                checklistToSave,
                 publicId,
                 companyId,
             ]

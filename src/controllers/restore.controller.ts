@@ -47,8 +47,11 @@ export const restoreBackup = async (req: Request, res: Response) => {
                 if (records.length > 0) {
                     const columns = Object.keys(records[0]);
                     
-                    // Converte valores vazios '' para null, caso necessário, mas para restauração literal deixamos como está
-                    const values = records.map(record => columns.map(col => record[col]));
+                    // Converte valores vazios '' para null, para evitar erros de tipagem no BD (ex: int, date)
+                    const values = records.map(record => columns.map(col => {
+                        const val = record[col];
+                        return val === '' ? null : val;
+                    }));
                     
                     const query = `INSERT INTO \`${tableName}\` (\`${columns.join('`, `')}\`) VALUES ?`;
                     

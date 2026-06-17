@@ -26,10 +26,39 @@
             <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Clientes</h3>
                 <div class="flex items-center gap-3">
+                    <div class="relative w-full sm:w-72 hidden sm:block">
+                        <input type="text" id="filterSearch" placeholder="Buscar por cliente, documento ou email"
+                            class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
+                        <button type="button" id="btnListView" title="Visualização em Lista"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <button type="button" id="btnGridView" title="Visualização em Cards"
+                            class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1">
+                            <svg class="w-4 h-4 mr-1 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                        </button>
+                    </div>
                     <button type="button" id="btnBulkDeleteCustomers" title="Excluir em Lote"
                         class="hidden items-center justify-center gap-1.5 rounded-lg border border-amber-300 dark:border-amber-600 px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-sm font-medium text-amber-700 dark:text-amber-300 shadow-sm hover:bg-amber-100 dark:hover:bg-amber-900/50 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        Excluir em Lote (<span id="bulkCustomersCount">0</span>)
+                        <span class="hidden sm:inline">Excluir em Lote </span>(<span id="bulkCustomersCount">0</span>)
                     </button>
                     <button type="button" id="btnOpenSolidconCustomersModal" title="Importar Solidcon"
                         class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
@@ -41,7 +70,7 @@
                     </button>
                 </div>
             </div>
-            <div id="customersSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+            <div id="customersSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-gray-200 dark:border-slate-700 rounded-b-xl flex flex-col flex-1 min-h-0">
                 <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                         <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
@@ -82,6 +111,23 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <div id="customersGridSection" class="hidden bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-gray-200 dark:border-slate-700 rounded-b-xl overflow-y-auto flex-1 min-h-0 p-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 content-start"></div>
+            
+            <div id="customersResultsFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-5 py-3 rounded-xl shadow-sm flex items-center justify-between gap-4 mt-2" role="status" aria-live="polite">
+                <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+                    </svg>
+                    <span>Exibindo</span>
+                    <span data-grid-footer-range class="font-semibold text-gray-700 dark:text-gray-200">0-0</span>
+                    <span>de</span>
+                    <span data-grid-footer-total class="font-semibold text-gray-700 dark:text-gray-200">0</span>
+                </span>
+                <span class="text-xs text-gray-400 dark:text-gray-500">
+                    cliente(s) filtrado(s)
+                </span>
             </div>
         </div>
     </main>

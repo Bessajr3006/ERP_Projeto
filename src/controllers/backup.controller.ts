@@ -12,8 +12,8 @@ export const generateBackup = async (req: Request, res: Response) => {
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', `attachment; filename="backup-keystone-${dateStr}.zip"`);
         
-        const archiver = require('archiver');
-        const archive = archiver('zip', {
+        const { ZipArchive } = require('archiver');
+        const archive = new ZipArchive({
             zlib: { level: 9 }
         });
         

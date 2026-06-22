@@ -96,3 +96,14 @@ export function toBrazilIsoDateTime(value: DateInput = new Date()): string {
     const offset = getBrazilUtcOffset(value);
     return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${offset}`;
 }
+
+const DB_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
+export function toBrazilDbDateTime(value: DateInput = new Date()): string {
+    if (typeof value === 'string' && DB_DATETIME_PATTERN.test(value.trim())) {
+        return value.trim();
+    }
+    const parts = getBrazilDateTimeParts(value);
+    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+

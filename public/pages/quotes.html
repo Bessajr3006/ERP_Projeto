@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Orçamentos</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+</head>
+
+<body data-required-module="quotes" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Orçamentos</h3>
+                <div class="flex items-center gap-3">
+                    <div class="relative w-full sm:w-80">
+                        <input type="text" id="filterSearch" placeholder="Buscar por cliente ou ID..."
+                            class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <button type="button" id="btnOpenModal" title="Novo Orçamento"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="quotesSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-gray-200 dark:border-slate-700 rounded-b-xl flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10">
+                                    <input type="checkbox" id="selectAllQuotes" class="rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50">
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vendedor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quotesTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum orçamento cadastrado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="quotesModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="modalBackdrop"></div>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <form id="quotesForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modalTitle">Novo Orçamento</h3>
+                            <div class="mt-4 space-y-4">
+                                <input type="hidden" id="quoteId" name="quoteId" value="">
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div>
+                                        <div class="flex justify-between items-center">
+                                            <label for="quoteCustomer" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente <span class="text-red-500">*</span></label>
+                                            <div class="flex items-center">
+                                                <input type="checkbox" id="quoteCustomerManual" name="quoteCustomerManual" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800">
+                                                <label for="quoteCustomerManual" class="ml-1.5 text-xs text-gray-500 dark:text-gray-400 select-none">Manual</label>
+                                            </div>
+                                        </div>
+                                        <div id="quoteCustomerSelectContainer" class="mt-1">
+                                            <select id="quoteCustomer" name="quoteCustomer" required
+                                                class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <option value="">Selecione o Cliente</option>
+                                            </select>
+                                        </div>
+                                        <div id="quoteCustomerManualContainer" class="mt-1 hidden">
+                                            <input type="text" id="quoteCustomerManualName" name="quoteCustomerManualName" placeholder="Nome do Cliente"
+                                                class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="quoteSeller" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Vendedor</label>
+                                        <select id="quoteSeller" name="quoteSeller"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            <option value="">Selecione o Vendedor</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="quoteDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data <span class="text-red-500">*</span></label>
+                                        <input type="datetime-local" id="quoteDate" name="quoteDate" required
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="quoteValidity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Validade</label>
+                                        <input type="date" id="quoteValidity" name="quoteValidity"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="quoteBrand" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Marca</label>
+                                        <input type="text" id="quoteBrand" name="quoteBrand" placeholder="Marca (ex: Fiat, Honda)"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="quotePaymentMethod" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Forma de Pagamento</label>
+                                        <select id="quotePaymentMethod" name="quotePaymentMethod"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            <option value="">Selecione...</option>
+                                            <option value="pix">Pix</option>
+                                            <option value="credit">Cartão de Crédito</option>
+                                            <option value="debit">Cartão de Débito</option>
+                                            <option value="cash">Dinheiro</option>
+                                            <option value="boleto">Boleto</option>
+                                            <option value="transfer">Depósito/Transferência</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="quotePaymentTerms" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Prazo</label>
+                                        <input type="text" id="quotePaymentTerms" name="quotePaymentTerms" placeholder="ex: À Vista, 30/60 dias"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                </div>
+
+                                <!-- Seleção de Produtos / Serviços -->
+                                <div class="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-gray-50 dark:bg-slate-900/50 mt-4">
+                                    <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3" id="addItemsTitle">Adicionar Itens</h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                                        <div class="sm:col-span-2">
+                                            <label for="quoteItemType" class="block text-xs font-medium text-gray-500 dark:text-gray-400">Tipo de Item</label>
+                                            <select id="quoteItemType"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 text-sm">
+                                                <option value="product">Produto</option>
+                                                <option value="service">Serviço</option>
+                                            </select>
+                                        </div>
+                                        <div class="sm:col-span-4">
+                                            <label for="quoteItemSelect" id="quoteItemLabel" class="block text-xs font-medium text-gray-500 dark:text-gray-400">Produto</label>
+                                            <select id="quoteItemSelect"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 text-sm">
+                                                <option value="">Selecione...</option>
+                                            </select>
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <label for="quoteQuantity" class="block text-xs font-medium text-gray-500 dark:text-gray-400">Qtd</label>
+                                            <input type="number" id="quoteQuantity" min="0.01" step="0.01" value="1"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 text-sm">
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <label for="quoteUnitPrice" class="block text-xs font-medium text-gray-500 dark:text-gray-400">Valor Unit.</label>
+                                            <input type="text" id="quoteUnitPrice" placeholder="R$ 0,00"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 text-sm">
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <button type="button" id="btnAddProduct"
+                                                class="w-full inline-flex items-center justify-center rounded-md border border-transparent px-3 py-1.5 bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none transition-colors">
+                                                Adicionar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4 overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                            <thead class="bg-gray-100 dark:bg-slate-800">
+                                                <tr>
+                                                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Item</th>
+                                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd</th>
+                                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">V. Unit</th>
+                                                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Subtotal</th>
+                                                    <th scope="col" class="px-4 py-2 w-10"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="quoteItemsTable" class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700">
+                                                <tr>
+                                                    <td colspan="5" class="px-4 py-3 text-center text-xs text-gray-500">Nenhum produto adicionado.</td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot class="bg-gray-50 dark:bg-slate-800 font-bold border-t border-gray-200 dark:border-slate-700">
+                                                <tr>
+                                                    <td colspan="3" class="px-4 py-3 text-right text-sm text-gray-900 dark:text-gray-100">Total:</td>
+                                                    <td colspan="2" class="px-4 py-3 text-right text-brand-600 dark:text-brand-400 text-lg" id="quoteTotalValue">R$ 0,00</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label for="quoteObservation" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Observação</label>
+                                    <textarea id="quoteObservation" name="quoteObservation" rows="2"
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"></textarea>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse dark:border-t dark:border-slate-700">
+                        <button type="submit" id="saveBtn"
+                            class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">Salvar Orçamento</button>
+                        <button type="button" id="btnCancelModal"
+                            class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal to View Details or Convert to Sale could be added later if needed -->
+
+    <!-- ── MODAL: Visualizar Orçamento PDF/Impressão ───────────────────────────── -->
+    <div id="pdfModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity"
+                aria-hidden="true" id="closePdfModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle md:max-w-4xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between px-5 py-4 border-b dark:border-slate-700">
+                    <h3 id="pdfModalTitle" class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        <span id="pdfModalTitleText">Orçamento</span>
+                    </h3>
+                    <button type="button" id="closePdfModalCross" title="Fechar visualização" aria-label="Fechar visualização"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-0 h-[70vh]">
+                    <iframe id="pdfIframe" src="" title="Visualização do orçamento para impressão" class="w-full h-full border-0"></iframe>
+                </div>
+                <div class="flex items-center justify-end gap-2 px-5 py-4 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                    <button type="button" id="closePdfModalBtn"
+                        class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                        Fechar
+                    </button>
+                    <button type="button" id="printPdfBtn"
+                        class="hidden min-w-32 items-center justify-center px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 whitespace-nowrap">
+                        Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="/js/api.js?v=20260608172500"></script>
+    <script src="/js/components/crud-manager.js?v=20260608172500"></script>
+    <script src="/js/quotes.js?v=20260609211500"></script>
+    <script src="/js/components/navbar.js?v=20260614201900"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

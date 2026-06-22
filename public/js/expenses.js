@@ -9,6 +9,61 @@
     let banksData = [];
     let g_editId = null;
     let currentView = (localStorage.getItem('expensesView') || 'list') === 'grid' ? 'grid' : 'list';
+    const peopleCache = {};
+    async function loadPeopleOfType(type) {
+        if (peopleCache[type])
+            return peopleCache[type];
+        let items = [];
+        try {
+            if (type === 'customer') {
+                const res = await api('/entities/customers');
+                items = (res.data || []).map((x) => ({ public_id: x.public_id, name: x.name }));
+            }
+            else if (type === 'supplier') {
+                const res = await api('/entities/suppliers');
+                items = (res.data || []).map((x) => ({ public_id: x.public_id, name: x.name }));
+            }
+            else if (type === 'contact') {
+                const res = await api('/entities/contacts');
+                items = (res.data || []).map((x) => ({ public_id: x.public_id, name: x.name }));
+            }
+            else if (type === 'seller') {
+                const res = await api('/sellers');
+                items = (res.data || []).map((x) => ({ public_id: x.public_id, name: x.full_name }));
+            }
+            else if (['buyer', 'service_provider', 'accountant'].includes(type)) {
+                const res = await api('/users');
+                items = (res.data || [])
+                    .filter((x) => x.role === type)
+                    .map((x) => ({ public_id: x.public_id, name: x.full_name }));
+            }
+        }
+        catch (e) {
+            console.error(`Failed to load people of type ${type}`, e);
+        }
+        items.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+        peopleCache[type] = items;
+        return items;
+    }
+    function handleEntityTypeChange() {
+        const type = getInputValue('entityType');
+        const entitySelect = document.getElementById('entitySelect');
+        if (!entitySelect)
+            return;
+        entitySelect.innerHTML = '';
+        if (!type) {
+            entitySelect.disabled = true;
+            entitySelect.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+            return;
+        }
+        entitySelect.disabled = false;
+        entitySelect.innerHTML = '<option value="">Carregando...</option>';
+        loadPeopleOfType(type).then((items) => {
+            entitySelect.innerHTML = '<option value="">Selecione...</option>' + items
+                .map((x) => `<option value="${x.public_id}">${x.name}</option>`)
+                .join('');
+        });
+    }
     function getInputValue(id) {
         return document.getElementById(id)?.value || '';
     }
@@ -144,6 +199,11 @@
             if (el)
                 el.addEventListener('change', applyFilters);
         });
+        const entityTypeSelect = document.getElementById('entityType');
+        if (entityTypeSelect) {
+            entityTypeSelect.addEventListener('change', handleEntityTypeChange);
+        }
+        // Removed legacy entitySearch event listener.
         updateViewToggle();
         await loadDependencies();
         void fetchExpenses();
@@ -275,13 +335,22 @@
                     statusBadge =
                         '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-yellow-800 bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300 whitespace-nowrap">Pend.</span>';
                 }
+                const entityLabel = e.entity_name
+                    ? `<div class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                ${e.entity_name}
+               </div>`
+                    : '';
                 return `
         <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
             <td class="px-3 py-3 whitespace-nowrap">
                 <input type="checkbox" class="item-checkbox h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer" value="${e.public_id}">
             </td>
             <td class="px-2 py-3 whitespace-nowrap text-xs font-medium text-gray-500 dark:text-gray-400 font-mono hidden sm:table-cell">#${String(e.id).padStart(4, '0')}</td>
-            <td class="px-2 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${e.description}</td>
+            <td class="px-2 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div>${e.description}</div>
+                ${entityLabel}
+            </td>
             <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">${e.category_name || 'Geral'}</td>
             <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">${DateUtils.formatDate(e.date)}</td>
             <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">${e.bank_account_name || '-'}</td>
@@ -369,6 +438,12 @@
                     statusBadge =
                         '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">Pendente</span>';
                 }
+                const entityLabel = e.entity_name
+                    ? `<div class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                ${e.entity_name}
+               </div>`
+                    : '';
                 return `
         <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl p-5 flex flex-col relative border border-gray-100 dark:border-slate-700 group">
             
@@ -405,6 +480,7 @@
                         ${e.category_name || 'Geral'}
                     </span>
                     <div class="mt-1">${statusBadge}</div>
+                    ${entityLabel}
                 </div>
 
                 <div class="mt-4 grid grid-cols-2 gap-4">
@@ -435,6 +511,8 @@
         const statusEl = document.getElementById('status');
         if (statusEl)
             statusEl.value = 'pending';
+        setInputValue('entityType', '');
+        handleEntityTypeChange();
         const modalTitle = document.getElementById('modalTitle');
         if (modalTitle)
             modalTitle.textContent = 'Nova Despesa';
@@ -456,6 +534,24 @@
         const statusEl = document.getElementById('status');
         if (statusEl)
             statusEl.value = exp.status || 'paid';
+        if (exp.entity_type && exp.entity_public_id) {
+            setInputValue('entityType', exp.entity_type);
+            const entitySelect = document.getElementById('entitySelect');
+            if (entitySelect) {
+                entitySelect.disabled = false;
+                entitySelect.innerHTML = '<option value="">Carregando...</option>';
+                loadPeopleOfType(exp.entity_type).then((items) => {
+                    entitySelect.innerHTML = '<option value="">Selecione...</option>' + items
+                        .map((x) => `<option value="${x.public_id}">${x.name}</option>`)
+                        .join('');
+                    entitySelect.value = exp.entity_public_id || '';
+                });
+            }
+        }
+        else {
+            setInputValue('entityType', '');
+            handleEntityTypeChange();
+        }
         const modalTitle = document.getElementById('modalTitle');
         if (modalTitle)
             modalTitle.textContent = 'Duplicar Despesa';
@@ -478,6 +574,24 @@
         const statusEl = document.getElementById('status');
         if (statusEl)
             statusEl.value = exp.status || 'paid';
+        if (exp.entity_type && exp.entity_public_id) {
+            setInputValue('entityType', exp.entity_type);
+            const entitySelect = document.getElementById('entitySelect');
+            if (entitySelect) {
+                entitySelect.disabled = false;
+                entitySelect.innerHTML = '<option value="">Carregando...</option>';
+                loadPeopleOfType(exp.entity_type).then((items) => {
+                    entitySelect.innerHTML = '<option value="">Selecione...</option>' + items
+                        .map((x) => `<option value="${x.public_id}">${x.name}</option>`)
+                        .join('');
+                    entitySelect.value = exp.entity_public_id || '';
+                });
+            }
+        }
+        else {
+            setInputValue('entityType', '');
+            handleEntityTypeChange();
+        }
         const modalTitle = document.getElementById('modalTitle');
         if (modalTitle)
             modalTitle.textContent = 'Editar Despesa';
@@ -531,6 +645,16 @@
         const status = getInputValue('status');
         if (status)
             data.status = status;
+        const entityType = getInputValue('entityType');
+        const entityPublicId = getInputValue('entitySelect');
+        if (entityType && entityPublicId) {
+            data.entity_type = entityType;
+            data.entity_public_id = entityPublicId;
+        }
+        else {
+            data.entity_type = null;
+            data.entity_public_id = null;
+        }
         const btn = document.getElementById('saveBtn');
         if (btn) {
             btn.disabled = true;

@@ -53,6 +53,15 @@ const updateCompanySchema = z.object({
     solidcon_url_3: z.string().optional(),
     solidcon_url_4: z.string().optional(),
     solidcon_url_5: z.string().optional(),
+    serv_solidcon: z.string().optional(),
+    bd_solidcon: z.string().optional(),
+    login_solidcon: z.string().optional(),
+    senha_solidcon: z.string().optional(),
+    serv_dorsal: z.string().optional(),
+    bd_dorsal: z.string().optional(),
+    login_dorsal: z.string().optional(),
+    senha_dorsal: z.string().optional(),
+    cdfilial: z.string().optional(),
     allow_print_without_confirmation: z.boolean().optional(),
     is_active: z.boolean().optional(),
     
@@ -452,9 +461,12 @@ export class CompanyController {
     static async proxyConsulta(req: Request, res: Response): Promise<void> {
         try {
             const schema = z.object({
-                url: z.string().trim().url(),
+                url: z.string().trim().url().optional(),
+                connectionType: z.enum(['api', 'solidcon_db', 'dorsal_db']).optional(),
+                startDate: z.string().optional(),
+                endDate: z.string().optional(),
             });
-            const { url } = schema.parse(req.body || {});
+            const { url, connectionType = 'api', startDate, endDate } = schema.parse(req.body || {});
 
             const companyId = req.user?.company_id;
             if (!companyId) {
@@ -463,6 +475,53 @@ export class CompanyController {
             }
 
             const company = await CompanyService.getById(companyId);
+
+            if (connectionType === 'solidcon_db' || connectionType === 'dorsal_db') {
+                const isSolidcon = connectionType === 'solidcon_db';
+                const server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
+                const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
+                const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
+                const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+
+                if (!server || !database || !user || !password) {
+                    res.status(400).json({
+                        status: 'error',
+                        message: `Configurações de conexão para Banco de Dados ${isSolidcon ? 'Solidcon' : 'Dorsal'} incompletas no cadastro da empresa.`
+                    });
+                    return;
+                }
+
+                if (!startDate || !endDate) {
+                    res.status(400).json({ status: 'error', message: 'Datas Inicial e Final são obrigatórias para consulta ao banco.' });
+                    return;
+                }
+
+                const cdFilial = company.cdfilial ? String(company.cdfilial).trim() : '';
+                if (!cdFilial) {
+                    res.status(400).json({ status: 'error', message: 'Código da filial (cdfilial) não configurado no cadastro da empresa.' });
+                    return;
+                }
+
+                const { ExternalDbService } = await import('../services/externalDbService');
+                const rows = await ExternalDbService.queryExternalSqlServer({
+                    host: server,
+                    database,
+                    user,
+                    password
+                }, startDate, endDate, cdFilial);
+
+                res.status(200).json({
+                    status: 'success',
+                    data: rows
+                });
+                return;
+            }
+
+            if (!url) {
+                res.status(400).json({ status: 'error', message: 'URL é obrigatória para consultas do tipo API.' });
+                return;
+            }
+
             const allowedUrls = [
                 company.solidcon_url_1,
                 company.solidcon_url_2,
@@ -471,7 +530,18 @@ export class CompanyController {
                 company.solidcon_url_5,
             ].map((value) => String(value || '').trim()).filter(Boolean);
 
-            if (!allowedUrls.includes(url)) {
+            const cleanUrlBase = (uStr: string): string => {
+                try {
+                    const parsed = new URL(uStr);
+                    return parsed.origin + parsed.pathname;
+                } catch {
+                    return uStr;
+                }
+            };
+            const requestBase = cleanUrlBase(url);
+            const allowedBases = allowedUrls.map(cleanUrlBase);
+
+            if (!allowedUrls.includes(url) && !allowedBases.includes(requestBase)) {
                 res.status(403).json({ status: 'error', message: 'URL não cadastrada na integração Solidcon desta empresa.' });
                 return;
             }

@@ -183,7 +183,7 @@ export class CompanyService {
             }
         }
 
-        const extraFields = ['tax_regime', 'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'certificate_password', 'certificate_expiration', 'certificate_name', 'api_token', 'swagger_api_token', 'whatsapp_chat_provider', 'whatsapp_business_scope', 'solidcon_api_token', 'solidcon_url_1', 'solidcon_url_2', 'solidcon_url_3', 'solidcon_url_4', 'solidcon_url_5', 'allow_print_without_confirmation', 'ie', 'im', 'cnae_principal', 'crt', 'nfe_environment', 'nfe_series', 'nfe_number', 'nfce_series', 'nfce_number', 'csc_id', 'csc_token'];
+        const extraFields = ['tax_regime', 'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'certificate_password', 'certificate_expiration', 'certificate_name', 'api_token', 'swagger_api_token', 'whatsapp_chat_provider', 'whatsapp_business_scope', 'solidcon_api_token', 'solidcon_url_1', 'solidcon_url_2', 'solidcon_url_3', 'solidcon_url_4', 'solidcon_url_5', 'serv_solidcon', 'bd_solidcon', 'login_solidcon', 'senha_solidcon', 'serv_dorsal', 'bd_dorsal', 'login_dorsal', 'senha_dorsal', 'cdfilial', 'allow_print_without_confirmation', 'ie', 'im', 'cnae_principal', 'crt', 'nfe_environment', 'nfe_series', 'nfe_number', 'nfce_series', 'nfce_number', 'csc_id', 'csc_token'];
         for (const field of extraFields) {
             if ((data as any)[field] !== undefined) {
                 updates.push(`${field} = ?`);

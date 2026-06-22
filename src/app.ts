@@ -38,6 +38,7 @@ import accountingRoutes from './routes/accountingRoutes';
 import emailConfigRoutes from './routes/emailConfigRoutes';
 import uiPreferenceRoutes from './routes/uiPreferenceRoutes';
 import backupRoutes from './routes/backupRoutes';
+import publicRoutes from './routes/publicRoutes';
 import { StorageService } from './utils/storageService';
 import { toBrazilIsoDateTime } from './utils/dateTime';
 import httpLogger from './middlewares/httpLogger';
@@ -288,6 +289,7 @@ app.use('/api/v1/accounting', accountingRoutes);
 app.use('/api/v1/email-config', emailConfigRoutes);
 app.use('/api/v1/ui-preferences', uiPreferenceRoutes);
 app.use('/api/v1/backup', backupRoutes);
+app.use('/api/v1/public', publicRoutes);
 
 // ── Utility Routes ────────────────────────────────────────────────────────────
 app.get('/health', (_req: Request, res: Response) => {

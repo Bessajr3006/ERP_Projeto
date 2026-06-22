@@ -16,6 +16,14 @@ export interface BankAccount {
     api_client_secret?: string | null;
     api_certificate?: string | null;
     api_key?: string | null;
+    webhook_url?: string | null;
+    webhook_secret?: string | null;
+    webhook_certificate?: string | null;
+    webhook_key?: string | null;
+    webhook_event_transaction?: number;
+    webhook_event_account?: number;
+    webhook_event_status_sync?: number;
+    webhook_event_boleto?: number;
     created_at: Date;
     updated_at: Date;
 }
@@ -32,6 +40,14 @@ export interface CreateBankAccountData {
     api_client_secret?: string | null | undefined;
     api_certificate?: string | null | undefined;
     api_key?: string | null | undefined;
+    webhook_url?: string | null | undefined;
+    webhook_secret?: string | null | undefined;
+    webhook_certificate?: string | null | undefined;
+    webhook_key?: string | null | undefined;
+    webhook_event_transaction?: number | undefined;
+    webhook_event_account?: number | undefined;
+    webhook_event_status_sync?: number | undefined;
+    webhook_event_boleto?: number | undefined;
 }
 
 export interface UpdateBankAccountData {
@@ -46,4 +62,12 @@ export interface UpdateBankAccountData {
     api_client_secret?: string | null | undefined;
     api_certificate?: string | null | undefined;
     api_key?: string | null | undefined;
+    webhook_url?: string | null | undefined;
+    webhook_secret?: string | null | undefined;
+    webhook_certificate?: string | null | undefined;
+    webhook_key?: string | null | undefined;
+    webhook_event_transaction?: number | undefined;
+    webhook_event_account?: number | undefined;
+    webhook_event_status_sync?: number | undefined;
+    webhook_event_boleto?: number | undefined;
 }

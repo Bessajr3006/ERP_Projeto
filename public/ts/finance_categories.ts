@@ -9,9 +9,18 @@
     public_id?: string;
     name?: string;
     type?: 'income' | 'expense' | string;
+    finance_category_type_public_id?: string | null;
+    finance_category_type_name?: string | null;
+  };
+
+  type FinanceCategoryType = {
+    id?: number;
+    public_id?: string;
+    name?: string;
   };
 
   let g_categories: FinanceCategory[] = [];
+  let g_categoryTypes: FinanceCategoryType[] = [];
   let g_filteredCategories: FinanceCategory[] = [];
   let g_editingId: string | null = null;
 
@@ -163,8 +172,16 @@
             { value: 'expense', label: 'Despesa' },
           ],
         },
+        {
+          id: 'filterCategoryType',
+          type: 'select',
+          label: 'Tipo de Categoria',
+          options: [
+            { value: '', label: 'Todos' },
+          ],
+        },
       ],
-      gridClass: 'grid grid-cols-1 md:grid-cols-2 gap-3 items-end',
+      gridClass: 'grid grid-cols-1 md:grid-cols-3 gap-3 items-end',
     });
 
     let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -178,12 +195,38 @@
       }, 180);
     });
     getEl('filterType')?.addEventListener('change', applyFilters);
+    getEl('filterCategoryType')?.addEventListener('change', applyFilters);
   });
 
   // --- API Calls ---
 
+  async function fetchCategoryTypes(): Promise<void> {
+    try {
+      const res = await (api as any)('/finance/category-types');
+      g_categoryTypes = res.data || [];
+      populateCategoryTypeDropdowns();
+    } catch (error) {
+      console.error('Erro ao buscar tipos de categoria:', error);
+    }
+  }
+
+  function populateCategoryTypeDropdowns(): void {
+    const selectEl = getEl<HTMLSelectElement>('financeCategoryTypeSelect');
+    if (selectEl) {
+      selectEl.innerHTML = '<option value="">Nenhum</option>' +
+        g_categoryTypes.map(t => `<option value="${t.public_id}">${t.name}</option>`).join('');
+    }
+
+    const filterEl = getEl<HTMLSelectElement>('filterCategoryType');
+    if (filterEl) {
+      filterEl.innerHTML = '<option value="">Todos</option>' +
+        g_categoryTypes.map(t => `<option value="${t.public_id}">${t.name}</option>`).join('');
+    }
+  }
+
   async function fetchCategories(): Promise<void> {
     try {
+      await fetchCategoryTypes();
       const res = await (api as any)('/finance/categories');
       g_categories = res.data || [];
       applyFilters();
@@ -198,10 +241,12 @@
 
     const name = getEl<HTMLInputElement>('categoryName')?.value;
     const type = getEl<HTMLSelectElement>('categoryType')?.value;
+    const financeCategoryTypePublicId = getEl<HTMLSelectElement>('financeCategoryTypeSelect')?.value || null;
 
     const data = {
       name: name,
       type: type,
+      finance_category_type_public_id: financeCategoryTypePublicId,
     };
 
     const btn = getEl<HTMLButtonElement>('saveBtn');
@@ -266,7 +311,7 @@
     if (items.length === 0) {
       tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                     Nenhuma categoria encontrada.
                 </td>
             </tr>
@@ -304,6 +349,9 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${typeBadge}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                ${cat.finance_category_type_name ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-brand-50/50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 border border-brand-200/50 dark:border-brand-800/40">${cat.finance_category_type_name}</span>` : '<span class="italic text-gray-400">Nenhum</span>'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
                 Acesso Global
@@ -406,8 +454,9 @@
                     }</h4>
                 </div>
 
-                <div class="mt-2 flex flex-col gap-1 items-start">
+                <div class="mt-2 flex flex-wrap gap-1 items-start">
                     ${typeBadge}
+                    ${cat.finance_category_type_name ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-brand-50/50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 border border-brand-200/50 dark:border-brand-800/40">${cat.finance_category_type_name}</span>` : ''}
                 </div>
 
                 <div class="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -431,6 +480,7 @@
   function applyFilters(): void {
     const search = FilterPanel.normalizeText(getEl<HTMLInputElement>('filterSearch')?.value);
     const type = getEl<HTMLSelectElement>('filterType')?.value || '';
+    const categoryTypePublicId = getEl<HTMLSelectElement>('filterCategoryType')?.value || '';
 
     g_filteredCategories = g_categories.filter((item: any) => {
       if (!FilterPanel.matchesSearch(item, ['name'], search)) {
@@ -438,6 +488,10 @@
       }
 
       if (type && item.type !== type) {
+        return false;
+      }
+
+      if (categoryTypePublicId && item.finance_category_type_public_id !== categoryTypePublicId) {
         return false;
       }
 
@@ -464,12 +518,14 @@
 
     const nameInput = getEl<HTMLInputElement>('categoryName');
     const typeSelect = getEl<HTMLSelectElement>('categoryType');
+    const categoryTypeSelect = getEl<HTMLSelectElement>('financeCategoryTypeSelect');
     const idInput = getEl<HTMLInputElement>('categoryId');
     const form = getEl<HTMLFormElement>('categoryForm');
 
     if (category) {
       if (nameInput) nameInput.value = category.name || '';
       if (typeSelect) typeSelect.value = category.type || '';
+      if (categoryTypeSelect) categoryTypeSelect.value = category.finance_category_type_public_id || '';
       if (idInput) idInput.value = category.public_id || '';
     } else {
       form?.reset();

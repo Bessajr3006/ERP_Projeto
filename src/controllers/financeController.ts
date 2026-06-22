@@ -1,11 +1,18 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { FinanceService } from '../services/financeService';
+import { WhatsAppBusinessService } from '../services/whatsappBusinessService';
 import logger from '../config/logger';
 
 const createCategorySchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
-    type: z.enum(['income', 'expense'])
+    type: z.enum(['income', 'expense']),
+    finance_category_type_public_id: z.string().uuid().optional().nullable()
+});
+
+const createCategoryTypeSchema = z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    description: z.string().optional().nullable()
 });
 
 const createExpenseSchema = z.object({
@@ -16,6 +23,8 @@ const createExpenseSchema = z.object({
     bank_account_public_id: z.string().uuid('Invalid bank account ID'),
     payment_method: z.enum(['pix', 'credit', 'debit', 'cash', 'transfer', 'boleto']).optional(),
     status: z.enum(['pending', 'progress', 'paid']).optional(),
+    entity_type: z.string().optional().nullable(),
+    entity_public_id: z.string().uuid('Invalid entity ID').optional().nullable(),
 });
 
 const createRevenueSchema = z.object({
@@ -28,6 +37,21 @@ const createRevenueSchema = z.object({
     customer_public_id: z.string().uuid('Invalid customer ID').optional(),
     payment_method: z.enum(['pix', 'credit', 'debit', 'cash', 'transfer', 'boleto']).optional(),
     status: z.enum(['pending', 'progress', 'paid']).optional(),
+    entity_type: z.string().optional().nullable(),
+    entity_public_id: z.string().uuid('Invalid entity ID').optional().nullable(),
+});
+
+const importSolidconRevenuesSchema = z.object({
+    category_public_id: z.string().uuid('Invalid category ID').optional(),
+    bank_account_public_id: z.string().uuid('Invalid bank account ID').optional(),
+    payload: z.any()
+});
+
+const batchUpdateRevenuesSchema = z.object({
+    ids: z.array(z.string().uuid('Invalid ID')),
+    bank_account_public_id: z.string().uuid('Invalid bank account ID').optional(),
+    payment_method: z.enum(['pix', 'credit', 'debit', 'cash', 'transfer', 'boleto']).optional(),
+    date: z.string().optional()
 });
 
 export class FinanceController {
@@ -96,6 +120,76 @@ export class FinanceController {
             }
             if (error instanceof Error && error.message.includes('foreign key constraint')) {
                 res.status(400).json({ status: 'error', message: 'Cannot delete category because it is being used by transactions' });
+                return;
+            }
+            throw error;
+        }
+    }
+
+    static async createCategoryType(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const validatedData = createCategoryTypeSchema.parse(req.body);
+
+            const categoryType = await FinanceService.createCategoryType(companyId, validatedData);
+
+            res.status(201).json({ status: 'success', data: categoryType });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) { res.status(400).json({ status: 'error', errors: error.errors }); return; }
+            throw error;
+        }
+    }
+
+    static async listCategoryTypes(req: Request, res: Response): Promise<void> {
+        try {
+            const categoryTypes = await FinanceService.listCategoryTypes(req.user!.company_id);
+            res.status(200).json({ status: 'success', data: categoryTypes });
+        } catch (error) { throw error; }
+    }
+
+    static async updateCategoryType(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const id = req.params.id as string;
+
+            if (!id) {
+                res.status(400).json({ status: 'error', message: 'Category type ID is required' });
+                return;
+            }
+
+            const validatedData = createCategoryTypeSchema.parse(req.body);
+            const updatedCategoryType = await FinanceService.updateCategoryType(id, companyId, validatedData);
+
+            res.status(200).json({ status: 'success', data: updatedCategoryType });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) { res.status(400).json({ status: 'error', errors: error.errors }); return; }
+            if (error instanceof Error && error.message === 'Category type not found') {
+                res.status(404).json({ status: 'error', message: error.message });
+                return;
+            }
+            throw error;
+        }
+    }
+
+    static async deleteCategoryType(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const id = req.params.id as string;
+
+            if (!id) {
+                res.status(400).json({ status: 'error', message: 'Category type ID is required' });
+                return;
+            }
+
+            await FinanceService.deleteCategoryType(id, companyId);
+            res.status(204).send();
+        } catch (error: any) {
+            if (error instanceof Error && error.message === 'Category type not found') {
+                res.status(404).json({ status: 'error', message: error.message });
+                return;
+            }
+            if (error instanceof Error && error.message.includes('foreign key constraint')) {
+                res.status(400).json({ status: 'error', message: 'Cannot delete category type because it is in use' });
                 return;
             }
             throw error;
@@ -234,7 +328,55 @@ export class FinanceController {
                 res.status(400).json({ status: 'error', message: error.message });
                 return;
             }
+            if (error instanceof Error && error.message === 'Não é permitido excluir uma despesa que já foi paga. Altere o status para pendente antes de excluir.') {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
             throw error;
+        }
+    }
+
+    static async batchDeleteTransactions(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { ids } = req.body;
+
+            if (!Array.isArray(ids) || ids.length === 0) {
+                res.status(400).json({ status: 'error', message: 'Transaction IDs array is required' });
+                return;
+            }
+
+            const uniqueIds = Array.from(new Set(ids)) as string[];
+            const result = await FinanceService.batchDeleteTransactions(uniqueIds, companyId);
+            res.status(200).json({ status: 'success', data: result });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    }
+
+    static async batchUpdateRevenues(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const validatedData = batchUpdateRevenuesSchema.parse(req.body);
+            
+            const result = await FinanceService.batchUpdateRevenues(
+                companyId,
+                validatedData.ids,
+                {
+                    bank_account_public_id: validatedData.bank_account_public_id,
+                    payment_method: validatedData.payment_method,
+                    date: validatedData.date
+                }
+            );
+
+            res.status(200).json({ status: 'success', data: result });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                logger.warn({ zodErrors: error.errors }, '[financeController] ZodError (Batch Update Revenues)');
+                res.status(400).json({ status: 'error', message: error.errors[0]?.message || 'Erro de validação', errors: error.errors });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error.message });
         }
     }
 
@@ -257,6 +399,44 @@ export class FinanceController {
                 return;
             }
             res.status(500).send('Erro interno ao gerar recibo.');
+        }
+    }
+
+    static async sendWhatsApp(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const userId = req.user!.id;
+            const transactionPublicId = req.params.id as string;
+            const { phone } = req.body || {};
+
+            if (!transactionPublicId) {
+                res.status(400).json({ status: 'error', message: 'Transaction ID is required' });
+                return;
+            }
+
+            const result = await FinanceService.sendWhatsApp(Number(companyId), Number(userId), transactionPublicId, phone);
+            res.status(200).json({ status: 'success', message: 'WhatsApp enviado com sucesso', data: result });
+        } catch (error: any) {
+            if (error instanceof Error) {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: 'Erro interno ao enviar WhatsApp' });
+        }
+    }
+
+    static async getWhatsAppScreenshot(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const screenshot = await WhatsAppBusinessService.getSessionScreenshot(Number(companyId));
+            if (!screenshot) {
+                res.status(404).send('Screenshot da sessao nao disponivel (a sessao pode nao estar ativa).');
+                return;
+            }
+            res.setHeader('Content-Type', 'image/png');
+            res.send(screenshot);
+        } catch (error: any) {
+            res.status(500).send(`Erro ao tirar screenshot: ${error.message}`);
         }
     }
 
@@ -321,7 +501,8 @@ export class FinanceController {
                 return;
             }
 
-            await FinanceService.batchGenerateBillets(companyId, ids);
+            const uniqueIds = Array.from(new Set(ids)) as string[];
+            await FinanceService.batchGenerateBillets(companyId, uniqueIds);
             res.status(200).json({ status: 'success', message: 'Boletos gerados com sucesso' });
         } catch (error: any) {
             if (error instanceof Error) {
@@ -342,7 +523,8 @@ export class FinanceController {
                 return;
             }
 
-            await FinanceService.batchCancelBillets(companyId, ids);
+            const uniqueIds = Array.from(new Set(ids)) as string[];
+            await FinanceService.batchCancelBillets(companyId, uniqueIds);
             res.status(200).json({ status: 'success', message: 'Boletos cancelados com sucesso' });
         } catch (error: any) {
             if (error instanceof Error) {
@@ -379,7 +561,8 @@ export class FinanceController {
                 res.status(400).json({ status: 'error', message: 'Dados inválidos. Requer ids, email e login de admin.' });
                 return;
             }
-            await FinanceService.batchDeleteBankStatements(companyId, ids, email, password);
+            const uniqueIds = Array.from(new Set(ids)) as number[];
+            await FinanceService.batchDeleteBankStatements(companyId, uniqueIds, email, password);
             res.status(200).json({ status: 'success', message: 'Lançamentos do extrato removidos com sucesso. ' });
         } catch (error: any) {
             if (error instanceof Error) {
@@ -502,6 +685,74 @@ export class FinanceController {
             res.status(200).json({ status: 'success', data: rows });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message });
+        }
+    }
+
+    static async importRevenuesSolidcon(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const userId = req.user!.id;
+            const { category_public_id, bank_account_public_id, payload } = importSolidconRevenuesSchema.parse(req.body);
+
+            const normalizeItems = (value: any, depth = 0): any[] => {
+                if (depth > 4) return [];
+                if (Array.isArray(value)) return value;
+                if (typeof value === 'string') {
+                    try {
+                        return normalizeItems(JSON.parse(value), depth + 1);
+                    } catch {
+                        return [];
+                    }
+                }
+                const containers = ['body', 'items', 'data', 'revenues', 'receitas', 'registros', 'resultado', 'results', 'rows'];
+                for (const key of containers) {
+                    if (value?.[key] !== undefined && value?.[key] !== null) {
+                        const nestedItems = normalizeItems(value[key], depth + 1);
+                        if (nestedItems.length) return nestedItems;
+                    }
+                }
+                return [];
+            };
+
+            const items = normalizeItems(payload);
+            if (!items.length) {
+                res.status(400).json({ status: 'error', message: 'Nenhum item valido encontrado para importacao.' });
+                return;
+            }
+
+            const result = await FinanceService.importSolidconRevenues(companyId, userId, category_public_id, bank_account_public_id, items);
+
+            res.status(200).json({
+                status: 'success',
+                data: result
+            });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                res.status(400).json({ status: 'error', errors: error.errors });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error?.message || 'Internal Server Error' });
+        }
+    }
+
+    static async syncBoletoStatus(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const transactionPublicId = req.params.id as string;
+
+            if (!transactionPublicId) {
+                res.status(400).json({ status: 'error', message: 'Transaction ID is required' });
+                return;
+            }
+
+            const situacao = await FinanceService.syncBoletoStatus(companyId, transactionPublicId);
+            res.status(200).json({ status: 'success', situacao });
+        } catch (error: any) {
+            if (error instanceof Error) {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: 'Erro interno ao sincronizar boleto' });
         }
     }
 }

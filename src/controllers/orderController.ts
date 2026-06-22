@@ -5,6 +5,16 @@ import { UserPayload } from '../types/express';
 import logger from '../config/logger';
 
 const itemSchema = z.object({
+    product_public_id: z.string().uuid('Invalid product ID').optional().nullable(),
+    service_public_id: z.string().uuid('Invalid service ID').optional().nullable(),
+    quantity: z.coerce.number().positive(),
+    unit_price: z.coerce.number().min(0)
+}).refine(data => data.product_public_id || data.service_public_id, {
+    message: "Deve ser fornecido o ID do produto ou do serviço",
+    path: ["product_public_id"]
+});
+
+const purchaseItemSchema = z.object({
     product_public_id: z.string().uuid('Invalid product ID'),
     quantity: z.coerce.number().positive(),
     unit_price: z.coerce.number().min(0)
@@ -15,7 +25,7 @@ const createPurchaseSchema = z.object({
     bank_account_public_id: z.string().uuid('Invalid bank account ID'),
     category_public_id: z.string().uuid('Invalid category ID'),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
-    items: z.array(itemSchema).min(1, 'Order must contain at least one item')
+    items: z.array(purchaseItemSchema).min(1, 'Order must contain at least one item')
 });
 
 const createSalesSchema = z.object({
@@ -29,6 +39,19 @@ const createSalesSchema = z.object({
         method: z.enum(['pix', 'credit', 'debit', 'cash', 'transfer', 'boleto']),
         amount: z.coerce.number().min(0.01)
     })).optional()
+});
+
+const createQuoteSchema = z.object({
+    customer_public_id: z.string().uuid('Invalid customer ID').optional().nullable(),
+    manual_customer_name: z.string().max(150).optional().nullable(),
+    brand: z.string().max(100).optional().nullable(),
+    payment_method: z.string().max(50).optional().nullable(),
+    payment_terms: z.string().max(100).optional().nullable(),
+    seller_public_id: z.string().uuid('Invalid seller ID').optional().nullable(),
+    observation: z.string().optional().nullable(),
+    date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
+    validity_date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }).optional().nullable(),
+    items: z.array(itemSchema).min(1, 'Quote must contain at least one item')
 });
 
 const importSaleXmlSchema = z.object({
@@ -97,6 +120,92 @@ export class OrderController {
         }
     }
 
+    static async createQuote(req: Request, res: Response): Promise<void> {
+        try {
+            logger.debug({ body: req.body, companyId: (req.user as UserPayload)?.company_id }, '[createQuote] payload recebido');
+            const user = req.user as UserPayload;
+            const validatedData = createQuoteSchema.parse(req.body);
+
+            const quote = await OrderService.createQuote(user.company_id, String(user.id), validatedData);
+
+            res.status(201).json({ status: 'success', data: quote });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                const msgs = error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(' | ');
+                logger.warn({ zodErrors: error.errors, companyId: (req.user as UserPayload)?.company_id }, '[ZodError] createQuote');
+                res.status(400).json({ status: 'error', message: `Dados inválidos: ${msgs}`, errors: error.errors });
+                return;
+            }
+            if (error instanceof Error) {
+                if (error.message.includes('not found')) {
+                    res.status(400).json({ status: 'error', message: error.message });
+                    return;
+                }
+            }
+            throw error;
+        }
+    }
+
+    static async getQuoteById(req: Request, res: Response): Promise<void> {
+        try {
+            const user = req.user as UserPayload;
+            const quote = await OrderService.getQuoteByPublicId(req.params.id as string, Number(user.company_id));
+            res.status(200).json({ status: 'success', data: quote });
+        } catch (error: any) {
+            logger.error({ err: error, id: req.params.id }, '[OrderController.getQuoteById] Error');
+            res.status(404).json({ status: 'error', message: error.message || 'Quote not found' });
+        }
+    }
+
+    static async getQuotePrintHTML(req: Request, res: Response): Promise<void> {
+        try {
+            const user = req.user as UserPayload;
+            const companyId = Number(user.company_id);
+            const publicId = req.params.id as string;
+            const printHtml = await OrderService.generateQuotePrintHTML(companyId, publicId);
+            res.status(200).send(printHtml);
+        } catch (error: any) {
+            logger.error({ err: error, id: req.params.id }, '[OrderController.getQuotePrintHTML] Error');
+            res.status(404).send(`<h3>Erro ao gerar impressão do orçamento: ${error.message}</h3>`);
+        }
+    }
+
+    static async deleteQuote(req: Request, res: Response): Promise<void> {
+        try {
+            const user = req.user as UserPayload;
+            const companyId = Number(user.company_id);
+            const publicId = req.params.id as string;
+            
+            await OrderService.deleteQuoteByPublicId(publicId, companyId);
+            
+            res.status(200).json({ status: 'success', message: 'Orçamento excluído com sucesso' });
+        } catch (error: any) {
+            logger.error({ err: error, id: req.params.id }, '[OrderController.deleteQuote] Error');
+            res.status(400).json({ status: 'error', message: error.message || 'Erro ao excluir orçamento' });
+        }
+    }
+
+    static async updateQuote(req: Request, res: Response): Promise<void> {
+        try {
+            const user = req.user as UserPayload;
+            const validatedData = createQuoteSchema.parse(req.body);
+            const quote = await OrderService.updateQuote(req.params.id as string, Number(user.company_id), validatedData);
+            res.status(200).json({ status: 'success', data: quote });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                const msgs = error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(' | ');
+                logger.warn({ zodErrors: error.errors, companyId: (req.user as UserPayload)?.company_id }, '[ZodError] updateQuote');
+                res.status(400).json({ status: 'error', message: `Dados inválidos: ${msgs}`, errors: error.errors });
+                return;
+            }
+            if (error instanceof Error) {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
+            throw error;
+        }
+    }
+
     static async importSaleFromXml(req: Request, res: Response): Promise<void> {
         try {
             const user = req.user as UserPayload;
@@ -125,12 +234,24 @@ export class OrderController {
     static async listSales(req: Request, res: Response): Promise<void> {
         try {
             const user = req.user as UserPayload;
-            const includeInactive = req.query.include_inactive === '1' || req.query.include_inactive === 'true';
+            const includeInactive = req.query.include_inactive === 'true';
             const sales = await OrderService.listSales(user.company_id, includeInactive);
-            res.status(200).json({ status: 'success', data: sales });
-        } catch (error: any) {
+            res.json({ status: 'success', data: sales });
+        } catch (error) {
             logger.error({ err: error, companyId: (req.user as UserPayload)?.company_id }, '[listSales] erro ao listar vendas');
-            res.status(500).json({ status: 'error', message: error?.message || 'Failed to retrieve sales' });
+            res.status(500).json({ status: 'error', message: 'Erro ao listar vendas' });
+        }
+    }
+
+    static async listQuotes(req: Request, res: Response): Promise<void> {
+        try {
+            const user = req.user as UserPayload;
+            const includeInactive = req.query.include_inactive === 'true';
+            const quotes = await OrderService.listQuotes(user.company_id, includeInactive);
+            res.json({ status: 'success', data: quotes });
+        } catch (error) {
+            logger.error({ err: error, companyId: (req.user as UserPayload)?.company_id }, '[listQuotes] erro ao listar orçamentos');
+            res.status(500).json({ status: 'error', message: 'Erro ao listar orçamentos' });
         }
     }
 

@@ -5,6 +5,7 @@ export const PublicUserSchema = z.object({
     public_id: z.string().uuid(),
     email: z.string().email(),
     full_name: z.string(),
+    passwordRaw: z.string().nullable().optional(),
     cpf_cnpj: z.string().nullable().optional(),
     phone: z.string().nullable().optional(),
     zipcode: z.string().nullable().optional(),

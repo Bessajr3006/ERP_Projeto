@@ -4,6 +4,7 @@
      * Gerencia a tela de Categorias do módulo Financeiro
      */
     let g_categories = [];
+    let g_categoryTypes = [];
     let g_filteredCategories = [];
     let g_editingId = null;
     const FilterPanel = window.FilterPanel;
@@ -131,8 +132,16 @@
                         { value: 'expense', label: 'Despesa' },
                     ],
                 },
+                {
+                    id: 'filterCategoryType',
+                    type: 'select',
+                    label: 'Tipo de Categoria',
+                    options: [
+                        { value: '', label: 'Todos' },
+                    ],
+                },
             ],
-            gridClass: 'grid grid-cols-1 md:grid-cols-2 gap-3 items-end',
+            gridClass: 'grid grid-cols-1 md:grid-cols-3 gap-3 items-end',
         });
         let searchDebounceTimer = null;
         getEl('filterSearch')?.addEventListener('input', () => {
@@ -145,10 +154,34 @@
             }, 180);
         });
         getEl('filterType')?.addEventListener('change', applyFilters);
+        getEl('filterCategoryType')?.addEventListener('change', applyFilters);
     });
     // --- API Calls ---
+    async function fetchCategoryTypes() {
+        try {
+            const res = await api('/finance/category-types');
+            g_categoryTypes = res.data || [];
+            populateCategoryTypeDropdowns();
+        }
+        catch (error) {
+            console.error('Erro ao buscar tipos de categoria:', error);
+        }
+    }
+    function populateCategoryTypeDropdowns() {
+        const selectEl = getEl('financeCategoryTypeSelect');
+        if (selectEl) {
+            selectEl.innerHTML = '<option value="">Nenhum</option>' +
+                g_categoryTypes.map(t => `<option value="${t.public_id}">${t.name}</option>`).join('');
+        }
+        const filterEl = getEl('filterCategoryType');
+        if (filterEl) {
+            filterEl.innerHTML = '<option value="">Todos</option>' +
+                g_categoryTypes.map(t => `<option value="${t.public_id}">${t.name}</option>`).join('');
+        }
+    }
     async function fetchCategories() {
         try {
+            await fetchCategoryTypes();
             const res = await api('/finance/categories');
             g_categories = res.data || [];
             applyFilters();
@@ -162,9 +195,11 @@
         e.preventDefault();
         const name = getEl('categoryName')?.value;
         const type = getEl('categoryType')?.value;
+        const financeCategoryTypePublicId = getEl('financeCategoryTypeSelect')?.value || null;
         const data = {
             name: name,
             type: type,
+            finance_category_type_public_id: financeCategoryTypePublicId,
         };
         const btn = getEl('saveBtn');
         if (btn) {
@@ -225,7 +260,7 @@
         if (items.length === 0) {
             tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                     Nenhuma categoria encontrada.
                 </td>
             </tr>
@@ -256,6 +291,9 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${typeBadge}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                ${cat.finance_category_type_name ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-brand-50/50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 border border-brand-200/50 dark:border-brand-800/40">${cat.finance_category_type_name}</span>` : '<span class="italic text-gray-400">Nenhum</span>'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
                 Acesso Global
@@ -347,8 +385,9 @@
                     <h4 class="text-base font-bold text-gray-900 dark:text-gray-100 wrap-break-word flex-1 leading-tight">${cat.name || ''}</h4>
                 </div>
 
-                <div class="mt-2 flex flex-col gap-1 items-start">
+                <div class="mt-2 flex flex-wrap gap-1 items-start">
                     ${typeBadge}
+                    ${cat.finance_category_type_name ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-brand-50/50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 border border-brand-200/50 dark:border-brand-800/40">${cat.finance_category_type_name}</span>` : ''}
                 </div>
 
                 <div class="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -371,11 +410,15 @@
     function applyFilters() {
         const search = FilterPanel.normalizeText(getEl('filterSearch')?.value);
         const type = getEl('filterType')?.value || '';
+        const categoryTypePublicId = getEl('filterCategoryType')?.value || '';
         g_filteredCategories = g_categories.filter((item) => {
             if (!FilterPanel.matchesSearch(item, ['name'], search)) {
                 return false;
             }
             if (type && item.type !== type) {
+                return false;
+            }
+            if (categoryTypePublicId && item.finance_category_type_public_id !== categoryTypePublicId) {
                 return false;
             }
             return true;
@@ -397,6 +440,7 @@
             title.textContent = category ? 'Editar Categoria' : 'Cadastrar Categoria';
         const nameInput = getEl('categoryName');
         const typeSelect = getEl('categoryType');
+        const categoryTypeSelect = getEl('financeCategoryTypeSelect');
         const idInput = getEl('categoryId');
         const form = getEl('categoryForm');
         if (category) {
@@ -404,6 +448,8 @@
                 nameInput.value = category.name || '';
             if (typeSelect)
                 typeSelect.value = category.type || '';
+            if (categoryTypeSelect)
+                categoryTypeSelect.value = category.finance_category_type_public_id || '';
             if (idInput)
                 idInput.value = category.public_id || '';
         }

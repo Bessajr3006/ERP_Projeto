@@ -1,3 +1,4 @@
+// @ts-nocheck
 (() => {
     // ─── Controller: Extrato e Movimentações ─────────────────────────────────────
     let statementsData = []; // Todos os lançamentos mesclados (receitas + despesas)
@@ -115,8 +116,8 @@
     }
     // ─── Filtros ──────────────────────────────────────────────────────────────────
     function summarizeItems(items) {
-        const totalIn = items.filter((t) => t.type === 'revenue').reduce((sum, t) => sum + Number(t.amount), 0);
-        const totalOut = items.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
+        const totalIn = items.filter((t) => t.type === 'revenue' && t.status === 'paid').reduce((sum, t) => sum + Number(t.amount), 0);
+        const totalOut = items.filter((t) => t.type === 'expense' && t.status === 'paid').reduce((sum, t) => sum + Number(t.amount), 0);
         const balance = totalIn - totalOut;
         return { totalIn, totalOut, balance };
     }
@@ -573,12 +574,16 @@
         try {
             const btn1 = getById('btnSyncBankApi');
             const btn2 = getById('btnSyncBankApiCenter');
+            const btn3 = getById('btnHeaderSyncBankApi');
             const oldText1 = btn1?.innerHTML || '';
             const oldText2 = btn2?.innerHTML || '';
+            const oldText3 = btn3?.innerHTML || '';
             if (btn1)
                 btn1.innerHTML = 'Sincronizando...';
             if (btn2)
                 btn2.innerHTML = 'Sincronizando...';
+            if (btn3)
+                btn3.innerHTML = 'Sincronizando...';
             const res = await api('/finance/bank-statements/sync', {
                 method: 'POST',
                 body: JSON.stringify({ bankAccountPublicId: bankId, startDate, endDate }),
@@ -588,6 +593,8 @@
                 btn1.innerHTML = oldText1;
             if (btn2)
                 btn2.innerHTML = oldText2 || 'Consultar Extrato via API';
+            if (btn3)
+                btn3.innerHTML = oldText3 || 'Consultar API';
             await loadBankStatements();
         }
         catch (err) {
@@ -595,11 +602,15 @@
             UI.showAlert('alertMessage', err?.message || 'Erro ao sincronizar extrato com o Banco.', 'error');
             const btn1 = getById('btnSyncBankApi');
             const btn2 = getById('btnSyncBankApiCenter');
+            const btn3 = getById('btnHeaderSyncBankApi');
             if (btn1) {
                 btn1.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Consultar API`;
             }
             if (btn2) {
                 btn2.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Consultar Extrato via API`;
+            }
+            if (btn3) {
+                btn3.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Consultar API`;
             }
         }
     }
@@ -623,6 +634,7 @@
         });
         getById('btnSyncBankApi')?.addEventListener('click', syncBankStatementsViaApi);
         getById('btnSyncBankApiCenter')?.addEventListener('click', syncBankStatementsViaApi);
+        getById('btnHeaderSyncBankApi')?.addEventListener('click', syncBankStatementsViaApi);
         updateViewToggle();
         setupFilters();
         setDefaultPeriod();

@@ -473,6 +473,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (el) el.value = company[`solidcon_url_${i}`];
                 }
             }
+            const solidconFields = {
+                'serv_solidcon': 'servSolidcon',
+                'bd_solidcon': 'bdSolidcon',
+                'login_solidcon': 'loginSolidcon',
+                'senha_solidcon': 'senhaSolidcon',
+                'serv_dorsal': 'servDorsal',
+                'bd_dorsal': 'bdDorsal',
+                'login_dorsal': 'loginDorsal',
+                'senha_dorsal': 'senhaDorsal',
+                'cdfilial': 'cdFilial'
+            };
+            for (const [modelProp, domId] of Object.entries(solidconFields)) {
+                const el = document.getElementById(domId) as HTMLInputElement | null;
+                if (el && company[modelProp] !== undefined && company[modelProp] !== null) {
+                    el.value = String(company[modelProp]);
+                }
+            }
             syncStoredCompanyLogoState();
 
             // Populate Notas fields
@@ -640,6 +657,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const updateData = {};
                 for (let i = 1; i <= 5; i++) {
                     updateData[`solidcon_url_${i}`] = document.getElementById(`solidconUrl${i}`)?.value?.trim() || '';
+                }
+                const solidconFields = {
+                    'serv_solidcon': 'servSolidcon',
+                    'bd_solidcon': 'bdSolidcon',
+                    'login_solidcon': 'loginSolidcon',
+                    'senha_solidcon': 'senhaSolidcon',
+                    'serv_dorsal': 'servDorsal',
+                    'bd_dorsal': 'bdDorsal',
+                    'login_dorsal': 'loginDorsal',
+                    'senha_dorsal': 'senhaDorsal',
+                    'cdfilial': 'cdFilial'
+                };
+                for (const [modelProp, domId] of Object.entries(solidconFields)) {
+                    const val = (document.getElementById(domId) as HTMLInputElement)?.value?.trim();
+                    if ((modelProp === 'senha_solidcon' || modelProp === 'senha_dorsal') && !val) {
+                        continue;
+                    }
+                    updateData[modelProp] = val || '';
                 }
 
                 await api(`/companies/${g_companyPublicId}`, {
@@ -1067,6 +1102,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const bindPasswordToggle = (btnId: string, inputId: string) => {
+        const btn = document.getElementById(btnId);
+        btn?.addEventListener('click', () => {
+            const input = document.getElementById(inputId) as HTMLInputElement | null;
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            btn.querySelector('.eye-icon')?.classList.toggle('hidden', isPassword);
+            btn.querySelector('.eye-off-icon')?.classList.toggle('hidden', !isPassword);
+        });
+    };
+    bindPasswordToggle('toggleSenhaSolidconBtn', 'senhaSolidcon');
+    bindPasswordToggle('toggleSenhaDorsalBtn', 'senhaDorsal');
+
     const testNfeBtn = document.getElementById('testNfeBtn');
     if (testNfeBtn) {
         testNfeBtn.addEventListener('click', async () => {
@@ -1140,6 +1189,55 @@ document.addEventListener('DOMContentLoaded', async () => {
                 UI.showAlert('alertMessage', 'Certificado digital salvo com sucesso!', 'success');
             } catch (err) {
                 UI.showAlert('alertMessage', err.message || 'Erro ao salvar certificado', 'error');
+            } finally {
+                if (btn) { btn.textContent = originalText; btn.disabled = false; }
+            }
+        });
+    }
+
+    const notasForm = document.getElementById('notasForm');
+    if (notasForm) {
+        notasForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveNotasBtn');
+            const originalText = btn ? btn.textContent : '';
+            if (btn) { btn.textContent = 'Salvando...'; btn.disabled = true; }
+
+            try {
+                if (!g_companyPublicId) {
+                    throw new Error("ID da empresa não processado. Tente recarregar a página.");
+                }
+
+                const parseOptionalInt = (id: string) => {
+                    const val = (document.getElementById(id) as HTMLInputElement)?.value?.trim();
+                    if (!val) return null;
+                    const parsed = parseInt(val, 10);
+                    return isNaN(parsed) ? null : parsed;
+                };
+
+                const updateData = {
+                    ie: (document.getElementById('inscricaoEstadual') as HTMLInputElement)?.value?.trim() || null,
+                    im: (document.getElementById('inscricaoMunicipal') as HTMLInputElement)?.value?.trim() || null,
+                    cnae_principal: (document.getElementById('cnae') as HTMLInputElement)?.value?.trim() || null,
+                    nfe_environment: parseOptionalInt('nfeAmbiente'),
+                    nfe_series: parseOptionalInt('nfeSerie'),
+                    nfe_number: parseOptionalInt('nfeNumero'),
+                    nfce_series: parseOptionalInt('nfceSerie'),
+                    nfce_number: parseOptionalInt('nfceNumero'),
+                    csc_token: (document.getElementById('cscToken') as HTMLInputElement)?.value?.trim() || null,
+                    csc_id: (document.getElementById('cscId') as HTMLInputElement)?.value?.trim() || null
+                };
+
+                await api(`/companies/${g_companyPublicId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(updateData)
+                });
+
+                g_companySnapshot = { ...(g_companySnapshot || {}), ...updateData };
+                refreshParameterSummary();
+                UI.showAlert('alertMessage', 'Configurações fiscais salvas com sucesso!', 'success');
+            } catch (err) {
+                UI.showAlert('alertMessage', err.message || 'Erro ao salvar configurações fiscais', 'error');
             } finally {
                 if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }

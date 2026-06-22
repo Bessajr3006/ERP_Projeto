@@ -1,0 +1,10 @@
+FROM node:22-slim
+
+# Install Chromium, fonts, and ffmpeg dependencies required for whatsapp-web.js
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
+
+# Configure Puppeteer environment variables
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium

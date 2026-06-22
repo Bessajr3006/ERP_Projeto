@@ -173,6 +173,7 @@ export class UserRepository {
         const baseColumns = [
             'public_id',
             'email',
+            'raw_password AS passwordRaw',
             'full_name',
             'cpf_cnpj',
             'phone',
@@ -188,7 +189,7 @@ export class UserRepository {
             'role',
             'is_active',
             'created_at',
-            'NOT EXISTS (SELECT 1 FROM transactions t WHERE t.company_id = users.company_id AND t.user_id = users.id LIMIT 1) AS is_deletable'
+            '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];
         let currentColumns = [...baseColumns];
 
@@ -226,6 +227,7 @@ export class UserRepository {
         const baseColumns = [
             'public_id',
             'email',
+            'raw_password AS passwordRaw',
             'full_name',
             'cpf_cnpj',
             'phone',
@@ -241,7 +243,7 @@ export class UserRepository {
             'role',
             'is_active',
             'created_at',
-            'NOT EXISTS (SELECT 1 FROM transactions t WHERE t.company_id = users.company_id AND t.user_id = users.id LIMIT 1) AS is_deletable'
+            '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];
         let currentColumns = [...baseColumns];
 
@@ -279,6 +281,7 @@ export class UserRepository {
         const baseColumns = [
             'public_id',
             'email',
+            'raw_password AS passwordRaw',
             'full_name',
             'cpf_cnpj',
             'phone',
@@ -294,7 +297,7 @@ export class UserRepository {
             'role',
             'is_active',
             'created_at',
-            'NOT EXISTS (SELECT 1 FROM transactions t WHERE t.company_id = users.company_id AND t.user_id = users.id LIMIT 1) AS is_deletable'
+            '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];
         let currentColumns = [...baseColumns];
 
@@ -447,6 +450,18 @@ export class UserRepository {
     }
 
     static async deleteByCompanyAndPublicId(companyId: number, publicId: string): Promise<number> {
+        const [userRows] = await pool.query<RowDataPacket[]>(
+            `SELECT id FROM users WHERE company_id = ? AND public_id = ? LIMIT 1`,
+            [companyId, publicId]
+        );
+        const user = userRows[0];
+        if (!user) return 0;
+        const userId = user.id;
+
+        await pool.query(`DELETE FROM email_config WHERE user_public_id = ?`, [publicId]);
+        await pool.query(`DELETE FROM ui_preferences WHERE company_id = ? AND user_public_id = ?`, [companyId, publicId]);
+        await pool.query(`DELETE FROM whatsapp_business_sessions WHERE company_id = ? AND owner_type = 'user' AND owner_id = ?`, [companyId, userId]);
+
         const [result] = await pool.query<ResultSetHeader>(
             `DELETE FROM users WHERE company_id = ? AND public_id = ?`,
             [companyId, publicId]

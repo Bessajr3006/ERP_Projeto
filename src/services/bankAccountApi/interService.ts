@@ -40,9 +40,9 @@ export class InterService {
                 }
 
                 const publicId = randomUUID();
-                const type = tx.tipoLancamento === 'CREDITO' ? 'income' : 'expense';
-                const amount = Math.abs(tx.valor);
-                const description = tx.historico || 'Sem descrição';
+                const type = (tx.tipoLancamento === 'CREDITO' || tx.tipoOperacao === 'C') ? 'income' : 'expense';
+                const amount = Math.abs(parseFloat(tx.valor || '0'));
+                const description = tx.descricao || tx.historico || 'Sem descrição';
                 
                 const exists = await FinanceBankStatementRepository.checkStatementExists(pool, companyId, bankAccount.id, {
                     date: safeDate,
@@ -88,13 +88,21 @@ export class InterService {
             'Content-Length': Buffer.byteLength(payload)
         }, account, payload);
 
-        const data = JSON.parse(response);
+        let data;
+        try {
+            if (!response || !response.trim()) {
+                throw new Error('Resposta vazia do servidor.');
+            }
+            data = JSON.parse(response);
+        } catch (e: any) {
+            throw new Error(`Falha ao obter token de acesso: ${e.message}. Resposta original: ${response}`);
+        }
         if (!data.access_token) throw new Error('Falha ao obter token de acesso.');
         return data.access_token;
     }
 
     private static normalizeTransactionDate(tx: any): string | null {
-        const candidate = tx.dataLancamento || tx.dataMovimento || tx.data || tx.data_extrato || tx.date;
+        const candidate = tx.dataEntrada || tx.dataLancamento || tx.dataMovimento || tx.data || tx.data_extrato || tx.date;
         if (!candidate) return null;
 
         const parsed = new Date(candidate);
@@ -111,10 +119,19 @@ export class InterService {
             const options = { hostname, port: 443, path, method, headers, cert, key };
             const req = https.request(options, (res) => {
                 let body = '';
-                // Set encoding for string data, BUT wait, if it's PDF, we need binary!
-                // We'll return Buffer for binary and string for JSON.
                 res.on('data', chunk => body += chunk);
-                res.on('end', () => resolve(body));
+                res.on('end', () => {
+                    if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+                        const trimmed = body.trim();
+                        if (!trimmed) {
+                            return reject(new Error(`API do Banco retornou status ${res.statusCode} sem conteúdo.`));
+                        }
+                        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+                            return reject(new Error(`API do Banco retornou status ${res.statusCode}: ${trimmed.substring(0, 200)}`));
+                        }
+                    }
+                    resolve(body);
+                });
             });
             req.on('error', reject);
             if (payload) req.write(payload);
@@ -131,7 +148,19 @@ export class InterService {
             const req = https.request(options, (res) => {
                 const chunks: Buffer[] = [];
                 res.on('data', chunk => chunks.push(Buffer.from(chunk)));
-                res.on('end', () => resolve(Buffer.concat(chunks)));
+                res.on('end', () => {
+                    const buffer = Buffer.concat(chunks);
+                    if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+                        const bodyStr = buffer.toString('utf8').trim();
+                        if (!bodyStr) {
+                            return reject(new Error(`API do Banco retornou status ${res.statusCode} sem conteúdo.`));
+                        }
+                        if (!bodyStr.startsWith('{') && !bodyStr.startsWith('[')) {
+                            return reject(new Error(`API do Banco retornou status ${res.statusCode}: ${bodyStr.substring(0, 200)}`));
+                        }
+                    }
+                    resolve(buffer);
+                });
             });
             req.on('error', reject);
             if (payload) req.write(payload);
@@ -293,5 +322,169 @@ export class InterService {
                 throw new Error(`Erro ao cancelar: ${data.detail || JSON.stringify(data.violacoes)}`);
             }
         }
+    }
+
+    /**
+     * Registra o webhook na API v3 do Inter
+     */
+    static async registerWebhook(bankAccount: any, webhookUrl: string): Promise<void> {
+        const token = await this.getAccessToken(bankAccount, 'boleto-cobranca.write');
+        const payload = { webhookUrl };
+        const payloadStr = JSON.stringify(payload);
+
+        const response = await this.httpsRequest(
+            'cdpj.partners.bancointer.com.br',
+            '/cobranca/v3/cobrancas/webhook',
+            'PUT',
+            {
+                'Authorization': `Bearer ${token}`,
+                'x-inter-conta-corrente': bankAccount.account_number,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payloadStr)
+            },
+            bankAccount,
+            payloadStr
+        );
+
+        if (response) {
+            let data;
+            try {
+                data = JSON.parse(response);
+            } catch (e) {}
+            if (data && (data.violacoes || data.title)) {
+                throw new Error(`Erro ao registrar webhook: ${data.detail || JSON.stringify(data.violacoes)}`);
+            }
+        }
+    }
+
+    /**
+     * Exclui o webhook na API v3 do Inter
+     */
+    static async deleteWebhook(bankAccount: any): Promise<void> {
+        const token = await this.getAccessToken(bankAccount, 'boleto-cobranca.write');
+        const response = await this.httpsRequest(
+            'cdpj.partners.bancointer.com.br',
+            '/cobranca/v3/cobrancas/webhook',
+            'DELETE',
+            {
+                'Authorization': `Bearer ${token}`,
+                'x-inter-conta-corrente': bankAccount.account_number
+            },
+            bankAccount
+        );
+
+        if (response) {
+            let data;
+            try {
+                data = JSON.parse(response);
+            } catch (e) {}
+            if (data && (data.violacoes || data.title)) {
+                throw new Error(`Erro ao excluir webhook: ${data.detail || JSON.stringify(data.violacoes)}`);
+            }
+        }
+    }
+
+    /**
+     * Registra o webhook do Pix na API do Inter
+     */
+    static async registerPixWebhook(bankAccount: any, webhookUrl: string): Promise<void> {
+        if (!bankAccount.pix_key) return;
+        const token = await this.getAccessToken(bankAccount, 'webhook.write');
+        const payload = { webhookUrl };
+        const payloadStr = JSON.stringify(payload);
+
+        const response = await this.httpsRequest(
+            'cdpj.partners.bancointer.com.br',
+            `/pix/v2/webhook/${encodeURIComponent(bankAccount.pix_key.trim())}`,
+            'PUT',
+            {
+                'Authorization': `Bearer ${token}`,
+                'x-inter-conta-corrente': bankAccount.account_number,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payloadStr)
+            },
+            bankAccount,
+            payloadStr
+        );
+
+        if (response) {
+            let data;
+            try {
+                data = JSON.parse(response);
+            } catch (e) {}
+            if (data && (data.violacoes || data.title)) {
+                throw new Error(`Erro ao registrar webhook Pix: ${data.detail || JSON.stringify(data.violacoes)}`);
+            }
+        }
+    }
+
+    /**
+     * Exclui o webhook do Pix na API do Inter
+     */
+    static async deletePixWebhook(bankAccount: any): Promise<void> {
+        if (!bankAccount.pix_key) return;
+        const token = await this.getAccessToken(bankAccount, 'webhook.write');
+        const response = await this.httpsRequest(
+            'cdpj.partners.bancointer.com.br',
+            `/pix/v2/webhook/${encodeURIComponent(bankAccount.pix_key.trim())}`,
+            'DELETE',
+            {
+                'Authorization': `Bearer ${token}`,
+                'x-inter-conta-corrente': bankAccount.account_number
+            },
+            bankAccount
+        );
+
+        if (response) {
+            let data;
+            try {
+                data = JSON.parse(response);
+            } catch (e) {}
+            if (data && (data.violacoes || data.title)) {
+                throw new Error(`Erro ao excluir webhook Pix: ${data.detail || JSON.stringify(data.violacoes)}`);
+            }
+        }
+    }
+
+    /**
+     * Consulta o status da cobrança/boleto na API V3 do Inter
+     */
+    static async getBoletoStatus(bankAccount: any, nossoNumero: string): Promise<string> {
+        const token = await this.getAccessToken(bankAccount, 'boleto-cobranca.read');
+        const path = `/cobranca/v3/cobrancas/${nossoNumero}`;
+        
+        const response = await this.httpsRequest(
+            'cdpj.partners.bancointer.com.br',
+            path,
+            'GET',
+            {
+                'Authorization': `Bearer ${token}`,
+                'x-inter-conta-corrente': bankAccount.account_number
+            },
+            bankAccount
+        );
+
+        let data;
+        try {
+            if (!response || !response.trim()) {
+                throw new Error('Resposta vazia da API de Cobrança do Banco Inter');
+            }
+            data = JSON.parse(response);
+        } catch (e: any) {
+            throw new Error(`Erro ao ler resposta do banco: ${e.message}. Resposta original: ${response}`);
+        }
+
+        if (data.violacoes && data.violacoes.length > 0) {
+            throw new Error(`Erro ao consultar status no Banco Inter: ${data.violacoes[0].razao}`);
+        }
+        if (data.title && data.detail) {
+            throw new Error(`Erro ao consultar status no Banco Inter: ${data.detail}`);
+        }
+
+        const situacao = data.cobranca?.situacao || data.situacao;
+        if (!situacao) {
+            throw new Error(`Situação do boleto não encontrada na resposta do Banco Inter. Resposta: ${response}`);
+        }
+        return situacao; // e.g. "PAGO", "RECEBIDO", "ABERTO", "VENCIDO", "CANCELADO"
     }
 }

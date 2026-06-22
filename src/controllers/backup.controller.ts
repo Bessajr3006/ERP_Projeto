@@ -2,10 +2,28 @@ import { Request, Response } from 'express';
 import pool from '../config/db';
 import logger from '../config/logger';
 
-export const generateBackup = async (req: Request, res: Response) => {
+export const getTables = async (_req: Request, res: Response) => {
     try {
         const [tablesRows] = await pool.query('SHOW TABLES');
         const tables = (tablesRows as any[]).map(row => Object.values(row)[0] as string);
+        return res.status(200).json({ tables });
+    } catch (error) {
+        logger.error({ err: error }, '[Backup] Erro ao listar tabelas');
+        return res.status(500).json({ error: 'Erro ao listar tabelas', details: error instanceof Error ? error.message : String(error) });
+    }
+};
+
+export const generateBackup = async (req: Request, res: Response) => {
+    try {
+        const [tablesRows] = await pool.query('SHOW TABLES');
+        const allTables = (tablesRows as any[]).map(row => Object.values(row)[0] as string);
+        
+        let tables = allTables;
+        const selectedTablesParam = req.query.tables as string | undefined;
+        if (selectedTablesParam) {
+            const selectedTables = selectedTablesParam.split(',').map(t => t.trim());
+            tables = allTables.filter(t => selectedTables.includes(t));
+        }
         
         const dateStr = new Date().toISOString().split('T')[0];
         

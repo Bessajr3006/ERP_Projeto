@@ -490,7 +490,7 @@ CREATE TABLE IF NOT EXISTS sales_orders (
     company_id INT NOT NULL,
     customer_id INT NULL,
     total_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
-    status ENUM('pending', 'progress', 'completed', 'cancelled', 'separated', 'invoiced') NOT NULL DEFAULT 'pending',
+    status ENUM('quote', 'pending', 'progress', 'completed', 'cancelled', 'separated', 'invoiced') NOT NULL DEFAULT 'pending',
     date DATE NOT NULL,
     nfe_key VARCHAR(44) DEFAULT NULL,
     nfe_issue_date DATE DEFAULT NULL,
@@ -573,6 +573,30 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (purchase_id) REFERENCES purchase_orders(id) ON DELETE SET NULL,
     FOREIGN KEY (sale_id) REFERENCES sales_orders(id) ON DELETE SET NULL,
     INDEX idx_company_date (company_id, date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ERP Bank Statements (Multi-tenant & reconciled with transactions)
+CREATE TABLE IF NOT EXISTS bank_statements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    public_id CHAR(36) NOT NULL UNIQUE,
+    company_id INT NOT NULL,
+    bank_account_id INT NOT NULL,
+    transaction_id VARCHAR(100) DEFAULT NULL,
+    date DATE NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    amount DECIMAL(15, 2) NOT NULL,
+    type ENUM('income', 'expense') NOT NULL,
+    raw_data LONGTEXT DEFAULT NULL,
+    status ENUM('pending', 'reconciled') NOT NULL DEFAULT 'pending',
+    reconciled_transaction_id INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_bank_statements_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bank_statements_bank_account FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bank_statements_reconciled_tx FOREIGN KEY (reconciled_transaction_id) REFERENCES transactions(id) ON DELETE SET NULL,
+    UNIQUE KEY uk_bank_statements_acc_tx (bank_account_id, transaction_id),
+    INDEX idx_company_bank_date (company_id, bank_account_id, date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ERP Inventory: Categories

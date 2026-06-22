@@ -60,8 +60,10 @@
   const switchTab = (tabName: string): void => {
     const tabGeral = getById('tabContentGeral');
     const tabApi = getById('tabContentApi');
+    const tabWebhook = getById('tabContentWebhook');
     const btnGeral = getById('tabBtnGeral');
     const btnApi = getById('tabBtnApi');
+    const btnWebhook = getById('tabBtnWebhook');
 
     const activeClasses = ['border-brand-500', 'text-brand-600'];
     const inactiveClasses = [
@@ -79,21 +81,43 @@
       tabGeral.classList.add('block');
       tabApi.classList.remove('block');
       tabApi.classList.add('hidden');
+      tabWebhook.classList.remove('block');
+      tabWebhook.classList.add('hidden');
 
       btnGeral.classList.remove(...inactiveClasses);
       btnGeral.classList.add(...activeClasses);
       btnApi.classList.remove(...activeClasses);
       btnApi.classList.add(...inactiveClasses);
+      btnWebhook.classList.remove(...activeClasses);
+      btnWebhook.classList.add(...inactiveClasses);
     } else if (tabName === 'api') {
       tabApi.classList.remove('hidden');
       tabApi.classList.add('block');
       tabGeral.classList.remove('block');
       tabGeral.classList.add('hidden');
+      tabWebhook.classList.remove('block');
+      tabWebhook.classList.add('hidden');
 
       btnApi.classList.remove(...inactiveClasses);
       btnApi.classList.add(...activeClasses);
       btnGeral.classList.remove(...activeClasses);
       btnGeral.classList.add(...inactiveClasses);
+      btnWebhook.classList.remove(...activeClasses);
+      btnWebhook.classList.add(...inactiveClasses);
+    } else if (tabName === 'webhook') {
+      tabWebhook.classList.remove('hidden');
+      tabWebhook.classList.add('block');
+      tabGeral.classList.remove('block');
+      tabGeral.classList.add('hidden');
+      tabApi.classList.remove('block');
+      tabApi.classList.add('hidden');
+
+      btnWebhook.classList.remove(...inactiveClasses);
+      btnWebhook.classList.add(...activeClasses);
+      btnGeral.classList.remove(...activeClasses);
+      btnGeral.classList.add(...inactiveClasses);
+      btnApi.classList.remove(...activeClasses);
+      btnApi.classList.add(...inactiveClasses);
     }
   };
 
@@ -181,18 +205,28 @@
 
     setupZone('dropzoneCert', 'fileCertificado', 'apiCertificado', 'filenameCert', 'filenameCertText', 'clearCertBtn');
     setupZone('dropzoneKey', 'fileKey', 'apiKey', 'filenameKey', 'filenameKeyText', 'clearKeyBtn');
+    setupZone('dropzoneWebhookCert', 'fileWebhookCertificado', 'webhookCertificado', 'filenameWebhookCert', 'filenameWebhookCertText', 'clearWebhookCertBtn');
+    setupZone('dropzoneWebhookKey', 'fileWebhookKey', 'webhookKey', 'filenameWebhookKey', 'filenameWebhookKeyText', 'clearWebhookKeyBtn');
   };
 
   const resetFileDropzonesUI = (): void => {
-    ['Cert', 'Key'].forEach((type) => {
+    ['Cert', 'Key', 'WebhookCert', 'WebhookKey'].forEach((type) => {
       const dropzone = getById(`dropzone${type}`);
       const filenameDiv = getById(`filename${type}`);
-      const fileInput = getById(`file${type === 'Cert' ? 'Certificado' : 'Key'}`);
+      let fileInputId = '';
+      if (type === 'Cert') fileInputId = 'fileCertificado';
+      else if (type === 'Key') fileInputId = 'fileKey';
+      else if (type === 'WebhookCert') fileInputId = 'fileWebhookCertificado';
+      else if (type === 'WebhookKey') fileInputId = 'fileWebhookKey';
+
+      const fileInput = getById(fileInputId);
       if (dropzone) {
         dropzone.classList.remove('hidden');
         dropzone.style.display = '';
-        filenameDiv.classList.add('hidden');
-        filenameDiv.style.display = 'none';
+        if (filenameDiv) {
+          filenameDiv.classList.add('hidden');
+          filenameDiv.style.display = 'none';
+        }
         if (fileInput) fileInput.value = '';
       }
     });
@@ -206,7 +240,12 @@
       if (hasContent) {
         dropzone.classList.add('hidden');
         filenameDiv.classList.remove('hidden');
-        filenameText.textContent = `Arquivo ${type === 'Cert' ? '.crt' : '.key'} carregado do banco`;
+        let labelName = '';
+        if (type === 'Cert') labelName = '.crt';
+        else if (type === 'Key') labelName = '.key';
+        else if (type === 'WebhookCert') labelName = 'Certificado do Webhook .crt';
+        else if (type === 'WebhookKey') labelName = 'Chave do Webhook .key';
+        filenameText.textContent = `Arquivo ${labelName} carregado do banco`;
       } else {
         dropzone.classList.remove('hidden');
         filenameDiv.classList.add('hidden');
@@ -532,8 +571,19 @@
     getById('apiCertificado').value = bank.api_certificate ? atob(bank.api_certificate) : '';
     getById('apiKey').value = bank.api_key ? atob(bank.api_key) : '';
 
+    getById('webhookUrl').value = bank.webhook_url || '';
+    getById('webhookSecret').value = bank.webhook_secret || '';
+    getById('webhookCertificado').value = bank.webhook_certificate ? atob(bank.webhook_certificate) : '';
+    getById('webhookKey').value = bank.webhook_key ? atob(bank.webhook_key) : '';
+    getById('webhookEventTransaction').checked = !!bank.webhook_event_transaction;
+    getById('webhookEventAccount').checked = !!bank.webhook_event_account;
+    getById('webhookEventStatusSync').checked = !!bank.webhook_event_status_sync;
+    getById('webhookEventBoleto').checked = !!bank.webhook_event_boleto;
+
     populateFileDropzoneUI('Cert', !!bank.api_certificate);
     populateFileDropzoneUI('Key', !!bank.api_key);
+    populateFileDropzoneUI('WebhookCert', !!bank.webhook_certificate);
+    populateFileDropzoneUI('WebhookKey', !!bank.webhook_key);
 
     const initialBalanceInput = getById('initialBalance');
     initialBalanceInput.value = formatCurrencyInput(Number(bank.current_balance).toFixed(2).replace(/\D/g, ''));
@@ -563,8 +613,19 @@
     getById('apiCertificado').value = bank.api_certificate ? atob(bank.api_certificate) : '';
     getById('apiKey').value = bank.api_key ? atob(bank.api_key) : '';
 
+    getById('webhookUrl').value = bank.webhook_url || '';
+    getById('webhookSecret').value = bank.webhook_secret || '';
+    getById('webhookCertificado').value = bank.webhook_certificate ? atob(bank.webhook_certificate) : '';
+    getById('webhookKey').value = bank.webhook_key ? atob(bank.webhook_key) : '';
+    getById('webhookEventTransaction').checked = !!bank.webhook_event_transaction;
+    getById('webhookEventAccount').checked = !!bank.webhook_event_account;
+    getById('webhookEventStatusSync').checked = !!bank.webhook_event_status_sync;
+    getById('webhookEventBoleto').checked = !!bank.webhook_event_boleto;
+
     populateFileDropzoneUI('Cert', !!bank.api_certificate);
     populateFileDropzoneUI('Key', !!bank.api_key);
+    populateFileDropzoneUI('WebhookCert', !!bank.webhook_certificate);
+    populateFileDropzoneUI('WebhookKey', !!bank.webhook_key);
 
     const initialBalanceInput = getById('initialBalance');
     initialBalanceInput.value = formatCurrencyInput(Number(bank.current_balance).toFixed(2).replace(/\D/g, ''));
@@ -696,6 +757,7 @@
 
     getById('tabBtnGeral')?.addEventListener('click', () => switchTab('geral'));
     getById('tabBtnApi')?.addEventListener('click', () => switchTab('api'));
+    getById('tabBtnWebhook')?.addEventListener('click', () => switchTab('webhook'));
 
     getById('btnListView')?.addEventListener('click', () => {
       currentView = 'list';
@@ -763,6 +825,14 @@
       api_client_secret: getById('apiClientSecret').value || null,
       api_certificate: getById('apiCertificado').value ? btoa(getById('apiCertificado').value) : null,
       api_key: getById('apiKey').value ? btoa(getById('apiKey').value) : null,
+      webhook_url: getById('webhookUrl').value || null,
+      webhook_secret: getById('webhookSecret').value || null,
+      webhook_certificate: getById('webhookCertificado').value ? btoa(getById('webhookCertificado').value) : null,
+      webhook_key: getById('webhookKey').value ? btoa(getById('webhookKey').value) : null,
+      webhook_event_transaction: getById('webhookEventTransaction').checked ? 1 : 0,
+      webhook_event_account: getById('webhookEventAccount').checked ? 1 : 0,
+      webhook_event_status_sync: getById('webhookEventStatusSync').checked ? 1 : 0,
+      webhook_event_boleto: getById('webhookEventBoleto').checked ? 1 : 0,
     };
 
     saveBtn.disabled = true;
@@ -784,6 +854,14 @@
             api_client_secret: payload.api_client_secret,
             api_certificate: payload.api_certificate,
             api_key: payload.api_key,
+            webhook_url: payload.webhook_url,
+            webhook_secret: payload.webhook_secret,
+            webhook_certificate: payload.webhook_certificate,
+            webhook_key: payload.webhook_key,
+            webhook_event_transaction: payload.webhook_event_transaction,
+            webhook_event_account: payload.webhook_event_account,
+            webhook_event_status_sync: payload.webhook_event_status_sync,
+            webhook_event_boleto: payload.webhook_event_boleto,
           }),
         });
         (window as any).UI.showAlert('alertMessage', 'Conta bancária atualizada com sucesso!', 'success');

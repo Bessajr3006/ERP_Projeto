@@ -7,6 +7,7 @@ import { EntityService } from '../services/entityService';
 import { BankAccountService } from '../services/bankAccountService';
 import { toBrazilDate } from '../utils/dateTime';
 import { CacheService } from '../services/cacheService';
+import { EstoqueService } from '../services/estoqueService';
 
 export class OrderRepository {
     private static async resolveUserIdForContext(conn: any, companyId: number, userIdentifier: string): Promise<number> {
@@ -135,6 +136,7 @@ export class OrderRepository {
                 customerId = customer.id;
                 customerName = customer.name;
             }
+            if (!data.bank_account_public_id) throw new Error('Bank Account is required for sales');
             const bankAccount = await BankAccountService.getByPublicId(data.bank_account_public_id, companyId);
 
             const [catRows] = await conn.query<RowDataPacket[]>('SELECT id FROM categories WHERE public_id = ? AND company_id = ? LIMIT 1', [data.category_public_id, companyId]);
@@ -157,15 +159,27 @@ export class OrderRepository {
             const saleId = orderResult.insertId;
 
             for (const item of data.items) {
-                const product = await ProductService.getByPublicId(item.product_public_id, companyId);
+                let productId: number | null = null;
+                let serviceId: number | null = null;
+
+                if (item.product_public_id) {
+                    const product = await ProductService.getByPublicId(item.product_public_id, companyId);
+                    productId = product.id;
+                    await ProductService.recordMovement(conn, companyId, product.id, 'out', item.quantity, null, saleId);
+                } else if (item.service_public_id) {
+                    const service = await EstoqueService.getServiceByPublicId(item.service_public_id, companyId);
+                    serviceId = service.id;
+                }
+
                 const itemTotal = item.quantity * item.unit_price;
                 totalAmount += itemTotal;
 
                 await conn.query(
-                    `INSERT INTO sales_items (sale_id, product_id, quantity, unit_price, total_price, xml_item_data) VALUES (?, ?, ?, ?, ?, ?)`,
+                    `INSERT INTO sales_items (sale_id, product_id, service_id, quantity, unit_price, total_price, xml_item_data) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     [
                         saleId,
-                        product.id,
+                        productId,
+                        serviceId,
                         item.quantity,
                         item.unit_price,
                         itemTotal,
@@ -174,8 +188,6 @@ export class OrderRepository {
                             : null,
                     ]
                 );
-
-                await ProductService.recordMovement(conn, companyId, product.id, 'out', item.quantity, null, saleId);
             }
 
             await conn.query('UPDATE sales_orders SET total_amount = ? WHERE id = ?', [totalAmount, saleId]);
@@ -210,6 +222,242 @@ export class OrderRepository {
         }
     }
 
+    static async createQuote(companyId: number, _userPublicId: string, data: CreateSalesData): Promise<SalesOrder> {
+        const conn = await pool.getConnection();
+
+        try {
+            await conn.beginTransaction();
+
+            // const userId = await this.resolveUserIdForContext(conn, companyId, userPublicId);
+
+            let customerId = null;
+            if (data.customer_public_id) {
+                const customer = await EntityService.getCustomerByPublicId(data.customer_public_id, companyId);
+                customerId = customer.id;
+            }
+
+            let sellerId = null;
+            if (data.seller_public_id) {
+                // Assuming EntityService or UserService has a method, wait we can just query users table
+                const [sellerRows] = await conn.query<RowDataPacket[]>('SELECT id FROM users WHERE public_id = ? AND company_id = ?', [data.seller_public_id, companyId]);
+                if (sellerRows && sellerRows.length > 0) {
+                    sellerId = sellerRows[0]?.id;
+                }
+            }
+
+            let totalAmount = 0;
+            const publicId = randomUUID();
+            const orderDate = toBrazilDate(data.date as string);
+            const validityDate = data.validity_date ? toBrazilDate(data.validity_date as string) : null;
+
+            const [orderResult] = await conn.query<ResultSetHeader>(
+                `INSERT INTO sales_orders (public_id, company_id, customer_id, seller_id, total_amount, status, date, validity_date, observation, brand, manual_customer_name, payment_method, payment_terms) VALUES (?, ?, ?, ?, ?, 'quote', ?, ?, ?, ?, ?, ?, ?)`,
+                [publicId, companyId, customerId, sellerId, 0, orderDate, validityDate, data.observation || null, data.brand || null, data.manual_customer_name || null, data.payment_method || null, data.payment_terms || null]
+            );
+            const saleId = orderResult.insertId;
+
+            for (const item of data.items) {
+                let productId: number | null = null;
+                let serviceId: number | null = null;
+
+                if (item.product_public_id) {
+                    const product = await ProductService.getByPublicId(item.product_public_id, companyId);
+                    productId = product.id;
+                } else if (item.service_public_id) {
+                    const service = await EstoqueService.getServiceByPublicId(item.service_public_id, companyId);
+                    serviceId = service.id;
+                }
+
+                const itemTotal = item.quantity * item.unit_price;
+                totalAmount += itemTotal;
+
+                await conn.query(
+                    `INSERT INTO sales_items (sale_id, product_id, service_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`,
+                    [
+                        saleId,
+                        productId,
+                        serviceId,
+                        item.quantity,
+                        item.unit_price,
+                        itemTotal,
+                    ]
+                );
+            }
+
+            await conn.query('UPDATE sales_orders SET total_amount = ? WHERE id = ?', [totalAmount, saleId]);
+
+            // Orçamentos não afetam financeiro nem estoque.
+            CacheService.invalidate(`dashboard_${companyId}`);
+
+            await conn.commit();
+            return this.getSaleById(saleId, companyId);
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
+    }
+
+    static async getQuoteByPublicId(publicId: string, companyId: number): Promise<any> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT so.*, COALESCE(c.name, so.manual_customer_name) as customer_name, c.public_id as customer_public_id, u.public_id as seller_public_id 
+             FROM sales_orders so 
+             LEFT JOIN customers c ON so.customer_id = c.id 
+             LEFT JOIN users u ON so.seller_id = u.id
+             WHERE so.public_id = ? AND so.company_id = ? AND so.status = 'quote' LIMIT 1`, 
+            [publicId, companyId]
+        );
+        if (rows.length === 0) throw new Error('Quote not found');
+        const quote = rows[0] as any;
+
+        const [itemsRows] = await pool.query<RowDataPacket[]>(
+            `SELECT si.*, 
+                    COALESCE(p.name, s.name) as product_name,
+                    p.public_id as product_public_id,
+                    s.public_id as service_public_id
+             FROM sales_items si 
+             LEFT JOIN products p ON si.product_id = p.id 
+             LEFT JOIN services s ON si.service_id = s.id
+             WHERE si.sale_id = ?`,
+            [quote.id]
+        );
+        quote.items = itemsRows;
+        return quote;
+    }
+
+    static async getQuoteForPrint(publicId: string, companyId: number): Promise<any> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT so.*, 
+                    COALESCE(c.name, so.manual_customer_name) as customer_name,
+                    c.cnpj_cpf as customer_document,
+                    c.street as customer_street,
+                    c.number as customer_number,
+                    c.neighborhood as customer_neighborhood,
+                    c.city as customer_city,
+                    c.state as customer_state,
+                    c.zipcode as customer_zipcode,
+                    c.phone as customer_phone,
+                    c.email as customer_email,
+                    u.full_name as seller_name,
+                    comp.trade_name as comp_name,
+                    comp.company_name as comp_company_name,
+                    comp.cnpj as comp_doc,
+                    comp.logo_url as comp_logo_url,
+                    comp.logo_base64 as comp_logo_base64,
+                    comp.street as comp_street,
+                    comp.number as comp_number,
+                    comp.neighborhood as comp_neighborhood,
+                    comp.city as comp_city,
+                    comp.state as comp_state,
+                    comp.zipcode as comp_zipcode,
+                    comp.phone as comp_phone,
+                    comp.email as comp_email
+             FROM sales_orders so 
+             JOIN companies comp ON so.company_id = comp.id
+             LEFT JOIN customers c ON so.customer_id = c.id 
+             LEFT JOIN users u ON so.seller_id = u.id
+             WHERE so.public_id = ? AND so.company_id = ? AND so.status = 'quote' LIMIT 1`, 
+            [publicId, companyId]
+        );
+        if (rows.length === 0) throw new Error('Orçamento não encontrado');
+        const quote = rows[0] as any;
+
+        const [itemsRows] = await pool.query<RowDataPacket[]>(
+            `SELECT si.*, 
+                    COALESCE(p.name, s.name) as product_name,
+                    p.public_id as product_public_id,
+                    s.public_id as service_public_id
+             FROM sales_items si 
+             LEFT JOIN products p ON si.product_id = p.id 
+             LEFT JOIN services s ON si.service_id = s.id
+             WHERE si.sale_id = ? AND si.is_deleted = 0`,
+            [quote.id]
+        );
+        quote.items = itemsRows;
+        return quote;
+    }
+
+    static async deleteQuoteByPublicId(publicId: string, companyId: number): Promise<void> {
+        const [result] = await pool.query<ResultSetHeader>(
+            "UPDATE sales_orders SET is_deleted = 1 WHERE public_id = ? AND company_id = ? AND status = 'quote' AND is_deleted = 0",
+            [publicId, companyId]
+        );
+        if (result.affectedRows === 0) {
+            throw new Error('Orçamento não encontrado ou já excluído');
+        }
+    }
+
+    static async updateQuote(publicId: string, companyId: number, data: CreateSalesData): Promise<SalesOrder> {
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
+
+            const [quoteRows] = await conn.query<RowDataPacket[]>('SELECT id FROM sales_orders WHERE public_id = ? AND company_id = ? AND status = "quote"', [publicId, companyId]);
+            if (quoteRows.length === 0) throw new Error('Quote not found');
+            const quoteId = (quoteRows[0] as any).id;
+
+            let customerId = null;
+            if (data.customer_public_id) {
+                const customer = await EntityService.getCustomerByPublicId(data.customer_public_id, companyId);
+                customerId = customer.id;
+            }
+
+            let sellerId = null;
+            if (data.seller_public_id) {
+                const [sellerRows] = await conn.query<RowDataPacket[]>('SELECT id FROM users WHERE public_id = ? AND company_id = ?', [data.seller_public_id, companyId]);
+                if (sellerRows && sellerRows.length > 0) sellerId = (sellerRows[0] as any).id;
+            }
+
+            let totalAmount = 0;
+            const orderDate = toBrazilDate(data.date as string);
+            const validityDate = data.validity_date ? toBrazilDate(data.validity_date as string) : null;
+
+            await conn.query<ResultSetHeader>(
+                `UPDATE sales_orders SET customer_id = ?, seller_id = ?, date = ?, validity_date = ?, observation = ?, brand = ?, manual_customer_name = ?, payment_method = ?, payment_terms = ? WHERE id = ?`,
+                [customerId, sellerId, orderDate, validityDate, data.observation || null, data.brand || null, data.manual_customer_name || null, data.payment_method || null, data.payment_terms || null, quoteId]
+            );
+
+            // Delete old items
+            await conn.query('DELETE FROM sales_items WHERE sale_id = ?', [quoteId]);
+
+            // Insert new items
+            for (const item of data.items) {
+                let productId: number | null = null;
+                let serviceId: number | null = null;
+
+                if (item.product_public_id) {
+                    const product = await ProductService.getByPublicId(item.product_public_id, companyId);
+                    productId = product.id;
+                } else if (item.service_public_id) {
+                    const service = await EstoqueService.getServiceByPublicId(item.service_public_id, companyId);
+                    serviceId = service.id;
+                }
+
+                const itemTotal = item.quantity * item.unit_price;
+                totalAmount += itemTotal;
+
+                await conn.query(
+                    `INSERT INTO sales_items (sale_id, product_id, service_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`,
+                    [quoteId, productId, serviceId, item.quantity, item.unit_price, itemTotal]
+                );
+            }
+
+            // Update total
+            await conn.query('UPDATE sales_orders SET total_amount = ? WHERE id = ?', [totalAmount, quoteId]);
+
+            CacheService.invalidate(`dashboard_${companyId}`);
+
+            await conn.commit();
+            return this.getSaleById(quoteId, companyId);
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
+    }
+
     static async getPurchaseById(id: number, companyId: number): Promise<PurchaseOrder> {
         const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM purchase_orders WHERE id = ? AND company_id = ? LIMIT 1', [id, companyId]);
         if (rows.length === 0) throw new Error('Purchase Order not found');
@@ -223,7 +471,7 @@ export class OrderRepository {
     }
 
     static async listSales(companyId: number, includeInactive = false): Promise<any[]> {
-        const saleWhere = includeInactive ? 'so.company_id = ?' : 'so.company_id = ? AND so.is_deleted = 0';
+        const saleWhere = includeInactive ? 'so.company_id = ? AND so.status != \'quote\'' : 'so.company_id = ? AND so.is_deleted = 0 AND so.status != \'quote\'';
         const [salesRows] = await pool.query<RowDataPacket[]>(
             `SELECT so.*, c.name as customer_name, c.cnpj_cpf as customer_document FROM sales_orders so LEFT JOIN customers c ON so.customer_id = c.id WHERE ${saleWhere} ORDER BY so.created_at DESC`,
             [companyId]
@@ -236,7 +484,13 @@ export class OrderRepository {
         
         if (saleIds.length > 0) {
             const itemWhere = includeInactive ? '' : 'si.is_deleted = 0 AND ';
-            const query = `SELECT si.*, p.name as product_name, p.sku, p.ean, p.public_id as product_public_id FROM sales_items si JOIN products p ON si.product_id = p.id WHERE ${itemWhere}si.sale_id IN (${saleIds.join(',')})`;
+            const query = `SELECT si.*, 
+                                  COALESCE(p.name, s.name) as product_name, p.sku, p.ean,
+                                  p.public_id as product_public_id, s.public_id as service_public_id 
+                           FROM sales_items si 
+                           LEFT JOIN products p ON si.product_id = p.id 
+                           LEFT JOIN services s ON si.service_id = s.id 
+                           WHERE ${itemWhere}si.sale_id IN (${saleIds.join(',')})`;
             [itemsRows] = await pool.query<RowDataPacket[]>(query);
         }
 
@@ -249,6 +503,46 @@ export class OrderRepository {
         return salesRows.map(sale => ({
             ...sale,
             items: itemsBySale[sale.id] || []
+        }));
+    }
+
+    static async listQuotes(companyId: number, includeInactive = false): Promise<any[]> {
+        const quoteWhere = includeInactive ? 'so.company_id = ? AND so.status = \'quote\'' : 'so.company_id = ? AND so.is_deleted = 0 AND so.status = \'quote\'';
+        const [quotesRows] = await pool.query<RowDataPacket[]>(
+            `SELECT so.*, COALESCE(c.name, so.manual_customer_name) as customer_name, c.cnpj_cpf as customer_document, c.public_id as customer_public_id, u.public_id as seller_public_id, u.full_name as seller_name 
+             FROM sales_orders so 
+             LEFT JOIN customers c ON so.customer_id = c.id 
+             LEFT JOIN users u ON so.seller_id = u.id
+             WHERE ${quoteWhere} ORDER BY so.created_at DESC`,
+            [companyId]
+        );
+
+        if (!quotesRows || quotesRows.length === 0) return [];
+
+        const quoteIds = quotesRows.map(q => Number(q.id)).filter(id => !isNaN(id));
+        let itemsRows: RowDataPacket[] = [];
+        
+        if (quoteIds.length > 0) {
+            const itemWhere = includeInactive ? '' : 'si.is_deleted = 0 AND ';
+            const query = `SELECT si.*, 
+                                  COALESCE(p.name, s.name) as product_name, p.sku, p.ean,
+                                  p.public_id as product_public_id, s.public_id as service_public_id 
+                           FROM sales_items si 
+                           LEFT JOIN products p ON si.product_id = p.id 
+                           LEFT JOIN services s ON si.service_id = s.id 
+                           WHERE ${itemWhere}si.sale_id IN (${quoteIds.join(',')})`;
+            [itemsRows] = await pool.query<RowDataPacket[]>(query);
+        }
+
+        const itemsByQuote = itemsRows.reduce((acc: any, item: any) => {
+            if (!acc[item.sale_id]) acc[item.sale_id] = [];
+            acc[item.sale_id].push(item);
+            return acc;
+        }, {});
+
+        return quotesRows.map(q => ({
+            ...q,
+            items: itemsByQuote[q.id] || []
         }));
     }
 
@@ -381,7 +675,13 @@ export class OrderRepository {
 
         if (saleIds.length > 0) {
             const [rows] = await pool.query<RowDataPacket[]>(
-                `SELECT si.*, p.name as product_name, p.sku FROM sales_items si JOIN products p ON si.product_id = p.id WHERE si.is_deleted = 0 AND si.sale_id IN (${saleIds.join(',')})` 
+                `SELECT si.*, 
+                        COALESCE(p.name, s.name) as product_name, p.sku,
+                        p.public_id as product_public_id, s.public_id as service_public_id
+                 FROM sales_items si 
+                 LEFT JOIN products p ON si.product_id = p.id 
+                 LEFT JOIN services s ON si.service_id = s.id 
+                 WHERE si.is_deleted = 0 AND si.sale_id IN (${saleIds.join(',')})` 
             );
             itemsRows = rows;
         }

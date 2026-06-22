@@ -123,7 +123,6 @@ function highlightActiveLink() {
     const mobileOverviewDropdownLinks = document.querySelectorAll('#mobileOverviewDropdown a');
     const mobileReportsDropdownLinks = document.querySelectorAll('#mobileReportsDropdown a');
     const mobileConfigDropdownLinks = document.querySelectorAll('#mobileConfigDropdown a');
-    const mobileControleDropdownLinks = document.querySelectorAll('#mobileControleDropdown a');
 
     mobileLinks.forEach(link => {
         const href = link.getAttribute('href');
@@ -162,9 +161,7 @@ function highlightActiveLink() {
     highlightMobileDropdown(mobileAccountingDropdownLinks, 'mobileAccountingDropdownBtn', 'mobileAccountingDropdown', 'mobileAccountingDropdownIcon');
     highlightMobileDropdown(mobileOverviewDropdownLinks, 'mobileOverviewDropdownBtn', 'mobileOverviewDropdown', 'mobileOverviewDropdownIcon');
     highlightMobileDropdown(mobileReportsDropdownLinks, 'mobileReportsDropdownBtn', 'mobileReportsDropdown', 'mobileReportsDropdownIcon');
-    highlightMobileDropdown(mobileConfigDropdownLinks, 'mobileConfigDropdownBtn',
-                        'mobileControleDropdownBtn', 'mobileConfigDropdown', 'mobileConfigDropdownIcon');
-    highlightMobileDropdown(mobileControleDropdownLinks, 'mobileControleDropdownBtn', 'mobileControleDropdown', 'mobileControleDropdownIcon');
+    highlightMobileDropdown(mobileConfigDropdownLinks, 'mobileConfigDropdownBtn', 'mobileConfigDropdown', 'mobileConfigDropdownIcon');
     highlightMobileDropdown(mobilePurchasesDropdownLinks, 'mobilePurchasesDropdownBtn', 'mobilePurchasesDropdown', 'mobilePurchasesDropdownIcon');
 }
 
@@ -582,15 +579,15 @@ async function loadUserGreeting() {
                     }
 
                     // Ocultar com força (style.display) recursos sem permissão
-                    // Obs: admin agora pode ter permissões customizadas; então NÃO devemos fazer bypass.
-                    // Mantemos apenas um bypass de segurança para o super_admin não ficar trancado.
-                    const isSuperAdminBypass = (role === 'super_admin')
-                        && (moduleName === 'tasks' || moduleName === 'roles' || moduleName === 'accounting' || moduleName === 'accounting_entries' || moduleName === 'accounting_auto_entries' || moduleName === 'accounting_auto_history' || moduleName === 'declaration_control' || moduleName === 'declaration_registration' || moduleName === 'fechamento' || moduleName === 'organizer' || moduleName === 'users' || moduleName === 'company' || moduleName === 'email-config' || moduleName === 'email' || moduleName === 'ajuste' || moduleName === 'backup_restore' || moduleName === 'service_types' || moduleName === 'services' || moduleName === 'service_launches' || moduleName === 'service_tax_municipal' || moduleName === 'service_tax_federal');
+                    // Obs: admin e super_admin possuem bypass de segurança para os módulos administrativos
+                    // para evitar lockout (trancamento) do administrador da empresa.
+                    const isAdminBypass = (role === 'super_admin' || role === 'admin')
+                        && (moduleName === 'tasks' || moduleName === 'roles' || moduleName === 'accounting' || moduleName === 'accounting_entries' || moduleName === 'accounting_auto_entries' || moduleName === 'accounting_auto_history' || moduleName === 'declaration_control' || moduleName === 'declaration_registration' || moduleName === 'fechamento' || moduleName === 'organizer' || moduleName === 'users' || moduleName === 'company' || moduleName === 'email-config' || moduleName === 'email' || moduleName === 'ajuste' || moduleName === 'backup_restore' || moduleName === 'service_types' || moduleName === 'services' || moduleName === 'service_launches' || moduleName === 'service_tax_municipal' || moduleName === 'service_tax_federal' || moduleName === 'whatsapp' || moduleName === 'whatsapp-info' || moduleName === 'whatsapp_sessions');
                     const hasModuleAccess = moduleName === 'stock_types'
                         ? hasStockTypesAccess
                         : effectivePerms.includes(moduleName);
 
-                    if (!hasModuleAccess && !isSuperAdminBypass) {
+                    if (!hasModuleAccess && !isAdminBypass) {
                         a.style.setProperty('display', 'none', 'important');
                     }
                 });
@@ -654,8 +651,8 @@ async function loadUserGreeting() {
 
                 const currentModule = normalizeModule(document.body?.dataset?.requiredModule || currentFile);
                 
-                const isBypassed = (role === 'super_admin')
-                    && (currentModule === 'tasks' || currentModule === 'roles' || currentModule === 'accounting' || currentModule === 'organizer' || currentModule === 'users' || currentModule === 'company' || currentModule === 'email-config' || currentModule === 'email' || currentModule === 'ajuste' || currentModule === 'service_types' || currentModule === 'services' || currentModule === 'service_launches' || currentModule === 'backup_restore' || currentModule === 'declaration_registration');
+                const isBypassed = (role === 'super_admin' || role === 'admin')
+                    && (currentModule === 'tasks' || currentModule === 'roles' || currentModule === 'accounting' || currentModule === 'organizer' || currentModule === 'users' || currentModule === 'company' || currentModule === 'email-config' || currentModule === 'email' || currentModule === 'ajuste' || currentModule === 'service_types' || currentModule === 'services' || currentModule === 'service_launches' || currentModule === 'backup_restore' || currentModule === 'declaration_registration' || currentModule === 'whatsapp' || currentModule === 'whatsapp-info' || currentModule === 'whatsapp_sessions');
                 const hasCurrentModuleAccess = currentModule === 'stock_types'
                     ? hasStockTypesAccess
                     : effectivePerms.includes(currentModule);

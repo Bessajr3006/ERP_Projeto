@@ -3,11 +3,68 @@
 let revenuesData = [];
 let categoriesData = [];
 let banksData = [];
-let customersData = [];
 let g_deleteId = null;
 let g_editId = null;
 let g_baixaId = null;
+let g_whatsappId = null;
 let currentView = localStorage.getItem('revenuesView') || 'list';
+
+const peopleCache = {};
+
+async function loadPeopleOfType(type) {
+    if (peopleCache[type]) return peopleCache[type];
+
+    let items = [];
+    try {
+        if (type === 'customer') {
+            const res = await api('/entities/customers');
+            items = (res.data || []).map((x) => ({ public_id: x.public_id, name: x.name }));
+        } else if (type === 'supplier') {
+            const res = await api('/entities/suppliers');
+            items = (res.data || []).map((x) => ({ public_id: x.public_id, name: x.name }));
+        } else if (type === 'contact') {
+            const res = await api('/entities/contacts');
+            items = (res.data || []).map((x) => ({ public_id: x.public_id, name: x.name }));
+        } else if (type === 'seller') {
+            const res = await api('/sellers');
+            items = (res.data || []).map((x) => ({ public_id: x.public_id, name: x.full_name }));
+        } else if (['buyer', 'service_provider', 'accountant'].includes(type)) {
+            const res = await api('/users');
+            items = (res.data || [])
+                .filter((x) => x.role === type)
+                .map((x) => ({ public_id: x.public_id, name: x.full_name }));
+        }
+    } catch (e) {
+        console.error(`Failed to load people of type ${type}`, e);
+    }
+    
+    items.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    peopleCache[type] = items;
+    return items;
+}
+
+function handleEntityTypeChange() {
+    const type = document.getElementById('entityType')?.value || '';
+    const entitySelect = document.getElementById('entitySelect');
+    if (!entitySelect) return;
+
+    entitySelect.innerHTML = '';
+
+    if (!type) {
+        entitySelect.disabled = true;
+        entitySelect.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+        return;
+    }
+
+    entitySelect.disabled = false;
+    entitySelect.innerHTML = '<option value="">Carregando...</option>';
+    
+    loadPeopleOfType(type).then((items) => {
+        entitySelect.innerHTML = '<option value="">Selecione...</option>' + items
+            .map((x) => `<option value="${x.public_id}">${x.name}</option>`)
+            .join('');
+    });
+}
 
 function setCurrencyValue(inputId, numValue) {
     const el = document.getElementById(inputId);
@@ -33,6 +90,14 @@ function getCurrentDateTimeInputValue() {
 
 function toMysqlDateTimeValue(value) {
     return value ? `${value.replace('T', ' ')}:00` : null;
+}
+
+function toDateTimeInputValue(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return '';
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().slice(0, 16);
 }
 
 function updateViewToggle() {
@@ -114,24 +179,263 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnCancelModal = document.getElementById('btnCancelModal');
     if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
 
+    // Whatsapp Modal Bindings
+    const btnCancelWhatsappModal = document.getElementById('btnCancelWhatsappModal');
+    if (btnCancelWhatsappModal) btnCancelWhatsappModal.addEventListener('click', closeWhatsappModal);
+
+    const whatsappModalBackdrop = document.getElementById('whatsappModalBackdrop');
+    if (whatsappModalBackdrop) whatsappModalBackdrop.addEventListener('click', closeWhatsappModal);
+
+    const btnConfirmWhatsappSend = document.getElementById('btnConfirmWhatsappSend');
+    if (btnConfirmWhatsappSend) btnConfirmWhatsappSend.addEventListener('click', handleSendWhatsapp);
+
     const revenueForm = document.getElementById('revenueForm');
     if (revenueForm) revenueForm.addEventListener('submit', handleSaveRevenue);
+
+    const statusSelect = document.getElementById('status');
+    const receivedAtContainer = document.getElementById('receivedAtContainer');
+    if (statusSelect && receivedAtContainer) {
+        statusSelect.addEventListener('change', () => {
+            if (statusSelect.value === 'paid') {
+                receivedAtContainer.classList.remove('hidden');
+                const receivedAtEl = document.getElementById('receivedAt');
+                if (receivedAtEl && !receivedAtEl.value) {
+                    receivedAtEl.value = getCurrentDateTimeInputValue();
+                }
+            } else {
+                receivedAtContainer.classList.add('hidden');
+            }
+        });
+    }
+
+    // Solidcon Modal Bindings
+    const openSolidconModal = () => {
+        document.getElementById('solidconModal')?.classList.remove('hidden');
+        const startEl = document.getElementById('solidconStartDate') as HTMLInputElement | null;
+        const endEl = document.getElementById('solidconEndDate') as HTMLInputElement | null;
+        if (startEl && !startEl.value) {
+            const now = new Date();
+            const tzOffset = now.getTimezoneOffset() * 60000;
+            const firstDay = new Date(new Date(now.getFullYear(), now.getMonth(), 1).getTime() - tzOffset).toISOString().split('T')[0];
+            startEl.value = firstDay || '';
+        }
+        if (endEl && !endEl.value) {
+            const now = new Date();
+            const tzOffset = now.getTimezoneOffset() * 60000;
+            const lastDay = new Date(new Date(now.getFullYear(), now.getMonth() + 1, 0).getTime() - tzOffset).toISOString().split('T')[0];
+            endEl.value = lastDay || '';
+        }
+    };
+
+    let solidconFetchedPayload: any = null;
+
+    const closeSolidconModal = () => {
+        document.getElementById('solidconModal')?.classList.add('hidden');
+        clearSolidconStatus();
+        solidconFetchedPayload = null;
+    };
+
+    const btnOpenSolidconModal = document.getElementById('btnOpenSolidconModal');
+    if (btnOpenSolidconModal) btnOpenSolidconModal.addEventListener('click', openSolidconModal);
+
+    const btnCloseSolidconModal = document.getElementById('btnCloseSolidconModal');
+    if (btnCloseSolidconModal) btnCloseSolidconModal.addEventListener('click', closeSolidconModal);
+
+    const btnCancelSolidconModal = document.getElementById('btnCancelSolidconModal');
+    if (btnCancelSolidconModal) btnCancelSolidconModal.addEventListener('click', closeSolidconModal);
+
+    const solidconModalBackdrop = document.getElementById('solidconModalBackdrop');
+    if (solidconModalBackdrop) {
+        solidconModalBackdrop.addEventListener('click', (e) => {
+            if (e.target === solidconModalBackdrop) closeSolidconModal();
+        });
+    }
+
+    const solidconImportStatus = document.getElementById('solidconImportStatus');
+    const solidconImportDetails = document.getElementById('solidconImportDetails');
+
+    const clearSolidconStatus = () => {
+        if (solidconImportStatus) {
+            solidconImportStatus.className = 'hidden mt-3 text-sm rounded-md px-3 py-2';
+            solidconImportStatus.innerHTML = '';
+        }
+        if (solidconImportDetails) {
+            solidconImportDetails.className = 'hidden mt-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-100';
+            solidconImportDetails.innerHTML = '';
+        }
+    };
+
+    const setSolidconStatus = (message: string, type: 'success' | 'error' | 'warning') => {
+        if (!solidconImportStatus) return;
+        clearSolidconStatus();
+        let bgClass = '';
+        if (type === 'success') bgClass = 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-300 dark:border-emerald-900/30';
+        else if (type === 'error') bgClass = 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/20 dark:text-red-300 dark:border-red-900/30';
+        else bgClass = 'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900/30';
+
+        solidconImportStatus.className = `mt-3 text-sm rounded-md px-3 py-2 ${bgClass}`;
+        solidconImportStatus.textContent = message;
+    };
+
+    const showSolidconIgnoredDetails = (errors: any[]) => {
+        if (!solidconImportDetails || !errors || !errors.length) return;
+        const reasonCounts = errors.reduce((acc: any, item: any) => {
+            const reason = item?.reason || 'Motivo nao informado.';
+            acc[reason] = (acc[reason] || 0) + 1;
+            return acc;
+        }, {});
+        const reasonSummary = Object.entries(reasonCounts)
+            .map(([reason, count]) => `${count}x ${reason}`)
+            .join('<br>');
+        const examples = errors.slice(0, 20)
+            .map((item: any) => `Item #${Number(item?.index || 0) + 1}: ${item?.reason || 'Motivo nao informado.'}`)
+            .join('<br>');
+
+        solidconImportDetails.innerHTML = `<div class="font-semibold">Por que foi ignorado</div><div class="mt-1">${reasonSummary}</div><div class="mt-2 font-semibold">Exemplos</div><div class="mt-1">${examples}${errors.length > 20 ? `<br>... mais ${errors.length - 20} item(ns)` : ''}</div>`;
+        solidconImportDetails.classList.remove('hidden');
+    };
+
+    const getSelectedSolidconUrl = () => {
+        const urls = (window as any).currentSolidconUrls || [];
+        return urls.find((url: string) => String(url || '').trim()) || '';
+    };
+
+    const btnFetchSolidconJson = document.getElementById('btnFetchSolidconJson') as HTMLButtonElement | null;
+    if (btnFetchSolidconJson) {
+        btnFetchSolidconJson.addEventListener('click', async () => {
+            clearSolidconStatus();
+            
+            const connectionType = (document.getElementById('solidconConnectionType') as HTMLSelectElement | null)?.value || 'api';
+            const startVal = (document.getElementById('solidconStartDate') as HTMLInputElement | null)?.value;
+            const endVal = (document.getElementById('solidconEndDate') as HTMLInputElement | null)?.value;
+            
+            if (!startVal || !endVal) {
+                setSolidconStatus('Preencha as datas Inicial e Final.', 'warning');
+                return;
+            }
+
+            btnFetchSolidconJson.disabled = true;
+            const originalHtml = btnFetchSolidconJson.innerHTML;
+            btnFetchSolidconJson.textContent = 'Consultando...';
+
+            const reqBody: any = { connectionType, startDate: startVal, endDate: endVal };
+
+            if (connectionType === 'api') {
+                const url = getSelectedSolidconUrl();
+                if (!url) {
+                    setSolidconStatus('URL Solidcon nao configurada. Salve na tela Minha Empresa > API/Solidcon.', 'warning');
+                    btnFetchSolidconJson.innerHTML = originalHtml;
+                    btnFetchSolidconJson.disabled = false;
+                    return;
+                }
+                let fullUrl = url;
+                try {
+                    const urlObj = new URL(url);
+                    urlObj.searchParams.set('dataInicial', startVal);
+                    urlObj.searchParams.set('dataFinal', endVal);
+                    fullUrl = urlObj.toString();
+                } catch {
+                    const separator = url.includes('?') ? '&' : '?';
+                    fullUrl = `${url}${separator}dataInicial=${startVal}&dataFinal=${endVal}`;
+                }
+                reqBody.url = fullUrl;
+            }
+
+            try {
+                const response = await api('/companies/proxy-consulta', {
+                    method: 'POST',
+                    body: JSON.stringify(reqBody)
+                });
+                const payload = response?.data ?? response;
+                solidconFetchedPayload = payload;
+                
+                const items = Array.isArray(payload) ? payload : (payload?.data || payload?.items || payload?.rows || []);
+                const count = Array.isArray(items) ? items.length : 0;
+                setSolidconStatus(`Dados carregados com sucesso (${count} registros). Clique em "Importar" para salvar.`, 'success');
+            } catch (err: any) {
+                setSolidconStatus(err.message || 'Erro ao buscar dados da Solidcon.', 'error');
+            } finally {
+                btnFetchSolidconJson.innerHTML = originalHtml;
+                btnFetchSolidconJson.disabled = false;
+            }
+        });
+    }
+
+    const solidconImportForm = document.getElementById('solidconImportForm');
+    if (solidconImportForm) {
+        solidconImportForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearSolidconStatus();
+
+            if (!solidconFetchedPayload) {
+                setSolidconStatus('Nenhum dado carregado. Por favor, clique em "Consulta" antes de importar.', 'warning');
+                return;
+            }
+
+            const submitBtn = document.getElementById('btnExecuteSolidconImport') as HTMLButtonElement | null;
+            const cancelBtn = document.getElementById('btnCancelSolidconModal') as HTMLButtonElement | null;
+            const closeBtn = document.getElementById('btnCloseSolidconModal') as HTMLButtonElement | null;
+            
+            if (submitBtn) submitBtn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
+            if (closeBtn) closeBtn.disabled = true;
+            
+            const originalBtnText = submitBtn ? submitBtn.textContent : 'Importar';
+            if (submitBtn) submitBtn.textContent = 'Importando...';
+
+            try {
+                const result = await api('/finance/revenues/solidcon-import', {
+                    method: 'POST',
+                    body: JSON.stringify({ payload: solidconFetchedPayload })
+                });
+
+                const data = result?.data || {};
+                const created = data.created ?? 0;
+                const updated = data.updated ?? 0;
+                const skipped = data.skipped ?? 0;
+                const errors = Array.isArray(data.errors) ? data.errors : [];
+                const message = `Importacao concluida: ${created} novas, ${updated} atualizadas, ${skipped} ignoradas.`;
+                setSolidconStatus(message, created || updated ? 'success' : 'warning');
+                showSolidconIgnoredDetails(errors);
+
+                // Refresh the listing
+                await fetchRevenues();
+            } catch (err: any) {
+                setSolidconStatus(err.message || 'Erro ao importar receitas da Solidcon.', 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+                if (cancelBtn) cancelBtn.disabled = false;
+                if (closeBtn) closeBtn.disabled = false;
+            }
+        });
+    }
+
 
     document.getElementById('baixaModalBackdrop')?.addEventListener('click', window.closeBaixaModal);
     document.getElementById('btnCancelBaixaModal')?.addEventListener('click', window.closeBaixaModal);
     document.getElementById('deleteModalBackdrop')?.addEventListener('click', window.closeDeleteModal);
     document.getElementById('btnCancelDeleteModal')?.addEventListener('click', window.closeDeleteModal);
+    document.getElementById('bulkUpdateModalBackdrop')?.addEventListener('click', window.closeBulkUpdateModal);
+    document.getElementById('btnCancelBulkUpdateModal')?.addEventListener('click', window.closeBulkUpdateModal);
     document.getElementById('baixaFine')?.addEventListener('input', updateBaixaTotal);
     document.getElementById('baixaInterest')?.addEventListener('input', updateBaixaTotal);
 
-    const customerSearch = document.getElementById('customerSearch');
-    if (customerSearch) customerSearch.addEventListener('input', syncCustomerSearch);
+    const entityTypeSelect = document.getElementById('entityType');
+    if (entityTypeSelect) {
+        entityTypeSelect.addEventListener('change', handleEntityTypeChange);
+    }
+
+    // Removed legacy entitySearch event listener.
 
     const btnListView = document.getElementById('btnListView');
     if (btnListView) {
         btnListView.addEventListener('click', () => {
             currentView = 'list';
             localStorage.setItem('revenuesView', 'list');
+            clearCheckboxSelection();
             updateViewToggle();
         });
     }
@@ -141,6 +445,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnGridView.addEventListener('click', () => {
             currentView = 'grid';
             localStorage.setItem('revenuesView', 'grid');
+            clearCheckboxSelection();
             updateViewToggle();
         });
     }
@@ -153,6 +458,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnBatchCancelBillet = document.getElementById('btnBatchCancelBillet');
     if (btnBatchCancelBillet) {
         btnBatchCancelBillet.addEventListener('click', handleBatchCancelBillet);
+    }
+
+    const btnBatchDeleteRevenue = document.getElementById('btnBatchDeleteRevenue');
+    if (btnBatchDeleteRevenue) {
+        btnBatchDeleteRevenue.addEventListener('click', handleBatchDeleteRevenue);
+    }
+
+    const btnBatchUpdateRevenue = document.getElementById('btnBatchUpdateRevenue');
+    if (btnBatchUpdateRevenue) {
+        btnBatchUpdateRevenue.addEventListener('click', handleBatchUpdateRevenue);
     }
 
     // Filter toggle (collapse/expand)
@@ -254,35 +569,29 @@ function populateUserFilter() {
     filterUser.value = users.has(selectedValue) ? selectedValue : '';
 }
 
-function setCustomerSelection(publicId) {
-    const customerSelect = document.getElementById('customerSelect');
-    const customerSearch = document.getElementById('customerSearch');
-    const customer = customersData.find(c => c.public_id === publicId);
-    if (customerSelect) customerSelect.value = publicId || '';
-    if (customerSearch) customerSearch.value = customer?.name || '';
-}
-
-function syncCustomerSearch() {
-    const customerSelect = document.getElementById('customerSelect');
-    const customerSearch = document.getElementById('customerSearch');
-    if (!customerSelect || !customerSearch) return;
-
-    const searchValue = customerSearch.value.trim().toLowerCase();
-    const selectedCustomer = customersData.find(c => String(c.name || '').trim().toLowerCase() === searchValue);
-    customerSelect.value = selectedCustomer?.public_id || '';
-}
+// Old customer helper functions removed.
 
 async function loadDependencies() {
     try {
-        const [catsRes, banksRes, custsRes] = await Promise.all([
+        const [catsRes, banksRes, meRes] = await Promise.all([
             api('/finance/categories'),
             api('/bank-accounts'),
-            api('/entities/customers')
+            api('/auth/me')
         ]);
 
         categoriesData = catsRes.data.filter(c => c.type === 'income') || [];
         banksData = banksRes.data || [];
-        customersData = custsRes.data || [];
+
+        const company = meRes?.data?.company || meRes?.data?.user?.company || meRes?.data?.user?.company_info;
+        if (company) {
+            (window as any).currentSolidconUrls = [
+                company.solidcon_url_1 || '',
+                company.solidcon_url_2 || '',
+                company.solidcon_url_3 || '',
+                company.solidcon_url_4 || '',
+                company.solidcon_url_5 || '',
+            ];
+        }
 
         const catSelect = document.getElementById('category');
         if (catSelect) {
@@ -294,27 +603,24 @@ async function loadDependencies() {
 
         const bankSelect = document.getElementById('bankSelect');
         const filterBank = document.getElementById('filterBank');
+        const bulkUpdateBank = document.getElementById('bulkUpdateBank');
         if (bankSelect) {
             bankSelect.innerHTML = '<option value="">Selecione a conta depositaria...</option>';
         }
         if (filterBank) {
             filterBank.innerHTML = '<option value="">Todas as Contas</option>';
         }
+        if (bulkUpdateBank) {
+            bulkUpdateBank.innerHTML = '<option value="">-- Manter Conta Original de Cada Lançamento --</option>';
+        }
         banksData.forEach(b => {
             if (bankSelect) bankSelect.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
             if (filterBank) filterBank.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+            if (bulkUpdateBank) bulkUpdateBank.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
         });
 
-        const customersList = document.getElementById('customersList');
-        if (customersList) {
-            customersList.innerHTML = '';
-            customersData.forEach(c => {
-                customersList.innerHTML += `<option value="${c.name}"></option>`;
-            });
-        }
-
     } catch (e) {
-        console.error('Falha ao carregar categorias, bancos ou clientes', e);
+        console.error('Falha ao carregar categorias ou bancos', e);
     }
 }
 
@@ -455,8 +761,12 @@ function renderTable(data = revenuesData) {
                 ${r.user_name || '-'}
             </td>
             <td class="px-2 py-4 whitespace-normal wrap-break-word min-w-37.5 text-sm font-medium text-gray-900 dark:text-gray-100">
-                ${translateDescription(r.description)}
-                <div class="text-xs text-gray-400 mt-1 dark:text-gray-500">${r.customer_name ? r.customer_name : 'Sem cliente vinculado'}</div>
+                <div>${translateDescription(r.description)}</div>
+                ${r.entity_name ? `
+                <div class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    ${r.entity_name}
+                </div>` : '<div class="text-xs text-gray-400 mt-0.5 dark:text-gray-500">Sem vínculo</div>'}
             </td>
             <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
@@ -474,49 +784,60 @@ function renderTable(data = revenuesData) {
             <td class="px-2 py-4 whitespace-nowrap text-right text-sm font-medium text-green-600 dark:text-green-400">+ ${formatCurrency(r.amount)}</td>
             <td class="px-2 py-3 whitespace-nowrap text-center text-sm font-medium">
                 ${revenueStatus !== 'paid' ? `
-                <button type="button" class="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300 mr-2 baixa-btn" data-id="${r.public_id}" title="Baixa">
-                    <span class="inline-flex items-center rounded bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-semibold">Baixa</span>
+                <button type="button" class="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300 mr-2 cursor-pointer baixa-btn" data-id="${r.public_id}" title="Baixa">
+                    <span class="inline-flex items-center rounded bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-semibold pointer-events-none">Baixa</span>
                 </button>` : ''}
+                <button type="button" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-2 cursor-pointer send-whatsapp-btn" data-id="${r.public_id}" data-phone="${r.customer_phone || ''}" title="Enviar por WhatsApp">
+                    <svg class="h-5 w-5 inline pointer-events-none" fill="currentColor" viewBox="0 0 448 512">
+                        <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                    </svg>
+                </button>
                 ${isOverdue ? `
-                <button type="button" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 mr-2 inline-flex items-center gap-1 open-receipt-btn" data-id="${r.public_id}" title="Cobrar">
-                    <span class="inline-flex h-5 w-5 items-center justify-center text-base font-bold leading-none text-rose-600 dark:text-rose-400">$</span>
-                </button>` : ''}
-                ${!isOverdue ? `
-                <button type="button" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 open-receipt-btn" data-id="${r.public_id}" title="Recibo">
-                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button type="button" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 mr-2 cursor-pointer inline-flex items-center gap-1 open-receipt-btn" data-id="${r.public_id}" title="Cobrar">
+                    <span class="inline-flex h-5 w-5 items-center justify-center text-base font-bold leading-none text-rose-600 dark:text-rose-400 pointer-events-none">$</span>
+                </button>` : `
+                <button type="button" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 cursor-pointer open-receipt-btn" data-id="${r.public_id}" title="Recibo">
+                    <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                </button>
+                </button>`}
                 ${r.payment_method === 'boleto' ? `
-                <button type="button" class="${r.billet_url ? 'text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300' : 'text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300'} mr-2 open-boleto-btn" data-id="${r.public_id}" data-nosso-numero="${r.billet_url || ''}" title="${r.billet_url ? 'Visualizar Boleto PDF' : 'Gerar Boleto'}">
-                    ${r.billet_url ? `
-                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    ` : `
-                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                    `}
-                </button>
-                ${r.billet_url ? `
-                <button type="button" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 mr-2 cancel-boleto-btn" data-id="${r.public_id}" title="Cancelar Boleto">
-                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                </button>` : ''}` : ''}` : ''}
-                <button type="button" class="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300 mr-2 duplicate-btn" data-id="${r.public_id}" title="Duplicar">
-                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    ${(r.billet_url || revenueStatus !== 'paid') ? `
+                    <button type="button" class="${r.billet_url ? 'text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300' : 'text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300'} mr-2 cursor-pointer open-boleto-btn" data-id="${r.public_id}" data-nosso-numero="${r.billet_url || ''}" title="${r.billet_url ? 'Visualizar Boleto PDF' : 'Gerar Boleto'}">
+                        ${r.billet_url ? `
+                        <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        ` : `
+                        <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        `}
+                    </button>` : ''}
+                    ${(r.billet_url && revenueStatus !== 'paid') ? `
+                    <button type="button" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-2 cursor-pointer sync-boleto-btn" data-id="${r.public_id}" title="Sincronizar Status do Boleto">
+                        <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+                        </svg>
+                    </button>
+                    <button type="button" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 mr-2 cursor-pointer cancel-boleto-btn" data-id="${r.public_id}" title="Cancelar Boleto">
+                        <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                    </button>` : ''}
+                ` : ''}
+                <button type="button" class="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300 mr-2 cursor-pointer duplicate-btn" data-id="${r.public_id}" title="Duplicar">
+                    <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                 </button>
-                <button type="button" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-2 edit-btn" data-id="${r.public_id}" title="Editar">
-                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button type="button" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 mr-2 cursor-pointer edit-btn" data-id="${r.public_id}" title="Editar">
+                    <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                 </button>
-                <button type="button" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 delete-btn" data-id="${r.public_id}" title="Excluir">
-                    <svg class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button type="button" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 cursor-pointer delete-btn" data-id="${r.public_id}" title="Excluir">
+                    <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                 </button>
@@ -565,47 +886,58 @@ function renderGrid(elementId, items) {
 
                 <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
                     ${revenueStatus !== 'paid' ? `
-                    <button type="button" class="p-1.5 text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 bg-gray-50 hover:bg-emerald-50 dark:bg-slate-700 dark:hover:bg-emerald-900/30 rounded baixa-btn" data-id="${r.public_id}" title="Baixa">
-                        <span class="inline-flex h-4 items-center justify-center text-xs font-bold leading-none">Baixa</span>
+                    <button type="button" class="p-1.5 text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 bg-gray-50 hover:bg-emerald-50 dark:bg-slate-700 dark:hover:bg-emerald-900/30 rounded cursor-pointer baixa-btn" data-id="${r.public_id}" title="Baixa">
+                        <span class="inline-flex h-4 items-center justify-center text-xs font-bold leading-none pointer-events-none">Baixa</span>
                     </button>` : ''}
+                    <button type="button" class="p-1.5 text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 bg-gray-50 hover:bg-green-50 dark:bg-slate-700 dark:hover:bg-green-900/30 rounded cursor-pointer send-whatsapp-btn" data-id="${r.public_id}" data-phone="${r.customer_phone || ''}" title="Enviar por WhatsApp">
+                        <svg class="h-4 w-4 pointer-events-none" fill="currentColor" viewBox="0 0 448 512">
+                            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                        </svg>
+                    </button>
                     ${isOverdue ? `
-                    <button type="button" class="p-1.5 text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 bg-gray-50 hover:bg-rose-50 dark:bg-slate-700 dark:hover:bg-rose-900/30 rounded open-receipt-btn" data-id="${r.public_id}" title="Cobrar">
-                        <span class="inline-flex h-4 w-4 items-center justify-center text-sm font-bold leading-none text-rose-500 dark:text-rose-400">$</span>
-                    </button>` : ''}
-                    ${!isOverdue ? `
-                    <button type="button" class="p-1.5 text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30 rounded open-receipt-btn" data-id="${r.public_id}" title="Recibo">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button type="button" class="p-1.5 text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 bg-gray-50 hover:bg-rose-50 dark:bg-slate-700 dark:hover:bg-rose-900/30 rounded cursor-pointer open-receipt-btn" data-id="${r.public_id}" title="Cobrar">
+                        <span class="inline-flex h-4 w-4 items-center justify-center text-sm font-bold leading-none text-rose-500 dark:text-rose-400 pointer-events-none">$</span>
+                    </button>` : `
+                    <button type="button" class="p-1.5 text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30 rounded cursor-pointer open-receipt-btn" data-id="${r.public_id}" title="Recibo">
+                        <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                    </button>
+                    </button>`}
                     ${r.payment_method === 'boleto' ? `
-                    <button type="button" class="p-1.5 ${r.billet_url ? 'text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30' : 'text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 bg-gray-50 hover:bg-emerald-50 dark:bg-slate-700 dark:hover:bg-emerald-900/30'} rounded open-boleto-btn" data-id="${r.public_id}" data-nosso-numero="${r.billet_url || ''}" title="${r.billet_url ? 'Visualizar Boleto PDF' : 'Gerar Boleto'}">
-                        ${r.billet_url ? `
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        ` : `
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        </svg>
-                        `}
-                    </button>
-                    ${r.billet_url ? `
-                    <button type="button" class="p-1.5 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 bg-gray-50 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-900/30 rounded cancel-boleto-btn" data-id="${r.public_id}" title="Cancelar Boleto">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                        </svg>
-                    </button>` : ''}` : ''}` : ''}
-                    <button type="button" class="p-1.5 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded edit-btn" data-id="${r.public_id}" title="Editar">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        ${(r.billet_url || revenueStatus !== 'paid') ? `
+                        <button type="button" class="p-1.5 ${r.billet_url ? 'text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30' : 'text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 bg-gray-50 hover:bg-emerald-50 dark:bg-slate-700 dark:hover:bg-emerald-900/30'} rounded cursor-pointer open-boleto-btn" data-id="${r.public_id}" data-nosso-numero="${r.billet_url || ''}" title="${r.billet_url ? 'Visualizar Boleto PDF' : 'Gerar Boleto'}">
+                            ${r.billet_url ? `
+                            <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            ` : `
+                            <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            `}
+                        </button>` : ''}
+                        ${(r.billet_url && revenueStatus !== 'paid') ? `
+                        <button type="button" class="p-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 bg-gray-50 hover:bg-blue-50 dark:bg-slate-700 dark:hover:bg-blue-900/30 rounded cursor-pointer sync-boleto-btn" data-id="${r.public_id}" title="Sincronizar Status do Boleto">
+                            <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+                            </svg>
+                        </button>
+                        <button type="button" class="p-1.5 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 bg-gray-50 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-900/30 rounded cursor-pointer cancel-boleto-btn" data-id="${r.public_id}" title="Cancelar Boleto">
+                            <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                        </button>` : ''}
+                    ` : ''}
+                    <button type="button" class="p-1.5 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded cursor-pointer edit-btn" data-id="${r.public_id}" title="Editar">
+                        <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
-                    <button type="button" class="p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30 rounded duplicate-btn" data-id="${r.public_id}" title="Duplicar">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <button type="button" class="p-1.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30 rounded cursor-pointer duplicate-btn" data-id="${r.public_id}" title="Duplicar">
+                        <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                     </button>
-                    <button type="button" class="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 bg-gray-50 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-900/30 rounded delete-btn" data-id="${r.public_id}" title="Excluir">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button type="button" class="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 bg-gray-50 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-900/30 rounded cursor-pointer delete-btn" data-id="${r.public_id}" title="Excluir">
+                        <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                     </button>
@@ -619,11 +951,12 @@ function renderGrid(elementId, items) {
                         ${r.category_name || 'Geral'}
                     </span>
                 </div>
-                <div class="mt-4">
-                    <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300">
-                        <span class="text-xs text-gray-500 dark:text-gray-400">Cliente / Vínculo:</span>
-                        <span class="font-medium text-gray-900 dark:text-gray-100">${r.customer_name ? r.customer_name : 'Sem vínculo'}</span>
-                    </div>
+                <div class="mt-2 flex flex-col gap-1 items-start">
+                    ${r.entity_name ? `
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        ${r.entity_name}
+                    </div>` : '<div class="mt-1 text-xs text-gray-400 dark:text-gray-500">Sem vínculo</div>'}
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-4">
                     <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300">
@@ -664,7 +997,14 @@ function openModal() {
     const statusEl = document.getElementById('status');
     if (statusEl) statusEl.value = 'pending';
 
-    setCustomerSelection('');
+    const receivedAtEl = document.getElementById('receivedAt');
+    if (receivedAtEl) receivedAtEl.value = '';
+    const receivedAtContainer = document.getElementById('receivedAtContainer');
+    if (receivedAtContainer) receivedAtContainer.classList.add('hidden');
+
+    const entityTypeSelect = document.getElementById('entityType');
+    if (entityTypeSelect) entityTypeSelect.value = '';
+    handleEntityTypeChange();
 
     const modalTitle = document.getElementById('modalTitle');
     if (modalTitle) modalTitle.textContent = 'Nova Receita';
@@ -685,6 +1025,10 @@ window.closeDeleteModal = () => {
 window.closeBaixaModal = () => {
     document.getElementById('baixaModal')?.classList.add('hidden');
     g_baixaId = null;
+};
+
+window.closeBulkUpdateModal = () => {
+    document.getElementById('bulkUpdateModal')?.classList.add('hidden');
 };
 
 function updateBaixaTotal() {
@@ -764,6 +1108,99 @@ async function copyReceiptQrCode(publicId, button) {
     }
 }
 
+function openWhatsappModal(id, phone) {
+    g_whatsappId = id;
+    const input = document.getElementById('whatsappPhoneInput') as HTMLInputElement | null;
+    if (input) {
+        input.value = phone || '';
+    }
+    const errDiv = document.getElementById('whatsappModalError');
+    if (errDiv) {
+        errDiv.textContent = '';
+        errDiv.classList.add('hidden');
+    }
+    const modal = document.getElementById('whatsappModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeWhatsappModal() {
+    g_whatsappId = null;
+    const modal = document.getElementById('whatsappModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    const errDiv = document.getElementById('whatsappModalError');
+    if (errDiv) {
+        errDiv.textContent = '';
+        errDiv.classList.add('hidden');
+    }
+    const spinner = document.getElementById('whatsappSendSpinner');
+    if (spinner) {
+        spinner.classList.add('hidden');
+        spinner.classList.remove('inline-block');
+    }
+    const btn = document.getElementById('btnConfirmWhatsappSend');
+    if (btn) {
+        btn.removeAttribute('disabled');
+    }
+}
+
+async function handleSendWhatsapp() {
+    if (!g_whatsappId) return;
+
+    const input = document.getElementById('whatsappPhoneInput') as HTMLInputElement | null;
+    const phone = input ? input.value.trim() : '';
+
+    const btn = document.getElementById('btnConfirmWhatsappSend');
+    const spinner = document.getElementById('whatsappSendSpinner');
+    const errDiv = document.getElementById('whatsappModalError');
+
+    if (errDiv) {
+        errDiv.textContent = '';
+        errDiv.classList.add('hidden');
+    }
+
+    if (btn) btn.setAttribute('disabled', 'true');
+    if (spinner) {
+        spinner.classList.remove('hidden');
+        spinner.classList.add('inline-block');
+    }
+
+    try {
+        const jwtToken = localStorage.getItem('erp_token') || '';
+        const response = await fetch(`/api/v1/finance/revenues/${g_whatsappId}/send-whatsapp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${jwtToken}`
+            },
+            body: JSON.stringify({ phone })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Erro ao enviar cobrança por WhatsApp');
+        }
+
+        if (typeof UI !== 'undefined' && UI.showAlert) {
+            UI.showAlert('alertMessage', 'Cobrança enviada com sucesso!', 'success');
+        }
+        closeWhatsappModal();
+    } catch (error: any) {
+        const errMsg = error.message || 'Falha ao enviar por WhatsApp';
+        if (errDiv) {
+            errDiv.textContent = errMsg;
+            errDiv.classList.remove('hidden');
+        } else if (typeof UI !== 'undefined' && UI.showAlert) {
+            UI.showAlert('alertMessage', errMsg, 'error');
+        }
+        if (btn) btn.removeAttribute('disabled');
+        if (spinner) spinner.classList.add('hidden');
+    }
+}
+
 document.addEventListener('click', (e) => {
     const dupBtn = e.target.closest('.duplicate-btn');
     const editBtn = e.target.closest('.edit-btn');
@@ -791,13 +1228,41 @@ document.addEventListener('click', (e) => {
         document.getElementById('dueDate').value = DateUtils.toDateInputValue(rev.date);
         document.getElementById('category').value = rev.category_public_id || '';
         document.getElementById('bankSelect').value = rev.bank_account_public_id || '';
-        setCustomerSelection(rev.customer_public_id || '');
+
+        const entityTypeSelect = document.getElementById('entityType');
+        if (rev.entity_type && rev.entity_public_id) {
+            if (entityTypeSelect) entityTypeSelect.value = rev.entity_type;
+            const entitySelect = document.getElementById('entitySelect');
+            if (entitySelect) {
+                entitySelect.disabled = false;
+                entitySelect.innerHTML = '<option value="">Carregando...</option>';
+                loadPeopleOfType(rev.entity_type).then((items) => {
+                    entitySelect.innerHTML = '<option value="">Selecione...</option>' + items
+                        .map((x) => `<option value="${x.public_id}">${x.name}</option>`)
+                        .join('');
+                    entitySelect.value = rev.entity_public_id;
+                });
+            }
+        } else {
+            if (entityTypeSelect) entityTypeSelect.value = '';
+            handleEntityTypeChange();
+        }
 
         const paymentEl = document.getElementById('paymentMethod');
         if (paymentEl) paymentEl.value = rev.payment_method || '';
 
         const statusEl = document.getElementById('status');
         if (statusEl) statusEl.value = rev.status || 'paid';
+
+        const receivedAtEl = document.getElementById('receivedAt');
+        const receivedAtContainer = document.getElementById('receivedAtContainer');
+        if (statusEl && statusEl.value === 'paid') {
+            if (receivedAtContainer) receivedAtContainer.classList.remove('hidden');
+            if (receivedAtEl) receivedAtEl.value = toDateTimeInputValue(rev.received_at);
+        } else {
+            if (receivedAtContainer) receivedAtContainer.classList.add('hidden');
+            if (receivedAtEl) receivedAtEl.value = '';
+        }
 
         const modalTitle = document.getElementById('modalTitle');
         if (modalTitle) modalTitle.textContent = 'Duplicar Receita';
@@ -820,13 +1285,41 @@ document.addEventListener('click', (e) => {
         document.getElementById('dueDate').value = DateUtils.toDateInputValue(rev.date);
         document.getElementById('category').value = rev.category_public_id || '';
         document.getElementById('bankSelect').value = rev.bank_account_public_id || '';
-        setCustomerSelection(rev.customer_public_id || '');
+
+        const entityTypeSelect = document.getElementById('entityType');
+        if (rev.entity_type && rev.entity_public_id) {
+            if (entityTypeSelect) entityTypeSelect.value = rev.entity_type;
+            const entitySelect = document.getElementById('entitySelect');
+            if (entitySelect) {
+                entitySelect.disabled = false;
+                entitySelect.innerHTML = '<option value="">Carregando...</option>';
+                loadPeopleOfType(rev.entity_type).then((items) => {
+                    entitySelect.innerHTML = '<option value="">Selecione...</option>' + items
+                        .map((x) => `<option value="${x.public_id}">${x.name}</option>`)
+                        .join('');
+                    entitySelect.value = rev.entity_public_id;
+                });
+            }
+        } else {
+            if (entityTypeSelect) entityTypeSelect.value = '';
+            handleEntityTypeChange();
+        }
 
         const paymentEl = document.getElementById('paymentMethod');
         if (paymentEl) paymentEl.value = rev.payment_method || '';
 
         const statusEl = document.getElementById('status');
         if (statusEl) statusEl.value = rev.status || 'paid';
+
+        const receivedAtEl = document.getElementById('receivedAt');
+        const receivedAtContainer = document.getElementById('receivedAtContainer');
+        if (statusEl && statusEl.value === 'paid') {
+            if (receivedAtContainer) receivedAtContainer.classList.remove('hidden');
+            if (receivedAtEl) receivedAtEl.value = toDateTimeInputValue(rev.received_at);
+        } else {
+            if (receivedAtContainer) receivedAtContainer.classList.add('hidden');
+            if (receivedAtEl) receivedAtEl.value = '';
+        }
 
         const modalTitle = document.getElementById('modalTitle');
         if (modalTitle) modalTitle.textContent = 'Editar Receita';
@@ -890,6 +1383,18 @@ document.addEventListener('click', (e) => {
         }
     }
 
+    const sendWhatsappBtn = (e.target as HTMLElement).closest('.send-whatsapp-btn');
+    if (sendWhatsappBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const pubId = sendWhatsappBtn.getAttribute('data-id');
+        const phone = sendWhatsappBtn.getAttribute('data-phone') || '';
+        if (pubId) {
+            openWhatsappModal(pubId, phone);
+        }
+        return;
+    }
+
     const openReceiptBtn = e.target.closest('.open-receipt-btn');
     if (openReceiptBtn) {
         e.preventDefault();
@@ -919,6 +1424,7 @@ document.addEventListener('click', (e) => {
     } else {
         const openBoletoBtn = (e.target as HTMLElement).closest('.open-boleto-btn');
         const cancelBoletoBtn = (e.target as HTMLElement).closest('.cancel-boleto-btn');
+        const syncBoletoBtn = (e.target as HTMLElement).closest('.sync-boleto-btn');
         if (openBoletoBtn) {
             e.preventDefault();
             e.stopPropagation();
@@ -973,6 +1479,37 @@ document.addEventListener('click', (e) => {
                 })
                 .catch(err => {
                     (window as any).UI.showAlert('alertMessage', 'Erro de conexão: ' + err.message, 'error');
+                });
+            }
+        } else if (syncBoletoBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const pubId = syncBoletoBtn.getAttribute('data-id');
+            if (pubId) {
+                const originalHtml = syncBoletoBtn.innerHTML;
+                syncBoletoBtn.innerHTML = '...';
+                syncBoletoBtn.setAttribute('disabled', 'true');
+                const jwtToken = localStorage.getItem('erp_token') || '';
+                fetch('/api/v1/finance/revenues/' + pubId + '/sync-boleto-status', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + jwtToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const situacao = data.situacao || 'Desconhecido';
+                        (window as any).UI.showAlert('alertMessage', `Status do boleto sincronizado com sucesso! Situação: ${situacao}`, 'success');
+                        fetchRevenues();
+                    } else {
+                        (window as any).UI.showAlert('alertMessage', 'Erro ao sincronizar boleto: ' + (data.message || 'Erro desconhecido'), 'error');
+                        syncBoletoBtn.innerHTML = originalHtml;
+                        syncBoletoBtn.removeAttribute('disabled');
+                    }
+                })
+                .catch(err => {
+                    (window as any).UI.showAlert('alertMessage', 'Erro de conexão: ' + err.message, 'error');
+                    syncBoletoBtn.innerHTML = originalHtml;
+                    syncBoletoBtn.removeAttribute('disabled');
                 });
             }
         }
@@ -1030,24 +1567,31 @@ async function generateBillet(publicId, btnEl) {
 
 // Select All Checkbox Logic
 document.addEventListener('change', (e) => {
-    if (e.target.id === 'selectAllCheckbox') {
-        const checkboxes = document.querySelectorAll('.revenue-checkbox');
-        checkboxes.forEach(cb => cb.checked = e.target.checked);
+    const target = e.target as HTMLInputElement;
+    if (target.id === 'selectAllCheckbox') {
+        const containerId = currentView === 'list' ? 'revenuesTable' : 'revenuesGridContainer';
+        const container = document.getElementById(containerId);
+        const checkboxes = container ? container.querySelectorAll('.revenue-checkbox') : [];
+        checkboxes.forEach(cb => (cb as HTMLInputElement).checked = target.checked);
         updateSelectedCount();
     }
 
-    if (e.target.classList.contains('revenue-checkbox')) {
-        const checkboxes = document.querySelectorAll('.revenue-checkbox');
-        const allChecked = Array.from(checkboxes).length > 0 && Array.from(checkboxes).every(cb => cb.checked);
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    if (target.classList.contains('revenue-checkbox')) {
+        const containerId = currentView === 'list' ? 'revenuesTable' : 'revenuesGridContainer';
+        const container = document.getElementById(containerId);
+        const checkboxes = container ? container.querySelectorAll('.revenue-checkbox') : [];
+        const allChecked = Array.from(checkboxes).length > 0 && Array.from(checkboxes).every(cb => (cb as HTMLInputElement).checked);
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox') as HTMLInputElement;
         if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
         updateSelectedCount();
     }
 });
 
 function updateSelectedCount() {
-    const selected = document.querySelectorAll('.revenue-checkbox:checked');
-    const selectedIds = Array.from(selected).map(cb => cb.value);
+    const containerId = currentView === 'list' ? 'revenuesTable' : 'revenuesGridContainer';
+    const container = document.getElementById(containerId);
+    const selected = container ? container.querySelectorAll('.revenue-checkbox:checked') : [];
+    const selectedIds = Array.from(selected).map(cb => (cb as HTMLInputElement).value);
 
     const batchActions = document.getElementById('batchActions');
     if (batchActions) {
@@ -1061,17 +1605,28 @@ function updateSelectedCount() {
     }
 }
 
+function clearCheckboxSelection() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox') as HTMLInputElement;
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    document.querySelectorAll('.revenue-checkbox').forEach(cb => (cb as HTMLInputElement).checked = false);
+    updateSelectedCount();
+}
+
 async function handleBatchGenerateBillet() {
-    const selected = document.querySelectorAll('.revenue-checkbox:checked');
-    const selectedIds = Array.from(selected).map(cb => cb.value);
+    const containerId = currentView === 'list' ? 'revenuesTable' : 'revenuesGridContainer';
+    const container = document.getElementById(containerId);
+    const selected = container ? container.querySelectorAll('.revenue-checkbox:checked') : [];
+    const selectedIds = Array.from(selected).map(cb => (cb as HTMLInputElement).value);
     if (selectedIds.length === 0) return;
 
     if (!confirm(`Deseja gerar boletos para as ${selectedIds.length} receitas selecionadas?`)) return;
 
     const btn = document.getElementById('btnBatchGenerateBillet');
-    const oldText = btn.textContent;
-    btn.textContent = 'Gerando...';
-    btn.disabled = true;
+    const oldText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.textContent = 'Gerando...';
+        btn.disabled = true;
+    }
 
     try {
         await api('/finance/revenues/batch-generate-billets', {
@@ -1080,32 +1635,34 @@ async function handleBatchGenerateBillet() {
         });
         UI.showAlert('alertMessage', 'Boletos gerados com sucesso!', 'success');
 
-        // Remove checkboxes selection
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        if (selectAllCheckbox) selectAllCheckbox.checked = false;
-        document.querySelectorAll('.revenue-checkbox').forEach(cb => cb.checked = false);
-        updateSelectedCount();
+        clearCheckboxSelection();
 
         fetchRevenues();
-    } catch (err) {
+    } catch (err: any) {
         UI.showAlert('alertMessage', 'Erro ao gerar boletos em lote: ' + err.message, 'error');
     } finally {
-        btn.textContent = oldText;
-        btn.disabled = false;
+        if (btn) {
+            btn.textContent = oldText;
+            btn.disabled = false;
+        }
     }
 }
 
 async function handleBatchCancelBillet() {
-    const selected = document.querySelectorAll('.revenue-checkbox:checked');
-    const selectedIds = Array.from(selected).map(cb => cb.value);
+    const containerId = currentView === 'list' ? 'revenuesTable' : 'revenuesGridContainer';
+    const container = document.getElementById(containerId);
+    const selected = container ? container.querySelectorAll('.revenue-checkbox:checked') : [];
+    const selectedIds = Array.from(selected).map(cb => (cb as HTMLInputElement).value);
     if (selectedIds.length === 0) return;
 
     if (!confirm(`Deseja cancelar boletos das ${selectedIds.length} receitas selecionadas?`)) return;
 
     const btn = document.getElementById('btnBatchCancelBillet');
-    const oldText = btn.textContent;
-    btn.textContent = 'Cancelando...';
-    btn.disabled = true;
+    const oldText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.textContent = 'Cancelando...';
+        btn.disabled = true;
+    }
 
     try {
         await api('/finance/revenues/batch-cancel-billets', {
@@ -1114,19 +1671,79 @@ async function handleBatchCancelBillet() {
         });
         UI.showAlert('alertMessage', 'Boletos cancelados com sucesso!', 'success');
 
-        // Remove checkboxes selection
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        if (selectAllCheckbox) selectAllCheckbox.checked = false;
-        document.querySelectorAll('.revenue-checkbox').forEach(cb => cb.checked = false);
-        updateSelectedCount();
+        clearCheckboxSelection();
 
         fetchRevenues();
-    } catch (err) {
+    } catch (err: any) {
         UI.showAlert('alertMessage', 'Erro ao cancelar boletos em lote: ' + err.message, 'error');
     } finally {
-        btn.textContent = oldText;
-        btn.disabled = false;
+        if (btn) {
+            btn.textContent = oldText;
+            btn.disabled = false;
+        }
     }
+}
+
+async function handleBatchDeleteRevenue() {
+    const containerId = currentView === 'list' ? 'revenuesTable' : 'revenuesGridContainer';
+    const container = document.getElementById(containerId);
+    const selected = container ? container.querySelectorAll('.revenue-checkbox:checked') : [];
+    const selectedIds = Array.from(selected).map(cb => (cb as HTMLInputElement).value);
+    if (selectedIds.length === 0) return;
+
+    if (!confirm(`Deseja excluir as ${selectedIds.length} receitas selecionadas?`)) return;
+
+    const btn = document.getElementById('btnBatchDeleteRevenue');
+    const oldText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.textContent = 'Excluindo...';
+        btn.disabled = true;
+    }
+
+    try {
+        const res = await api('/finance/transactions/batch-delete', {
+            method: 'POST',
+            body: JSON.stringify({ ids: selectedIds })
+        });
+        
+        const successCount = res?.data?.success || 0;
+        const errorList = res?.data?.errors || [];
+
+        if (errorList.length > 0) {
+            UI.showAlert('alertMessage', `Excluídas ${successCount} receitas. Algumas falharam:\n${errorList.join('\n')}`, 'error');
+        } else {
+            UI.showAlert('alertMessage', 'Receitas excluídas com sucesso!', 'success');
+        }
+
+        clearCheckboxSelection();
+
+        fetchRevenues();
+    } catch (err: any) {
+        UI.showAlert('alertMessage', 'Erro ao excluir receitas em lote: ' + err.message, 'error');
+    } finally {
+        if (btn) {
+            btn.textContent = oldText;
+            btn.disabled = false;
+        }
+    }
+}
+
+async function handleBatchUpdateRevenue() {
+    const containerId = currentView === 'list' ? 'revenuesTable' : 'revenuesGridContainer';
+    const container = document.getElementById(containerId);
+    const selected = container ? container.querySelectorAll('.revenue-checkbox:checked') : [];
+    const selectedIds = Array.from(selected).map(cb => (cb as HTMLInputElement).value);
+    if (selectedIds.length === 0) return;
+
+    // Reset form and open modal
+    const bulkUpdateForm = document.getElementById('bulkUpdateForm');
+    if (bulkUpdateForm) (bulkUpdateForm as HTMLFormElement).reset();
+
+    const countSpan = document.getElementById('bulkUpdateModalCount');
+    if (countSpan) countSpan.textContent = selectedIds.length.toString();
+
+    const modal = document.getElementById('bulkUpdateModal');
+    if (modal) modal.classList.remove('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1189,7 +1806,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         received_at: toMysqlDateTimeValue(baixaDateTime),
                         category_public_id: rev.category_public_id,
                         bank_account_public_id: rev.bank_account_public_id,
-                        customer_public_id: rev.customer_public_id || undefined,
+                        entity_type: rev.entity_type || null,
+                        entity_public_id: rev.entity_public_id || null,
                         payment_method: rev.payment_method || undefined,
                         status: 'paid'
                     })
@@ -1205,6 +1823,64 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.disabled = false;
                 button.classList.remove('opacity-50', 'cursor-not-allowed');
                 button.textContent = 'Confirmar Baixa';
+            }
+        });
+    }
+
+    const bulkUpdateForm = document.getElementById('bulkUpdateForm');
+    if (bulkUpdateForm) {
+        bulkUpdateForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const containerId = currentView === 'list' ? 'revenuesTable' : 'revenuesGridContainer';
+            const container = document.getElementById(containerId);
+            const selected = container ? container.querySelectorAll('.revenue-checkbox:checked') : [];
+            const selectedIds = Array.from(selected).map(cb => (cb as HTMLInputElement).value);
+            if (selectedIds.length === 0) return;
+
+            const bank_account_public_id = document.getElementById('bulkUpdateBank')?.value || undefined;
+            const payment_method = document.getElementById('bulkUpdateMethod')?.value || undefined;
+            const date = document.getElementById('bulkUpdateDate')?.value || undefined;
+
+            const button = document.getElementById('confirmBulkUpdateBtn');
+            const oldText = button ? button.textContent : '';
+            if (button) {
+                (button as HTMLButtonElement).disabled = true;
+                button.textContent = 'Salvando...';
+            }
+
+            try {
+                const res = await api('/finance/revenues/batch-update', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        ids: selectedIds,
+                        bank_account_public_id,
+                        payment_method,
+                        date
+                    })
+                });
+
+                const successCount = res?.data?.success || 0;
+                const errorList = res?.data?.errors || [];
+
+                window.closeBulkUpdateModal();
+                clearCheckboxSelection();
+
+                if (errorList.length > 0) {
+                    UI.showAlert('alertMessage', `Alteradas ${successCount} receitas. Algumas falharam:\n${errorList.join('\n')}`, 'error');
+                } else {
+                    UI.showAlert('alertMessage', 'Alteração em lote realizada com sucesso!', 'success');
+                }
+
+                await fetchRevenues();
+                await loadDependencies();
+            } catch (error) {
+                UI.showAlert('alertMessage', 'Erro ao realizar alteração em lote: ' + error.message, 'error');
+            } finally {
+                if (button) {
+                    (button as HTMLButtonElement).disabled = false;
+                    button.textContent = oldText;
+                }
             }
         });
     }
@@ -1226,9 +1902,18 @@ async function handleSaveRevenue(e) {
         amount: amountVal,
         date: document.getElementById('dueDate').value,
         category_public_id: document.getElementById('category').value,
-        bank_account_public_id: document.getElementById('bankSelect').value,
-        customer_public_id: document.getElementById('customerSelect').value || undefined
+        bank_account_public_id: document.getElementById('bankSelect').value
     };
+
+    const entityType = document.getElementById('entityType')?.value || '';
+    const entityPublicId = document.getElementById('entitySelect')?.value || '';
+    if (entityType && entityPublicId) {
+        data.entity_type = entityType;
+        data.entity_public_id = entityPublicId;
+    } else {
+        data.entity_type = null;
+        data.entity_public_id = null;
+    }
 
     const paymentEl = document.getElementById('paymentMethod');
     if (paymentEl && paymentEl.value) {
@@ -1238,6 +1923,12 @@ async function handleSaveRevenue(e) {
     const statusEl = document.getElementById('status');
     if (statusEl && statusEl.value) {
         data.status = statusEl.value;
+        if (data.status === 'paid') {
+            const receivedAtEl = document.getElementById('receivedAt');
+            if (receivedAtEl && receivedAtEl.value) {
+                data.received_at = toMysqlDateTimeValue(receivedAtEl.value);
+            }
+        }
     }
 
     const btn = document.getElementById('saveBtn');

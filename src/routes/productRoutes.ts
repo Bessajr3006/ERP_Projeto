@@ -68,6 +68,29 @@ router.post('/solidcon-import', (req, res, next) => ProductController.importSoli
 router.post('/bulk-update', (req, res, next) => ProductController.bulkUpdate(req, res).catch(next));
 /**
  * @openapi
+ * /products/send-catalog:
+ *   post:
+ *     tags: [Products]
+ *     summary: Enviar catálogo de produtos em PDF por WhatsApp
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               phone: { type: string }
+ *             required: [phone]
+ *     responses:
+ *       200: { description: Catálogo enviado com sucesso }
+ *       400: { description: Erro na solicitação }
+ * */
+router.post('/send-catalog', (req, res, next) => ProductController.sendCatalog(req, res).catch(next));
+
+/**
+ * @openapi
  * /products/{id}:
  *   get:
  *     tags: [Products]

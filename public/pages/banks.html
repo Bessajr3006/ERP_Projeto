@@ -127,6 +127,10 @@
                                             class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500 border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap ml-4">
                                             Integração API/Inter
                                         </button>
+                                        <button type="button" id="tabBtnWebhook"
+                                            class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500 border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap ml-4">
+                                            Webhook
+                                        </button>
                                     </nav>
                                 </div>
 
@@ -290,6 +294,151 @@
                                                     </button>
                                                 </div>
                                                 <textarea id="apiKey" name="apiKey" class="hidden" aria-hidden="true" title="Conteúdo da chave privada da API"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB WEBHOOK -->
+                                    <div id="tabContentWebhook" class="hidden">
+                                        <div class="space-y-4">
+                                            <div>
+                                                <label for="webhookUrl"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Webhook</label>
+                                                <input type="url" id="webhookUrl" name="webhookUrl" placeholder="Ex: https://api.seu-sistema.com/webhooks/banking" autocomplete="off"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Endpoint para o qual as notificações de eventos serão enviadas.</p>
+                                            </div>
+                                            <div>
+                                                <label for="webhookSecret"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chave de Assinatura (Secret)</label>
+                                                <input type="password" id="webhookSecret" name="webhookSecret" placeholder="Chave para assinar/validar payloads do webhook" autocomplete="new-password"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Usado para assinar os payloads e garantir que as requisições vêm da Keystone.</p>
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certificado do Webhook (.crt)</label>
+                                                <label id="dropzoneWebhookCert" for="fileWebhookCertificado"
+                                                    class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
+                                                    <span class="flex flex-col items-center space-y-1 text-center">
+                                                         <svg xmlns="http://www.w3.org/2000/svg"
+                                                             class="w-6 h-6 text-gray-400" fill="none"
+                                                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                             <path stroke-linecap="round" stroke-linejoin="round"
+                                                                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                         </svg>
+                                                         <span
+                                                             class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                             Solte o arquivo ou <span
+                                                                 class="text-brand-600 dark:text-brand-400 underline">selecione</span>
+                                                         </span>
+                                                         <span class="text-xs text-gray-500">Apenas arquivos .crt</span>
+                                                    </span>
+                                                    <input type="file" id="fileWebhookCertificado" name="fileWebhookCertificado"
+                                                         class="hidden" accept=".crt,.pem,.txt">
+                                                </label>
+                                                <div id="filenameWebhookCert" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50" style="display: none;">
+                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                         viewBox="0 0 24 24" stroke="currentColor">
+                                                         <path stroke-linecap="round" stroke-linejoin="round"
+                                                             stroke-width="2" d="M5 13l4 4L19 7" />
+                                                     </svg>
+                                                     <span id="filenameWebhookCertText" class="truncate"></span>
+                                                     <button type="button" id="clearWebhookCertBtn" title="Remover certificado"
+                                                         class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
+                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                             <path stroke-linecap="round" stroke-linejoin="round"
+                                                                 stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                         </svg>
+                                                     </button>
+                                                </div>
+                                                <textarea id="webhookCertificado" name="webhookCertificado" class="hidden" aria-hidden="true" title="Conteúdo do certificado do Webhook"></textarea>
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chave Privada do Webhook (.key)</label>
+                                                <label id="dropzoneWebhookKey" for="fileWebhookKey"
+                                                    class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
+                                                    <span class="flex flex-col items-center space-y-1 text-center">
+                                                         <svg xmlns="http://www.w3.org/2000/svg"
+                                                             class="w-6 h-6 text-gray-400" fill="none"
+                                                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                             <path stroke-linecap="round" stroke-linejoin="round"
+                                                                 d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                         </svg>
+                                                         <span
+                                                             class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                             Solte o arquivo ou <span
+                                                                 class="text-brand-600 dark:text-brand-400 underline">selecione</span>
+                                                         </span>
+                                                         <span class="text-xs text-gray-500">Apenas arquivos .key</span>
+                                                    </span>
+                                                    <input type="file" id="fileWebhookKey" name="fileWebhookKey" class="hidden"
+                                                         accept=".key,.pem,.txt">
+                                                </label>
+                                                <div id="filenameWebhookKey" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50" style="display: none;">
+                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                         viewBox="0 0 24 24" stroke="currentColor">
+                                                         <path stroke-linecap="round" stroke-linejoin="round"
+                                                             stroke-width="2" d="M5 13l4 4L19 7" />
+                                                     </svg>
+                                                     <span id="filenameWebhookKeyText" class="truncate"></span>
+                                                     <button type="button" id="clearWebhookKeyBtn" title="Remover chave"
+                                                         class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
+                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                             <path stroke-linecap="round" stroke-linejoin="round"
+                                                                 stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                         </svg>
+                                                     </button>
+                                                </div>
+                                                <textarea id="webhookKey" name="webhookKey" class="hidden" aria-hidden="true" title="Conteúdo da chave privada do Webhook"></textarea>
+                                            </div>
+                                            <div>
+                                                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Eventos a Enviar</span>
+                                                <div class="space-y-3 bg-gray-50 dark:bg-slate-900/30 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50">
+                                                    <div class="flex items-start">
+                                                        <div class="flex items-center h-5">
+                                                            <input id="webhookEventTransaction" name="webhookEventTransaction" type="checkbox"
+                                                                class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                        </div>
+                                                        <div class="ml-3 text-sm">
+                                                            <label for="webhookEventTransaction" class="font-medium text-gray-700 dark:text-gray-300">Transações</label>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-400">Dispara ao criar, atualizar ou conciliar transações financeiras (entradas/saídas).</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
+                                                        <div class="flex items-center h-5">
+                                                            <input id="webhookEventAccount" name="webhookEventAccount" type="checkbox"
+                                                                class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                        </div>
+                                                        <div class="ml-3 text-sm">
+                                                            <label for="webhookEventAccount" class="font-medium text-gray-700 dark:text-gray-300">Alterações de Conta</label>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-400">Dispara quando dados básicos, saldo inicial ou status da conta mudarem.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
+                                                        <div class="flex items-center h-5">
+                                                            <input id="webhookEventStatusSync" name="webhookEventStatusSync" type="checkbox"
+                                                                class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                        </div>
+                                                        <div class="ml-3 text-sm">
+                                                            <label for="webhookEventStatusSync" class="font-medium text-gray-700 dark:text-gray-300">Sincronização de Status</label>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-400">Dispara em alterações de conexão da API ou status de integração com bancos parceiros.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
+                                                        <div class="flex items-center h-5">
+                                                            <input id="webhookEventBoleto" name="webhookEventBoleto" type="checkbox"
+                                                                class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                        </div>
+                                                        <div class="ml-3 text-sm">
+                                                            <label for="webhookEventBoleto" class="font-medium text-gray-700 dark:text-gray-300">Boletos Recebidos</label>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-400">Sincroniza automaticamente quando boletos/cobranças forem pagos no banco.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'progress' | 'completed' | 'cancelled' | 'separated' | 'invoiced';
+export type OrderStatus = 'quote' | 'pending' | 'progress' | 'completed' | 'cancelled' | 'separated' | 'invoiced';
 
 export interface PurchaseOrder {
     id: number;
@@ -40,13 +40,20 @@ export interface SalesOrder {
     public_id: string; // UUID
     company_id: number;
     customer_id?: number | null;
+    seller_id?: number | null;
+    manual_customer_name?: string | null;
+    brand?: string | null;
+    payment_method?: string | null;
+    payment_terms?: string | null;
     total_amount: number;
     status: OrderStatus;
     date: Date;
+    validity_date?: Date | string | null;
     nfe_key?: string | null;
     nfe_issue_date?: Date | string | null;
     nfe_header_json?: string | null;
     delivery_address?: string | null;
+    observation?: string | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -62,7 +69,8 @@ export interface SalesItem {
 }
 
 export interface CreateSalesItemData {
-    product_public_id: string;
+    product_public_id?: string | null | undefined;
+    service_public_id?: string | null | undefined;
     quantity: number;
     unit_price: number;
     xml_item_data?: Record<string, any> | string | null | undefined;
@@ -75,10 +83,18 @@ export interface CreateSalesPaymentData {
 
 export interface CreateSalesData {
     customer_public_id?: string | null | undefined;
+    manual_customer_name?: string | null | undefined;
+    brand?: string | null | undefined;
+    payment_method?: string | null | undefined;
+    payment_terms?: string | null | undefined;
+    seller_id?: number | null | undefined;
+    seller_public_id?: string | null | undefined;
     delivery_address?: string | null | undefined;
-    bank_account_public_id: string; // Needs a bank to receive the income
-    category_public_id: string; // Financial Category
+    bank_account_public_id?: string | null | undefined;
+    category_public_id?: string | null | undefined;
     date: string | Date;
+    validity_date?: string | null | undefined;
+    observation?: string | null | undefined;
     nfe_key?: string | null | undefined;
     nfe_issue_date?: string | Date | null | undefined;
     nfe_header_json?: Record<string, any> | string | null | undefined;

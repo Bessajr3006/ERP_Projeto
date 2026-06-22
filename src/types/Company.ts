@@ -33,6 +33,15 @@ export interface Company {
     solidcon_url_3?: string;
     solidcon_url_4?: string;
     solidcon_url_5?: string;
+    serv_solidcon?: string;
+    bd_solidcon?: string;
+    login_solidcon?: string;
+    senha_solidcon?: string;
+    serv_dorsal?: string;
+    bd_dorsal?: string;
+    login_dorsal?: string;
+    senha_dorsal?: string;
+    cdfilial?: string;
     allow_print_without_confirmation?: boolean;
 
     is_active?: boolean;
@@ -108,6 +117,15 @@ export interface UpdateCompanyData {
     solidcon_url_3?: string | undefined;
     solidcon_url_4?: string | undefined;
     solidcon_url_5?: string | undefined;
+    serv_solidcon?: string | undefined;
+    bd_solidcon?: string | undefined;
+    login_solidcon?: string | undefined;
+    senha_solidcon?: string | undefined;
+    serv_dorsal?: string | undefined;
+    bd_dorsal?: string | undefined;
+    login_dorsal?: string | undefined;
+    senha_dorsal?: string | undefined;
+    cdfilial?: string | undefined;
     allow_print_without_confirmation?: boolean | undefined;
     is_active?: boolean | undefined;
 

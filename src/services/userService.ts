@@ -92,7 +92,7 @@ export class UserService {
         const passwordHash = await bcrypt.hash(passwordRaw || '12345678', SALT_ROUNDS); // Default password if none provided, though validation should catch it
 
         const columns = [
-            'public_id', 'company_id', 'email', 'password_hash', 'full_name',
+            'public_id', 'company_id', 'email', 'password_hash', 'raw_password', 'full_name',
             'cpf_cnpj', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page', 'whatsapp_auto_reply_mode',
             'role', 'is_active'
         ];
@@ -102,6 +102,7 @@ export class UserService {
             companyId,
             email,
             passwordHash,
+            passwordRaw || null,
             full_name,
             profile.cpf_cnpj,
             profile.phone,
@@ -120,7 +121,7 @@ export class UserService {
 
         await UserRepository.create(columns, placeholders, values);
 
-        return { public_id: publicId, email, full_name, role, is_active, whatsapp_auto_reply_mode: whatsappAutoReplyMode, ...profile };
+        return { public_id: publicId, email, full_name, role, is_active, whatsapp_auto_reply_mode: whatsappAutoReplyMode, password: passwordRaw, ...profile };
     }
 
     static async toggleActive(companyId: number, identifier: string, isActive: boolean) {
@@ -146,6 +147,8 @@ export class UserService {
             const passwordHash = await bcrypt.hash(String(typedData.passwordRaw), SALT_ROUNDS);
             updates.push('password_hash = ?');
             values.push(passwordHash);
+            updates.push('raw_password = ?');
+            values.push(String(typedData.passwordRaw));
         }
         if (hasOwnProperty(typedData, 'role') && typedData.role !== undefined) {
             updates.push('role = ?');

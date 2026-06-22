@@ -232,4 +232,38 @@ export class ProductController {
             res.status(500).json({ status: 'error', message: error?.message || 'Internal Server Error' });
         }
     }
+
+    static async sendCatalog(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const userId = req.user!.id;
+            const { phone, type, origin } = z.object({
+                phone: z.string().min(8, 'Telefone inválido'),
+                type: z.enum(['pdf', 'link']).optional().default('pdf'),
+                origin: z.string().optional(),
+            }).parse(req.body);
+
+            const result = await ProductService.sendCatalog(
+                Number(companyId),
+                Number(userId),
+                phone,
+                type,
+                origin || `${req.secure ? 'https' : 'http'}://${req.get('host')}`
+            );
+
+            res.status(200).json({
+                status: 'success',
+                message: 'Catálogo enviado com sucesso',
+                data: result
+            });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                res.status(400).json({ status: 'error', errors: error.errors });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao enviar catálogo' });
+        }
+    }
+
 }
+

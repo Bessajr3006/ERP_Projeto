@@ -5,6 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - POS</title>
     <link href="/css/style.css" rel="stylesheet">
+    <style>
+        /* Layout POS / Restaurante */
+        .pos-grid {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        @media (min-width: 1024px) {
+            .pos-grid {
+                flex-direction: row;
+            }
+        }
+        
+        .pos-main-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0;
+            height: 100%;
+        }
+        
+        .cart-sidebar {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Mobile Slide Over */
+        @media (max-width: 1023px) {
+            .cart-sidebar {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 85%;
+                max-width: 400px;
+                z-index: 50;
+                transform: translateX(100%);
+            }
+            .cart-sidebar.open-mobile {
+                transform: translateX(0);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .cart-sidebar {
+                width: 380px;
+                flex-shrink: 0;
+                transform: none !important;
+            }
+            /* Esconder sidebar no desktop se a classe cart-hidden estiver presente no wrapper */
+            .pos-grid.cart-hidden .cart-sidebar {
+                display: none;
+            }
+        }
+    </style>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
     <script src="/js/pwa.js"></script>
@@ -21,7 +82,7 @@
         <div class="pos-grid cart-hidden relative bg-white dark:bg-slate-800 border-none sm:border-solid sm:border border-gray-200 dark:border-slate-700 rounded-none sm:rounded-lg shadow-none sm:shadow-sm">
 
         <!-- Main Content - Produtos -->
-        <div class="h-full flex flex-col bg-gray-50 dark:bg-slate-900/50 relative">
+        <div class="pos-main-content bg-gray-50 dark:bg-slate-900/50 relative">
             <!-- Search bar & Comanda -->
             <div class="p-4 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-stretch md:items-center z-0 gap-3">
                 <div class="w-full min-w-0 md:w-auto">

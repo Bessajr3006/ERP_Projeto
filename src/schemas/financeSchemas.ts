@@ -1,11 +1,26 @@
 import { z } from 'zod';
 
+export const CategoryTypeSchema = z.object({
+    id: z.number().int().positive(),
+    public_id: z.string().uuid(),
+    company_id: z.number().int().positive(),
+    name: z.string(),
+    description: z.string().nullable().optional(),
+    created_at: z.date().optional().or(z.string().optional()),
+    updated_at: z.date().optional().or(z.string().optional())
+}).passthrough();
+
+export const CategoryTypeListSchema = z.array(CategoryTypeSchema);
+
 export const CategorySchema = z.object({
     id: z.number().int().positive(),
     public_id: z.string().uuid(),
     company_id: z.number().int().positive(),
     name: z.string(),
     type: z.enum(['income', 'expense']),
+    finance_category_type_id: z.number().nullable().optional(),
+    finance_category_type_public_id: z.string().uuid().nullable().optional(),
+    finance_category_type_name: z.string().nullable().optional(),
     created_at: z.date().optional().or(z.string().optional()),
     updated_at: z.date().optional().or(z.string().optional())
 }).passthrough();
@@ -17,6 +32,12 @@ export const TransactionSchema = z.object({
     bank_account_id: z.number().int().positive(),
     category_id: z.number().int().positive(),
     customer_id: z.number().nullable().optional(),
+    supplier_id: z.number().nullable().optional(),
+    contact_id: z.number().nullable().optional(),
+    related_user_id: z.number().nullable().optional(),
+    entity_name: z.string().nullable().optional(),
+    entity_public_id: z.string().nullable().optional(),
+    entity_type: z.string().nullable().optional(),
     user_id: z.number().nullable().optional(),
     description: z.string(),
     nsn: z.string().nullable().optional(),

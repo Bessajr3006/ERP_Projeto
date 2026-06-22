@@ -133,7 +133,9 @@ type WhatsAppRuntimeExports = WhatsAppModule & {
     default?: Partial<WhatsAppModule>;
 };
 
-const SESSION_ROOT = path.join(process.cwd(), '.runtime', 'whatsapp-business');
+const SESSION_ROOT = process.env.DATA_DIR
+    ? path.join(process.env.DATA_DIR, 'whatsapp-business')
+    : path.join(process.cwd(), '.runtime', 'whatsapp-business');
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads', 'whatsapp');
 let whatsappModulePromise: Promise<WhatsAppModule> | null = null;
 
@@ -1815,6 +1817,34 @@ export class WhatsAppBusinessService {
         }
     }
 
+    private static async getRegisteredPhonesForCompany(companyId: number): Promise<Set<string>> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT phone FROM (
+                SELECT phone FROM customers WHERE company_id = ? AND phone IS NOT NULL AND phone != ''
+                UNION ALL
+                SELECT phone FROM suppliers WHERE company_id = ? AND phone IS NOT NULL AND phone != ''
+                UNION ALL
+                SELECT phone FROM users WHERE company_id = ? AND phone IS NOT NULL AND phone != ''
+             ) AS all_phones`,
+            [companyId, companyId, companyId]
+        );
+
+        const registeredSet = new Set<string>();
+        for (const row of rows) {
+            const normalized = WhatsAppBusinessMessageService.normalizeContactPhone(String(row.phone));
+            if (normalized) {
+                registeredSet.add(normalized);
+            }
+        }
+        return registeredSet;
+    }
+
+    private static async isPhoneRegistered(companyId: number, phone: string): Promise<boolean> {
+        const registered = await this.getRegisteredPhonesForCompany(companyId);
+        const normalized = WhatsAppBusinessMessageService.normalizeContactPhone(phone);
+        return normalized ? registered.has(normalized) : false;
+    }
+
     private static isPersonalChat(chatId: string | null | undefined): boolean {
         if (typeof chatId !== 'string') {
             return false;
@@ -2357,6 +2387,20 @@ export class WhatsAppBusinessService {
             return;
         }
 
+        const isRegistered = await this.isPhoneRegistered(scope.companyId, contactPhone);
+        if (!isRegistered) {
+            logger.info(
+                {
+                    scope: this.buildRecordMapKey(scope),
+                    contactPhone,
+                    direction,
+                    messageId: message.id?._serialized || null,
+                },
+                '[whatsappBusinessService] Mensagem nao persistida pois o contato nao esta cadastrado no ERP'
+            );
+            return;
+        }
+
         let persistedContactPhone = contactPhone;
         try {
             const notifyName = String((message as { notifyName?: string | null })?.notifyName || '').trim() || null;
@@ -2755,9 +2799,16 @@ export class WhatsAppBusinessService {
         }
 
         try {
+            const registeredPhones = await this.getRegisteredPhonesForCompany(record.scope.companyId);
+
             const chats = await client.getChats();
             const personalChats = chats
-                .filter((chat: any) => this.isPersonalChat(chat?.id?._serialized || chat?.id?.toString?.() || ''))
+                .filter((chat: any) => {
+                    const chatId = chat?.id?._serialized || chat?.id?.toString?.() || '';
+                    if (!this.isPersonalChat(chatId)) return false;
+                    const phone = WhatsAppBusinessMessageService.normalizeContactPhone(chatId);
+                    return phone ? registeredPhones.has(phone) : false;
+                })
                 .sort((left: any, right: any) => {
                     const leftTs = Number(left?.timestamp || 0);
                     const rightTs = Number(right?.timestamp || 0);
@@ -2848,9 +2899,16 @@ export class WhatsAppBusinessService {
                 return;
             }
 
+            const registeredPhones = await this.getRegisteredPhonesForCompany(record.scope.companyId);
+
             const chats = await client.getChats();
             const personalChats = chats
-                .filter((chat: any) => this.isPersonalChat(chat?.id?._serialized || chat?.id?.toString?.() || ''))
+                .filter((chat: any) => {
+                    const chatId = chat?.id?._serialized || chat?.id?.toString?.() || '';
+                    if (!this.isPersonalChat(chatId)) return false;
+                    const phone = WhatsAppBusinessMessageService.normalizeContactPhone(chatId);
+                    return phone ? registeredPhones.has(phone) : false;
+                })
                 .sort((left: any, right: any) => Number(right?.timestamp || 0) - Number(left?.timestamp || 0))
                 .slice(0, this.inboundSyncChatsLimit);
 
@@ -2940,6 +2998,51 @@ export class WhatsAppBusinessService {
     }
 
     private static bindClientEvents(record: SessionRecord, client: WhatsAppClient): void {
+        client.on('ready', () => {
+            const page = (client as any).pupPage;
+            if (page) {
+                logger.info({ sessionKey: record.scope.sessionKey }, '[whatsappBusinessService] Browser ready, hooking console/error logs');
+                page.on('console', (msg: any) => {
+                    const text = msg.text();
+                    const type = msg.type();
+                    if (type === 'error' || text.includes('error') || text.includes('failed') || text.includes('Exception') || text.includes('Warning')) {
+                        logger.warn({ text, type }, '[whatsappBusinessService] Browser Console Log');
+                    }
+                });
+                page.on('pageerror', (err: any) => {
+                    logger.error({ err: err.message }, '[whatsappBusinessService] Browser Page Error');
+                });
+            }
+        });
+
+        client.on('message_ack', (message: WhatsAppMessage, ack: number) => {
+            const status = this.translateAckStatus(ack);
+            if (status && message.id?._serialized) {
+                logger.info(
+                    {
+                        scope: this.buildRecordMapKey(record.scope),
+                        event: 'message_ack',
+                        messageId: message.id._serialized,
+                        ack,
+                        status
+                    },
+                    '[whatsappBusinessService] Evento message_ack recebido'
+                );
+                pool.query(
+                    `UPDATE whatsapp_business_messages
+                     SET status = ?,
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE message_id = ?`,
+                    [status, message.id._serialized]
+                ).catch((error: unknown) => {
+                    logger.error(
+                        { err: error, sessionKey: record.scope.sessionKey, messageId: message.id?._serialized || null },
+                        '[whatsappBusinessService] Falha ao atualizar ack de mensagem no banco'
+                    );
+                });
+            }
+        });
+
         client.on('qr', (qr: string) => {
             void (async () => {
                 const qrCodeDataUrl = await QRCode.toDataURL(qr, {
@@ -3072,6 +3175,7 @@ export class WhatsAppBusinessService {
                 clientId: record.scope.sessionKey,
                 dataPath: SESSION_ROOT,
             }),
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             puppeteer: {
                 headless: true,
                 executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
@@ -3358,6 +3462,7 @@ export class WhatsAppBusinessService {
         record.client = null;
         record.initializePromise = null;
         this.stopInboundSyncTimer(record);
+        await this.clearPersistedSessionData(record.scope.sessionKey);
         this.updateSnapshot(record, {
             status: 'idle',
             qr_code_data_url: null,
@@ -3581,9 +3686,66 @@ export class WhatsAppBusinessService {
         const attachment = input.attachment || null;
 
         const preferredChatId = String(input.toChatId || '').trim();
-        const chatId = preferredChatId && this.isPersonalChat(preferredChatId)
+        let chatId = preferredChatId && this.isPersonalChat(preferredChatId)
             ? preferredChatId
             : `${recipientPhone}@c.us`;
+
+        if (record.client && !preferredChatId) {
+            try {
+                if (recipientPhone.startsWith('55')) {
+                    let phone9: string;
+                    let phone8: string;
+
+                    if (recipientPhone.length === 13) {
+                        phone9 = recipientPhone;
+                        const ddd = recipientPhone.slice(2, 4);
+                        const rest = recipientPhone.slice(5);
+                        phone8 = `55${ddd}${rest}`;
+                    } else if (recipientPhone.length === 12) {
+                        phone8 = recipientPhone;
+                        const ddd = recipientPhone.slice(2, 4);
+                        const rest = recipientPhone.slice(4);
+                        phone9 = `55${ddd}9${rest}`;
+                    } else {
+                        phone9 = recipientPhone;
+                        phone8 = recipientPhone;
+                    }
+
+                    const [numberId9, numberId8] = await Promise.all([
+                        record.client.getNumberId(phone9),
+                        phone8 !== phone9 ? record.client.getNumberId(phone8) : Promise.resolve(null)
+                    ]);
+
+                    logger.info(
+                        { recipientPhone, phone9, phone8, numberId9, numberId8 },
+                        '[whatsappBusinessService] Resolucao de numero brasileiro'
+                    );
+
+                    if (numberId9 && numberId9._serialized && !numberId9._serialized.endsWith('@lid')) {
+                        chatId = numberId9._serialized;
+                    } else if (numberId8 && numberId8._serialized && !numberId8._serialized.endsWith('@lid')) {
+                        chatId = numberId8._serialized;
+                    } else if (numberId9 && numberId9._serialized && numberId9._serialized.endsWith('@lid')) {
+                        chatId = `${phone9}@c.us`;
+                    } else if (numberId8 && numberId8._serialized && numberId8._serialized.endsWith('@lid')) {
+                        chatId = `${phone8}@c.us`;
+                    } else {
+                        chatId = `${recipientPhone}@c.us`;
+                    }
+                } else {
+                    const numberId = await record.client.getNumberId(recipientPhone);
+                    if (numberId && numberId._serialized && !numberId._serialized.endsWith('@lid')) {
+                        chatId = numberId._serialized;
+                    } else {
+                        chatId = `${recipientPhone}@c.us`;
+                    }
+                }
+            } catch (err) {
+                logger.warn({ err, recipientPhone }, '[whatsappBusinessService] Falha ao resolver getNumberId');
+                chatId = `${recipientPhone}@c.us`;
+            }
+        }
+
         try {
             const chatUser = this.extractChatUserDigits(chatId);
             if (chatUser && chatUser !== recipientPhone) {
@@ -3603,6 +3765,15 @@ export class WhatsAppBusinessService {
             },
             '[whatsappBusinessService] Envio manual usando chat_id resolvido'
         );
+
+        // Pre-carrega o chat para garantir que a tabela de chats do WhatsApp Web local seja inicializada
+        try {
+            logger.info({ chatId, recipientPhone }, '[whatsappBusinessService] Pre-carregando chat para evitar mensagem pendente');
+            await record.client.getChatById(chatId);
+        } catch (getChatErr: any) {
+            logger.warn({ err: getChatErr, chatId, recipientPhone }, '[whatsappBusinessService] Falha no getChatById (prosseguindo mesmo assim)');
+        }
+
         const isAudioAttachment = attachment?.mimeType?.trim().toLowerCase().startsWith('audio/');
         const media = attachment ? await this.buildMessageMedia(attachment) : null;
         const message = attachment
@@ -3681,6 +3852,24 @@ export class WhatsAppBusinessService {
 
     static async sendUserMessage(companyId: number | string, userId: number | string, input: WhatsAppBusinessSendMessageInput): Promise<WhatsAppBusinessSendResult> {
         return this.sendScopedMessage(this.buildUserScope(companyId, userId), input);
+    }
+
+    static async getSessionScreenshot(companyId: number | string): Promise<Buffer | null> {
+        const scope = this.buildCompanyScope(companyId);
+        const record = this.sessions.get(this.buildRecordMapKey(scope));
+        if (!record || !record.client) {
+            return null;
+        }
+        const page = (record.client as any).pupPage;
+        if (!page) {
+            return null;
+        }
+        try {
+            return await page.screenshot({ type: 'png' }) as Buffer;
+        } catch (e: any) {
+            logger.warn({ err: e }, '[whatsappBusinessService] Falha ao tirar screenshot da pagina');
+            return null;
+        }
     }
 
     static async shutdownAllSessions(): Promise<void> {

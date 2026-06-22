@@ -66,6 +66,21 @@ import runMigration72FinanceVisionPermissions from './run_migration_72_finance_v
 import runMigration73StockTypes from './run_migration_73_stock_types';
 import runMigration74ProductStockType from './run_migration_74_product_stock_type';
 import runMigration75ServiceLaunchesNfseStatus from './run_migration_75_service_launches_nfse_status';
+import runMigration86QuoteStatus from './run_migration_86_quote_status';
+import runMigration87QuotesFields from './run_migration_87_quotes_fields';
+import runMigration88QuotesPermissions from './run_migration_88_quotes_permissions';
+import { runMigration89QuoteServices } from './run_migration_89_quote_services';
+import { runMigration90QuoteManualCustomerAndBrand } from './run_migration_90_quote_manual_customer_and_brand';
+import { runMigration91QuotePaymentAndTerms } from './run_migration_91_quote_payment_and_terms';
+import { runMigration92SolidconDorsalFields } from './run_migration_92_solidcon_dorsal_fields';
+import { runMigration93AddCdfilial } from './run_migration_93_add_cdfilial';
+import { runMigration94BankAccountsWebhookFields } from './run_migration_94_bank_accounts_webhook_fields';
+import { runMigration95BankAccountsWebhookCerts } from './run_migration_95_bank_accounts_webhook_certs';
+import { runMigration96FinanceCategoryTypes } from './run_migration_96_finance_category_types';
+import { runMigration97BankAccountsWebhookBoleto } from './run_migration_97_bank_accounts_webhook_boleto';
+import { runMigration98BankStatements } from './run_migration_98_bank_statements';
+
+
 
 type SeedRole = 'admin' | 'operator' | 'financial' | 'seller' | 'contact' | 'accountant' | 'buyer' | 'service_provider' | 'user' | 'super_admin';
 
@@ -109,6 +124,7 @@ const ALL_MODULES = [
     'expenses',
     'revenues',
     'finance_categories',
+    'finance_category_types',
     'banks',
     'statements',
     'customers',
@@ -137,7 +153,7 @@ const ALL_MODULES = [
 const ROLE_MODULES: Record<SeedRole, readonly string[]> = {
     admin: ALL_MODULES,
     operator: ['dashboard', 'sales', 'restaurant', 'picking', 'nota'],
-    financial: ['dashboard', 'finance_vision', 'expenses', 'revenues', 'finance_categories', 'banks', 'statements', 'purchases', 'accountant'],
+    financial: ['dashboard', 'finance_vision', 'expenses', 'revenues', 'finance_categories', 'finance_category_types', 'banks', 'statements', 'purchases', 'accountant'],
     seller: ['dashboard', 'sales', 'customers', 'contacts', 'sellers'],
     contact: ['dashboard', 'contacts'],
     accountant: ['dashboard', 'company', 'accountant'],
@@ -412,6 +428,21 @@ async function runInitDb(): Promise<void> {
     await runMigration73StockTypes();
     await runMigration74ProductStockType();
     await runMigration75ServiceLaunchesNfseStatus();
+    await runMigration86QuoteStatus();
+    await runMigration87QuotesFields();
+    await runMigration88QuotesPermissions();
+    await runMigration89QuoteServices();
+    await runMigration90QuoteManualCustomerAndBrand();
+    await runMigration91QuotePaymentAndTerms();
+    await runMigration92SolidconDorsalFields();
+    await runMigration93AddCdfilial();
+    await runMigration94BankAccountsWebhookFields();
+    await runMigration95BankAccountsWebhookCerts();
+    await runMigration96FinanceCategoryTypes();
+    await runMigration97BankAccountsWebhookBoleto();
+    await runMigration98BankStatements();
+
+
 
     const systemCompany = await ensureSystemCompany();
     await ensureAtLeastOneVisibleCompany();

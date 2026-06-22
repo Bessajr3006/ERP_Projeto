@@ -87,8 +87,9 @@ export class AccountingController {
                 return;
             }
 
-            await AccountingService.batchDeleteAccounts(publicIds, companyId);
-            res.status(200).json({ status: 'success', message: `${publicIds.length} contas excluídas com sucesso.` });
+            const uniqueIds = Array.from(new Set(publicIds)) as string[];
+            await AccountingService.batchDeleteAccounts(uniqueIds, companyId);
+            res.status(200).json({ status: 'success', message: `${uniqueIds.length} contas excluídas com sucesso.` });
         } catch (error) {
             throw error;
         }

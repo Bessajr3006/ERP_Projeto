@@ -91,6 +91,12 @@ router.put('/categories/:id', (req, res, next) => FinanceController.updateCatego
  */
 router.delete('/categories/:id', (req, res, next) => FinanceController.deleteCategory(req, res).catch(next));
 
+// Category Types routes
+router.post('/category-types', (req, res, next) => FinanceController.createCategoryType(req, res).catch(next));
+router.get('/category-types', (req, res, next) => FinanceController.listCategoryTypes(req, res).catch(next));
+router.put('/category-types/:id', (req, res, next) => FinanceController.updateCategoryType(req, res).catch(next));
+router.delete('/category-types/:id', (req, res, next) => FinanceController.deleteCategoryType(req, res).catch(next));
+
 /**
  * @openapi
  * /finance/expenses:
@@ -216,6 +222,20 @@ router.post('/revenues/batch-generate-billets', (req, res, next) => FinanceContr
 router.post('/revenues/batch-cancel-billets', (req, res, next) => FinanceController.batchCancelBillets(req, res).catch(next));
 /**
  * @openapi
+ * /finance/revenues/solidcon-import:
+ *   post:
+ *     tags: [Finance]
+ *     summary: Importar receitas da Solidcon
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Importacao concluida }
+ */
+router.post('/revenues/solidcon-import', (req, res, next) => FinanceController.importRevenuesSolidcon(req, res).catch(next));
+router.post('/revenues/batch-update', (req, res, next) => FinanceController.batchUpdateRevenues(req, res).catch(next));
+
+/**
+ * @openapi
  * /finance/revenues/{id}:
  *   put:
  *     tags: [Finance]
@@ -282,6 +302,7 @@ router.post('/revenues/:id/generate-billet', (req, res, next) => FinanceControll
  *       200: { description: PDF do boleto }
  */
 router.get('/revenues/:id/boleto-pdf', (req, res, next) => FinanceController.getBoletoPdf(req, res).catch(next));
+router.post('/revenues/:id/sync-boleto-status', (req, res, next) => FinanceController.syncBoletoStatus(req, res).catch(next));
 /**
  * @openapi
  * /finance/revenues/{id}/receipt:
@@ -299,7 +320,9 @@ router.get('/revenues/:id/boleto-pdf', (req, res, next) => FinanceController.get
  *       200: { description: HTML do recibo }
  *       400: { description: Erro ao gerar recibo }
  */
+router.get('/whatsapp/screenshot', protectRoute, (req, res, next) => FinanceController.getWhatsAppScreenshot(req, res).catch(next));
 router.get('/revenues/:id/receipt', (req, res, next) => FinanceController.getReceipt(req, res).catch(next));
+router.post('/revenues/:id/send-whatsapp', protectRoute, (req, res, next) => FinanceController.sendWhatsApp(req, res).catch(next));
 
 /**
  * @openapi
@@ -318,6 +341,7 @@ router.get('/revenues/:id/receipt', (req, res, next) => FinanceController.getRec
  *       204: { description: Transacao removida }
  */
 router.delete('/transactions/:id', (req, res, next) => FinanceController.deleteTransaction(req, res).catch(next));
+router.post('/transactions/batch-delete', (req, res, next) => FinanceController.batchDeleteTransactions(req, res).catch(next));
 
 /**
  * @openapi

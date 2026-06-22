@@ -539,6 +539,100 @@
                                 conectar as integrações com o sistema Solidcon.</p>
 
                             <div class="space-y-4">
+                                <!-- Conexão Banco de Dados Solidcon -->
+                                <div class="pt-4 border-b border-gray-200 dark:border-slate-700 pb-6">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                        <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                        </svg>
+                                        Conexão Banco de Dados Solidcon
+                                    </h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="servSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Servidor Solidcon (IP/Host)</label>
+                                            <input type="text" id="servSolidcon" name="servSolidcon" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: 192.168.1.100">
+                                        </div>
+                                        <div>
+                                            <label for="bdSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Banco de Dados Solidcon</label>
+                                            <input type="text" id="bdSolidcon" name="bdSolidcon" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: solidcon_db">
+                                        </div>
+                                        <div>
+                                            <label for="loginSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Login Solidcon</label>
+                                            <input type="text" id="loginSolidcon" name="loginSolidcon" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: db_user">
+                                        </div>
+                                        <div>
+                                            <label for="senhaSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha Solidcon</label>
+                                            <div class="relative mt-1">
+                                                <input type="password" id="senhaSolidcon" name="senhaSolidcon" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="••••••••">
+                                                <button type="button" id="toggleSenhaSolidconBtn" title="Mostrar ou ocultar senha" aria-label="Mostrar ou ocultar senha" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
+                                                    <svg class="h-5 w-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    <svg class="h-5 w-5 eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Conexão Banco de Dados Dorsal -->
+                                <div class="pt-4 border-b border-gray-200 dark:border-slate-700 pb-6">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                        <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                        </svg>
+                                        Conexão Banco de Dados Dorsal
+                                    </h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="servDorsal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Servidor Dorsal (IP/Host)</label>
+                                            <input type="text" id="servDorsal" name="servDorsal" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: 192.168.1.200">
+                                        </div>
+                                        <div>
+                                            <label for="bdDorsal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Banco de Dados Dorsal</label>
+                                            <input type="text" id="bdDorsal" name="bdDorsal" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: dorsal_db">
+                                        </div>
+                                        <div>
+                                            <label for="loginDorsal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Login Dorsal</label>
+                                            <input type="text" id="loginDorsal" name="loginDorsal" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: db_user">
+                                        </div>
+                                        <div>
+                                            <label for="senhaDorsal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha Dorsal</label>
+                                            <div class="relative mt-1">
+                                                <input type="password" id="senhaDorsal" name="senhaDorsal" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="••••••••">
+                                                <button type="button" id="toggleSenhaDorsalBtn" title="Mostrar ou ocultar senha" aria-label="Mostrar ou ocultar senha" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
+                                                    <svg class="h-5 w-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    <svg class="h-5 w-5 eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Código de Filial para Integrações -->
+                                <div class="pt-4 border-b border-gray-200 dark:border-slate-700 pb-6">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                        <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                        Parâmetros de Filial
+                                    </h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="cdFilial" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código da Filial (cdfilial)</label>
+                                            <input type="text" id="cdFilial" name="cdFilial" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: 1">
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="pt-4 mt-6 border-t border-gray-200 dark:border-slate-700">
                                     <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Links e Endpoints da Integração (URLs)</h4>
                                     

@@ -44,6 +44,10 @@
     activeCategory: string | number;
     isCartOpen: boolean;
     isPaymentModalOpen: boolean;
+    isCatalogModalOpen: boolean;
+    catalogPhone: string;
+    sendingCatalog: boolean;
+    companyPublicId: string;
     registerId: string;
     currentDate: string;
     defaultBankPublicId: string | null;
@@ -69,8 +73,13 @@
       activeCategory: 'all',
       isCartOpen: false,
       isPaymentModalOpen: false,
+      isCatalogModalOpen: false,
+      catalogPhone: '',
+      sendingCatalog: false,
+      companyPublicId: '',
       registerId: localStorage.getItem('erp_caixa_id') || '01',
       currentDate: new Date().toLocaleDateString('pt-BR'),
+
       defaultBankPublicId: null,
       defaultCategoryPublicId: null,
       allowPrintWithoutConfirmation: false,
@@ -87,6 +96,7 @@
         { id: 'boleto', name: 'Boleto' },
       ],
     };
+
 
     // --- Helpers ---
     const formatCurrency = (val: any): string =>
@@ -133,7 +143,12 @@
                                     <input id="searchInput" type="text" value="${state.searchQuery}" placeholder="Buscar código, nome..." class="peer h-full w-full outline-none text-[16px] md:text-sm font-medium text-gray-700 dark:text-gray-300 pr-2 bg-transparent placeholder-gray-400">
                                 </div>
                             </div>
-                            <div class="shrink-0">
+                            <div class="shrink-0 flex items-center gap-2">
+                                <button type="button" id="btnSendCatalogWhatsApp" class="flex items-center justify-center px-3.5 h-12 min-w-12 sm:min-w-12 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-200 dark:border-emerald-800/60 shadow-sm transition-all duration-300 active:scale-[0.98]" title="Enviar Catálogo por WhatsApp" aria-label="Enviar Catálogo por WhatsApp">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                    </svg>
+                                </button>
                                 <button type="button" id="btnToggleCartMobile" class="flex items-center justify-center px-3.5 h-12 min-w-12 sm:min-w-12 bg-linear-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-xl border border-brand-500/40 relative transition-all duration-300 active:scale-[0.98] ${
                                   state.cart.length > 0
                                     ? 'shadow-lg ring-2 ring-brand-300/70 animate-pulse'
@@ -150,6 +165,7 @@
                                     }
                                 </button>
                             </div>
+
                         </div>
                         <div class="mt-3 flex items-center gap-2 border-b border-gray-200 dark:border-slate-700">
                           <button type="button" id="btnCategoryPrev" class="mb-2 h-7 w-7 shrink-0 rounded-full border border-gray-200 bg-white/95 text-gray-500 shadow-sm hover:text-brand-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800/95 dark:text-gray-300 dark:hover:text-brand-300 dark:hover:bg-slate-700 transition-colors" title="Categorias anteriores" aria-label="Categorias anteriores">
@@ -332,7 +348,49 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Modal Enviar Catálogo WhatsApp -->
+            <div id="catalogWhatsappModal" class="${state.isCatalogModalOpen ? 'flex' : 'hidden'} fixed inset-0 z-10000 items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl w-[95%] max-w-md shadow-2xl flex flex-col">
+                    <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50/50 dark:bg-slate-900/50">
+                        <h3 class="text-lg font-bold dark:text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.739-1.45L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.858.002-2.634-1.02-5.11-2.881-6.974C16.592 1.89 14.117 1.06 11.487 1.06 6.05 1.06 1.625 5.48 1.62 10.921c-.001 1.701.453 3.361 1.314 4.816L1.97 21.65l6.01-1.577zM17.65 14.4c-.3-.15-1.785-.88-2.06-.98-.28-.1-.48-.15-.68.15-.2.3-.77.98-.95 1.18-.18.2-.35.23-.65.08-1.02-.51-1.72-.88-2.4-2.05-.18-.3-.18-.5-.03-.65.13-.13.3-.35.45-.53.15-.18.2-.3.3-.5.1-.2.05-.38-.03-.53-.08-.15-.68-1.65-.93-2.25-.24-.58-.49-.5-.68-.51h-.58c-.2 0-.53.08-.8.38-.28.3-1.05 1.03-1.05 2.5 0 1.48 1.08 2.9 1.23 3.1.15.2 2.13 3.25 5.16 4.56.72.31 1.28.5 1.72.64.73.23 1.39.2 1.92.12.59-.09 1.79-.73 2.04-1.44.25-.7.25-1.3.18-1.43-.07-.13-.26-.2-.56-.35z"/></svg>
+                            Enviar Catálogo
+                        </h3>
+                        <button type="button" id="btnCloseCatalogWhatsapp" class="text-gray-400 p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                    </div>
+                    <div class="p-6 space-y-4 text-left">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                            Selecione como deseja compartilhar o catálogo de produtos com o cliente:
+                        </p>
+
+                        <!-- Link Copy Section -->
+                        <div class="space-y-2 bg-gray-50 dark:bg-slate-900/50 p-3 rounded-xl border border-gray-100 dark:border-slate-800">
+                            <label class="block text-xs font-bold uppercase text-gray-400">Link do Catálogo Digital</label>
+                            <div class="flex gap-2">
+                                <input id="catalogLinkInput" type="text" readonly value="${window.location.origin}/pages/catalog.html?company=${state.companyPublicId}" class="flex-1 text-xs border p-2 rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-300 focus:outline-none">
+                                <button type="button" id="btnCopyCatalogLink" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-700 dark:hover:text-white px-3 py-2 rounded-lg font-bold transition-all">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold dark:text-gray-300">Telefone do Destinatário</label>
+                            <input id="catalogWhatsappPhone" type="text" value="${state.catalogPhone}" placeholder="Ex: 11 99999-9999" class="w-full border p-2.5 rounded-lg bg-gray-50 dark:bg-slate-900 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none">
+                            <span class="text-xs text-gray-400">Insira o telefone com DDD. O sistema fará a formatação automática.</span>
+                        </div>
+                    </div>
+                    <div class="p-6 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 flex gap-3">
+                        <button type="button" id="btnSendCatalogLink" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl uppercase transition-all disabled:opacity-50 flex items-center justify-center gap-2" ${state.sendingCatalog ? 'disabled' : ''}>
+                            <span>${state.sendingCatalog ? 'Enviando...' : 'Enviar Link'}</span>
+                        </button>
+                        <button type="button" id="btnConfirmSendCatalog" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl uppercase transition-all disabled:opacity-50 flex items-center justify-center gap-2" ${state.sendingCatalog ? 'disabled' : ''}>
+                            <span>${state.sendingCatalog ? 'Enviando...' : 'Enviar PDF'}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
+
 
       attachEventListeners();
     }
@@ -575,9 +633,49 @@
 
       document.getElementById('btnConfirmSale')?.addEventListener('click', confirmSale);
 
+      // Catalog WhatsApp Events
+      document.getElementById('btnSendCatalogWhatsApp')?.addEventListener('click', () => {
+        state.isCatalogModalOpen = true;
+        render();
+      });
+
+      document.getElementById('btnCloseCatalogWhatsapp')?.addEventListener('click', () => {
+        state.isCatalogModalOpen = false;
+        render();
+      });
+
+      (document.getElementById('catalogWhatsappPhone') as HTMLInputElement | null)?.addEventListener('input', (e: Event) => {
+        state.catalogPhone = (e.target as HTMLInputElement).value;
+      });
+
+      document.getElementById('btnCopyCatalogLink')?.addEventListener('click', () => {
+        const input = document.getElementById('catalogLinkInput') as HTMLInputElement | null;
+        if (input) {
+          navigator.clipboard.writeText(input.value);
+          const btn = document.getElementById('btnCopyCatalogLink');
+          if (btn) {
+            btn.textContent = 'Copiado!';
+            setTimeout(() => {
+              const b = document.getElementById('btnCopyCatalogLink');
+              if (b) b.textContent = 'Copiar';
+            }, 2000);
+          }
+        }
+      });
+
+      document.getElementById('btnSendCatalogLink')?.addEventListener('click', () => {
+        sendCatalogWhatsApp('link');
+      });
+
+      document.getElementById('btnConfirmSendCatalog')?.addEventListener('click', () => {
+        sendCatalogWhatsApp('pdf');
+      });
+
+
       attachGridListeners();
       attachCartListeners();
     }
+
 
     function scrollCategories(direction: number): void {
       const scroller = document.getElementById('categoryScroller');
@@ -762,6 +860,32 @@
       }
     }
 
+    async function sendCatalogWhatsApp(type: 'pdf' | 'link' = 'pdf'): Promise<void> {
+      if (!state.catalogPhone.trim()) {
+        return void alert('Por favor, informe o telefone de destino.');
+      }
+      state.sendingCatalog = true;
+      render();
+      try {
+        await api('/products/send-catalog', {
+          method: 'POST',
+          body: JSON.stringify({
+            phone: state.catalogPhone,
+            type: type,
+            origin: window.location.origin
+          }),
+        });
+        alert('Catálogo enviado com sucesso via WhatsApp!');
+        state.isCatalogModalOpen = false;
+      } catch (e: any) {
+        alert(e?.message || 'Erro ao enviar catálogo por WhatsApp.');
+      } finally {
+        state.sendingCatalog = false;
+        render();
+      }
+    }
+
+
     // --- Init ---
     try {
       const [pRes, cRes, cuRes, bRes, fRes, _aRes] = await Promise.all([
@@ -781,6 +905,9 @@
 
       const salesCat = fRes.data?.find((c: any) => String(c.name || '').toLowerCase().includes('venda')) || fRes.data?.[0];
       if (salesCat) state.defaultCategoryPublicId = salesCat.public_id;
+      if (_aRes.data?.company?.public_id) {
+        state.companyPublicId = _aRes.data.company.public_id;
+      }
     } catch (e) {
       console.error(e);
     }

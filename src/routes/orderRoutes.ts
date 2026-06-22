@@ -161,8 +161,33 @@ router.post('/purchases', (req, res, next) => OrderController.createPurchase(req
  *         description: Não autenticado
  */
 router.post('/sales', (req, res, next) => OrderController.createSale(req, res).catch(next));
+
+/**
+ * @openapi
+ * /orders/quotes:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Criar orçamento
+ *     description: |
+ *       Cria um novo orçamento (venda com status quote).
+ *       Não movimenta estoque nem cria registros financeiros.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Orçamento criado com sucesso
+ *       400:
+ *         description: Dados inválidos ou cliente/produto não encontrado
+ */
+router.post('/quotes', (req, res, next) => OrderController.createQuote(req, res).catch(next));
+
 router.post('/sales/import-xml', (req, res, next) => OrderController.importSaleFromXml(req, res).catch(next));
 router.get('/sales', (req, res, next) => OrderController.listSales(req, res).catch(next));
+router.get('/quotes/:id', (req, res, next) => OrderController.getQuoteById(req, res).catch(next));
+router.get('/quotes/:id/print', (req, res, next) => OrderController.getQuotePrintHTML(req, res).catch(next));
+router.put('/quotes/:id', (req, res, next) => OrderController.updateQuote(req, res).catch(next));
+router.delete('/quotes/:id', (req, res, next) => OrderController.deleteQuote(req, res).catch(next));
+router.get('/quotes', (req, res, next) => OrderController.listQuotes(req, res).catch(next));
 router.patch('/:id/active', (req, res, next) => OrderController.setSaleActive(req, res).catch(next));
 router.patch('/:saleId/items/:itemId/active', (req, res, next) => OrderController.setSaleItemActive(req, res).catch(next));
 router.delete('/:id/permanent', (req, res, next) => OrderController.hardDeleteInactiveSale(req, res).catch(next));

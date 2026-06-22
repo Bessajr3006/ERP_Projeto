@@ -9,6 +9,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const api = (window as any).api;
+    const UI = (window as any).UI;
     const runtimeWindow = window as any;
     if (runtimeWindow.__whatsappPageInitialized) {
         return;
@@ -769,6 +771,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 getChatUserFromChatId(convo?.last_chat_id),
             ]).map((value) => aliasToCanonical.get(value) || value);
 
+            const isRegistered = resolvedAliases.some((alias) => registeredContactRolesByPhone.has(alias));
+            if (!isRegistered) continue;
+
             mergedMap.set(phone, {
                 ...convo,
                 contact_phone: phone,
@@ -948,8 +953,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        await Promise.all([loadSession(), loadConversations()]);
         await loadCustomersAsContacts();
+        await Promise.all([loadSession(), loadConversations()]);
         startPolling();
         setupEvents();
         updateAttachmentInfo();

@@ -23,7 +23,9 @@ export interface Product {
     tax_rule_id?: number | null;
     measure_id?: number | null;
     stock_type_name?: string | null;
+    category_name?: string | null;
     image_base64?: string | null;
+
     image_url?: string | null;
     created_at: Date;
     updated_at: Date;

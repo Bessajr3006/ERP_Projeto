@@ -30,20 +30,15 @@
                             </svg>
                             Excluir em Lote
                         </button>
-                        <button id="btnBatchGenerateBillet"
+                        <button id="btnBatchUpdateRevenue"
                             class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                            Gerar Boleto em Lote
+                            Alterar em Lote
                         </button>
-                        <button id="btnBatchCancelBillet"
-                            class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                            Cancelar Boleto em Lote
-                        </button>
+
+
                     </div>
                     <div class="flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm">
                         <button type="button" id="btnListView" title="Visualização em Lista"
@@ -65,6 +60,10 @@
                             </svg>
                         </button>
                     </div>
+                    <button type="button" id="btnOpenSolidconModal" title="Importar Solidcon"
+                        class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        Solidcon
+                    </button>
                     <button type="button" id="btnOpenModal" title="Nova Receita"
                         class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -259,14 +258,33 @@
 
                     <!-- Modal Body -->
                     <div class="px-5 py-4 space-y-4">
-                        <!-- Cliente -->
-                        <div>
-                            <label for="customerSearch" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Cliente</label>
-                            <input type="hidden" id="customerSelect" name="customerSelect">
-                            <input type="text" id="customerSearch" name="customerSearch" list="customersList"
-                                placeholder="Digite para buscar o cliente..."
-                                class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all">
-                            <datalist id="customersList"></datalist>
+                        <!-- Tipo de Pessoa e Pessoa -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="entityType" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Tipo de Pessoa
+                                </label>
+                                <select id="entityType" name="entityType"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all">
+                                    <option value="" selected>Nenhum/Não Informar</option>
+                                    <option value="customer">Cliente</option>
+                                    <option value="supplier">Fornecedor</option>
+                                    <option value="contact">Contato</option>
+                                    <option value="seller">Vendedor</option>
+                                    <option value="buyer">Comprador</option>
+                                    <option value="service_provider">Prestador de Serviço</option>
+                                    <option value="accountant">Contador</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="entitySelect" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Pessoa
+                                </label>
+                                <select id="entitySelect" name="entitySelect" disabled
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all">
+                                    <option value="">Selecione o tipo primeiro...</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Grid 2 colunas -->
@@ -326,6 +344,11 @@
                                     <option value="paid">Recebido / Pago</option>
                                     <option value="pending" selected>Pendente</option>
                                 </select>
+                            </div>
+                            <div id="receivedAtContainer" class="hidden col-span-2">
+                                <label for="receivedAt" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Data da Baixa</label>
+                                <input type="datetime-local" id="receivedAt" name="receivedAt"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all">
                             </div>
                         </div>
 
@@ -469,6 +492,83 @@
         </div>
     </div>
 
+    <!-- ── MODAL: Atualização de Receitas em Lote ─────────── -->
+    <!-- ── MODAL: Atualização de Receitas em Lote ─────────── -->
+    <div id="bulkUpdateModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="bulk-update-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="bulkUpdateModalBackdrop" class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity"
+                aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="bulkUpdateForm">
+                    <div class="px-5 pt-5 pb-3">
+                        <div class="flex items-start gap-4">
+                            <div class="shrink-0 flex items-center justify-center h-11 w-11 rounded-xl bg-brand-100 dark:bg-brand-900/30">
+                                <svg class="h-5 w-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </div>
+                            <div class="w-full">
+                                <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100" id="bulk-update-modal-title">
+                                    Atualização em Lote (<span id="bulkUpdateModalCount">0</span> itens)
+                                </h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    Preencha os campos abaixo para alterar as receitas selecionadas em lote.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="bulkUpdateBank" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Conta p/ Depósito
+                                </label>
+                                <select id="bulkUpdateBank" name="bulkUpdateBank"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                    <option value="">-- Manter Conta Original de Cada Lançamento --</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="bulkUpdateMethod" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Forma de Recebimento
+                                </label>
+                                <select id="bulkUpdateMethod" name="bulkUpdateMethod"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                    <option value="">-- Manter Forma Original de Cada Lançamento --</option>
+                                    <option value="pix">PIX</option>
+                                    <option value="cash">Dinheiro</option>
+                                    <option value="debit">Cartão de Débito</option>
+                                    <option value="credit">Cartão de Crédito</option>
+                                    <option value="transfer">Transferência Bancária</option>
+                                    <option value="boleto">Boleto Bancário</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="bulkUpdateDate" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                    Data de Vencimento
+                                </label>
+                                <input type="date" id="bulkUpdateDate" name="bulkUpdateDate"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                        <button type="button" id="btnCancelBulkUpdateModal"
+                            class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="confirmBulkUpdateBtn"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- ── MODAL: Visualizar Boleto PDF ───────────────────────────── -->
     <div id="pdfModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -506,6 +606,135 @@
             </div>
         </div>
     </div>
+
+    <!-- ── MODAL: Enviar WhatsApp ────────────────────────── -->
+    <div id="whatsappModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="whatsapp-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="whatsappModalBackdrop" class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity"
+                aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="px-5 pt-5 pb-3">
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0 flex items-center justify-center h-11 w-11 rounded-xl bg-green-100 dark:bg-green-900/30">
+                            <svg class="h-5 w-5 text-green-600 dark:text-green-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 448 512">
+                                <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100" id="whatsapp-modal-title">Enviar por WhatsApp</h3>
+                            <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400" id="whatsappModalDescription">
+                                Confirme ou insira o número do WhatsApp do cliente para enviar a cobrança:
+                            </p>
+                            <div class="mt-3">
+                                <label for="whatsappPhoneInput" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Telefone WhatsApp</label>
+                                <input type="text" id="whatsappPhoneInput" placeholder="Ex: (11) 99999-9999"
+                                    class="w-full rounded-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:text-gray-100">
+                            </div>
+                            <div id="whatsappModalError" class="hidden mt-3 p-3 rounded-xl text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-medium"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                    <button type="button" id="btnCancelWhatsappModal"
+                        class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="button" id="btnConfirmWhatsappSend"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer">
+                        <span id="whatsappSendSpinner" class="hidden animate-spin w-4 h-4 border-2 border-current border-t-transparent text-white rounded-full"></span>
+                        Enviar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Solidcon Modal -->
+    <div id="solidconModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="solidcon-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="solidconModalBackdrop" class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="solidconImportForm" class="space-y-0">
+                    <div class="bg-white dark:bg-slate-800 px-5 pt-5 pb-4 sm:p-6">
+                        <div class="flex items-start justify-between gap-4 mb-4">
+                            <div>
+                                <h3 id="solidcon-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Importar Solidcon</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Busque pela API usando o período ou cole o payload JSON manualmente para importar receitas.</p>
+                            </div>
+                            <button type="button" id="btnCloseSolidconModal" title="Fechar"
+                                class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                                <span class="sr-only">Fechar</span>
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Configurações da Importação -->
+                        <div class="mb-4">
+                            <label for="solidconConnectionType" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                Tipo de Conexão
+                            </label>
+                            <select id="solidconConnectionType" name="solidconConnectionType"
+                                class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all font-sans">
+                                <option value="api">API (Solidcon URL)</option>
+                                <option value="solidcon_db">Banco de Dados Solidcon (SQL Server)</option>
+                                <option value="dorsal_db">Banco de Dados Dorsal (SQL Server)</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="solidconStartDate" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Data Inicial
+                                </label>
+                                <input type="date" id="solidconStartDate" name="solidconStartDate" required
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all font-sans">
+                            </div>
+                            <div>
+                                <label for="solidconEndDate" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Data Final
+                                </label>
+                                <input type="date" id="solidconEndDate" name="solidconEndDate" required
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all font-sans">
+                            </div>
+                        </div>
+
+                        <!-- Ação de buscar da API -->
+                        <div class="flex justify-end mb-4">
+                            <button type="button" id="btnFetchSolidconJson" 
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-all">
+                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                Consulta
+                            </button>
+                        </div>
+
+
+                        <div id="solidconImportStatus" class="hidden mt-3 text-sm rounded-md px-3 py-2"></div>
+                        <div id="solidconImportDetails" class="hidden mt-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-100"></div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                        <button type="button" id="btnCancelSolidconModal"
+                            class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnExecuteSolidconImport"
+                            class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            Importar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
 
     <!-- ── KPI updater (injeta dados nos cards quando revenues.js carregar) ── -->
     <script>
@@ -560,7 +789,7 @@
 
     <script src="/js/api.js"></script>
     <script src="/js/pagination.js"></script>
-    <script src="/js/revenues.js?v=20260528"></script>
+    <script src="/js/revenues.js?v=20260619_2"></script>
     <script src="/js/components/navbar.js?v=20260614201900"></script>
 
     <div id="app-footer" class="shrink-0"></div>

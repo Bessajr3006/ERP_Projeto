@@ -1,28 +1,41 @@
 import { randomUUID } from 'crypto';
 import pool from '../config/db';
 import { PoolConnection, RowDataPacket } from 'mysql2/promise';
-import { Category, CreateCategoryData } from '../types/Finance';
+import { Category, CreateCategoryData, FinanceCategoryType, CreateFinanceCategoryTypeData } from '../types/Finance';
 import { DashboardStatsSchema } from '../schemas/reportSchemas';
 import { CacheService } from './cacheService';
-import { toBrazilDate, toBrazilYearMonth } from '../utils/dateTime';
+import { toBrazilDate, toBrazilYearMonth, toBrazilDbDateTime } from '../utils/dateTime';
 import { BankAccountService } from './bankAccountService';
-import { CategorySchema, CategoryListSchema, TransactionListSchema } from '../schemas/financeSchemas';
+import { CategorySchema, CategoryListSchema, TransactionListSchema, CategoryTypeSchema, CategoryTypeListSchema } from '../schemas/financeSchemas';
 import { FinanceCategoryRepository } from '../repositories/financeCategoryRepository';
+import { FinanceCategoryTypeRepository } from '../repositories/financeCategoryTypeRepository';
 import { FinanceReportRepository } from '../repositories/financeReportRepository';
 import { FinanceBankStatementRepository } from '../repositories/financeBankStatementRepository';
 import { FinanceTransactionRepository } from '../repositories/financeTransactionRepository';
 import { FinanceDocumentRepository } from '../repositories/financeDocumentRepository';
 import QRCode from 'qrcode';
+import puppeteer from 'puppeteer';
+import { CompanyService } from './companyService';
+import { WhatsAppBusinessService } from './whatsappBusinessService';
+import { WhatsAppBusinessMessageService } from './whatsappBusinessMessageService';
 
 export class FinanceService {
     /**
      * Creates a new financial category
      */
     static async createCategory(companyId: number, data: CreateCategoryData): Promise<Category> {
-        const { name, type } = data;
+        const { name, type, finance_category_type_public_id } = data;
         const publicId = randomUUID();
 
-        const insertId = await FinanceCategoryRepository.create(publicId, companyId, name, type);
+        let financeCategoryTypeId: number | null = null;
+        if (finance_category_type_public_id) {
+            const types = await FinanceCategoryTypeRepository.getByPublicId(companyId, finance_category_type_public_id);
+            if (types && types[0]) {
+                financeCategoryTypeId = types[0].id;
+            }
+        }
+
+        const insertId = await FinanceCategoryRepository.create(publicId, companyId, name, type, financeCategoryTypeId);
         if (!insertId) throw new Error('Failed to create category');
 
         return this.getCategoryById(insertId, companyId);
@@ -44,7 +57,15 @@ export class FinanceService {
         if (!catRows || catRows.length === 0 || !catRows[0]) throw new Error('Category not found');
         const categoryId = catRows[0].id;
 
-        await FinanceCategoryRepository.update(companyId, categoryId, data.name, data.type);
+        let financeCategoryTypeId: number | null = null;
+        if (data.finance_category_type_public_id) {
+            const types = await FinanceCategoryTypeRepository.getByPublicId(companyId, data.finance_category_type_public_id);
+            if (types && types[0]) {
+                financeCategoryTypeId = types[0].id;
+            }
+        }
+
+        await FinanceCategoryRepository.update(companyId, categoryId, data.name, data.type, financeCategoryTypeId);
 
         return this.getCategoryById(categoryId, companyId);
     }
@@ -57,13 +78,93 @@ export class FinanceService {
         await FinanceCategoryRepository.delete(companyId, categoryId);
     }
 
+    // --- Finance Category Types CRUD ---
+
+    static async createCategoryType(companyId: number, data: CreateFinanceCategoryTypeData): Promise<FinanceCategoryType> {
+        const { name, description } = data;
+        const publicId = randomUUID();
+
+        const insertId = await FinanceCategoryTypeRepository.create(publicId, companyId, name, description || null);
+        if (!insertId) throw new Error('Failed to create category type');
+
+        return this.getCategoryTypeById(insertId, companyId);
+    }
+
+    static async getCategoryTypeById(id: number, companyId: number): Promise<FinanceCategoryType> {
+        const rows = await FinanceCategoryTypeRepository.getById(companyId, id);
+        if (!rows || rows.length === 0) throw new Error('Category type not found');
+        return CategoryTypeSchema.parse(rows[0]) as FinanceCategoryType;
+    }
+
+    static async getCategoryTypeByPublicId(publicId: string, companyId: number): Promise<FinanceCategoryType> {
+        const rows = await FinanceCategoryTypeRepository.getByPublicId(companyId, publicId);
+        if (!rows || rows.length === 0) throw new Error('Category type not found');
+        return CategoryTypeSchema.parse(rows[0]) as FinanceCategoryType;
+    }
+
+    static async listCategoryTypes(companyId: number): Promise<FinanceCategoryType[]> {
+        const rows = await FinanceCategoryTypeRepository.getAllByCompany(companyId);
+        return CategoryTypeListSchema.parse(rows) as FinanceCategoryType[];
+    }
+
+    static async updateCategoryType(publicId: string, companyId: number, data: CreateFinanceCategoryTypeData): Promise<FinanceCategoryType> {
+        const typeRows = await FinanceCategoryTypeRepository.getByPublicId(companyId, publicId);
+        if (!typeRows || typeRows.length === 0 || !typeRows[0]) throw new Error('Category type not found');
+        const typeId = typeRows[0].id;
+
+        await FinanceCategoryTypeRepository.update(companyId, typeId, data.name, data.description || null);
+
+        return this.getCategoryTypeById(typeId, companyId);
+    }
+
+    static async deleteCategoryType(publicId: string, companyId: number): Promise<void> {
+        const typeRows = await FinanceCategoryTypeRepository.getByPublicId(companyId, publicId);
+        if (!typeRows || typeRows.length === 0 || !typeRows[0]) throw new Error('Category type not found');
+        const typeId = typeRows[0].id;
+
+        await FinanceCategoryTypeRepository.delete(companyId, typeId);
+    }
+
+    private static async resolveEntityIds(
+        conn: PoolConnection,
+        companyId: number,
+        entityType?: string | null | undefined,
+        entityPublicId?: string | null | undefined
+    ): Promise<{ customerId: number | null; supplierId: number | null; contactId: number | null; relatedUserId: number | null }> {
+        let customerId: number | null = null;
+        let supplierId: number | null = null;
+        let contactId: number | null = null;
+        let relatedUserId: number | null = null;
+
+        if (entityType && entityPublicId) {
+            if (entityType === 'customer') {
+                const rows = await FinanceTransactionRepository.getCustomerByPublicId(conn, companyId, entityPublicId);
+                if (!rows || rows.length === 0) throw new Error('Cliente não encontrado');
+                customerId = rows[0]!.id;
+            } else if (entityType === 'supplier') {
+                const rows = await FinanceTransactionRepository.getSupplierByPublicId(conn, companyId, entityPublicId);
+                if (!rows || rows.length === 0) throw new Error('Fornecedor não encontrado');
+                supplierId = rows[0]!.id;
+            } else if (entityType === 'contact') {
+                const rows = await FinanceTransactionRepository.getContactByPublicId(conn, companyId, entityPublicId);
+                if (!rows || rows.length === 0) throw new Error('Contato não encontrado');
+                contactId = rows[0]!.id;
+            } else if (['seller', 'buyer', 'service_provider', 'accountant'].includes(entityType)) {
+                const rows = await FinanceTransactionRepository.getUserByPublicIdAndCompany(conn, companyId, entityPublicId);
+                if (!rows || rows.length === 0) throw new Error('Pessoa não encontrada');
+                relatedUserId = rows[0]!.id;
+            }
+        }
+        return { customerId, supplierId, contactId, relatedUserId };
+    }
+
     /**
      * Creates an expense transaction and updates bank account balance
      */
     static async createExpense(
         companyId: number,
         userId: string,
-        data: { description: string; amount: number; date: string; category_public_id: string; bank_account_public_id: string; payment_method?: string | undefined; status?: string | undefined }
+        data: { description: string; amount: number; date: string; category_public_id: string; bank_account_public_id: string; payment_method?: string | undefined; status?: string | undefined; entity_type?: string | null | undefined; entity_public_id?: string | null | undefined }
     ): Promise<void> {
         await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
             const catRows = await FinanceTransactionRepository.getCategoryByPublicId(conn, companyId, data.category_public_id);
@@ -78,6 +179,8 @@ export class FinanceService {
             if (!userRows || userRows.length === 0 || !userRows[0]) throw new Error('User not found');
             const internalUserId = userRows[0].id;
 
+            const { customerId, supplierId, contactId, relatedUserId } = await this.resolveEntityIds(conn, companyId, data.entity_type, data.entity_public_id);
+
             const transactionPublicId = randomUUID();
             const txStatus = data.status || 'paid';
 
@@ -86,6 +189,10 @@ export class FinanceService {
                 company_id: companyId,
                 bank_account_id: bankAccountId,
                 category_id: categoryId,
+                customer_id: customerId,
+                supplier_id: supplierId,
+                contact_id: contactId,
+                related_user_id: relatedUserId,
                 user_id: internalUserId,
                 description: data.description,
                 amount: data.amount,
@@ -112,7 +219,7 @@ export class FinanceService {
     static async createRevenue(
         companyId: number,
         userId: string,
-        data: { description: string; amount: number; date: string; category_public_id: string; bank_account_public_id: string; customer_public_id?: string | undefined; payment_method?: string | undefined; status?: string | undefined }
+        data: { description: string; amount: number; date: string; received_at?: string | undefined; category_public_id: string; bank_account_public_id: string; customer_public_id?: string | undefined; payment_method?: string | undefined; status?: string | undefined; entity_type?: string | null | undefined; entity_public_id?: string | null | undefined }
     ): Promise<void> {
         await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
             const catRows = await FinanceTransactionRepository.getCategoryByPublicId(conn, companyId, data.category_public_id, 'income');
@@ -124,7 +231,17 @@ export class FinanceService {
             const bankAccountId = bankRows[0].id;
 
             let customerId: number | null = null;
-            if (data.customer_public_id) {
+            let supplierId: number | null = null;
+            let contactId: number | null = null;
+            let relatedUserId: number | null = null;
+
+            if (data.entity_type && data.entity_public_id) {
+                const resolved = await this.resolveEntityIds(conn, companyId, data.entity_type, data.entity_public_id);
+                customerId = resolved.customerId;
+                supplierId = resolved.supplierId;
+                contactId = resolved.contactId;
+                relatedUserId = resolved.relatedUserId;
+            } else if (data.customer_public_id) {
                 const custRows = await FinanceTransactionRepository.getCustomerByPublicId(conn, companyId, data.customer_public_id);
                 if (!custRows || custRows.length === 0 || !custRows[0]) throw new Error('Customer not found');
                 customerId = custRows[0].id;
@@ -136,6 +253,9 @@ export class FinanceService {
 
             const transactionPublicId = randomUUID();
             const txStatus = data.status || 'paid';
+            const receivedAt = txStatus === 'paid'
+                ? (data.received_at ? toBrazilDbDateTime(data.received_at) : toBrazilDbDateTime(new Date()))
+                : null;
 
             await FinanceTransactionRepository.insertTransaction(conn, {
                 public_id: transactionPublicId,
@@ -143,13 +263,17 @@ export class FinanceService {
                 bank_account_id: bankAccountId,
                 category_id: categoryId,
                 customer_id: customerId,
+                supplier_id: supplierId,
+                contact_id: contactId,
+                related_user_id: relatedUserId,
                 user_id: internalUserId,
                 description: data.description,
                 amount: data.amount,
                 type: 'income',
                 payment_method: data.payment_method,
                 date: data.date,
-                status: txStatus
+                status: txStatus,
+                received_at: receivedAt
             });
 
             if (txStatus === 'paid') {
@@ -166,7 +290,7 @@ export class FinanceService {
     static async updateExpense(
         companyId: number,
         publicId: string,
-        data: { description: string; amount: number; date: string; category_public_id: string; bank_account_public_id: string; payment_method?: string | undefined; status?: string | undefined }
+        data: { description: string; amount: number; date: string; category_public_id: string; bank_account_public_id: string; payment_method?: string | undefined; status?: string | undefined; entity_type?: string | null | undefined; entity_public_id?: string | null | undefined }
     ): Promise<void> {
         await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
             // 1. Fetch old transaction
@@ -183,6 +307,8 @@ export class FinanceService {
             if (!bankRows || bankRows.length === 0 || !bankRows[0]) throw new Error('Bank account not found');
             const newBankAccountId = bankRows[0].id;
 
+            const { customerId, supplierId, contactId, relatedUserId } = await this.resolveEntityIds(conn, companyId, data.entity_type, data.entity_public_id);
+
             // 3. Reverse old effect
             if (oldTx.status === 'paid') {
                 // Reverse expense: add balance back
@@ -195,6 +321,10 @@ export class FinanceService {
             await FinanceTransactionRepository.updateTransaction(conn, companyId, oldTx.id, {
                 bank_account_id: newBankAccountId,
                 category_id: newCategoryId,
+                customer_id: customerId,
+                supplier_id: supplierId,
+                contact_id: contactId,
+                related_user_id: relatedUserId,
                 description: data.description,
                 amount: data.amount,
                 payment_method: data.payment_method,
@@ -213,7 +343,7 @@ export class FinanceService {
     static async updateRevenue(
         companyId: number,
         publicId: string,
-        data: { description: string; amount: number; date: string; received_at?: string | undefined; category_public_id: string; bank_account_public_id: string; customer_public_id?: string | undefined; payment_method?: string | undefined; status?: string | undefined }
+        data: { description: string; amount: number; date: string; received_at?: string | undefined; category_public_id: string; bank_account_public_id: string; customer_public_id?: string | undefined; payment_method?: string | undefined; status?: string | undefined; entity_type?: string | null | undefined; entity_public_id?: string | null | undefined }
     ): Promise<void> {
         await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
             // 1. Fetch old transaction
@@ -230,6 +360,23 @@ export class FinanceService {
             if (!bankRows || bankRows.length === 0 || !bankRows[0]) throw new Error('Bank account not found');
             const newBankAccountId = bankRows[0].id;
 
+            let customerId: number | null = null;
+            let supplierId: number | null = null;
+            let contactId: number | null = null;
+            let relatedUserId: number | null = null;
+
+            if (data.entity_type && data.entity_public_id) {
+                const resolved = await this.resolveEntityIds(conn, companyId, data.entity_type, data.entity_public_id);
+                customerId = resolved.customerId;
+                supplierId = resolved.supplierId;
+                contactId = resolved.contactId;
+                relatedUserId = resolved.relatedUserId;
+            } else if (data.customer_public_id) {
+                const custRows = await FinanceTransactionRepository.getCustomerByPublicId(conn, companyId, data.customer_public_id);
+                if (!custRows || custRows.length === 0 || !custRows[0]) throw new Error('Customer not found');
+                customerId = custRows[0].id;
+            }
+
             // 3. Reverse old effect
             if (oldTx.status === 'paid') {
                 // Reverse income: subtract balance back
@@ -237,17 +384,23 @@ export class FinanceService {
             }
 
             const newStatus = data.status || 'paid';
+            const receivedAt = newStatus === 'paid'
+                ? (data.received_at ? toBrazilDbDateTime(data.received_at) : (oldTx.received_at ? toBrazilDbDateTime(oldTx.received_at) : toBrazilDbDateTime(new Date())))
+                : null;
 
             // 4. Update transaction
             await FinanceTransactionRepository.updateTransaction(conn, companyId, oldTx.id, {
                 bank_account_id: newBankAccountId,
                 category_id: newCategoryId,
-                customer_id: data.customer_public_id ? await FinanceTransactionRepository.getCustomerByPublicId(conn, companyId, data.customer_public_id).then(r => r[0]?.id) : null,
+                customer_id: customerId,
+                supplier_id: supplierId,
+                contact_id: contactId,
+                related_user_id: relatedUserId,
                 description: data.description,
                 amount: data.amount,
                 payment_method: data.payment_method,
                 date: data.date,
-                received_at: data.received_at,
+                received_at: receivedAt,
                 status: newStatus
             });
 
@@ -264,6 +417,10 @@ export class FinanceService {
             const rows = await FinanceTransactionRepository.getTransactionByPublicId(conn, companyId, publicId);
             if (!rows || rows.length === 0 || !rows[0]) throw new Error('Transaction not found');
             const transaction = rows[0];
+
+            if (transaction.type === 'expense' && transaction.status === 'paid') {
+                throw new Error('Não é permitido excluir uma despesa que já foi paga. Altere o status para pendente antes de excluir.');
+            }
 
             // Se a receita estiver amarrada a um lançamento de serviço ([SL:<public_id>]), não permitir exclusão.
             if (transaction.type === 'income') {
@@ -296,6 +453,76 @@ export class FinanceService {
                 }
             }
         });
+    }
+
+    static async batchDeleteTransactions(publicIds: string[], companyId: number): Promise<{ success: number; errors: string[] }> {
+        let success = 0;
+        const errors: string[] = [];
+        for (const publicId of publicIds) {
+            try {
+                await this.deleteTransaction(publicId, companyId);
+                success++;
+            } catch (err: any) {
+                errors.push(`ID ${publicId.substring(0, 8)}: ${err.message}`);
+            }
+        }
+        return { success, errors };
+    }
+
+    static async batchUpdateRevenues(
+        companyId: number,
+        ids: string[],
+        data: { bank_account_public_id?: string | undefined; payment_method?: string | undefined; date?: string | undefined }
+    ): Promise<{ success: number; errors: string[] }> {
+        let success = 0;
+        const errors: string[] = [];
+        const uniqueIds = Array.from(new Set(ids));
+
+        for (const publicId of uniqueIds) {
+            try {
+                await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
+                    // 1. Fetch old transaction
+                    const oldRows = await FinanceTransactionRepository.getTransactionByPublicId(conn, companyId, publicId, 'income');
+                    if (!oldRows || oldRows.length === 0 || !oldRows[0]) throw new Error('Transaction not found');
+                    const oldTx = oldRows[0];
+
+                    // 2. Resolve bank account
+                    let newBankAccountId = oldTx.bank_account_id;
+                    if (data.bank_account_public_id) {
+                        const bankRows = await FinanceTransactionRepository.getBankAccountByPublicId(conn, companyId, data.bank_account_public_id);
+                        if (!bankRows || bankRows.length === 0 || !bankRows[0]) throw new Error('Bank account not found');
+                        newBankAccountId = bankRows[0].id;
+                    }
+
+                    // 3. Reconcile balance if transaction status is 'paid' and bank account changed
+                    if (oldTx.status === 'paid' && newBankAccountId !== oldTx.bank_account_id) {
+                        await FinanceTransactionRepository.updateBankAccountBalance(conn, companyId, oldTx.bank_account_id, oldTx.amount, true);
+                        await FinanceTransactionRepository.updateBankAccountBalance(conn, companyId, newBankAccountId, oldTx.amount, false);
+                    }
+
+                    // 4. Update transaction status and fields
+                    const paymentMethod = data.payment_method || oldTx.payment_method;
+                    const dateValue = data.date || oldTx.date;
+
+                    await FinanceTransactionRepository.updateTransaction(conn, companyId, oldTx.id, {
+                        bank_account_id: newBankAccountId,
+                        category_id: oldTx.category_id,
+                        customer_id: oldTx.customer_id,
+                        description: oldTx.description,
+                        amount: oldTx.amount,
+                        payment_method: paymentMethod,
+                        date: dateValue,
+                        received_at: oldTx.received_at,
+                        status: oldTx.status
+                    });
+                });
+                success++;
+            } catch (err: any) {
+                errors.push(`ID ${publicId.substring(0, 8)}: ${err.message}`);
+            }
+        }
+
+        return { success, errors };
     }
 
     static async getDashboardAnalytics(companyId: number, bankAccountPublicId?: string): Promise<any> {
@@ -442,57 +669,15 @@ export class FinanceService {
         const bankName = escapeHtml(tx.bank_name || 'Nao informado');
         const statusLabel = effectiveStatus === 'progress' ? 'Andamento' : (isPending ? 'Pendente' : 'Recebido');
 
-        const sanitizeEmvField = (value: string, maxLength: number) => {
-            const clean = value
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^A-Za-z0-9\s]/g, '')
-                .trim();
-            return clean.slice(0, maxLength) || 'NA';
-        };
-
-        const formatEmv = (id: string, value: string) => {
-            const length = value.length.toString().padStart(2, '0');
-            return `${id}${length}${value}`;
-        };
-
-        const buildPixPayload = (key: string, amountValue: number, name: string, city: string) => {
-            const payloadParts: string[] = [];
-            payloadParts.push(formatEmv('00', '01'));
-            const merchantAccount = [
-                formatEmv('00', 'br.gov.bcb.pix'),
-                formatEmv('01', key)
-            ].join('');
-            payloadParts.push(formatEmv('26', merchantAccount));
-            payloadParts.push(formatEmv('52', '0000'));
-            payloadParts.push(formatEmv('53', '986'));
-            payloadParts.push(formatEmv('54', amountValue.toFixed(2)));
-            payloadParts.push(formatEmv('58', 'BR'));
-            payloadParts.push(formatEmv('59', sanitizeEmvField(name, 25)));
-            payloadParts.push(formatEmv('60', sanitizeEmvField(city, 15)));
-            const additional = formatEmv('05', '***');
-            payloadParts.push(formatEmv('62', additional));
-            const payloadNoCrc = payloadParts.join('') + '6304';
-            let crc = 0xffff;
-            for (let i = 0; i < payloadNoCrc.length; i++) {
-                crc ^= payloadNoCrc.charCodeAt(i) << 8;
-                for (let j = 0; j < 8; j++) {
-                    if (crc & 0x8000) {
-                        crc = (crc << 1) ^ 0x1021;
-                    } else {
-                        crc <<= 1;
-                    }
-                    crc &= 0xffff;
-                }
-            }
-            const crcHex = crc.toString(16).toUpperCase().padStart(4, '0');
-            return payloadNoCrc + crcHex;
-        };
+        const companyPhone = tx.comp_phone ? escapeHtml(tx.comp_phone) : '';
+        const companyPhoneHtml = companyPhone ? `<p class="subtitle">Telefone: ${companyPhone}</p>` : '';
+        const customerPhone = tx.cust_phone ? escapeHtml(tx.cust_phone) : '';
+        const customerPhoneHtml = customerPhone ? `<div class="label" style="margin-top:10px;">Telefone</div><div class="value">${customerPhone}</div>` : '';
 
         let qrDataUrl = '';
         let pixPayload = '';
         if (shouldShowPixSection) {
-            pixPayload = buildPixPayload(pixKey, amount, tx.comp_name || 'Empresa', tx.comp_city || 'Cidade');
+            pixPayload = FinanceService.buildPixPayload(pixKey, amount, tx.comp_name || 'Empresa', tx.comp_city || 'Cidade');
             qrDataUrl = await QRCode.toDataURL(pixPayload, { margin: 1, width: 240 });
         }
 
@@ -553,6 +738,7 @@ export class FinanceService {
                     <p class="title">Recibo de Cobranca</p>
                     <p class="subtitle">${companyName}</p>
                     <p class="subtitle">CNPJ: ${companyDoc}</p>
+                    ${companyPhoneHtml}
                 </div>
             </div>
             <div class="meta">
@@ -573,6 +759,7 @@ export class FinanceService {
                 <div class="value">${customerName}</div>
                 <div class="label" style="margin-top:10px;">CNPJ/CPF</div>
                 <div class="value">${customerDoc}</div>
+                ${customerPhoneHtml}
                 <div class="label" style="margin-top:10px;">Endereço</div>
                 <div class="value" style="font-weight: 500;">${customerAddressHtml}</div>
             </div>
@@ -590,6 +777,169 @@ export class FinanceService {
 </body>
 </html>`;
     }
+
+    static buildPixPayload(key: string, amountValue: number, name: string, city: string): string {
+        const sanitizeEmvField = (value: string, maxLength: number) => {
+            const clean = value
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^A-Za-z0-9\s]/g, '')
+                .trim();
+            return clean.slice(0, maxLength) || 'NA';
+        };
+
+        const formatEmv = (id: string, value: string) => {
+            const length = value.length.toString().padStart(2, '0');
+            return `${id}${length}${value}`;
+        };
+
+        const payloadParts: string[] = [];
+        payloadParts.push(formatEmv('00', '01'));
+        const merchantAccount = [
+            formatEmv('00', 'br.gov.bcb.pix'),
+            formatEmv('01', key)
+        ].join('');
+        payloadParts.push(formatEmv('26', merchantAccount));
+        payloadParts.push(formatEmv('52', '0000'));
+        payloadParts.push(formatEmv('53', '986'));
+        payloadParts.push(formatEmv('54', amountValue.toFixed(2)));
+        payloadParts.push(formatEmv('58', 'BR'));
+        payloadParts.push(formatEmv('59', sanitizeEmvField(name, 25)));
+        payloadParts.push(formatEmv('60', sanitizeEmvField(city, 15)));
+        const additional = formatEmv('05', '***');
+        payloadParts.push(formatEmv('62', additional));
+        const payloadNoCrc = payloadParts.join('') + '6304';
+        let crc = 0xffff;
+        for (let i = 0; i < payloadNoCrc.length; i++) {
+            crc ^= payloadNoCrc.charCodeAt(i) << 8;
+            for (let j = 0; j < 8; j++) {
+                if (crc & 0x8000) {
+                    crc = (crc << 1) ^ 0x1021;
+                } else {
+                    crc <<= 1;
+                }
+                crc &= 0xffff;
+            }
+        }
+        const crcHex = crc.toString(16).toUpperCase().padStart(4, '0');
+        return payloadNoCrc + crcHex;
+    }
+
+    static async generatePdfFromHtml(html: string): Promise<Buffer> {
+        const launchOptions: any = {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--no-zygote',
+                '--single-process',
+            ],
+        };
+        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        }
+        const browser = await puppeteer.launch(launchOptions);
+        try {
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: 'networkidle0' });
+            const pdfUint8 = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: {
+                    top: '20px',
+                    bottom: '20px',
+                    left: '20px',
+                    right: '20px',
+                },
+            });
+            return Buffer.from(pdfUint8);
+        } finally {
+            await browser.close();
+        }
+    }
+
+    static async sendWhatsApp(companyId: number, userId: number, id: string, phoneOverride?: string): Promise<any> {
+        const tx = await FinanceDocumentRepository.getTransactionForDocument(pool, companyId, id);
+        if (!tx) throw new Error('Receita não encontrada');
+        if (tx.type !== 'income') throw new Error('WhatsApp de cobrança disponível apenas para receitas');
+
+        const rawPhone = (phoneOverride || tx.cust_phone || '').trim();
+        const normalizedPhone = WhatsAppBusinessMessageService.normalizeContactPhone(rawPhone);
+        if (!normalizedPhone) {
+            throw new Error('Telefone do cliente não cadastrado ou inválido. Por favor, atualize o cadastro ou informe um número.');
+        }
+
+        const amount = Number(tx.amount) || 0;
+        const amountFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
+
+        let pdfBase64 = '';
+        let filename = '';
+        let pixCode = '';
+        let messageBody = '';
+
+        if (tx.payment_method === 'boleto') {
+            if (!tx.billet_url) {
+                throw new Error('Boleto ainda não foi gerado no banco. Por favor, gere o boleto antes de enviar por WhatsApp.');
+            }
+            const billetRes = await FinanceService.getBoletoPdfBase64(companyId, id, tx.billet_url);
+            pdfBase64 = billetRes.pdfBase64;
+            filename = billetRes.filename;
+            pixCode = tx.pix_code || '';
+
+            messageBody = `Olá, *${tx.cust_name || 'Cliente'}*!\n\n` +
+                `Segue em anexo o Boleto referente à cobrança *${tx.description || ''}* no valor de *${amountFormatted}*.\n\n` +
+                (pixCode ? `*Pix Copia e Cola (boleto):*\n\`${pixCode}\`\n\n` : '') +
+                (tx.barcode ? `*Código de Barras (boleto):*\n\`${tx.barcode}\`\n` : '');
+        } else {
+            const html = await FinanceService.generateReceiptHTML(companyId, id);
+            const pdfBuffer = await FinanceService.generatePdfFromHtml(html);
+            pdfBase64 = pdfBuffer.toString('base64');
+
+            const safeName = String(tx.cust_name || 'Cliente').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+            const safeDate = tx.date ? (tx.date instanceof Date ? tx.date.toISOString().slice(0, 10) : String(tx.date).slice(0, 10)) : 'Data';
+            filename = `Recibo_${safeName}_${safeDate}.pdf`;
+
+            const transactionStatus = String(tx.status || '').toLowerCase();
+            const effectiveStatus = transactionStatus !== 'paid' && String(tx.sale_status || '').toLowerCase() === 'progress'
+                ? 'progress'
+                : transactionStatus;
+            const isPending = effectiveStatus === 'pending';
+            const isProgress = effectiveStatus === 'progress';
+            const isPixPayment = String(tx.payment_method || '').toLowerCase() === 'pix';
+            const shouldShowPixSection = isPixPayment && (isPending || isProgress);
+            const pixKey = String(tx.pix_key || '').trim();
+
+            if (shouldShowPixSection && pixKey) {
+                pixCode = FinanceService.buildPixPayload(pixKey, amount, tx.comp_name || 'Empresa', tx.comp_city || 'Cidade');
+            }
+
+            messageBody = `Olá, *${tx.cust_name || 'Cliente'}*!\n\n` +
+                `Segue em anexo o Recibo de Cobrança referente a *${tx.description || ''}* no valor de *${amountFormatted}*.\n\n` +
+                (pixCode ? `*Pix Copia e Cola (pagamento):*\n\`${pixCode}\`\n` : '');
+        }
+
+        const company = await CompanyService.getById(companyId);
+        const useCompanyScope = (company.whatsapp_business_scope || 'company') === 'company';
+
+        const messageInput = {
+            to: normalizedPhone,
+            messageBody: messageBody.trim(),
+            attachment: {
+                base64: pdfBase64,
+                mimeType: 'application/pdf',
+                fileName: filename,
+            },
+        };
+
+        if (useCompanyScope) {
+            return await WhatsAppBusinessService.sendMessage(companyId, messageInput);
+        } else {
+            return await WhatsAppBusinessService.sendUserMessage(companyId, userId, messageInput);
+        }
+    }
+
     static async generateBillet(companyId: number, transactionPublicId: string): Promise<any> {
         const tx = await FinanceDocumentRepository.getTransactionForBillet(pool, companyId, transactionPublicId);
         if (!tx) throw new Error('Transação não encontrada');
@@ -708,4 +1058,269 @@ export class FinanceService {
 
     static async syncBankStatementsOfx(_c: number, _b: string, _o: string): Promise<number> { return 0; }
     static async batchDeleteBankStatements(_c: number, _i: number[], _e: string, _p: string): Promise<void> {}
+
+    static async importSolidconRevenues(
+        companyId: number,
+        userId: string,
+        categoryPublicId: string | undefined,
+        bankAccountPublicId: string | undefined,
+        items: any[]
+    ): Promise<{ created: number; updated: number; skipped: number; errors: Array<{ index: number; reason: string }> }> {
+        const result = { created: 0, updated: 0, skipped: 0, errors: [] as Array<{ index: number; reason: string }> };
+
+        const normalizeText = (value: any): string => String(value ?? '').trim();
+        const parseNumber = (value: any): number | undefined => {
+            if (value === null || value === undefined || value === '') return undefined;
+            const normalized = String(value)
+                .trim()
+                .replace(/\s/g, '')
+                .replace(/\.(?=\d{3}(\D|$))/g, '')
+                .replace(',', '.');
+            const parsed = Number(normalized);
+            return Number.isFinite(parsed) ? parsed : undefined;
+        };
+        const normalizeKey = (value: string): string => value
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9]/g, '')
+            .toLowerCase();
+        const pickValue = (payload: any, keys: string[]): any => {
+            if (!payload || typeof payload !== 'object') return undefined;
+            for (const key of keys) {
+                if (payload && payload[key] !== undefined && payload[key] !== null && payload[key] !== '') {
+                    return payload[key];
+                }
+            }
+            const normalizedKeys = new Map(Object.keys(payload).map((key) => [normalizeKey(key), key]));
+            for (const key of keys) {
+                const actualKey = normalizedKeys.get(normalizeKey(key));
+                if (actualKey && payload[actualKey] !== undefined && payload[actualKey] !== null && payload[actualKey] !== '') {
+                    return payload[actualKey];
+                }
+            }
+            return undefined;
+        };
+
+        const mapSolidconItem = (payload: any) => {
+            const nrCupom = pickValue(payload, ['nrCupom', 'nrcupom', 'nrcupomcupom']);
+            let description = normalizeText(pickValue(payload, ['descricao', 'description', 'obs', 'observacao', 'nome', 'name', 'titulo', 'title', 'historico', 'doc_origem', 'nr_documento'])) || 'Importação Solidcon';
+            if (nrCupom) {
+                description = `Cupom #${nrCupom} - ${description}`;
+            }
+            const amount = parseNumber(pickValue(payload, ['valor', 'amount', 'vl_documento', 'valor_liquido', 'vl_liquido', 'vl_original', 'valor_original', 'value', 'vlCrediario', 'vl_crediario']));
+            if (amount === undefined || amount <= 0) return null;
+
+            const dateRaw = pickValue(payload, ['data_vencimento', 'dt_vencimento', 'data', 'date', 'vencimento', 'dt_emissao', 'data_emissao', 'emissao']);
+            let date = '';
+            if (dateRaw) {
+                try {
+                    const parsedDate = new Date(dateRaw);
+                    if (!isNaN(parsedDate.getTime())) {
+                        date = parsedDate.toISOString().split('T')[0] || '';
+                    }
+                } catch {
+                    // ignore
+                }
+            }
+            if (!date) {
+                date = new Date().toISOString().split('T')[0] || '';
+            }
+
+            const rawMethod = normalizeText(pickValue(payload, ['forma_pagamento', 'forma_pgto', 'meio_pagamento', 'payment_method', 'tipo_pagamento'])).toLowerCase();
+            let payment_method: 'pix' | 'credit' | 'debit' | 'cash' | 'transfer' | 'boleto' | undefined = undefined;
+            if (rawMethod.includes('pix')) payment_method = 'pix';
+            else if (rawMethod.includes('credito') || rawMethod.includes('credit')) payment_method = 'credit';
+            else if (rawMethod.includes('debito') || rawMethod.includes('debit')) payment_method = 'debit';
+            else if (rawMethod.includes('dinheiro') || rawMethod.includes('cash')) payment_method = 'cash';
+            else if (rawMethod.includes('transfer') || rawMethod.includes('ted') || rawMethod.includes('doc')) payment_method = 'transfer';
+            else if (rawMethod.includes('boleto')) payment_method = 'boleto';
+
+            const statusRaw = normalizeText(pickValue(payload, ['status', 'situacao', 'state'])).toLowerCase();
+            const paidDateRaw = pickValue(payload, ['data_pagamento', 'dt_pagamento', 'data_baixa', 'dt_baixa', 'pago_em']);
+            let status: 'pending' | 'progress' | 'paid' = 'pending';
+            if (statusRaw.includes('pago') || statusRaw.includes('paid') || statusRaw.includes('recebido') || paidDateRaw) {
+                status = 'paid';
+            }
+
+            const customerName = normalizeText(pickValue(payload, ['cliente', 'customer', 'nome_cliente', 'sacado', 'nome']));
+            const customerDoc = String(pickValue(payload, ['cnpj', 'cpf', 'cnpj_cpf', 'documento', 'doc', 'cpf_cnpj', 'cdCrediario', 'cd_crediario']) || '').replace(/\D/g, '');
+
+            return {
+                description,
+                amount,
+                date,
+                payment_method,
+                status,
+                customerName,
+                customerDoc
+            };
+        };
+
+        // Resolve global entities
+        let categoryId: number;
+        let bankAccountId: number;
+        let internalUserId: number;
+
+        try {
+            let catPubId = categoryPublicId;
+            if (!catPubId) {
+                const [firstCat] = await pool.query<RowDataPacket[]>(
+                    "SELECT public_id FROM categories WHERE company_id = ? AND type = 'income' ORDER BY id ASC LIMIT 1",
+                    [companyId]
+                );
+                if (firstCat?.[0]) {
+                    catPubId = firstCat[0].public_id;
+                } else {
+                    const defaultCatPubId = randomUUID();
+                    await FinanceCategoryRepository.create(defaultCatPubId, companyId, 'Importações Solidcon', 'income');
+                    catPubId = defaultCatPubId;
+                }
+            }
+
+            const catRows = await FinanceCategoryRepository.getByPublicId(companyId, catPubId!);
+            if (!catRows || catRows.length === 0 || !catRows[0]) throw new Error('Category not found');
+            categoryId = catRows[0].id;
+
+            let bankAccPubId = bankAccountPublicId;
+            if (!bankAccPubId) {
+                const [firstBank] = await pool.query<RowDataPacket[]>(
+                    "SELECT public_id FROM bank_accounts WHERE company_id = ? ORDER BY id ASC LIMIT 1",
+                    [companyId]
+                );
+                if (!firstBank?.[0]) {
+                    throw new Error('Nenhuma conta bancaria cadastrada no sistema.');
+                }
+                bankAccPubId = firstBank[0].public_id;
+            }
+
+            const [bankRows] = await pool.query<RowDataPacket[]>(
+                'SELECT id FROM bank_accounts WHERE public_id = ? AND company_id = ? LIMIT 1',
+                [bankAccPubId, companyId]
+            );
+            if (!bankRows || bankRows.length === 0 || !bankRows[0]) throw new Error('Bank account not found');
+            bankAccountId = bankRows[0].id;
+
+            const [userRows] = await pool.query<RowDataPacket[]>(
+                'SELECT id FROM users WHERE public_id = ? LIMIT 1',
+                [userId]
+            );
+            if (!userRows || userRows.length === 0 || !userRows[0]) throw new Error('User not found');
+            internalUserId = userRows[0].id;
+        } catch (error: any) {
+            throw new Error(`Erro ao inicializar parametros de importacao: ${error.message}`);
+        }
+
+        for (let index = 0; index < items.length; index += 1) {
+            const item = items[index];
+            try {
+                const mapped = mapSolidconItem(item);
+                if (!mapped) {
+                    result.skipped += 1;
+                    result.errors.push({ index, reason: 'Item sem descricao ou valor valido.' });
+                    continue;
+                }
+
+                // Check duplicate
+                const [existingRows] = await pool.query<RowDataPacket[]>(
+                    `SELECT id FROM transactions 
+                     WHERE company_id = ? 
+                       AND type = 'income'
+                       AND description = ? 
+                       AND amount = ? 
+                       AND date = ? 
+                     LIMIT 1`,
+                    [companyId, mapped.description, mapped.amount, mapped.date]
+                );
+                if (existingRows?.[0]) {
+                    result.skipped += 1;
+                    continue;
+                }
+
+                // Look up customer
+                let customerId: number | null = null;
+                if (mapped.customerDoc) {
+                    const [custRows] = await pool.query<RowDataPacket[]>(
+                        'SELECT id FROM customers WHERE company_id = ? AND cnpj_cpf = ? LIMIT 1',
+                        [companyId, mapped.customerDoc]
+                    );
+                    if (custRows?.[0]) {
+                        customerId = custRows[0].id;
+                    }
+                }
+                if (!customerId && mapped.customerName) {
+                    const [custRows] = await pool.query<RowDataPacket[]>(
+                        'SELECT id FROM customers WHERE company_id = ? AND name = ? LIMIT 1',
+                        [companyId, mapped.customerName]
+                    );
+                    if (custRows?.[0]) {
+                        customerId = custRows[0].id;
+                    }
+                }
+
+                await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
+                    const transactionPublicId = randomUUID();
+                    await FinanceTransactionRepository.insertTransaction(conn, {
+                        public_id: transactionPublicId,
+                        company_id: companyId,
+                        bank_account_id: bankAccountId,
+                        category_id: categoryId,
+                        customer_id: customerId,
+                        user_id: internalUserId,
+                        description: mapped.description,
+                        amount: mapped.amount,
+                        type: 'income',
+                        payment_method: mapped.payment_method,
+                        date: mapped.date,
+                        status: mapped.status
+                    });
+
+                    if (mapped.status === 'paid') {
+                        await FinanceTransactionRepository.updateBankAccountBalance(conn, companyId, bankAccountId, mapped.amount, false);
+                    }
+                });
+
+                result.created += 1;
+            } catch (error: any) {
+                result.skipped += 1;
+                result.errors.push({ index, reason: error?.message || 'Falha ao importar item.' });
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Sincroniza o status de um boleto consultando diretamente a API do Banco Inter
+     */
+    static async syncBoletoStatus(companyId: number, transactionPublicId: string): Promise<string> {
+        const tx = await FinanceDocumentRepository.getTransactionForBillet(pool, companyId, transactionPublicId);
+        if (!tx) throw new Error('Transação não encontrada');
+        if (tx.type !== 'income' || !tx.billet_url) {
+            throw new Error('Transação não é um boleto válido ou emitido no banco');
+        }
+
+        const bankAccount = await BankAccountService.getByPublicId(tx.bank_acc_public_id, companyId);
+        const { InterService } = await import('./bankAccountApi/interService');
+        
+        const situacao = await InterService.getBoletoStatus(bankAccount, tx.billet_url);
+        
+        if (situacao === 'PAGO' || situacao === 'RECEBIDO') {
+            if (tx.status !== 'paid') {
+                await FinanceTransactionRepository.withTransaction(async (conn) => {
+                    await conn.query(
+                        `UPDATE transactions SET status = 'paid', received_at = NOW(), updated_at = NOW() WHERE id = ?`,
+                        [tx.id]
+                    );
+                    await conn.query(
+                        `UPDATE bank_accounts SET current_balance = current_balance + ? WHERE id = ?`,
+                        [tx.amount, tx.bank_account_id]
+                    );
+                });
+            }
+            return 'PAGO';
+        }
+        
+        return situacao;
+    }
 }
+

@@ -76,6 +76,7 @@
                 groupName: 'Principal',
                 links: [
                     { id: 'sales', label: 'PDV / Vendas' },
+                    { id: 'quotes', label: 'Orçamentos' },
                     { id: 'service_launches', label: 'Lançamento de Serviço' },
                     { id: 'restaurant', label: 'Restaurante' }
                 ]
@@ -130,6 +131,7 @@
                 links: [
                     { id: 'expenses', label: 'Despesa' },
                     { id: 'revenues', label: 'Receita' },
+                    { id: 'finance_category_types', label: 'Tipo de Categoria' },
                     { id: 'finance_categories', label: 'Categoria (Finanças)' },
                     { id: 'banks', label: 'Bancos' },
                     { id: 'statements', label: 'Extrato' }

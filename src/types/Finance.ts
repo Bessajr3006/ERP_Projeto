@@ -4,6 +4,9 @@ export interface Category {
     company_id: number;
     name: string;
     type: 'income' | 'expense';
+    finance_category_type_id?: number | null;
+    finance_category_type_public_id?: string | null;
+    finance_category_type_name?: string | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -11,6 +14,22 @@ export interface Category {
 export interface CreateCategoryData {
     name: string;
     type: 'income' | 'expense';
+    finance_category_type_public_id?: string | null | undefined;
+}
+
+export interface FinanceCategoryType {
+    id: number;
+    public_id: string; // UUID
+    company_id: number;
+    name: string;
+    description?: string | null | undefined;
+    created_at: Date;
+    updated_at: Date;
+}
+
+export interface CreateFinanceCategoryTypeData {
+    name: string;
+    description?: string | null | undefined;
 }
 
 export type TransactionStatus = 'pending' | 'paid' | 'cancelled';

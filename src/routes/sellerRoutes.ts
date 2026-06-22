@@ -30,6 +30,26 @@ router.get('/', (req, res, next) => SellerController.getAll(req, res).catch(next
  *     description: Cria um novo usuário automaticamente atribuído ao papel (role) de vendedor.
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - full_name
+ *               - email
+ *               - passwordRaw
+ *             properties:
+ *               full_name:
+ *                 type: string
+ *                 example: "João da Silva"
+ *               email:
+ *                 type: string
+ *                 example: "joao.vendedor@empresa.com"
+ *               passwordRaw:
+ *                 type: string
+ *                 example: "SenhaSegura123"
  *     responses:
  *       201: { description: Vendedor criado com sucesso }
  */
@@ -87,6 +107,19 @@ router.get('/:id/customers', (req, res, next) => SellerController.getCustomers(r
  *         name: id
  *         required: true
  *         schema: { type: string }
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               full_name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               passwordRaw:
+ *                 type: string
  *     responses:
  *       200: { description: Vendedor atualizado }
  */

@@ -7,6 +7,8 @@
      * Chat sincronizado com WhatsApp Business - KEYSTONE ERP
      */
     document.addEventListener('DOMContentLoaded', async () => {
+        const api = window.api;
+        const UI = window.UI;
         const runtimeWindow = window;
         if (runtimeWindow.__whatsappPageInitialized) {
             return;
@@ -674,6 +676,9 @@
                     phone,
                     getChatUserFromChatId(convo?.last_chat_id),
                 ]).map((value) => aliasToCanonical.get(value) || value);
+                const isRegistered = resolvedAliases.some((alias) => registeredContactRolesByPhone.has(alias));
+                if (!isRegistered)
+                    continue;
                 mergedMap.set(phone, {
                     ...convo,
                     contact_phone: phone,
@@ -847,8 +852,8 @@
                     convList.innerHTML = '<div class="py-10 text-center text-sm text-red-400">Sessão expirada. Faça login novamente.</div>';
                 return;
             }
-            await Promise.all([loadSession(), loadConversations()]);
             await loadCustomersAsContacts();
+            await Promise.all([loadSession(), loadConversations()]);
             startPolling();
             setupEvents();
             updateAttachmentInfo();

@@ -1,6 +1,7 @@
 import { PurchaseOrder, CreatePurchaseData, SalesOrder, CreateSalesData } from '../types/Order';
 import { OrderRepository } from '../repositories/orderRepository';
 import { DOMParser } from '@xmldom/xmldom';
+import { toBrazilDate } from '../utils/dateTime';
 import { ProductRepository } from '../repositories/productRepository';
 import pool from '../config/db';
 import { RowDataPacket } from 'mysql2/promise';
@@ -460,6 +461,18 @@ export class OrderService {
         return OrderRepository.createSalesOrder(companyId, userPublicId, data);
     }
 
+    static async createQuote(companyId: number, userPublicId: string, data: CreateSalesData): Promise<SalesOrder> {
+        return OrderRepository.createQuote(companyId, userPublicId, data);
+    }
+
+    static async getQuoteByPublicId(publicId: string, companyId: number): Promise<any> {
+        return OrderRepository.getQuoteByPublicId(publicId, companyId);
+    }
+
+    static async updateQuote(publicId: string, companyId: number, data: CreateSalesData): Promise<SalesOrder> {
+        return OrderRepository.updateQuote(publicId, companyId, data);
+    }
+
     static async getPurchaseById(id: number, companyId: number): Promise<PurchaseOrder> {
         return OrderRepository.getPurchaseById(id, companyId);
     }
@@ -470,6 +483,10 @@ export class OrderService {
 
     static async listSales(companyId: number, includeInactive = false): Promise<any[]> {
         return OrderRepository.listSales(companyId, includeInactive);
+    }
+
+    static async listQuotes(companyId: number, includeInactive = false): Promise<any[]> {
+        return OrderRepository.listQuotes(companyId, includeInactive);
     }
 
     static async updateSaleStatus(id: number, companyId: number, status: string, nfeEmittedAt?: Date): Promise<void> {
@@ -503,4 +520,230 @@ export class OrderService {
     static async listPurchasesBySupplier(supplierPublicId: string, companyId: number): Promise<any[]> {
         return OrderRepository.listPurchasesBySupplier(supplierPublicId, companyId);
     }
+
+    static async deleteQuoteByPublicId(publicId: string, companyId: number): Promise<void> {
+        return OrderRepository.deleteQuoteByPublicId(publicId, companyId);
+    }
+
+    static async generateQuotePrintHTML(companyId: number, publicId: string): Promise<string> {
+        const quote = await OrderRepository.getQuoteForPrint(publicId, companyId);
+        
+        const escapeHtml = (value: unknown): string =>
+            String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
+        const formatPrintDate = (value: unknown): string => {
+            if (!value) return '';
+            const isoDate = toBrazilDate(value instanceof Date ? value : new Date(value as any));
+            const [year, month, day] = isoDate.split('-');
+            return year && month && day ? `${day}/${month}/${year}` : isoDate;
+        };
+
+        const formatBrazilDocument = (value: unknown): string => {
+            const digits = String(value || '').replace(/\D/g, '');
+            if (digits.length === 14) return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+            if (digits.length === 11) return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            return String(value || '-');
+        };
+
+        const formatCurrency = (value: number): string => {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        };
+
+        const compLogoBase64 = String(quote.comp_logo_base64 || '').trim();
+        const compLogoUrl = String(quote.comp_logo_url || '').trim();
+        const compLogoSrc = compLogoBase64
+            ? (compLogoBase64.startsWith('data:') ? compLogoBase64 : `data:image/jpeg;base64,${compLogoBase64}`)
+            : compLogoUrl;
+        const companyLogoHtml = compLogoSrc
+            ? `<img class="company-logo" src="${escapeHtml(compLogoSrc)}" alt="Logo da empresa" />`
+            : '';
+
+        const customerAddressObj = {
+            street: quote.customer_street || '',
+            number: quote.customer_number || '',
+            neighborhood: quote.customer_neighborhood || '',
+            city: quote.customer_city || '',
+            state: quote.customer_state || '',
+            zip: quote.customer_zipcode || ''
+        };
+        const customerFullAddress = [
+            customerAddressObj.street ? `${customerAddressObj.street}, ${customerAddressObj.number || 'S/N'}` : '',
+            customerAddressObj.neighborhood,
+            customerAddressObj.city ? `${customerAddressObj.city} - ${customerAddressObj.state}` : '',
+            customerAddressObj.zip ? `CEP: ${customerAddressObj.zip.replace(/\D/g, '').replace(/^(\d{5})(\d{3})?.*$/, '$1-$2')}` : ''
+        ].filter(Boolean).join(' | ');
+        const customerAddressHtml = customerFullAddress ? escapeHtml(customerFullAddress) : 'Não informado';
+
+        const compAddressObj = {
+            street: quote.comp_street || '',
+            number: quote.comp_number || '',
+            neighborhood: quote.comp_neighborhood || '',
+            city: quote.comp_city || '',
+            state: quote.comp_state || '',
+            zip: quote.comp_zipcode || ''
+        };
+        const compFullAddress = [
+            compAddressObj.street ? `${compAddressObj.street}, ${compAddressObj.number || 'S/N'}` : '',
+            compAddressObj.neighborhood,
+            compAddressObj.city ? `${compAddressObj.city} - ${compAddressObj.state}` : '',
+            compAddressObj.zip ? `CEP: ${compAddressObj.zip.replace(/\D/g, '').replace(/^(\d{5})(\d{3})?.*$/, '$1-$2')}` : ''
+        ].filter(Boolean).join(' | ');
+        const compAddressHtml = compFullAddress ? escapeHtml(compFullAddress) : 'Não informado';
+
+        const items = quote.items || [];
+        let totalVal = 0;
+        const itemsHtml = items.map((item: any) => {
+            const subtotal = Number(item.quantity) * Number(item.unit_price);
+            totalVal += subtotal;
+            return `
+                <tr>
+                    <td>${escapeHtml(item.product_name)}</td>
+                    <td class="text-right">${Number(item.quantity)}</td>
+                    <td class="text-right">${formatCurrency(Number(item.unit_price))}</td>
+                    <td class="text-right font-medium">${formatCurrency(subtotal)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const obsHtml = quote.observation
+            ? `
+            <div class="section">
+                <div class="section-title">Observações</div>
+                <div class="value font-medium" style="white-space: pre-wrap;">${escapeHtml(quote.observation)}</div>
+            </div>
+            `
+            : '';
+
+        return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orçamento #${String(quote.id).padStart(4, '0')}</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #111827; margin: 0; background: #f9fafb; }
+        .page { max-width: 720px; margin: 24px auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 24px; }
+        .header { display: flex; justify-content: space-between; gap: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 16px; }
+        .company-info { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .company-logo { width: 82px; height: 82px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px; background: #fff; flex: 0 0 auto; }
+        .title { font-size: 18px; font-weight: 700; margin: 0 0 6px; }
+        .subtitle { font-size: 12px; color: #6b7280; margin: 0; }
+        .meta { text-align: right; font-size: 12px; color: #374151; }
+        .label { font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.04em; }
+        .value { font-size: 13px; font-weight: 600; color: #111827; margin-top: 3px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+        .section { margin-top: 18px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+        .section-title { font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 8px; }
+        .amount { font-size: 20px; font-weight: 700; color: #047857; }
+        
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+        .items-table th { background: #f3f4f6; color: #374151; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; padding: 8px 12px; text-align: left; }
+        .items-table td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; color: #111827; }
+        .items-table th.text-right, .items-table td.text-right { text-align: right; }
+        .font-medium { font-weight: 500; }
+        
+        @media print { body { background: #fff; } .page { border: none; box-shadow: none; margin: 0; border-radius: 0; padding: 0; } }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div class="company-info">
+                ${companyLogoHtml}
+                <div>
+                    <p class="title">Orçamento #${String(quote.id).padStart(4, '0')}</p>
+                    <p class="subtitle" style="font-weight:600;">${escapeHtml(quote.comp_name)}</p>
+                    ${quote.comp_company_name ? `<p class="subtitle">${escapeHtml(quote.comp_company_name)}</p>` : ''}
+                    <p class="subtitle">CNPJ: ${escapeHtml(formatBrazilDocument(quote.comp_doc))}</p>
+                    <p class="subtitle">Endereço: ${compAddressHtml}</p>
+                    ${quote.comp_phone ? `<p class="subtitle">Telefone: ${escapeHtml(quote.comp_phone)}</p>` : ''}
+                    ${quote.comp_email ? `<p class="subtitle">E-mail: ${escapeHtml(quote.comp_email)}</p>` : ''}
+                </div>
+            </div>
+            <div class="meta">
+                <div>
+                    <div class="label">Emissão</div>
+                    <div class="value">${escapeHtml(formatPrintDate(quote.date || quote.created_at))}</div>
+                </div>
+                ${quote.validity_date ? `
+                <div style="margin-top: 8px;">
+                    <div class="label">Validade</div>
+                    <div class="value">${escapeHtml(formatPrintDate(quote.validity_date))}</div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+
+        <div class="grid">
+            <div>
+                <div class="label">Cliente</div>
+                <div class="value">${escapeHtml(quote.customer_name || 'Não informado')}</div>
+                <div class="label" style="margin-top:10px;">CNPJ/CPF</div>
+                <div class="value">${escapeHtml(formatBrazilDocument(quote.customer_document))}</div>
+                <div class="label" style="margin-top:10px;">Endereço</div>
+                <div class="value" style="font-weight: 500;">${customerAddressHtml}</div>
+                ${quote.customer_phone ? `
+                <div class="label" style="margin-top:10px;">Telefone</div>
+                <div class="value">${escapeHtml(quote.customer_phone)}</div>
+                ` : ''}
+                ${quote.customer_email ? `
+                <div class="label" style="margin-top:10px;">E-mail</div>
+                <div class="value">${escapeHtml(quote.customer_email)}</div>
+                ` : ''}
+            </div>
+            <div>
+                <div class="label">Resumo do Orçamento</div>
+                <div class="label" style="margin-top:10px;">Vendedor</div>
+                <div class="value">${escapeHtml(quote.seller_name || '-')}</div>
+                ${quote.brand ? `
+                <div class="label" style="margin-top:10px;">Marca</div>
+                <div class="value">${escapeHtml(quote.brand)}</div>
+                ` : ''}
+                ${quote.payment_method ? `
+                <div class="label" style="margin-top:10px;">Forma de Pagamento</div>
+                <div class="value">${escapeHtml(quote.payment_method)}</div>
+                ` : ''}
+                ${quote.payment_terms ? `
+                <div class="label" style="margin-top:10px;">Prazo/Parcelamento</div>
+                <div class="value">${escapeHtml(quote.payment_terms)}</div>
+                ` : ''}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Itens do Orçamento</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Descrição do Item</th>
+                        <th class="text-right" style="width: 80px;">Qtd</th>
+                        <th class="text-right" style="width: 120px;">Preço Unit.</th>
+                        <th class="text-right" style="width: 120px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section" style="display: flex; justify-content: space-between; align-items: center;">
+            <div></div>
+            <div style="text-align: right;">
+                <div class="label">Valor Total do Orçamento</div>
+                <div class="amount" style="margin-top: 4px;">${formatCurrency(totalVal)}</div>
+            </div>
+        </div>
+
+        ${obsHtml}
+    </div>
+</body>
+</html>`;
+    }
 }
+

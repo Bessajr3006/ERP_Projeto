@@ -28,7 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tasksListContainer = document.getElementById('tasksListContainer');
     const filterBtns = document.querySelectorAll('.task-filter-btn');
     const viewModeBtns = document.querySelectorAll('.view-mode-btn');
-
+    const colSelector = document.getElementById('colSelector');
+    const colBtns = document.querySelectorAll('.col-btn');
+ 
     const btnAttachFile = document.getElementById('btnAttachFile');
     const taskFileInput = document.getElementById('taskFileInput');
     const btnRecordAudio = document.getElementById('btnRecordAudio');
@@ -43,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let users = [];
     let currentFilter = 'pending';
     let currentViewMode = 'list';
+    let currentColumns = parseInt(localStorage.getItem('tasksColumns') || '3', 10);
     let calendarDate = new Date(); // Start at current month
     let agendaDayDate = new Date();
     
@@ -318,6 +321,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 3. Renderizar Lista
     function renderTasks() {
+        if (colSelector) {
+            if (currentViewMode === 'list') {
+                colSelector.classList.remove('hidden');
+            } else {
+                colSelector.classList.add('hidden');
+            }
+        }
+
         let filtered = allTasks.filter(t => currentFilter === 'all' || t.status === currentFilter);
 
         // Sort by Date (Agenda approach) - tasks without date go to the end
@@ -328,11 +339,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             return new Date(a.dueDate) - new Date(b.dueDate);
         });
 
+        // Dynamic classes based on chosen column layout:
+        // 'grid-cols-1 sm:grid-cols-2'
+        // 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+        // 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+        // 'sm:col-span-2'
+        // 'sm:col-span-2 lg:col-span-3'
+        // 'sm:col-span-2 md:col-span-3 lg:col-span-4'
+        let colsClass = 'grid-cols-1 sm:grid-cols-2';
+        let colSpanClass = 'sm:col-span-2';
+        if (currentColumns === 3) {
+            colsClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+            colSpanClass = 'sm:col-span-2 lg:col-span-3';
+        } else if (currentColumns === 4) {
+            colsClass = 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+            colSpanClass = 'sm:col-span-2 md:col-span-3 lg:col-span-4';
+        }
+
         // If list is completely empty AND mode is not calendar
         if (filtered.length === 0 && currentViewMode !== 'calendar') {
             tasksListContainer.innerHTML = `
-            <ul id="tasksList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-8">
-                <li class="sm:col-span-2 bg-white dark:bg-slate-800 rounded-2xl p-8 text-center border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-slate-750">
+            <ul id="tasksList" class="grid ${colsClass} gap-3 pb-8">
+                <li class="${colSpanClass} bg-white dark:bg-slate-800 rounded-2xl p-8 text-center border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-slate-750">
                     <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/30 mb-4 text-brand-600 dark:text-brand-400">
                         <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -530,7 +558,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             // Normal List
             tasksListContainer.innerHTML = `
-            <ul id="tasksList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-8">
+            <ul id="tasksList" class="grid ${colsClass} gap-3 pb-8">
                 ${filtered.map(t => createTaskCardHTML(t, todayStr)).join('')}
             </ul>`;
         }
@@ -859,6 +887,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderTasks();
         });
     });
+
+    function updateColButtonsUI() {
+        colBtns.forEach(b => {
+            const btnCols = parseInt(b.dataset.cols || '3', 10);
+            if (btnCols === currentColumns) {
+                b.classList.remove('text-gray-500', 'dark:text-gray-400');
+                b.classList.add('active', 'text-brand-700', 'dark:text-brand-300', 'bg-white', 'dark:bg-slate-700', 'shadow-sm');
+            } else {
+                b.classList.remove('active', 'text-brand-700', 'dark:text-brand-300', 'bg-white', 'dark:bg-slate-700', 'shadow-sm');
+                b.classList.add('text-gray-500', 'dark:text-gray-400');
+            }
+        });
+    }
+
+    colBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const btnTgt = e.target.closest('.col-btn');
+            if(!btnTgt) return;
+            currentColumns = parseInt(btnTgt.dataset.cols || '3', 10);
+            localStorage.setItem('tasksColumns', currentColumns.toString());
+            updateColButtonsUI();
+            renderTasks();
+        });
+    });
+
+    updateColButtonsUI();
 
     // Boot
     await loadUsers();

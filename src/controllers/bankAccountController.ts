@@ -17,7 +17,15 @@ const createBankAccountSchema = z.object({
     api_client_id: z.string().nullable().optional(),
     api_client_secret: z.string().nullable().optional(),
     api_certificate: z.string().nullable().optional(),
-    api_key: z.string().nullable().optional()
+    api_key: z.string().nullable().optional(),
+    webhook_url: z.string().nullable().optional(),
+    webhook_secret: z.string().nullable().optional(),
+    webhook_certificate: z.string().nullable().optional(),
+    webhook_key: z.string().nullable().optional(),
+    webhook_event_transaction: z.coerce.number().optional(),
+    webhook_event_account: z.coerce.number().optional(),
+    webhook_event_status_sync: z.coerce.number().optional(),
+    webhook_event_boleto: z.coerce.number().optional()
 });
 
 const updateBankAccountSchema = z.object({
@@ -34,7 +42,15 @@ const updateBankAccountSchema = z.object({
     api_client_id: z.string().nullable().optional(),
     api_client_secret: z.string().nullable().optional(),
     api_certificate: z.string().nullable().optional(),
-    api_key: z.string().nullable().optional()
+    api_key: z.string().nullable().optional(),
+    webhook_url: z.string().nullable().optional(),
+    webhook_secret: z.string().nullable().optional(),
+    webhook_certificate: z.string().nullable().optional(),
+    webhook_key: z.string().nullable().optional(),
+    webhook_event_transaction: z.coerce.number().optional(),
+    webhook_event_account: z.coerce.number().optional(),
+    webhook_event_status_sync: z.coerce.number().optional(),
+    webhook_event_boleto: z.coerce.number().optional()
 });
 
 export class BankAccountController {

@@ -11,16 +11,23 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
-export interface AccountingHistories {
-  active: Generated<number>;
+export interface AccountingAutoTemplateItems {
+  credit_account_id: Generated<number | null>;
+  debit_account_id: Generated<number | null>;
+  history_template: string;
+  id: Generated<number>;
+  public_id: string;
+  template_id: number;
+}
+
+export interface AccountingAutoTemplates {
+  active: Generated<number | null>;
   code: string;
   company_id: number;
   created_at: Generated<Date | null>;
   description: string;
-  history_text: string;
   id: Generated<number>;
   public_id: string;
-  updated_at: Generated<Date | null>;
 }
 
 export interface AccountingEntries {
@@ -35,6 +42,18 @@ export interface AccountingEntries {
   id: Generated<number>;
   public_id: string;
   status: Generated<"active" | "inactive">;
+  updated_at: Generated<Date | null>;
+}
+
+export interface AccountingHistories {
+  active: Generated<number>;
+  code: string;
+  company_id: number;
+  created_at: Generated<Date | null>;
+  description: string;
+  history_text: string;
+  id: Generated<number>;
+  public_id: string;
   updated_at: Generated<Date | null>;
 }
 
@@ -116,6 +135,8 @@ export interface ChartOfAccounts {
 export interface Companies {
   allow_print_without_confirmation: Generated<number>;
   api_token: Generated<string | null>;
+  bd_dorsal: Generated<string | null>;
+  bd_solidcon: Generated<string | null>;
   certificate_expiration: Generated<Date | null>;
   certificate_name: Generated<string | null>;
   certificate_password: Generated<string | null>;
@@ -156,6 +177,8 @@ export interface Companies {
   im: Generated<string | null>;
   is_active: Generated<number>;
   is_system: Generated<number>;
+  login_dorsal: Generated<string | null>;
+  login_solidcon: Generated<string | null>;
   logo_base64: Generated<string | null>;
   logo_filename: Generated<string | null>;
   logo_url: Generated<string | null>;
@@ -186,6 +209,11 @@ export interface Companies {
    * UUID for public reference
    */
   public_id: string;
+  senha_dorsal: Generated<string | null>;
+  senha_solidcon: Generated<string | null>;
+  serv_dorsal: Generated<string | null>;
+  serv_solidcon: Generated<string | null>;
+  cdfilial: Generated<string | null>;
   solidcon_api_token: Generated<string | null>;
   solidcon_url_1: Generated<string | null>;
   solidcon_url_2: Generated<string | null>;
@@ -301,23 +329,27 @@ export interface ControleSimples {
 }
 
 export interface CustomerDeclarations {
-  id: Generated<number>;
-  public_id: string;
+  accumulated_revenue: Generated<Decimal | null>;
+  amount_due: Generated<Decimal | null>;
   company_id: number;
-  customer_id: number;
   competence_month: number;
   competence_year: number;
-  declaration_type: string;
-  status: Generated<"PENDENTE" | "ENTREGUE" | "SEM_MOVIMENTO" | "NAO_SE_APLICA">;
-  delivery_date: Date | null;
-  receipt_url: string | null;
   created_at: Generated<Date | null>;
+  customer_id: number;
+  declaration_type: string;
+  delivery_date: Generated<Date | null>;
+  document_period: Generated<string | null>;
+  due_date: Generated<Date | null>;
+  gross_revenue: Generated<Decimal | null>;
+  id: Generated<number>;
+  public_id: string;
+  receipt_number: Generated<string | null>;
+  receipt_url: Generated<string | null>;
+  status: Generated<"ENTREGUE" | "NAO_SE_APLICA" | "PENDENTE" | "SEM_MOVIMENTO">;
   updated_at: Generated<Date | null>;
 }
 
 export interface Customers {
-  opening_date: Generated<Date | null>;
-  tax_regime: Generated<string | null>;
   certificate_expiration: Generated<Date | null>;
   certificate_password: Generated<string | null>;
   certificate_url: Generated<string | null>;
@@ -338,18 +370,34 @@ export interface Customers {
   name: string;
   neighborhood: Generated<string | null>;
   number: Generated<string | null>;
+  opening_date: Generated<Date | null>;
   phone: Generated<string | null>;
   public_id: string;
   seller_user_id: Generated<number | null>;
   social_contract_url: Generated<string | null>;
   state: Generated<string | null>;
   street: Generated<string | null>;
+  tax_regime: Generated<string | null>;
   updated_at: Generated<Date | null>;
   /**
    * Dia do mes para vencimento (1-31)
    */
   vencimento_dia: Generated<number | null>;
   zipcode: Generated<string | null>;
+}
+
+export interface DeclarationTypes {
+  active: Generated<number | null>;
+  company_id: number;
+  created_at: Generated<Date | null>;
+  description: Generated<string | null>;
+  due_day: Generated<number | null>;
+  frequency: Generated<"ANUAL" | "BIMESTRAL" | "MENSAL" | "SEMESTRAL" | "TRIMESTRAL">;
+  id: Generated<number>;
+  name: string;
+  public_id: string;
+  tax_regime: Generated<string | null>;
+  updated_at: Generated<Date | null>;
 }
 
 export interface EmailConfig {
@@ -600,15 +648,17 @@ export interface Roles {
 export interface SalesItems {
   id: Generated<number>;
   is_deleted: Generated<number>;
-  product_id: number;
+  product_id: Generated<number | null>;
   quantity: Decimal;
   sale_id: number;
+  service_id: Generated<number | null>;
   total_price: Decimal;
   unit_price: Decimal;
   xml_item_data: Generated<string | null>;
 }
 
 export interface SalesOrders {
+  brand: Generated<string | null>;
   company_id: number;
   created_at: Generated<Date | null>;
   customer_id: Generated<number | null>;
@@ -616,14 +666,20 @@ export interface SalesOrders {
   delivery_address: Generated<string | null>;
   id: Generated<number>;
   is_deleted: Generated<number>;
+  manual_customer_name: Generated<string | null>;
   nfe_emitted_at: Generated<Date | null>;
   nfe_header_json: Generated<string | null>;
   nfe_issue_date: Generated<Date | null>;
   nfe_key: Generated<string | null>;
+  observation: Generated<string | null>;
+  payment_method: Generated<string | null>;
+  payment_terms: Generated<string | null>;
   public_id: string;
-  status: Generated<"cancelled" | "completed" | "invoiced" | "pending" | "progress" | "separated">;
+  seller_id: Generated<number | null>;
+  status: Generated<"cancelled" | "completed" | "invoiced" | "pending" | "progress" | "quote" | "separated">;
   total_amount: Generated<Decimal>;
   updated_at: Generated<Date | null>;
+  validity_date: Generated<Date | null>;
 }
 
 export interface SchemaMigrations {
@@ -645,6 +701,7 @@ export interface SefazJobs {
 }
 
 export interface ServiceLaunches {
+  checklist: Generated<string | null>;
   company_id: number;
   created_at: Generated<Date | null>;
   customer_id: number;
@@ -857,6 +914,7 @@ export interface Users {
    * UUID for public reference
    */
   public_id: string;
+  raw_password: Generated<string | null>;
   role: Generated<string>;
   state: Generated<string | null>;
   street: Generated<string | null>;
@@ -946,31 +1004,11 @@ export interface WhatsappJobs {
   type: string;
 }
 
-
-export interface AccountingAutoTemplates {
-  id: Generated<number>;
-  public_id: string;
-  company_id: number;
-  code: string;
-  description: string;
-  active: Generated<number | null>;
-  created_at: Generated<Date | null>;
-}
-
-export interface AccountingAutoTemplateItems {
-  id: Generated<number>;
-  public_id: string;
-  template_id: number;
-  debit_account_id: number | null;
-  credit_account_id: number | null;
-  history_template: string;
-}
-
 export interface DB {
-  accounting_auto_templates: AccountingAutoTemplates;
   accounting_auto_template_items: AccountingAutoTemplateItems;
-  accounting_histories: AccountingHistories;
+  accounting_auto_templates: AccountingAutoTemplates;
   accounting_entries: AccountingEntries;
+  accounting_histories: AccountingHistories;
   audit_logs: AuditLogs;
   auditoria_operacoes: AuditoriaOperacoes;
   bank_accounts: BankAccounts;
@@ -985,6 +1023,7 @@ export interface DB {
   controle_simples: ControleSimples;
   customer_declarations: CustomerDeclarations;
   customers: Customers;
+  declaration_types: DeclarationTypes;
   email_config: EmailConfig;
   faturamento_dia: FaturamentoDia;
   ibge_cities: IbgeCities;

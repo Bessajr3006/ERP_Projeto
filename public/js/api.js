@@ -460,8 +460,12 @@ const api = async (endpoint, options = {}) => {
                         .join('; ');
                 }
             }
-            if (!errorMsg)
+            if (!errorMsg) {
                 errorMsg = 'Erro na requisição';
+            }
+            else if (errorMsg.toLowerCase().includes('email already in use')) {
+                errorMsg = 'Este e-mail já está sendo utilizado por outro usuário.';
+            }
             console.error('[API Error]', response.status, endpoint, data);
             throw new Error(errorMsg);
         }

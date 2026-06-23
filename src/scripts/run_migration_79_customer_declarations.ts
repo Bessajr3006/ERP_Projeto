@@ -32,10 +32,10 @@ export default async function runMigration79() {
             `);
             logger.info('Created customer_declarations table.');
 
-            const migrationName = '79_customer_declarations';
+            const migrationName = 79;
             await conn.query(
-                `INSERT INTO schema_migrations (version) VALUES (?) ON DUPLICATE KEY UPDATE version=version`,
-                [migrationName]
+                `INSERT INTO schema_migrations (version, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE version=version`,
+                [migrationName, 'Create customer_declarations table']
             );
 
         } finally {

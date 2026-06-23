@@ -27,10 +27,10 @@ export default async function runMigration78() {
             `);
             logger.info('Created accounting_histories table.');
 
-            const migrationName = '78_accounting_histories';
+            const migrationName = 78;
             await conn.query(
-                `INSERT INTO schema_migrations (version) VALUES (?) ON DUPLICATE KEY UPDATE version=version`,
-                [migrationName]
+                `INSERT INTO schema_migrations (version, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE version=version`,
+                [migrationName, 'Create accounting_histories table']
             );
 
         } finally {

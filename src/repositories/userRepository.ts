@@ -213,7 +213,10 @@ export class UserRepository {
                     continue;
                 }
 
-                const reduced = removeListItem(currentColumns, (column) => column === missingColumn);
+                const reduced = removeListItem(currentColumns, (column) => {
+                    const colName = column.trim().split(/\s+/)[0];
+                    return colName === missingColumn;
+                });
                 if (!reduced.removed) {
                     throw error;
                 }
@@ -267,7 +270,10 @@ export class UserRepository {
                     continue;
                 }
 
-                const reduced = removeListItem(currentColumns, (column) => column === missingColumn);
+                const reduced = removeListItem(currentColumns, (column) => {
+                    const colName = column.trim().split(/\s+/)[0];
+                    return colName === missingColumn;
+                });
                 if (!reduced.removed) {
                     throw error;
                 }
@@ -320,7 +326,10 @@ export class UserRepository {
                     continue;
                 }
 
-                const reduced = removeListItem(currentColumns, (column) => column === missingColumn);
+                const reduced = removeListItem(currentColumns, (column) => {
+                    const colName = column.trim().split(/\s+/)[0];
+                    return colName === missingColumn;
+                });
                 if (!reduced.removed) {
                     throw error;
                 }

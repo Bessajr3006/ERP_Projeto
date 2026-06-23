@@ -17,7 +17,7 @@ services:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-30mariafn@}
       MARIADB_ROOT_HOST: ${MARIADB_ROOT_HOST:-%}
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping --socket=/run/mysqld/mysqld.sock -uroot -p\"$${MARIADB_ROOT_PASSWORD}\" --silent"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--mariadbupgrade"]
       interval: 10s
       timeout: 5s
       retries: 30

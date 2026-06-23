@@ -155,8 +155,14 @@ export class UserService {
             values.push(typedData.role as UserRole);
         }
         if (hasOwnProperty(typedData, 'email') && typedData.email !== undefined) {
+            const newEmail = String(typedData.email).trim();
+            const existing = await UserRepository.getFullByEmail(newEmail);
+            const firstMatch = existing[0];
+            if (firstMatch && firstMatch.public_id !== publicId) {
+                throw new AppError('Email already in use', 409);
+            }
             updates.push('email = ?');
-            values.push(String(typedData.email).trim());
+            values.push(newEmail);
         }
         if (hasOwnProperty(typedData, 'is_active') && typedData.is_active !== undefined) {
             updates.push('is_active = ?');

@@ -20,14 +20,30 @@ router.use(protectRoute, requireTenantContext);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name: { type: string }
- *               price: { type: number }
- *               category_id: { type: string }
- *             required: [name]
+ *             $ref: '#/components/schemas/CreateProductRequest'
  *     responses:
- *       201: { description: Produto criado }
+ *       201:
+ *         description: Produto criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 data:
+ *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Dados invalidos ou ausentes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       409:
+ *         description: SKU ja cadastrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.post('/', (req, res, next) => ProductController.create(req, res).catch(next));
 /**
@@ -39,7 +55,18 @@ router.post('/', (req, res, next) => ProductController.create(req, res).catch(ne
  *     security:
  *       - bearerAuth: []
  *     responses:
- *       200: { description: Lista de produtos }
+ *       200:
+ *         description: Lista de produtos recuperada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
  */
 router.get('/', (req, res, next) => ProductController.list(req, res).catch(next));
 /**
@@ -62,8 +89,26 @@ router.post('/solidcon-import', (req, res, next) => ProductController.importSoli
  *     summary: Atualizar produtos em lote
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BulkUpdateProductsRequest'
  *     responses:
- *       200: { description: Produtos atualizados }
+ *       200:
+ *         description: Produtos atualizados com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 message: { type: string, example: "X produtos atualizados com sucesso" }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     count: { type: integer, example: 5 }
  */
 router.post('/bulk-update', (req, res, next) => ProductController.bulkUpdate(req, res).catch(next));
 /**
@@ -94,17 +139,31 @@ router.post('/send-catalog', (req, res, next) => ProductController.sendCatalog(r
  * /products/{id}:
  *   get:
  *     tags: [Products]
- *     summary: Obter produto por ID publico
+ *     summary: Obter produto por ID publico (UUID)
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema: { type: string, format: uuid }
  *     responses:
- *       200: { description: Produto encontrado }
- *       404: { description: Produto nao encontrado }
+ *       200:
+ *         description: Produto encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 data:
+ *                   $ref: '#/components/schemas/Product'
+ *       404:
+ *         description: Produto nao encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.get('/:id', (req, res, next) => ProductController.getByPublicId(req, res).catch(next));
 /**
@@ -119,9 +178,36 @@ router.get('/:id', (req, res, next) => ProductController.getByPublicId(req, res)
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateProductRequest'
  *     responses:
- *       200: { description: Produto atualizado }
+ *       200:
+ *         description: Produto atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 data:
+ *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Dados invalidos ou ausentes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       404:
+ *         description: Produto nao encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.put('/:id', (req, res, next) => ProductController.update(req, res).catch(next));
 /**
@@ -136,9 +222,15 @@ router.put('/:id', (req, res, next) => ProductController.update(req, res).catch(
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: string }
+ *         schema: { type: string, format: uuid }
  *     responses:
  *       204: { description: Produto removido }
+ *       404:
+ *         description: Produto nao encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 router.delete('/:id', (req, res, next) => ProductController.delete(req, res).catch(next));
 

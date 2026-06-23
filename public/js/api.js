@@ -158,22 +158,22 @@ const Auth = {
     setToken(token) {
         const normalizedToken = typeof token === 'string' ? token.trim() : '';
         if (!normalizedToken || normalizedToken === 'undefined' || normalizedToken === 'null') {
-            localStorage.removeItem('erp_token');
+            sessionStorage.removeItem('erp_token');
             return false;
         }
-        localStorage.setItem('erp_token', normalizedToken);
+        sessionStorage.setItem('erp_token', normalizedToken);
         return true;
     },
     getToken() {
-        const token = localStorage.getItem('erp_token');
+        const token = sessionStorage.getItem('erp_token');
         if (!token || token === 'undefined' || token === 'null') {
-            localStorage.removeItem('erp_token');
+            sessionStorage.removeItem('erp_token');
             return null;
         }
         return token;
     },
     clearToken() {
-        localStorage.removeItem('erp_token');
+        sessionStorage.removeItem('erp_token');
     },
     isAuthenticated() {
         return !!Auth.getToken();

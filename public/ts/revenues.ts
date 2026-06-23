@@ -1079,7 +1079,7 @@ function copyToClipboard(value) {
 
 async function copyReceiptQrCode(publicId, button) {
     let url = '/api/v1/finance/revenues/' + publicId + '/receipt';
-    const jwtToken = localStorage.getItem('erp_token');
+    const jwtToken = sessionStorage.getItem('erp_token');
     if (jwtToken) {
         url += '?token=' + jwtToken;
     }
@@ -1169,7 +1169,7 @@ async function handleSendWhatsapp() {
     }
 
     try {
-        const jwtToken = localStorage.getItem('erp_token') || '';
+        const jwtToken = sessionStorage.getItem('erp_token') || '';
         const response = await fetch(`/api/v1/finance/revenues/${g_whatsappId}/send-whatsapp`, {
             method: 'POST',
             headers: {
@@ -1368,7 +1368,7 @@ document.addEventListener('click', (e) => {
         }
 
         if (url) {
-            const jwtToken = localStorage.getItem('erp_token');
+            const jwtToken = sessionStorage.getItem('erp_token');
             if (jwtToken) {
                 url += (url.includes('?') ? '&' : '?') + 'token=' + jwtToken;
             }
@@ -1407,7 +1407,7 @@ document.addEventListener('click', (e) => {
             }
 
             let url = '/api/v1/finance/revenues/' + pubId + '/receipt';
-            const jwtToken = localStorage.getItem('erp_token');
+            const jwtToken = sessionStorage.getItem('erp_token');
             if (jwtToken) {
                 url += '?token=' + jwtToken;
             }
@@ -1437,7 +1437,7 @@ document.addEventListener('click', (e) => {
                 } else {
                     if (confirm('Esta receita ainda não possui boleto gerado no banco. Deseja emitir agora?')) {
                         // Faz a emissão
-                        const jwtToken = localStorage.getItem('erp_token') || '';
+                        const jwtToken = sessionStorage.getItem('erp_token') || '';
                         fetch('/api/v1/finance/revenues/' + pubId + '/generate-billet', {
                             method: 'POST',
                             headers: { 'Authorization': 'Bearer ' + jwtToken }
@@ -1462,7 +1462,7 @@ document.addEventListener('click', (e) => {
             e.stopPropagation();
             const pubId = cancelBoletoBtn.getAttribute('data-id');
             if (pubId && confirm('Deseja realmente cancelar este boleto no banco? Esta ação não pode ser desfeita.')) {
-                const jwtToken = localStorage.getItem('erp_token') || '';
+                const jwtToken = sessionStorage.getItem('erp_token') || '';
                 fetch('/api/v1/finance/revenues/batch-cancel-billets', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + jwtToken, 'Content-Type': 'application/json' },
@@ -1489,7 +1489,7 @@ document.addEventListener('click', (e) => {
                 const originalHtml = syncBoletoBtn.innerHTML;
                 syncBoletoBtn.innerHTML = '...';
                 syncBoletoBtn.setAttribute('disabled', 'true');
-                const jwtToken = localStorage.getItem('erp_token') || '';
+                const jwtToken = sessionStorage.getItem('erp_token') || '';
                 fetch('/api/v1/finance/revenues/' + pubId + '/sync-boleto-status', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + jwtToken }
@@ -1518,7 +1518,7 @@ document.addEventListener('click', (e) => {
 
 function openBoletoModal(pubId: string, nossoNumero: string) {
     let url = '/api/v1/finance/revenues/' + pubId + '/boleto-pdf?nossoNumero=' + encodeURIComponent(nossoNumero);
-    const jwtToken = localStorage.getItem('erp_token');
+    const jwtToken = sessionStorage.getItem('erp_token');
     if (jwtToken) {
         url += '&token=' + jwtToken;
     }

@@ -192,7 +192,7 @@
                 const pubId = printBtn.getAttribute('data-id');
                 if (pubId) {
                     let url = `/api/v1/orders/quotes/${pubId}/print`;
-                    const jwtToken = localStorage.getItem('erp_token');
+                    const jwtToken = sessionStorage.getItem('erp_token');
                     if (jwtToken) {
                         url += '?token=' + jwtToken;
                     }

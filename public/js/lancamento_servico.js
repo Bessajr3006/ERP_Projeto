@@ -168,7 +168,7 @@
     function openReceipt(pubId) {
         if (!pubId) return;
         let url = '/api/v1/finance/revenues/' + pubId + '/receipt';
-        const jwtToken = localStorage.getItem('erp_token');
+        const jwtToken = sessionStorage.getItem('erp_token');
         if (jwtToken) {
             url += '?token=' + jwtToken;
         }

@@ -70,6 +70,9 @@ services:
       start_period: 360s
     networks:
       - erp-internal
+    extra_hosts:
+      - "srv-n1.netbird.cloud:100.112.188.194"
+      - "srv-gelo.netbird.cloud:100.112.186.10"
 
   worker:
     image: ghcr.io/bessajr3006/erp-app:latest
@@ -107,6 +110,9 @@ services:
       disable: true
     networks:
       - erp-internal
+    extra_hosts:
+      - "srv-n1.netbird.cloud:100.112.188.194"
+      - "srv-gelo.netbird.cloud:100.112.186.10"
 
   frontend:
     image: ghcr.io/bessajr3006/erp-frontend:latest

@@ -92,10 +92,11 @@ import { runMigration95BankAccountsWebhookCerts } from './run_migration_95_bank_
 import { runMigration96FinanceCategoryTypes } from './run_migration_96_finance_category_types';
 import { runMigration97BankAccountsWebhookBoleto } from './run_migration_97_bank_accounts_webhook_boleto';
 import { runMigration98BankStatements } from './run_migration_98_bank_statements';
+import { runMigration99AddAdminBasicRole } from './run_migration_99_add_admin_basic_role';
 
 
 
-type SeedRole = 'admin' | 'operator' | 'financial' | 'seller' | 'contact' | 'accountant' | 'buyer' | 'service_provider' | 'user' | 'super_admin';
+type SeedRole = 'admin' | 'operator' | 'financial' | 'seller' | 'contact' | 'accountant' | 'buyer' | 'service_provider' | 'user' | 'super_admin' | 'admin_basic';
 
 type CompanyRow = RowDataPacket & {
     id: number;
@@ -174,6 +175,7 @@ const ROLE_MODULES: Record<SeedRole, readonly string[]> = {
     service_provider: ['dashboard', 'service_providers'],
     user: ['dashboard'],
     super_admin: ALL_MODULES,
+    admin_basic: ALL_MODULES,
 };
 
 const DEFAULT_COMPANY_USERS: Array<{ fullName: string; role: Exclude<SeedRole, 'super_admin'>; emailPrefix: string }> = [
@@ -351,6 +353,7 @@ async function seedDefaultCompanyUsers(companies: CompanyRow[]): Promise<void> {
 
         await ensureRolePermissions(company.id, 'seller', ROLE_MODULES.seller);
         await ensureRolePermissions(company.id, 'accountant', ROLE_MODULES.accountant);
+        await ensureRolePermissions(company.id, 'admin_basic', ROLE_MODULES.admin_basic);
 
         for (const user of DEFAULT_COMPANY_USERS) {
             await ensureUser(
@@ -476,6 +479,7 @@ async function runInitDb(): Promise<void> {
     await runMigration96FinanceCategoryTypes();
     await runMigration97BankAccountsWebhookBoleto();
     await runMigration98BankStatements();
+    await runMigration99AddAdminBasicRole();
 
 
 

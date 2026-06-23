@@ -25,7 +25,7 @@ const initialUserSchema = z.object({
     full_name: z.string().trim().min(2, 'Nome do usuário deve ter no mínimo 2 caracteres').max(150),
     email: z.string().trim().email('Email do usuário inválido'),
     passwordRaw: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
-    role: z.enum(['admin', 'user', 'operator', 'financial', 'manager', 'seller', 'contact', 'accountant', 'buyer', 'service_provider']).default('admin'),
+    role: z.enum(['admin', 'user', 'operator', 'financial', 'manager', 'seller', 'contact', 'accountant', 'buyer', 'service_provider', 'admin_basic']).default('admin'),
 });
 
 const createCompanySchema = z.object({

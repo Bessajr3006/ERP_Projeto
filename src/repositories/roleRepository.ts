@@ -5,6 +5,7 @@ export class RoleRepository {
     static async ensureDefaultRoles(companyId: number): Promise<void> {
         const defaults = [
             { name: 'Administrador', slug: 'admin', description: 'Acesso administrativo completo' },
+            { name: 'Administrador Básico', slug: 'admin_basic', description: 'Acesso administrativo básico (editável)' },
             { name: 'Usuário', slug: 'user', description: 'Perfil padrão de usuário' },
             { name: 'Operador', slug: 'operator', description: 'Operações do dia a dia' },
             { name: 'Financeiro', slug: 'financial', description: 'Acesso ao módulo financeiro' },
@@ -34,6 +35,13 @@ export class RoleRepository {
                 can_view = VALUES(can_view),
                 updated_at = CURRENT_TIMESTAMP`,
             [companyId, companyId]
+        );
+
+        await pool.query(
+            `INSERT IGNORE INTO role_permissions (company_id, role, module, can_view)
+             SELECT DISTINCT ?, 'admin_basic', module, 1
+             FROM role_permissions`,
+            [companyId]
         );
     }
 

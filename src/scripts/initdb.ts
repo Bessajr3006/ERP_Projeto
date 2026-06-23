@@ -380,6 +380,15 @@ async function runInitDb(): Promise<void> {
     await ensureDatabaseExists();
     await applyCanonicalSchema();
 
+    // Ensure schema_migrations table exists for tracking migration history
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            version INT UNSIGNED NOT NULL PRIMARY KEY,
+            description VARCHAR(255) NOT NULL,
+            aplicado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     await runMigration18();
     await runMigration19();
     await runMigration21();

@@ -31,6 +31,9 @@ services:
           - mariadb
 
   backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.portainer
     image: ghcr.io/bessajr3006/erp-app:latest
     pull_policy: always
     restart: unless-stopped
@@ -75,6 +78,9 @@ services:
       - "srv-gelo.netbird.cloud:100.112.186.10"
 
   worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.portainer
     image: ghcr.io/bessajr3006/erp-app:latest
     pull_policy: always
     restart: unless-stopped
@@ -115,6 +121,9 @@ services:
       - "srv-gelo.netbird.cloud:100.112.186.10"
 
   frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     image: ghcr.io/bessajr3006/erp-frontend:latest
     pull_policy: always
     restart: unless-stopped

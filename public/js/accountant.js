@@ -4,6 +4,9 @@
     let accountantPhoneMask = null;
     let accountantZipMask = null;
     let accountantIbgeStates = [];
+    const api = window.api;
+    const Auth = window.Auth;
+    const UI = window.UI;
     const getById = (id) => document.getElementById(id);
     const makeMask = window.createMaskAdapter || ((input, options) => window.IMask(input, options));
     const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
@@ -210,6 +213,12 @@
             accountantZipMask = makeMask(zipcodeInput, { mask: '00000-000' });
             accountantZipMask.on('complete', handleAccountantCepLookup);
         }
+        const btnSearchAccountantCep = document.getElementById('btnSearchAccountantCep');
+        if (btnSearchAccountantCep) {
+            btnSearchAccountantCep.addEventListener('click', () => {
+                void handleAccountantCepLookup();
+            });
+        }
     };
     const applyAccountantPrefillFromQuery = () => {
         const params = new URLSearchParams(window.location.search);
@@ -268,7 +277,6 @@
             entityName: 'Contador',
             endpoint: '/users',
             tableId: 'accountantsTable',
-            gridSectionId: 'accountantsGridSection',
             tableSectionId: 'accountantsSection',
             modalId: 'entityModal',
             disableSummaryFooter: true,
@@ -359,53 +367,6 @@
             `)
                     .join('');
             },
-            renderGrid: (items) => {
-                const grid = getById('accountantsGridSection');
-                if (items.length === 0) {
-                    grid.innerHTML =
-                        '<div class="col-span-full flex flex-col items-center justify-center py-12 gap-2"><svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p class="text-sm text-gray-400 dark:text-gray-500">Nenhum contador encontrado.</p></div>';
-                    return;
-                }
-                grid.innerHTML = items
-                    .map((item, index) => `
-                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700 ${!item.is_active ? 'opacity-50' : ''}">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center mb-3">
-                            <input type="checkbox" id="chk_crd_${item.public_id}" name="accountantSelect[]" value="${item.public_id}" placeholder="" data-bwignore="true" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
-                            <span class="text-xs font-mono text-gray-400 dark:text-gray-500">#${String(index + 1).padStart(4, '0')}</span>
-                        </div>
-                        <div class="flex justify-between items-start gap-3">
-                            <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">${item.full_name}</h4>
-                            <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Contador</span>
-                        </div>
-
-                        <div class="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                            <p>${formatDoc(item.cpf_cnpj)}</p>
-                            <p class="truncate max-w-55" title="${item.email || ''}">${item.email || 'Sem email'}</p>
-                            <p>${formatPhone(item.phone)}</p>
-                            <p>${formatAccountantLocation(item)}</p>
-                            <p>${item.is_active
-                    ? '<span class="w-2.5 h-2.5 bg-green-500 rounded-full inline-block mr-1"></span>Ativo'
-                    : '<span class="w-2.5 h-2.5 bg-red-500 rounded-full inline-block mr-1"></span>Inativo'}</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-end space-x-2">
-                        <button type="button" title="Editar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 edit-btn" data-item='${JSON.stringify(item).replace(/'/g, '&#39;')}' data-id="${item.public_id}">
-                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        ${item.is_active
-                    ? `<button type="button" title="Desativar" class="text-red-600 hover:bg-red-50 p-1.5 rounded-full dark:hover:bg-red-900/30 toggle-status-btn" data-id="${item.public_id}" data-action="false">
-                                 <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-                               </button>`
-                    : `<button type="button" title="Ativar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 toggle-status-btn" data-id="${item.public_id}" data-action="true">
-                                 <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                               </button>`}
-                    </div>
-                </div>
-            `)
-                    .join('');
-            },
             onEdit: (data) => {
                 getById('entityForm')?.reset();
                 const accountantIdInput = getById('accountantId');
@@ -418,6 +379,7 @@
                     accountantIdInput.value = data.public_id || '';
                     getById('accountantName').value = data.full_name || '';
                     getById('accountantEmail').value = data.email || '';
+                    getById('accountantCrc').value = data.crc || '';
                     getById('accountantStreet').value = data.street || '';
                     getById('accountantNumber').value = data.number || '';
                     getById('accountantComplement').value = data.complement || '';
@@ -483,6 +445,7 @@
                 role: 'accountant',
                 is_active: (getById('accountantStatus')?.value || 'active') !== 'inactive',
                 cpf_cnpj: getMaskedValue(accountantDocMask, 'accountantDocument') || undefined,
+                crc: getTrimmedValue('accountantCrc') || undefined,
                 phone: getMaskedValue(accountantPhoneMask, 'accountantPhone') || undefined,
                 zipcode: getMaskedValue(accountantZipMask, 'accountantZipcode') || undefined,
                 street: getTrimmedValue('accountantStreet') || undefined,

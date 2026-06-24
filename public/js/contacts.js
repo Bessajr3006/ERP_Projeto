@@ -1,3 +1,6 @@
+/// <reference path="./globals.d.ts" />
+/// <reference path="./api.ts" />
+/// <reference path="./components/crud-manager.ts" />
 (function initContactsPage() {
     let contactsManager;
     let contactsDocMask = null;
@@ -222,7 +225,6 @@
             entityName: 'Contato',
             endpoint: '/entities/contacts',
             tableId: 'contactsTable',
-            gridSectionId: 'contactsGridSection',
             tableSectionId: 'contactsSection',
             modalId: 'entityModal',
             disableSummaryFooter: true,
@@ -280,51 +282,6 @@
                         </button>
                     </td>
                 </tr>
-            `).join('');
-            },
-            renderGrid: (items) => {
-                const grid = getById('contactsGridSection');
-                if (items.length === 0) {
-                    grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 gap-2">
-                    <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum contato encontrado.</p>
-                </div>`;
-                    return;
-                }
-                grid.innerHTML = items.map((item, index) => `
-                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center mb-3">
-                            <input type="checkbox" value="${item.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
-                        </div>
-                        <div class="flex justify-between items-start gap-3">
-                            <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 line-clamp-2" title="${item.name}">${item.name}</h4>
-                        </div>
-                        <div class="text-xs font-mono text-gray-500 mb-4">${formatDoc(item.cnpj_cpf) || 'S/ Documento'}</div>
-
-                        <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                            ${item.email ? `<div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                <span class="truncate">${item.email}</span>
-                            </div>` : ''}
-                            ${item.phone ? `<div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                <span>${formatPhone(item.phone)}</span>
-                            </div>` : ''}
-                        </div>
-                    </div>
-
-                    <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-2">
-                        <button type="button" title="Editar" class="p-2 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
-                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        <button type="button" title="Excluir" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors delete-btn" data-id="${item.public_id}">
-                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    </div>
-                </div>
             `).join('');
             },
             onEdit: (data) => {

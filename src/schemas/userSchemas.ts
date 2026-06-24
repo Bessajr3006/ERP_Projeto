@@ -7,6 +7,7 @@ export const PublicUserSchema = z.object({
     full_name: z.string(),
     passwordRaw: z.string().nullable().optional(),
     cpf_cnpj: z.string().nullable().optional(),
+    crc: z.string().nullable().optional(),
     phone: z.string().nullable().optional(),
     zipcode: z.string().nullable().optional(),
     street: z.string().nullable().optional(),

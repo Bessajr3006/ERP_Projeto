@@ -259,6 +259,11 @@
                 state.zipMask = makeMask(zipcodeInput, { mask: '00000-000' });
                 state.zipMask?.on?.('complete', handleCepLookup);
             }
+
+            const btnSearchEntityCep = getById('btnSearchEntityCep');
+            if (btnSearchEntityCep) {
+                btnSearchEntityCep.addEventListener('click', handleCepLookup);
+            }
         }
 
         function applyRolePrefillFromQuery(roleManager: any) {

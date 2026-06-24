@@ -221,6 +221,7 @@
     const documentInput = getEl<HTMLInputElement>('sellerDocument');
     const phoneInput = getEl<HTMLInputElement>('sellerPhone');
     const zipcodeInput = getEl<HTMLInputElement>('sellerZipcode');
+    const btnSearchSellerCep = getEl<HTMLButtonElement>('btnSearchSellerCep');
 
     if (documentInput && !sellerDocMask) {
       sellerDocMask = makeMask(documentInput, {
@@ -238,6 +239,10 @@
     if (zipcodeInput && !sellerZipMask) {
       sellerZipMask = makeMask(zipcodeInput, { mask: '00000-000' });
       sellerZipMask.on('complete', () => void handleSellerCepLookup());
+    }
+
+    if (btnSearchSellerCep) {
+      btnSearchSellerCep.addEventListener('click', () => void handleSellerCepLookup());
     }
   }
 
@@ -326,7 +331,7 @@
       if (!tbody) return;
 
       if (sellerClients.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-4 text-center text-sm text-gray-500">Nenhum cliente vinculado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-sm text-gray-500">Nenhum cliente vinculado.</td></tr>';
         return;
       }
 
@@ -341,7 +346,7 @@
                 <option value="percentage" ${c.discount_type === 'percentage' ? 'selected' : ''}>%</option>
                 <option value="fixed" ${c.discount_type === 'fixed' ? 'selected' : ''}>R$</option>
               </select>
-              <button type="button" class="ml-1 text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 save-discount-btn" data-id="${c.public_id}" title="Salvar desconto">
+              <button type="button" class="ml-1 text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 save-discount-btn" data-id="${c.public_id}" title="Salvar comissão">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
               </button>
             </div>
@@ -373,11 +378,25 @@
       const clientId = select?.value;
       if (!clientId || !currentSellerId) return;
 
+      const commValueInput = getEl<HTMLInputElement>('newClientCommissionValue');
+      const commTypeSelect = getEl<HTMLSelectElement>('newClientCommissionType');
+      
+      const discount_value = commValueInput?.value ? parseFloat(commValueInput.value) : null;
+      const discount_type = commTypeSelect?.value || null;
+
       try {
         await api(`/entities/customers/${clientId}`, {
           method: 'PUT',
-          body: JSON.stringify({ seller_public_id: currentSellerId })
+          body: JSON.stringify({ 
+            seller_public_id: currentSellerId,
+            discount_value,
+            discount_type
+          })
         });
+
+        if (commValueInput) commValueInput.value = '';
+        if (select) select.value = '';
+
         UI?.showAlert?.('alertMessage', 'Cliente vinculado com sucesso!', 'success');
         await loadCustomersForSeller(currentSellerId);
       } catch (e: any) {
@@ -431,7 +450,7 @@
             method: 'PUT',
             body: JSON.stringify({ discount_type, discount_value })
           });
-          UI?.showAlert?.('alertMessage', 'Desconto salvo com sucesso!', 'success');
+          UI?.showAlert?.('alertMessage', 'Comissão salva com sucesso!', 'success');
           await loadCustomersForSeller(currentSellerId);
         } catch (e: any) {
           UI?.showAlert?.('alertMessage', e.message || 'Erro ao salvar desconto', 'error');
@@ -454,7 +473,6 @@
       entityName: 'Vendedor',
       endpoint: '/users',
       tableId: 'sellersTable',
-      gridSectionId: 'sellersGridSection',
       tableSectionId: 'sellersSection',
       modalId: 'entityModal',
       disableSummaryFooter: true,
@@ -557,74 +575,6 @@
                         }
                     </td>
                 </tr>
-            `
-          )
-          .join('');
-      },
-
-      renderGrid: (items: AnyRecord[]) => {
-        const grid = getEl('sellersGridSection');
-        if (!grid) return;
-
-        if (items.length === 0) {
-          grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 gap-2">
-                    <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum vendedor encontrado.</p>
-                </div>`;
-          return;
-        }
-
-        grid.innerHTML = items
-          .map(
-            (item: AnyRecord, index: number) => `
-                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700 ${
-                  !item.is_active ? 'opacity-50' : ''
-                }">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center mb-3">
-                            <input type="checkbox" value="${item.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
-                            <span class="text-xs font-mono text-gray-400 dark:text-gray-500">#${String(index + 1).padStart(4, '0')}</span>
-                        </div>
-                        <div class="flex justify-between items-start gap-3">
-                            <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">${item.full_name}</h4>
-                            <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Vendedor</span>
-                        </div>
-
-                        <div class="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                            <p>${formatDoc(item.cpf_cnpj)}</p>
-                            <p class="truncate" title="${item.email || ''}">${item.email || 'Sem email'}</p>
-                            <p>${formatPhone(item.phone)}</p>
-                            <p>${formatSellerLocation(item)}</p>
-                            <p>${
-                              item.is_active
-                                ? '<span class="w-2.5 h-2.5 bg-green-500 rounded-full inline-block mr-1"></span>Ativo'
-                                : '<span class="w-2.5 h-2.5 bg-red-500 rounded-full inline-block mr-1"></span>Inativo'
-                            }</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-end space-x-2">
-                        <button type="button" title="Clientes" class="text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-full dark:hover:bg-indigo-900/30 open-clients-btn" data-id="${item.public_id}">
-                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        </button>
-                        <button type="button" title="Editar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 edit-btn" data-item='${JSON.stringify(
-                          item
-                        ).replace(/'/g, '&#39;')}' data-id="${item.public_id}">
-                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        ${
-                          item.is_active
-                            ? `<button type="button" title="Desativar" class="text-red-600 hover:bg-red-50 p-1.5 rounded-full dark:hover:bg-red-900/30 toggle-status-btn" data-id="${item.public_id}" data-action="false">
-                                  <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-                                </button>`
-                            : `<button type="button" title="Ativar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 toggle-status-btn" data-id="${item.public_id}" data-action="true">
-                                  <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                </button>`
-                        }
-                    </div>
-                </div>
             `
           )
           .join('');

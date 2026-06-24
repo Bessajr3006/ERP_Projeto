@@ -259,95 +259,11 @@
         }
         // --- Render Grid ---
         function renderGrid() {
-            const grid = getById('usersGridSection');
-            if (!grid)
-                return;
-            const filtered = getFiltered();
-            if (!filtered.length) {
-                grid.innerHTML = '<p class="col-span-3 text-center text-sm text-gray-500 dark:text-gray-400 py-10">Nenhum usuário encontrado.</p>';
-                return;
-            }
-            grid.innerHTML = filtered.map(u => `
-            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl p-5 border border-gray-100 dark:border-slate-700 flex flex-col ${!u.is_active ? 'opacity-60' : ''}">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-xs font-medium text-gray-400 dark:text-gray-500">${getRoleName(u.role)}</span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
-                        ${u.is_active ? 'Ativo' : 'Inativo'}
-                    </span>
-                </div>
-                <h4 class="text-base font-bold text-gray-900 dark:text-gray-100 mb-3">${u.full_name}</h4>
-                <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-4">
-                    <div>${u.email}</div>
-                    <div>${formatPhone(u.phone)}</div>
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span class="font-mono text-[10px] select-all">${u.public_id}</span>
-                        <button type="button" class="view-id-btn text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transform transition-all duration-200 ease-out" data-id="${u.public_id}" title="Copiar ID: ${u.public_id}">
-                            <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="mt-auto flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-700">
-                    <button type="button" class="btn-edit-card p-2 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 rounded-lg hover:bg-brand-100 transition-colors" data-id="${u.public_id}" title="Editar">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    </button>
-                    <button type="button" class="btn-delete-card p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors" data-id="${u.public_id}" title="Excluir">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                </div>
-            </div>
-        `).join('');
-            grid.querySelectorAll('.btn-edit-card').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const user = usersData.find(u => u.public_id === btn.dataset.id);
-                    if (user)
-                        openModalDeferred(user);
-                });
-            });
-            grid.querySelectorAll('.btn-delete-card').forEach((btn) => {
-                btn.addEventListener('click', () => deleteUser(btn.dataset.id));
-            });
-            bindCopyEvents();
-            window.GridSummaryFooter?.update({
-                footerId: 'usersResultsFooter',
-                anchorId: 'usersGridSection',
-                count: filtered.length,
-                label: 'usuário(s) exibido(s)'
-            });
+            // Grid was removed.
         }
         // --- View toggle ---
         function setView(view) {
-            currentView = view;
-            localStorage.setItem('usersView', view);
-            const listSection = getById('usersSection');
-            const gridSection = getById('usersGridSection');
-            const btnList = getById('btnListView');
-            const btnGrid = getById('btnGridView');
-            const activeClasses = ['bg-brand-100', 'dark:bg-brand-900/40', 'text-brand-700', 'dark:text-brand-300', 'shadow-sm'];
-            const inactiveClasses = ['text-gray-500', 'hover:text-gray-700', 'dark:text-gray-400', 'dark:hover:text-gray-200'];
-            if (view === 'list') {
-                listSection.style.display = '';
-                gridSection.style.display = 'none';
-                btnList.querySelector('.check-icon')?.classList.remove('hidden');
-                btnGrid.querySelector('.check-icon')?.classList.add('hidden');
-                activeClasses.forEach(c => btnList.classList.add(c));
-                inactiveClasses.forEach(c => btnList.classList.remove(c));
-                inactiveClasses.forEach(c => btnGrid.classList.add(c));
-                activeClasses.forEach(c => btnGrid.classList.remove(c));
-            }
-            else {
-                listSection.style.display = 'none';
-                gridSection.style.display = 'grid';
-                btnGrid.querySelector('.check-icon')?.classList.remove('hidden');
-                btnList.querySelector('.check-icon')?.classList.add('hidden');
-                activeClasses.forEach(c => btnGrid.classList.add(c));
-                inactiveClasses.forEach(c => btnGrid.classList.remove(c));
-                inactiveClasses.forEach(c => btnList.classList.add(c));
-                activeClasses.forEach(c => btnGrid.classList.remove(c));
-            }
             renderTable();
-            renderGrid();
         }
         // --- Modal ---
         function openModal(user = null) {

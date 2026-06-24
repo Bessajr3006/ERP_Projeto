@@ -12,7 +12,6 @@
     filterStorageKey: 'service_providers_filter_panel',
     pageTitle: 'Prestadores de Serviço',
     tableId: 'serviceProvidersTable',
-    gridSectionId: 'serviceProvidersGridSection',
     tableSectionId: 'serviceProvidersSection',
     resultsFooterId: 'serviceProvidersResultsFooter',
     createdMessage: 'Prestador de serviço cadastrado com sucesso!',

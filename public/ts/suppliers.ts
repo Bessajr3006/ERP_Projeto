@@ -96,8 +96,17 @@
             .some((value: string) => value.includes(searchDigits));
         });
 
-        if (_tablePager) _tablePager.setData(filtered);
-        if (_gridPager) _gridPager.setData(filtered);
+        renderTable('suppliersTable', filtered, 0);
+        suppliersManager._bindActionEvents();
+
+        if ((window as any).GridSummaryFooter) {
+            (window as any).GridSummaryFooter.update({
+                footerId: 'suppliersResultsFooter',
+                anchorId: 'suppliersSection',
+                count: filtered.length,
+                label: 'fornecedor(es) exibido(s)'
+            });
+        }
 
         return filtered;
       },
@@ -119,27 +128,6 @@
         });
         suppliersData = this.data;
 
-        if (!_tablePager) {
-          _tablePager = new Paginator({
-            containerId: 'suppliersPaginationContainer',
-            pageSize: 20,
-            onChange: (pageItems: Supplier[], state: any) => {
-              renderTable('suppliersTable', pageItems, (state.currentPage - 1) * state.pageSize);
-              suppliersManager._bindActionEvents();
-            },
-          });
-        }
-        if (!_gridPager) {
-          _gridPager = new Paginator({
-            containerId: 'suppliersGridPaginationContainer',
-            pageSize: 20,
-            onChange: (pageItems: Supplier[], state: any) => {
-              renderGrid('suppliersGridSection', pageItems, (state.currentPage - 1) * state.pageSize);
-              suppliersManager._bindActionEvents();
-            },
-          });
-        }
-
         this.applyFilters();
       } catch (error) {
         console.error('Failed to load entities', error);
@@ -159,9 +147,6 @@
     applySupplierPrefillFromQuery();
   });
 
-  // ── Paginadores ─────────────────────────────────────────────
-  let _tablePager: any = null;
-  let _gridPager: any = null;
   const makeMask: any = (window as any).createMaskAdapter || ((input: any, options: any) => (window as any).IMask(input, options));
 
   let docMask: any = null;
@@ -730,56 +715,6 @@
       .join('');
   }
 
-  function renderGrid(elementId: string, items: Supplier[], offset = 0): void {
-    const grid = document.getElementById(elementId);
-    if (!grid) return;
-
-    if (items.length === 0) {
-      grid.innerHTML =
-        '<div class="col-span-full flex flex-col items-center justify-center py-12 gap-2"><svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p class="text-sm text-gray-400 dark:text-gray-500">Nenhum fornecedor encontrado.</p></div>';
-      return;
-    }
-
-    grid.innerHTML = items
-      .map(
-        (item: any, index: number) => `
-        <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group">
-            <div class="flex-1">
-                <div class="flex justify-between items-center mb-3">
-                    <input type="checkbox" value="${item.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
-                    <span class="text-xs font-mono text-gray-400 dark:text-gray-500">#${String(offset + index + 1).padStart(4, '0')}</span>
-                </div>
-                <h4 class="text-base leading-snug font-bold text-gray-900 dark:text-gray-100 pr-2 wrap-break-word" title="${item.name}">${item.name}</h4>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">${formatDoc(item.cnpj_cpf) || 'Sem documento'}</p>
-                
-                <div class="mt-4 space-y-2">
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                        ${item.email ? `<span class="truncate" title="${item.email}">${item.email}</span>` : 'Não informado'}
-                    </div>
-                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                        ${item.phone || 'Não informado'}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-5 pt-4 border-t border-transparent flex justify-end space-x-2">
-                <button type="button" title="Editar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 edit-btn" data-item='${JSON.stringify(item).replace(/'/g, '&#39;')}'>
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </button>
-                <button type="button" title="Duplicar" class="text-gray-500 hover:bg-gray-100 p-1.5 rounded-full dark:hover:bg-slate-700 dark:text-gray-400 duplicate-btn" data-item='${JSON.stringify(item).replace(/'/g, '&#39;')}'>
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                </button>
-                <button type="button" title="Excluir" class="text-red-500 hover:bg-red-50 p-1.5 rounded-full dark:hover:bg-red-900/30 delete-btn" data-id="${item.public_id}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-            </div>
-        </div>
-    `
-      )
-      .join('');
-  }
 
   document.addEventListener('DOMContentLoaded', () => {
     const tabBtnData = document.getElementById('tabBtn-data');
@@ -800,6 +735,20 @@
         }
       });
     }
+
+    const btnSearchEntityCep = document.getElementById('btnSearchEntityCep');
+    if (btnSearchEntityCep) {
+      btnSearchEntityCep.addEventListener('click', () => {
+        void handleEntityCepLookup();
+      });
+    }
+
+    const btnSearchCnpj = document.getElementById('btnSearchCnpj');
+    if (btnSearchCnpj) {
+      btnSearchCnpj.addEventListener('click', () => {
+        void handleEntityCnpjLookup();
+      });
+    }
   });
 
   // UI function to toggle tabs
@@ -813,13 +762,13 @@
       if (!btn || !content) return;
 
       if (tab === tabName) {
-        btn.classList.add('active', 'text-brand-600', 'border-brand-600', 'dark:text-brand-500', 'dark:border-brand-500');
-        btn.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'text-gray-500');
+        btn.classList.add('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+        btn.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'hover:border-gray-300', 'dark:hover:text-gray-300');
         content.classList.remove('hidden');
         content.classList.add('block');
       } else {
-        btn.classList.remove('active', 'text-brand-600', 'border-brand-600', 'dark:text-brand-500', 'dark:border-brand-500');
-        btn.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'text-gray-500');
+        btn.classList.remove('border-brand-500', 'text-brand-600', 'dark:text-brand-300');
+        btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'hover:border-gray-300', 'dark:hover:text-gray-300');
         content.classList.add('hidden');
         content.classList.remove('block');
       }

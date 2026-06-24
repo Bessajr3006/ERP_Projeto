@@ -284,9 +284,10 @@
             entityName: 'Orçamento',
             endpoint: '/orders/quotes',
             tableId: 'quotesTable',
-            gridSectionId: 'quotesSection', // No grid for quotes, but need an ID
+            gridSectionId: 'quotesGridSection',
             tableSectionId: 'quotesSection',
             modalId: 'quotesModal',
+            filterConfig: { footerId: 'quotesResultsFooter' },
             renderTable: (items) => {
                 const tbody = getById('quotesTable');
                 if (!tbody) return;
@@ -335,6 +336,66 @@
                                 </div>
                             </td>
                         </tr>
+                    `;
+                }).join('');
+            },
+            renderGrid: (items) => {
+                const grid = getById('quotesGridSection');
+                if (!grid) return;
+                if (items.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 gap-2">
+                        <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-sm text-gray-400 dark:text-gray-500">Nenhum orçamento encontrado.</p>
+                    </div>`;
+                    return;
+                }
+
+                grid.innerHTML = items.map((quote) => {
+                    const total = quote.items ? quote.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) : 0;
+                    return `
+                    <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700 group">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center pt-1 z-10">
+                                <input type="checkbox" value="${quote.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                <span class="ml-2 text-xs font-mono font-medium text-gray-500 dark:text-gray-400">#${String(quote.id).padStart(4, '0')}</span>
+                            </div>
+
+                            <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
+                                <button class="p-1.5 text-indigo-600 hover:text-indigo-900 dark:hover:text-indigo-400 bg-gray-50 hover:bg-indigo-50 dark:bg-slate-700 dark:hover:bg-indigo-900/30 rounded print-quote-btn" data-id="${quote.public_id}" title="Imprimir Orçamento">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                                </button>
+                                <button class="p-1.5 text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded edit-btn" data-id="${quote.public_id}" title="Editar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                </button>
+                                <button class="p-1.5 text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-400 bg-gray-50 hover:bg-emerald-50 dark:bg-slate-700 dark:hover:bg-emerald-900/30 rounded convert-sale-btn" data-id="${quote.public_id}" title="Transformar em Venda">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </button>
+                                <button class="p-1.5 text-red-600 hover:text-red-900 dark:hover:text-red-400 bg-gray-50 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-900/30 rounded delete-btn" data-id="${quote.public_id}" title="Excluir">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 mt-0">
+                            <div class="flex justify-between items-start gap-2 mb-2">
+                                <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight wrap-break-word flex-1" title="${quote.customer_name || 'Consumidor Final'}">${quote.customer_name || 'Consumidor Final'}</h4>
+                                <span class="text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">${formatCurrency(total)}</span>
+                            </div>
+
+                            <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-8 0v2m8 0H9m8 0H9m4-9a4 4 0 100-8 4 4 0 000 8z"></path></svg>
+                                    <span class="truncate">${quote.seller_name || 'S/ Vendedor'}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z"></path></svg>
+                                    <span class="truncate">${formatDate(quote.date || quote.created_at)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     `;
                 }).join('');
             },

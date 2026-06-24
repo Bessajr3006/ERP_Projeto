@@ -288,6 +288,152 @@
             }
         });
     }
+    function setupDetailsModalTabs() {
+        const tabButtons = document.querySelectorAll('.details-modal-tab');
+        tabButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-details-tab-target');
+                if (!targetId)
+                    return;
+                tabButtons.forEach((b) => {
+                    const isActive = b === btn;
+                    b.setAttribute('aria-selected', String(isActive));
+                    b.classList.toggle('border-brand-500', isActive);
+                    b.classList.toggle('text-brand-600', isActive);
+                    b.classList.toggle('dark:text-brand-300', isActive);
+                    b.classList.toggle('border-transparent', !isActive);
+                    b.classList.toggle('text-gray-500', !isActive);
+                    b.classList.toggle('dark:text-gray-400', !isActive);
+                });
+                document.querySelectorAll('.details-modal-tab-panel').forEach((panel) => {
+                    if (panel.id === targetId) {
+                        panel.classList.remove('hidden');
+                    }
+                    else {
+                        panel.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    }
+    function resetDetailsModalTabs() {
+        const tabButtons = document.querySelectorAll('.details-modal-tab');
+        tabButtons.forEach((btn, index) => {
+            const isFirst = index === 0;
+            btn.setAttribute('aria-selected', String(isFirst));
+            btn.classList.toggle('border-brand-500', isFirst);
+            btn.classList.toggle('text-brand-600', isFirst);
+            btn.classList.toggle('dark:text-brand-300', isFirst);
+            btn.classList.toggle('border-transparent', !isFirst);
+            btn.classList.toggle('text-gray-500', !isFirst);
+            btn.classList.toggle('dark:text-gray-400', !isFirst);
+        });
+        document.querySelectorAll('.details-modal-tab-panel').forEach((panel, index) => {
+            if (index === 0) {
+                panel.classList.remove('hidden');
+            }
+            else {
+                panel.classList.add('hidden');
+            }
+        });
+    }
+    async function openViewDetailsModal(customerId, customerName) {
+        const modal = getById('viewCustomerDetailsModal');
+        const nameSpan = getById('viewDetailsCustomerName');
+        if (!modal)
+            return;
+        if (nameSpan)
+            nameSpan.textContent = customerName;
+        resetDetailsModalTabs();
+        const ordersTable = getById('viewDetailsOrdersTable');
+        const servicesTable = getById('viewDetailsServicesTable');
+        const financialsTable = getById('viewDetailsFinancialsTable');
+        if (ordersTable)
+            ordersTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Carregando...</td></tr>';
+        if (servicesTable)
+            servicesTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Carregando...</td></tr>';
+        if (financialsTable)
+            financialsTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Carregando...</td></tr>';
+        modal.classList.remove('hidden');
+        try {
+            const [salesRes, servicesRes, revenuesRes] = await Promise.all([
+                (window.api)(`/orders/customers/${customerId}/sales`).catch(() => ({ data: [] })),
+                (window.api)('/estoque/service-launches').catch(() => ({ data: [] })),
+                (window.api)('/finance/revenues').catch(() => ({ data: [] }))
+            ]);
+            const sales = salesRes.data || [];
+            const services = (servicesRes.data || []).filter((item) => item.customer_public_id === customerId);
+            const revenues = (revenuesRes.data || []).filter((item) => item.customer_public_id === customerId || item.entity_public_id === customerId);
+            if (ordersTable) {
+                if (sales.length === 0) {
+                    ordersTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum pedido encontrado.</td></tr>';
+                }
+                else {
+                    ordersTable.innerHTML = sales.map((sale) => {
+                        const date = sale.created_at ? new Date(sale.created_at).toLocaleDateString('pt-BR') : '-';
+                        const formattedVal = Number(sale.total_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">#${sale.public_id.slice(-6).toUpperCase()}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${date}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">${sale.status || 'Pendente'}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right font-mono">${formattedVal}</td>
+                        </tr>
+                    `;
+                    }).join('');
+                }
+            }
+            if (servicesTable) {
+                if (services.length === 0) {
+                    servicesTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento de serviço encontrado.</td></tr>';
+                }
+                else {
+                    servicesTable.innerHTML = services.map((srv) => {
+                        const formattedVal = Number(srv.total_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">#${srv.public_id.slice(-6).toUpperCase()}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${srv.service_name || srv.description || '-'}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200">${srv.nfse_status || 'Pendente'}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right font-mono">${formattedVal}</td>
+                        </tr>
+                    `;
+                    }).join('');
+                }
+            }
+            if (financialsTable) {
+                if (revenues.length === 0) {
+                    financialsTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento financeiro encontrado.</td></tr>';
+                }
+                else {
+                    financialsTable.innerHTML = revenues.map((rev) => {
+                        const date = rev.due_date ? new Date(rev.due_date).toLocaleDateString('pt-BR') : '-';
+                        const formattedVal = Number(rev.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        const statusColor = rev.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+                        const statusText = rev.status === 'paid' ? 'Pago' : 'Pendente';
+                        return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${rev.description || '-'}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${date}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${statusText}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right font-mono">${formattedVal}</td>
+                        </tr>
+                    `;
+                    }).join('');
+                }
+            }
+        }
+        catch (error) {
+            console.error('Erro ao buscar detalhes do cliente', error);
+            window.UI.showAlert('alertMessage', 'Falha ao carregar histórico do cliente.', 'error');
+        }
+    }
     function setupCustomerFormEnhancements() {
         const documentInput = getById('customerDocument');
         const phoneInput = getById('customerPhone');
@@ -364,6 +510,27 @@
         }
         setupCustomerFormEnhancements();
         setupCustomerModalTabs();
+        setupDetailsModalTabs();
+        const closeViewDetailsModal = () => getById('viewCustomerDetailsModal')?.classList.add('hidden');
+        getById('btnCloseViewDetailsModal')?.addEventListener('click', closeViewDetailsModal);
+        getById('btnCancelViewDetailsModal')?.addEventListener('click', closeViewDetailsModal);
+        const viewDetailsModalBackdrop = getById('viewDetailsModalBackdrop');
+        if (viewDetailsModalBackdrop) {
+            viewDetailsModalBackdrop.addEventListener('click', (e) => {
+                if (e.target === viewDetailsModalBackdrop)
+                    closeViewDetailsModal();
+            });
+        }
+        document.addEventListener('click', (e) => {
+            const btn = e.target?.closest('.view-details-btn');
+            if (btn) {
+                const customerId = btn.getAttribute('data-id');
+                const customerName = btn.getAttribute('data-name');
+                if (customerId && customerName) {
+                    openViewDetailsModal(customerId, customerName);
+                }
+            }
+        });
         loadDependencies();
         const openSolidconCustomersModal = () => getById('solidconCustomersModal')?.classList.remove('hidden');
         const closeSolidconCustomersModal = () => getById('solidconCustomersModal')?.classList.add('hidden');
@@ -444,7 +611,7 @@
             renderTable: (items) => {
                 const tbody = getById('customersTable');
                 if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum cliente encontrado.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum cliente encontrado.</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map((item, index) => `
@@ -452,16 +619,26 @@
                     <td class="px-3 py-4 whitespace-nowrap text-left w-12">
                         <input type="checkbox" value="${item.public_id}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">${item.name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${formatDoc(item.cnpj_cpf) || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div class="font-medium text-gray-900 dark:text-gray-100">${item.name}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">${formatDoc(item.cnpj_cpf) || '-'}</div>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         <div class="block w-56 max-w-full truncate" title="${item.email || ''}">${item.email || '-'}</div>
                         <div>${formatPhone(item.phone)}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">${item.vencimento_dia ? 'Dia ' + item.vencimento_dia : '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right font-mono">${item.limite != null && item.limite !== '' && Number(item.limite) > 0 ? 'R$ ' + Number(item.limite).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <div>${item.vencimento_dia ? 'Dia ' + item.vencimento_dia : '-'}</div>
+                        <div class="font-mono text-xs mt-0.5">${item.limite != null && item.limite !== '' && Number(item.limite) > 0 ? 'R$ ' + Number(item.limite).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</div>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${item.seller_name || 'Sem Vendedor'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button type="button" title="Visualizar" class="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 mr-2 view-details-btn" data-id="${item.public_id}" data-name="${item.name}">
+                            <svg class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
                         <button type="button" title="Editar" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-2 edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         </button>
@@ -494,6 +671,12 @@
                         </div>
 
                         <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
+                            <button class="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 bg-gray-50 hover:bg-blue-50 dark:bg-slate-700 dark:hover:bg-blue-900/30 rounded view-details-btn" data-id="${item.public_id}" data-name="${item.name}" title="Visualizar">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
                             <button class="p-1.5 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 bg-gray-50 hover:bg-brand-50 dark:bg-slate-700 dark:hover:bg-brand-900/30 rounded edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}' title="Editar">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             </button>
@@ -553,6 +736,10 @@
                     getById('customerCertExpiration').value = data.certificate_expiration ? data.certificate_expiration.split('T')[0] : '';
                     getById('customerDueDay').value = data.vencimento_dia ?? '';
                     getById('customerCreditLimit').value = data.limite ?? '';
+                    if (getById('customerDiscountValue'))
+                        getById('customerDiscountValue').value = data.discount_value ?? '';
+                    if (getById('customerDiscountType'))
+                        getById('customerDiscountType').value = data.discount_type || 'percentage';
                     setMaskedValue(customerDocMask, 'customerDocument', data.cnpj_cpf || '');
                     setMaskedValue(customerPhoneMask, 'customerPhone', data.phone || '');
                     setMaskedValue(customerZipMask, 'customerZipcode', data.zipcode || '');
@@ -938,6 +1125,8 @@
                 certificate_expiration: getTrimmedValue('customerCertExpiration') || undefined,
                 vencimento_dia: getById('customerDueDay')?.value !== '' ? Number(getById('customerDueDay')?.value) : undefined,
                 limite: getById('customerCreditLimit')?.value !== '' ? Number(getById('customerCreditLimit')?.value) : undefined,
+                discount_type: getById('customerDiscountType')?.value || undefined,
+                discount_value: getById('customerDiscountValue')?.value !== '' ? Number(getById('customerDiscountValue')?.value) : undefined,
             };
             saveBtn.disabled = true;
             saveBtn.textContent = 'Salvando...';

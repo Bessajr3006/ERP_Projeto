@@ -1,8 +1,11 @@
+/// <reference path="../globals.d.ts" />
+/// <reference path="../api.ts" />
 /**
  * crud-manager.js
  * Fábrica central para gerenciar páginas de CRUD com Listagem/Grid,
  * chamadas à API, buscas, e renderizações automáticas.
  */
+// @ts-ignore
 class CrudManager {
     constructor(config) {
         this.entityName = config.entityName || 'Registro';
@@ -85,7 +88,7 @@ class CrudManager {
         }
         if (this.renderTableFn)
             this.renderTableFn(filtered);
-        if (this.renderGridFn)
+        if (false && this.renderGridFn)
             this.renderGridFn(filtered);
         if (window.GridSummaryFooter && !this.disableSummaryFooter) {
             window.GridSummaryFooter.update({
@@ -168,6 +171,9 @@ class CrudManager {
     _setupViewToggles() {
         const btnList = document.getElementById('btnListView');
         const btnGrid = document.getElementById('btnGridView');
+        if (!btnList || !btnGrid) {
+            this.currentView = 'list';
+        }
         if (btnList) {
             btnList.addEventListener('click', () => {
                 this.currentView = 'list';
@@ -185,11 +191,25 @@ class CrudManager {
         this._updateViewToggleUI();
     }
     _updateViewToggleUI() {
-        const btnList = document.getElementById('btnListView');
-        const btnGrid = document.getElementById('btnGridView');
         const tableSection = document.getElementById(this.tableSectionId);
         const gridSection = document.getElementById(this.gridSectionId);
-        if (!btnList || !btnGrid || !tableSection || !gridSection)
+        if (tableSection && gridSection) {
+            if (this.currentView === 'list') {
+                tableSection.style.display = '';
+                tableSection.classList.remove('hidden');
+                gridSection.style.display = 'none';
+                gridSection.classList.add('hidden');
+            }
+            else {
+                tableSection.style.display = 'none';
+                tableSection.classList.add('hidden');
+                gridSection.style.display = '';
+                gridSection.classList.remove('hidden');
+            }
+        }
+        const btnList = document.getElementById('btnListView');
+        const btnGrid = document.getElementById('btnGridView');
+        if (!btnList || !btnGrid)
             return;
         const activeClasses = "flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1";
         const inactiveClasses = "flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1";
@@ -200,18 +220,10 @@ class CrudManager {
         if (this.currentView === 'list') {
             btnList.className = activeClasses;
             btnList.querySelector('.check-icon')?.classList.remove('hidden');
-            tableSection.style.display = '';
-            tableSection.classList.remove('hidden');
-            gridSection.style.display = 'none';
-            gridSection.classList.add('hidden');
         }
         else {
             btnGrid.className = activeClasses;
             btnGrid.querySelector('.check-icon')?.classList.remove('hidden');
-            tableSection.style.display = 'none';
-            tableSection.classList.add('hidden');
-            gridSection.style.display = '';
-            gridSection.classList.remove('hidden');
         }
     }
     _setupModals() {

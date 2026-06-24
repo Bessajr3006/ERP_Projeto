@@ -231,4 +231,35 @@ export class ProductRepository {
 
         return result.affectedRows;
     }
+
+    static async bulkDelete(companyId: number, productIds: string[]): Promise<number> {
+        if (!productIds || productIds.length === 0) return 0;
+
+        const placeholders = productIds.map(() => '?').join(', ');
+        
+        // 1. Get image URLs to delete from storage
+        const [products] = await pool.query<any[]>(
+            `SELECT image_url FROM products WHERE company_id = ? AND public_id IN (${placeholders})`,
+            [companyId, ...productIds]
+        );
+
+        // 2. Perform delete
+        const [result] = await pool.query<ResultSetHeader>(
+            `DELETE FROM products WHERE company_id = ? AND public_id IN (${placeholders})`,
+            [companyId, ...productIds]
+        );
+
+        // 3. Clean up storage
+        for (const p of products) {
+            if (p.image_url) {
+                try {
+                    StorageService.delete(p.image_url);
+                } catch (err) {
+                    console.error('Failed to delete image during bulk delete:', err);
+                }
+            }
+        }
+
+        return result.affectedRows;
+    }
 }

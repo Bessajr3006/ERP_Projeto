@@ -191,6 +191,34 @@ export class ProductController {
         }
     }
 
+    static async bulkDelete(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { productIds } = req.body;
+
+            if (!Array.isArray(productIds) || productIds.length === 0) {
+                res.status(400).json({ status: 'error', message: 'Nenhum produto selecionado.' });
+                return;
+            }
+
+            const affected = await ProductService.bulkDelete(productIds, companyId);
+            res.status(200).json({
+                status: 'success',
+                message: `${affected} produto(s) excluído(s) com sucesso.`,
+                data: { affected }
+            });
+        } catch (error: any) {
+            if (error?.code === 'ER_ROW_IS_REFERENCED_2') {
+                res.status(409).json({ 
+                    status: 'error', 
+                    message: 'Não é possível excluir um ou mais produtos selecionados pois possuem movimentações ou pedidos atrelados.' 
+                });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
+        }
+    }
+
     static async importSolidcon(req: Request, res: Response): Promise<void> {
         try {
             const companyId = req.user!.company_id;

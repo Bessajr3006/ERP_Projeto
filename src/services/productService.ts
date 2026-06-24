@@ -62,6 +62,10 @@ export class ProductService {
         return ProductRepository.bulkUpdate(companyId, data);
     }
 
+    static async bulkDelete(productIds: string[], companyId: number): Promise<number> {
+        return ProductRepository.bulkDelete(companyId, productIds);
+    }
+
     static async importSolidcon(companyId: number, items: any[]): Promise<{ created: number; updated: number; skipped: number; errors: Array<{ index: number; reason: string }> }> {
         const result = { created: 0, updated: 0, skipped: 0, errors: [] as Array<{ index: number; reason: string }> };
 

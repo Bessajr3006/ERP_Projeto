@@ -111,6 +111,7 @@ router.post('/solidcon-import', (req, res, next) => ProductController.importSoli
  *                     count: { type: integer, example: 5 }
  */
 router.post('/bulk-update', (req, res, next) => ProductController.bulkUpdate(req, res).catch(next));
+router.post('/bulk-delete', (req, res, next) => ProductController.bulkDelete(req, res).catch(next));
 /**
  * @openapi
  * /products/send-catalog:

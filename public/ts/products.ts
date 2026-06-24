@@ -468,6 +468,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const btnBulkDelete = getById('btnBulkDelete');
+    if (btnBulkDelete) {
+        btnBulkDelete.addEventListener('click', async () => {
+            const selectedIds = Array.from(qsa('.product-checkbox:checked') as any).map((cb: any) => cb.value);
+            if (selectedIds.length === 0) return;
+
+            if (confirm(`Deseja realmente excluir ${selectedIds.length} produto(s) selecionado(s) em lote?`)) {
+                const originalText = btnBulkDelete.textContent || '';
+                btnBulkDelete.disabled = true;
+                btnBulkDelete.textContent = 'Excluindo...';
+
+                try {
+                    const response = await api('/products/bulk-delete', {
+                        method: 'POST',
+                        body: JSON.stringify({ productIds: selectedIds })
+                    });
+                    
+                    UI.showAlert('alertMessage', response.message || 'Produtos excluídos com sucesso!', 'success');
+                    
+                    // Hide bulk buttons
+                    btnBulkDelete.classList.add('hidden');
+                    getById('btnBulkUpdate')?.classList.add('hidden');
+                    
+                    await loadProducts();
+                } catch (error: any) {
+                    alert(error.message || 'Erro ao excluir produtos em lote.');
+                } finally {
+                    btnBulkDelete.disabled = false;
+                    btnBulkDelete.textContent = originalText;
+                }
+            }
+        });
+    }
+
     const bulkUpdateForm = getById('bulkUpdateForm');
     if (bulkUpdateForm) {
         bulkUpdateForm.addEventListener('submit', async (e) => {
@@ -1093,6 +1127,8 @@ function bindActionEvents() {
         const checkedCount = qsa('.product-checkbox:checked').length;
         const btnBulk = getById('btnBulkUpdate');
         const countSpan = getById('bulkCount');
+        const btnBulkDelete = getById('btnBulkDelete');
+        const bulkDeleteCountSpan = getById('bulkDeleteCount');
 
         if (btnBulk) {
             if (checkedCount > 0) {
@@ -1102,6 +1138,17 @@ function bindActionEvents() {
             } else {
                 btnBulk.classList.add('hidden');
                 btnBulk.classList.remove('inline-flex', 'items-center', 'justify-center');
+            }
+        }
+
+        if (btnBulkDelete) {
+            if (checkedCount > 0) {
+                btnBulkDelete.classList.remove('hidden');
+                btnBulkDelete.classList.add('inline-flex', 'items-center', 'justify-center');
+                if (bulkDeleteCountSpan) bulkDeleteCountSpan.textContent = checkedCount;
+            } else {
+                btnBulkDelete.classList.add('hidden');
+                btnBulkDelete.classList.remove('inline-flex', 'items-center', 'justify-center');
             }
         }
     };

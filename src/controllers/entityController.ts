@@ -71,6 +71,10 @@ const bulkUpdateCustomersSchema = z.object({
     limite: z.number().min(0).optional(),
 });
 
+const bulkDeleteCustomersSchema = z.object({
+    customerIds: z.array(z.string()).min(1, 'At least one customer is required'),
+});
+
 // ── Factory de handlers ───────────────────────────────────────────────────────
 
 function makeHandlers(table: EntityTable) {
@@ -140,6 +144,18 @@ function makeHandlers(table: EntityTable) {
             } catch (error: any) {
                 if (error instanceof Error && /not found/i.test(error.message)) {
                     res.status(404).json({ status: 'error', message: `${notFoundLabel} não encontrado.` });
+                    return;
+                }
+                // Check for foreign key constraint errors
+                if (error.code === 'ER_ROW_IS_REFERENCED_2' || 
+                    error.code === 'ER_ROW_IS_REFERENCED' || 
+                    error.errno === 1451 || 
+                    error.errno === 1217 || 
+                    (error.message && error.message.includes('foreign key constraint fails'))) {
+                    res.status(400).json({ 
+                        status: 'error', 
+                        message: `Este ${notFoundLabel.toLowerCase()} possui registros vinculados (vendas, orçamentos, etc.) e não pode ser excluído.` 
+                    });
                     return;
                 }
                 throw error;
@@ -213,6 +229,39 @@ export class EntityController {
             }
             if (error instanceof Error && error.message === 'Seller not found for this company') {
                 res.status(400).json({ status: 'error', message: 'Vendedor informado nao pertence a esta empresa.' });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
+        }
+    }
+
+    static async bulkDeleteCustomers(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const validatedData = bulkDeleteCustomersSchema.parse(req.body);
+
+            const deletedCount = await EntityService.bulkDeleteCustomers(companyId, validatedData.customerIds);
+
+            res.status(200).json({
+                status: 'success',
+                message: `${deletedCount} clientes excluídos com sucesso`,
+                data: { count: deletedCount }
+            });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                res.status(400).json({ status: 'error', errors: error.errors });
+                return;
+            }
+            // Check for foreign key constraint errors
+            if (error.code === 'ER_ROW_IS_REFERENCED_2' || 
+                error.code === 'ER_ROW_IS_REFERENCED' || 
+                error.errno === 1451 || 
+                error.errno === 1217 || 
+                (error.message && error.message.includes('foreign key constraint fails'))) {
+                res.status(400).json({ 
+                    status: 'error', 
+                    message: 'Alguns dos clientes selecionados possuem registros vinculados (vendas, orçamentos, etc.) e não podem ser excluídos.' 
+                });
                 return;
             }
             res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });

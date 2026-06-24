@@ -370,6 +370,20 @@ export class EntityRepository {
         return result.affectedRows;
     }
 
+    static async bulkDeleteCustomers(companyId: number, customerIds: string[]): Promise<number> {
+        if (!customerIds || customerIds.length === 0) return 0;
+
+        await this.ensureCustomerSchema();
+
+        const placeholders = customerIds.map(() => '?').join(', ');
+        const [result] = await pool.query<ResultSetHeader>(
+            `DELETE FROM customers WHERE company_id = ? AND public_id IN (${placeholders})`,
+            [companyId, ...customerIds]
+        );
+
+        return result.affectedRows;
+    }
+
     static async delete(table: EntityTable, publicId: string, companyId: number): Promise<void> {
         await this.ensureSchemaForTable(table);
 

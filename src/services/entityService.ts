@@ -139,6 +139,10 @@ export class EntityService {
         return EntityRepository.bulkUpdateCustomers(companyId, data);
     }
 
+    static bulkDeleteCustomers(companyId: number, customerIds: string[]): Promise<number> {
+        return EntityRepository.bulkDeleteCustomers(companyId, customerIds);
+    }
+
     // ── Acesso genérico (novo — útil para novos módulos) ───────────────────────
 
     /**

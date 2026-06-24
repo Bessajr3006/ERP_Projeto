@@ -740,6 +740,46 @@
             if (e.target === bulkUpdateModalBackdrop)
                 closeBulkUpdateModal();
         });
+        const btnBulkDeleteCustomers = getById('btnBulkDeleteCustomers');
+        if (btnBulkDeleteCustomers) {
+            btnBulkDeleteCustomers.addEventListener('click', async () => {
+                const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+                const count = checkedBoxes.length;
+                if (count === 0)
+                    return;
+                const confirmMsg = count === 1
+                    ? 'Deseja realmente excluir o cliente selecionado?'
+                    : `Deseja realmente excluir os ${count} clientes selecionados?`;
+                if (!confirm(confirmMsg))
+                    return;
+                const customerIds = Array.from(checkedBoxes).map((cb) => cb.value);
+                btnBulkDeleteCustomers.disabled = true;
+                const originalText = btnBulkDeleteCustomers.innerHTML;
+                btnBulkDeleteCustomers.textContent = 'Excluindo...';
+                try {
+                    const response = await (window.api)('/entities/customers/bulk-delete', {
+                        method: 'POST',
+                        body: JSON.stringify({ customerIds })
+                    });
+                    window.UI.showAlert('alertMessage', response.message || 'Clientes excluídos com sucesso!', 'success');
+                    // Uncheck selectAll and all item checkboxes
+                    const selectAll = getById('selectAll');
+                    if (selectAll)
+                        selectAll.checked = false;
+                    document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = false);
+                    // Update bulk buttons visibility
+                    updateBulkButtonsVisibility();
+                    await customersManager.loadData();
+                }
+                catch (error) {
+                    alert(error.message || 'Erro ao excluir clientes.');
+                }
+                finally {
+                    btnBulkDeleteCustomers.disabled = false;
+                    btnBulkDeleteCustomers.innerHTML = originalText;
+                }
+            });
+        }
         if (bulkUpdateCustomersForm) {
             bulkUpdateCustomersForm.addEventListener('submit', async (e) => {
                 e.preventDefault();

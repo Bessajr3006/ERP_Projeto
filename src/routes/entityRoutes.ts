@@ -116,6 +116,18 @@ router.post('/customers/solidcon-import', (req, res, next) => EntityController.i
 router.post('/customers/bulk-update', (req, res, next) => EntityController.bulkUpdateCustomers(req, res).catch(next));
 /**
  * @openapi
+ * /entities/customers/bulk-delete:
+ *   post:
+ *     tags: [Entities]
+ *     summary: Excluir clientes em lote
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Clientes excluidos }
+ */
+router.post('/customers/bulk-delete', (req, res, next) => EntityController.bulkDeleteCustomers(req, res).catch(next));
+/**
+ * @openapi
  * /entities/customers/{id}:
  *   put:
  *     tags: [Entities]

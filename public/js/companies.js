@@ -1,3 +1,5 @@
+/// <reference path="./globals.d.ts" />
+/// <reference path="./api.ts" />
 (function initCompaniesPage() {
     let companiesData = [];
     let filteredCompanies = [];

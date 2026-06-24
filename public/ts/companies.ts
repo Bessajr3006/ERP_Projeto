@@ -1,3 +1,6 @@
+/// <reference path="./globals.d.ts" />
+/// <reference path="./api.ts" />
+
 (function initCompaniesPage() {
 
 type Company = any;

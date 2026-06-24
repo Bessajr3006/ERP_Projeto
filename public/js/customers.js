@@ -697,6 +697,155 @@
                 }
             });
         }
+        // ==========================================
+        // Bulk Update Customers Logic
+        // ==========================================
+        const btnBulkUpdateCustomers = getById('btnBulkUpdateCustomers');
+        const bulkUpdateCustomersModal = getById('bulkUpdateCustomersModal');
+        const btnCloseBulkUpdateModal = getById('btnCloseBulkUpdateModal');
+        const btnCancelBulkUpdateModal = getById('btnCancelBulkUpdateModal');
+        const bulkUpdateModalBackdrop = getById('bulkUpdateModalBackdrop');
+        const bulkUpdateCustomersForm = getById('bulkUpdateCustomersForm');
+        const closeBulkUpdateModal = () => {
+            bulkUpdateCustomersModal?.classList.add('hidden');
+        };
+        if (btnBulkUpdateCustomers) {
+            btnBulkUpdateCustomers.addEventListener('click', () => {
+                const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+                const count = checkedBoxes.length;
+                if (count === 0)
+                    return;
+                if (bulkUpdateCustomersForm) {
+                    bulkUpdateCustomersForm.reset();
+                }
+                // Populate Sellers dropdown in Bulk Modal
+                const bulkSellerSelect = getById('bulkCustomerSellerParam');
+                if (bulkSellerSelect) {
+                    bulkSellerSelect.innerHTML = [
+                        '<option value="">Não alterar</option>',
+                        '<option value="clear">Remover vendedor (Nenhum)</option>',
+                        ...allSellers.map(s => `<option value="${s.public_id}">${s.full_name}</option>`)
+                    ].join('');
+                    bulkSellerSelect.value = '';
+                }
+                const countSpan = getById('bulkModalCustomersCount');
+                if (countSpan)
+                    countSpan.textContent = String(count);
+                bulkUpdateCustomersModal?.classList.remove('hidden');
+            });
+        }
+        btnCloseBulkUpdateModal?.addEventListener('click', closeBulkUpdateModal);
+        btnCancelBulkUpdateModal?.addEventListener('click', closeBulkUpdateModal);
+        bulkUpdateModalBackdrop?.addEventListener('click', (e) => {
+            if (e.target === bulkUpdateModalBackdrop)
+                closeBulkUpdateModal();
+        });
+        if (bulkUpdateCustomersForm) {
+            bulkUpdateCustomersForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+                const customerIds = Array.from(checkedBoxes).map((cb) => cb.value);
+                if (customerIds.length === 0)
+                    return;
+                const sellerVal = getById('bulkCustomerSellerParam')?.value;
+                const dueDayVal = getById('bulkCustomerDueDay')?.value;
+                const creditLimitVal = getById('bulkCustomerCreditLimit')?.value;
+                const payload = {
+                    customerIds
+                };
+                if (sellerVal === 'clear') {
+                    payload.seller_public_id = null;
+                }
+                else if (sellerVal) {
+                    payload.seller_public_id = sellerVal;
+                }
+                if (dueDayVal !== '') {
+                    payload.vencimento_dia = Number(dueDayVal);
+                }
+                if (creditLimitVal !== '') {
+                    payload.limite = Number(creditLimitVal);
+                }
+                // If nothing is selected to change, alert the user
+                if (payload.seller_public_id === undefined && payload.vencimento_dia === undefined && payload.limite === undefined) {
+                    alert('Selecione ao menos um campo para alterar.');
+                    return;
+                }
+                const saveBtn = getById('bulkSaveBtn');
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Aplicando...';
+                }
+                try {
+                    const response = await (window.api)('/entities/customers/bulk-update', {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                    closeBulkUpdateModal();
+                    window.UI.showAlert('alertMessage', response.message || 'Clientes atualizados com sucesso!', 'success');
+                    // Uncheck selectAll and all item checkboxes
+                    const selectAll = getById('selectAll');
+                    if (selectAll)
+                        selectAll.checked = false;
+                    document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = false);
+                    // Update bulk buttons visibility
+                    updateBulkButtonsVisibility();
+                    await customersManager.loadData();
+                }
+                catch (error) {
+                    alert(error.message || 'Erro ao atualizar clientes.');
+                }
+                finally {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Aplicar Alterações';
+                    }
+                }
+            });
+        }
+        const updateBulkButtonsVisibility = () => {
+            const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+            const count = checkedBoxes.length;
+            const btnBulkUpdate = getById('btnBulkUpdateCustomers');
+            const btnBulkDelete = getById('btnBulkDeleteCustomers');
+            if (btnBulkUpdate) {
+                if (count > 0) {
+                    btnBulkUpdate.classList.remove('hidden');
+                    btnBulkUpdate.classList.add('inline-flex');
+                    const countSpan = getById('bulkUpdateCustomersCount');
+                    if (countSpan)
+                        countSpan.textContent = String(count);
+                }
+                else {
+                    btnBulkUpdate.classList.add('hidden');
+                    btnBulkUpdate.classList.remove('inline-flex');
+                }
+            }
+            if (btnBulkDelete) {
+                if (count > 0) {
+                    btnBulkDelete.classList.remove('hidden');
+                    btnBulkDelete.classList.add('inline-flex');
+                    const countSpan = getById('bulkCustomersCount');
+                    if (countSpan)
+                        countSpan.textContent = String(count);
+                }
+                else {
+                    btnBulkDelete.classList.add('hidden');
+                    btnBulkDelete.classList.remove('inline-flex');
+                }
+            }
+        };
+        document.addEventListener('change', (e) => {
+            if (e.target && (e.target.classList.contains('item-checkbox') || e.target.id === 'selectAll')) {
+                setTimeout(updateBulkButtonsVisibility, 0);
+            }
+        });
+        // Also hide bulk buttons when loading data
+        const originalLoadData = customersManager.loadData;
+        customersManager.loadData = async function (...args) {
+            const res = await originalLoadData.apply(this, args);
+            updateBulkButtonsVisibility();
+            return res;
+        };
         // Delete global action
         document.addEventListener('click', async (e) => {
             const btn = e.target?.closest?.('.delete-btn');

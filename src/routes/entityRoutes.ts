@@ -104,6 +104,18 @@ router.get('/customers', (req, res, next) => EntityController.listCustomers(req,
 router.post('/customers/solidcon-import', (req, res, next) => EntityController.importCustomersSolidcon(req, res).catch(next));
 /**
  * @openapi
+ * /entities/customers/bulk-update:
+ *   post:
+ *     tags: [Entities]
+ *     summary: Atualizar clientes em lote
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Clientes atualizados }
+ */
+router.post('/customers/bulk-update', (req, res, next) => EntityController.bulkUpdateCustomers(req, res).catch(next));
+/**
+ * @openapi
  * /entities/customers/{id}:
  *   put:
  *     tags: [Entities]

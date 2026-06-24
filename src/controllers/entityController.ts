@@ -64,6 +64,13 @@ const contactCreateSchema = baseEntitySchema.extend({
 });
 const contactUpdateSchema = contactCreateSchema.partial();
 
+const bulkUpdateCustomersSchema = z.object({
+    customerIds: z.array(z.string()).min(1, 'At least one customer is required'),
+    seller_public_id: optionalSellerPublicId,
+    vencimento_dia: z.number().int().min(1).max(31).nullable().optional(),
+    limite: z.number().min(0).optional(),
+});
+
 // ── Factory de handlers ───────────────────────────────────────────────────────
 
 function makeHandlers(table: EntityTable) {
@@ -185,6 +192,31 @@ export class EntityController {
 
     static deleteCustomer(req: Request, res: Response): Promise<void> {
         return customerHandlers.delete(req, res);
+    }
+
+    static async bulkUpdateCustomers(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const validatedData = bulkUpdateCustomersSchema.parse(req.body);
+
+            const updatedCount = await EntityService.bulkUpdateCustomers(companyId, validatedData);
+
+            res.status(200).json({
+                status: 'success',
+                message: `${updatedCount} clientes atualizados com sucesso`,
+                data: { count: updatedCount }
+            });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                res.status(400).json({ status: 'error', errors: error.errors });
+                return;
+            }
+            if (error instanceof Error && error.message === 'Seller not found for this company') {
+                res.status(400).json({ status: 'error', message: 'Vendedor informado nao pertence a esta empresa.' });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
+        }
     }
 
     // ── Contacts ──────────────────────────────────────────────────────────────

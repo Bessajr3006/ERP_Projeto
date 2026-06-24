@@ -130,6 +130,15 @@ export class EntityService {
         return customerCrud.delete(publicId, companyId);
     }
 
+    static bulkUpdateCustomers(companyId: number, data: {
+        customerIds: string[],
+        seller_public_id?: string | null | undefined,
+        vencimento_dia?: number | null | undefined,
+        limite?: number | undefined
+    }): Promise<number> {
+        return EntityRepository.bulkUpdateCustomers(companyId, data);
+    }
+
     // ── Acesso genérico (novo — útil para novos módulos) ───────────────────────
 
     /**

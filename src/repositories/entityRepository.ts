@@ -331,6 +331,45 @@ export class EntityRepository {
         return this.getById(table, currentId, companyId);
     }
 
+    static async bulkUpdateCustomers(companyId: number, data: {
+        customerIds: string[],
+        seller_public_id?: string | null | undefined,
+        vencimento_dia?: number | null | undefined,
+        limite?: number | undefined
+    }): Promise<number> {
+        if (!data.customerIds || data.customerIds.length === 0) return 0;
+
+        await this.ensureCustomerSchema();
+
+        const updates: string[] = [];
+        const values: any[] = [];
+
+        if (data.seller_public_id !== undefined) {
+            updates.push('seller_user_id = ?');
+            values.push(await this.resolveCustomerSellerId(companyId, data.seller_public_id));
+        }
+        if (data.vencimento_dia !== undefined) {
+            updates.push('vencimento_dia = ?');
+            values.push(data.vencimento_dia);
+        }
+        if (data.limite !== undefined) {
+            updates.push('limite = ?');
+            values.push(data.limite);
+        }
+
+        if (updates.length === 0) return 0;
+
+        const placeholders = data.customerIds.map(() => '?').join(', ');
+        values.push(companyId, ...data.customerIds);
+
+        const [result] = await pool.query<ResultSetHeader>(
+            `UPDATE customers SET ${updates.join(', ')} WHERE company_id = ? AND public_id IN (${placeholders})`,
+            values
+        );
+
+        return result.affectedRows;
+    }
+
     static async delete(table: EntityTable, publicId: string, companyId: number): Promise<void> {
         await this.ensureSchemaForTable(table);
 

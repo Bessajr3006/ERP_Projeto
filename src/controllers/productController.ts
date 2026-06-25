@@ -201,20 +201,27 @@ export class ProductController {
                 return;
             }
 
-            const affected = await ProductService.bulkDelete(productIds, companyId);
-            res.status(200).json({
-                status: 'success',
-                message: `${affected} produto(s) excluído(s) com sucesso.`,
-                data: { affected }
-            });
-        } catch (error: any) {
-            if (error?.code === 'ER_ROW_IS_REFERENCED_2') {
+            const { deletedCount, failedCount } = await ProductService.bulkDelete(productIds, companyId);
+
+            if (deletedCount === 0 && failedCount > 0) {
                 res.status(409).json({ 
                     status: 'error', 
-                    message: 'Não é possível excluir um ou mais produtos selecionados pois possuem movimentações ou pedidos atrelados.' 
+                    message: 'Não foi possível excluir nenhum dos produtos selecionados pois possuem movimentações ou pedidos atrelados.' 
                 });
                 return;
             }
+
+            let message = `${deletedCount} produto(s) excluído(s) com sucesso.`;
+            if (failedCount > 0) {
+                message += ` ${failedCount} produto(s) não puderam ser excluídos pois possuem movimentações ou pedidos atrelados.`;
+            }
+
+            res.status(200).json({
+                status: 'success',
+                message,
+                data: { affected: deletedCount, failedCount }
+            });
+        } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
         }
     }

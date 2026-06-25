@@ -232,34 +232,54 @@ export class ProductRepository {
         return result.affectedRows;
     }
 
-    static async bulkDelete(companyId: number, productIds: string[]): Promise<number> {
-        if (!productIds || productIds.length === 0) return 0;
+    static async bulkDelete(companyId: number, productIds: string[]): Promise<{ deletedCount: number; failedCount: number }> {
+        if (!productIds || productIds.length === 0) return { deletedCount: 0, failedCount: 0 };
 
-        const placeholders = productIds.map(() => '?').join(', ');
-        
-        // 1. Get image URLs to delete from storage
-        const [products] = await pool.query<any[]>(
-            `SELECT image_url FROM products WHERE company_id = ? AND public_id IN (${placeholders})`,
-            [companyId, ...productIds]
-        );
+        let deletedCount = 0;
+        let failedCount = 0;
 
-        // 2. Perform delete
-        const [result] = await pool.query<ResultSetHeader>(
-            `DELETE FROM products WHERE company_id = ? AND public_id IN (${placeholders})`,
-            [companyId, ...productIds]
-        );
+        for (const publicId of productIds) {
+            try {
+                // Get product to check if it exists and retrieve image_url
+                const [products] = await pool.query<any[]>(
+                    'SELECT id, image_url FROM products WHERE company_id = ? AND public_id = ?',
+                    [companyId, publicId]
+                );
 
-        // 3. Clean up storage
-        for (const p of products) {
-            if (p.image_url) {
-                try {
-                    StorageService.delete(p.image_url);
-                } catch (err) {
-                    console.error('Failed to delete image during bulk delete:', err);
+                if (products.length === 0) {
+                    continue;
+                }
+
+                const product = products[0];
+
+                // Attempt to delete the product
+                const [result] = await pool.query<ResultSetHeader>(
+                    'DELETE FROM products WHERE id = ? AND company_id = ?',
+                    [product.id, companyId]
+                );
+
+                if (result.affectedRows === 1) {
+                    deletedCount++;
+                    // Clean up storage if there is an image
+                    if (product.image_url) {
+                        try {
+                            StorageService.delete(product.image_url);
+                        } catch (err) {
+                            console.error('Failed to delete image during bulk delete:', err);
+                        }
+                    }
+                } else {
+                    failedCount++;
+                }
+            } catch (error: any) {
+                if (error?.code === 'ER_ROW_IS_REFERENCED_2') {
+                    failedCount++;
+                } else {
+                    throw error;
                 }
             }
         }
 
-        return result.affectedRows;
+        return { deletedCount, failedCount };
     }
 }

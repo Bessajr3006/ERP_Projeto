@@ -62,7 +62,7 @@ export class ProductService {
         return ProductRepository.bulkUpdate(companyId, data);
     }
 
-    static async bulkDelete(productIds: string[], companyId: number): Promise<number> {
+    static async bulkDelete(productIds: string[], companyId: number): Promise<{ deletedCount: number; failedCount: number }> {
         return ProductRepository.bulkDelete(companyId, productIds);
     }
 

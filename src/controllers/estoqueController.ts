@@ -77,6 +77,41 @@ export class EstoqueController {
         }
     }
 
+    static async bulkDeleteCategories(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { categoryIds } = req.body;
+
+            if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+                res.status(400).json({ status: 'error', message: 'Nenhuma categoria selecionada.' });
+                return;
+            }
+
+            const { deletedCount, failedCount } = await EstoqueService.bulkDeleteCategories(categoryIds, companyId);
+
+            if (deletedCount === 0 && failedCount > 0) {
+                res.status(409).json({
+                    status: 'error',
+                    message: 'Não foi possível excluir nenhuma das categorias selecionadas pois possuem produtos vinculados.'
+                });
+                return;
+            }
+
+            let message = `${deletedCount} categoria(s) excluída(s) com sucesso.`;
+            if (failedCount > 0) {
+                message += ` ${failedCount} categoria(s) não puderam ser excluídas pois possuem produtos vinculados.`;
+            }
+
+            res.status(200).json({
+                status: 'success',
+                message,
+                data: { affected: deletedCount, failedCount }
+            });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
+        }
+    }
+
     // ================== STOCK TYPES ==================
     static async createStockType(req: Request, res: Response): Promise<void> {
         try {

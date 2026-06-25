@@ -135,6 +135,7 @@
                 ]
             },
             renderTable: (items) => {
+                hideBulkDeleteButton();
                 const tbody = getById('categoriesTable');
                 if (items.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma categoria cadastrada.</td></tr>`;
@@ -230,6 +231,66 @@
                 getById('categoryModal').classList.remove('hidden');
             }
         });
+        function hideBulkDeleteButton() {
+            const btnBulkDelete = getById('btnBulkDelete');
+            if (btnBulkDelete) {
+                btnBulkDelete.classList.add('hidden');
+                btnBulkDelete.classList.remove('inline-flex', 'items-center', 'justify-center');
+            }
+        }
+        // Event delegation for checkbox changes
+        document.addEventListener('change', (e) => {
+            const target = e.target;
+            if (target && (target.id === 'selectAll' || target.classList.contains('item-checkbox'))) {
+                setTimeout(() => {
+                    const checkedCount = qsa('.item-checkbox:checked').length;
+                    const btnBulkDelete = getById('btnBulkDelete');
+                    const bulkDeleteCountSpan = getById('bulkDeleteCount');
+                    if (btnBulkDelete) {
+                        if (checkedCount > 0) {
+                            btnBulkDelete.classList.remove('hidden');
+                            btnBulkDelete.classList.add('inline-flex', 'items-center', 'justify-center');
+                            if (bulkDeleteCountSpan)
+                                bulkDeleteCountSpan.textContent = checkedCount;
+                        }
+                        else {
+                            btnBulkDelete.classList.add('hidden');
+                            btnBulkDelete.classList.remove('inline-flex', 'items-center', 'justify-center');
+                        }
+                    }
+                }, 50);
+            }
+        });
+        const btnBulkDelete = getById('btnBulkDelete');
+        if (btnBulkDelete) {
+            btnBulkDelete.addEventListener('click', async () => {
+                const selectedIds = Array.from(qsa('.item-checkbox:checked')).map((cb) => cb.value);
+                if (selectedIds.length === 0)
+                    return;
+                if (confirm(`Deseja realmente excluir ${selectedIds.length} categoria(s) selecionada(s) em lote?`)) {
+                    const originalHtml = btnBulkDelete.innerHTML;
+                    btnBulkDelete.disabled = true;
+                    btnBulkDelete.textContent = 'Excluindo...';
+                    try {
+                        const response = await api('/estoque/categories/bulk-delete', {
+                            method: 'POST',
+                            body: JSON.stringify({ categoryIds: selectedIds })
+                        });
+                        UI.showAlert('alertMessage', response.message || 'Categorias excluídas com sucesso!', 'success');
+                        // Hide bulk button
+                        hideBulkDeleteButton();
+                        await categoriesManager.loadData();
+                    }
+                    catch (error) {
+                        UI.showAlert('alertMessage', error.message || 'Erro ao excluir categorias em lote.', 'error');
+                    }
+                    finally {
+                        btnBulkDelete.disabled = false;
+                        btnBulkDelete.innerHTML = originalHtml;
+                    }
+                }
+            });
+        }
         categoriesManager.init();
     });
     // Form Logic

@@ -67,6 +67,10 @@ export class EstoqueService {
         return EstoqueRepository.deleteCategory(publicId, companyId);
     }
 
+    static async bulkDeleteCategories(categoryIds: string[], companyId: number): Promise<{ deletedCount: number; failedCount: number }> {
+        return EstoqueRepository.bulkDeleteCategories(companyId, categoryIds);
+    }
+
     // ================== STOCK TYPES ==================
     static async listStockTypes(companyId: number): Promise<StockType[]> {
         return EstoqueRepository.listStockTypes(companyId);
@@ -95,6 +99,18 @@ export class EstoqueService {
 
     static async getManufacturerByPublicId(publicId: string, companyId: number): Promise<Manufacturer> {
         return EstoqueRepository.getManufacturerByPublicId(publicId, companyId);
+    }
+
+    static async getOrCreateManufacturerByName(companyId: number, name: string): Promise<Manufacturer> {
+        const normalized = String(name || '').trim();
+        if (!normalized) {
+            throw new Error('Manufacturer name is required');
+        }
+        const existing = await EstoqueRepository.getManufacturerByName(companyId, normalized);
+        if (existing) {
+            return existing;
+        }
+        return EstoqueRepository.createManufacturer(companyId, { name: normalized });
     }
 
     static async createManufacturer(companyId: number, data: CreateManufacturerData): Promise<Manufacturer> {

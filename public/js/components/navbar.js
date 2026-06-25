@@ -321,6 +321,7 @@ function initLogout() {
         // Fallbacks para ambientes com variações de sessão/local cache.
         localStorage.removeItem('erp_token');
         sessionStorage.removeItem('erp_token');
+        localStorage.removeItem('bessa_swagger_token');
         closeLogoutModal();
         window.location.replace('/');
     };
@@ -400,6 +401,12 @@ async function loadUserGreeting() {
                     company: data.data.company || null,
                     permissions: data.data.permissions || []
                 };
+                if (data.data.company && data.data.company.swagger_api_token) {
+                    localStorage.setItem('bessa_swagger_token', data.data.company.swagger_api_token);
+                }
+                else {
+                    localStorage.removeItem('bessa_swagger_token');
+                }
                 window.SharedFooter?.setCompanyContext({
                     name: data.data.company?.trade_name || data.data.company?.company_name || '',
                     cnpj: data.data.company?.cnpj || '',

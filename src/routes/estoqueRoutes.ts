@@ -169,6 +169,7 @@ router.put('/categories/:id', (req, res, next) => EstoqueController.updateCatego
  *               $ref: '#/components/schemas/ApiError'
  */
 router.delete('/categories/:id', (req, res, next) => EstoqueController.deleteCategory(req, res).catch(next));
+router.post('/categories/bulk-delete', (req, res, next) => EstoqueController.bulkDeleteCategories(req, res).catch(next));
 
 // Stock Types
 router.post('/stock-types', (req, res, next) => EstoqueController.createStockType(req, res).catch(next));

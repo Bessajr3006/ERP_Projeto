@@ -11,33 +11,40 @@
     const getEl = (id) => document.getElementById(id);
     document.addEventListener('DOMContentLoaded', () => {
         void fetchTypes();
-        let currentView = localStorage.getItem('financeCategoryTypesView') || 'list';
+        let currentView = 'list';
+        localStorage.setItem('financeCategoryTypesView', 'list');
         function updateViewToggle() {
             const btnList = getEl('btnListView');
             const btnGrid = getEl('btnGridView');
             const tableSection = getEl('typesSection');
             const gridSection = getEl('typesGridSection');
-            if (!btnList || !btnGrid || !tableSection || !gridSection)
-                return;
-            btnList.className =
-                'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
-            btnGrid.className =
-                'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
-            btnList.querySelector('.check-icon')?.classList.add('hidden');
-            btnGrid.querySelector('.check-icon')?.classList.add('hidden');
-            if (currentView === 'list') {
-                btnList.className =
-                    'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
-                btnList.querySelector('.check-icon')?.classList.remove('hidden');
-                tableSection.classList.remove('hidden');
-                gridSection.classList.add('hidden');
+            if (tableSection && gridSection) {
+                if (currentView === 'list') {
+                    tableSection.classList.remove('hidden');
+                    gridSection.classList.add('hidden');
+                }
+                else {
+                    tableSection.classList.add('hidden');
+                    gridSection.classList.remove('hidden');
+                }
             }
-            else {
+            if (btnList && btnGrid) {
+                btnList.className =
+                    'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
                 btnGrid.className =
-                    'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
-                btnGrid.querySelector('.check-icon')?.classList.remove('hidden');
-                tableSection.classList.add('hidden');
-                gridSection.classList.remove('hidden');
+                    'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
+                btnList.querySelector('.check-icon')?.classList.add('hidden');
+                btnGrid.querySelector('.check-icon')?.classList.add('hidden');
+                if (currentView === 'list') {
+                    btnList.className =
+                        'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
+                    btnList.querySelector('.check-icon')?.classList.remove('hidden');
+                }
+                else {
+                    btnGrid.className =
+                        'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
+                    btnGrid.querySelector('.check-icon')?.classList.remove('hidden');
+                }
             }
         }
         const btnListView = getEl('btnListView');

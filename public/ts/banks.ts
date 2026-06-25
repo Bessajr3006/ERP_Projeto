@@ -19,7 +19,8 @@
     return parseFloat(strVal) || 0;
   };
 
-  let currentView: string = localStorage.getItem('banksView') || 'list';
+  let currentView = 'list';
+  localStorage.setItem('banksView', 'list');
   let _banksData: any[] = [];
 
   const updateViewToggle = (): void => {
@@ -28,42 +29,46 @@
     const tableSection = getById('banksSection');
     const gridSection = getById('banksGridSection');
 
-    if (!btnList || !btnGrid || !tableSection || !gridSection) return;
+    if (tableSection && gridSection) {
+      if (currentView === 'list') {
+        tableSection.classList.remove('hidden');
+        tableSection.style.display = '';
+        gridSection.classList.add('hidden');
+        gridSection.style.display = 'none';
+      } else {
+        tableSection.classList.add('hidden');
+        tableSection.style.display = 'none';
+        gridSection.classList.remove('hidden');
+        gridSection.style.display = '';
+      }
+    }
 
-    btnList.className =
-      'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
-    btnGrid.className =
-      'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
-
-    btnList.querySelector('.check-icon')?.classList.add('hidden');
-    btnGrid.querySelector('.check-icon')?.classList.add('hidden');
-
-    if (currentView === 'list') {
+    if (btnList && btnGrid) {
       btnList.className =
-        'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
-      btnList.querySelector('.check-icon')?.classList.remove('hidden');
-      tableSection.classList.remove('hidden');
-      tableSection.style.display = '';
-      gridSection.classList.add('hidden');
-      gridSection.style.display = 'none';
-    } else {
+        'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
       btnGrid.className =
-        'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
-      btnGrid.querySelector('.check-icon')?.classList.remove('hidden');
-      tableSection.classList.add('hidden');
-      tableSection.style.display = 'none';
-      gridSection.classList.remove('hidden');
-      gridSection.style.display = '';
+        'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
+
+      btnList.querySelector('.check-icon')?.classList.add('hidden');
+      btnGrid.querySelector('.check-icon')?.classList.add('hidden');
+
+      if (currentView === 'list') {
+        btnList.className =
+          'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
+        btnList.querySelector('.check-icon')?.classList.remove('hidden');
+      } else {
+        btnGrid.className =
+          'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
+        btnGrid.querySelector('.check-icon')?.classList.remove('hidden');
+      }
     }
   };
 
   const switchTab = (tabName: string): void => {
     const tabGeral = getById('tabContentGeral');
     const tabApi = getById('tabContentApi');
-    const tabWebhook = getById('tabContentWebhook');
     const btnGeral = getById('tabBtnGeral');
     const btnApi = getById('tabBtnApi');
-    const btnWebhook = getById('tabBtnWebhook');
 
     const activeClasses = ['border-brand-500', 'text-brand-600'];
     const inactiveClasses = [
@@ -81,43 +86,21 @@
       tabGeral.classList.add('block');
       tabApi.classList.remove('block');
       tabApi.classList.add('hidden');
-      tabWebhook.classList.remove('block');
-      tabWebhook.classList.add('hidden');
 
       btnGeral.classList.remove(...inactiveClasses);
       btnGeral.classList.add(...activeClasses);
       btnApi.classList.remove(...activeClasses);
       btnApi.classList.add(...inactiveClasses);
-      btnWebhook.classList.remove(...activeClasses);
-      btnWebhook.classList.add(...inactiveClasses);
     } else if (tabName === 'api') {
       tabApi.classList.remove('hidden');
       tabApi.classList.add('block');
       tabGeral.classList.remove('block');
       tabGeral.classList.add('hidden');
-      tabWebhook.classList.remove('block');
-      tabWebhook.classList.add('hidden');
 
       btnApi.classList.remove(...inactiveClasses);
       btnApi.classList.add(...activeClasses);
       btnGeral.classList.remove(...activeClasses);
       btnGeral.classList.add(...inactiveClasses);
-      btnWebhook.classList.remove(...activeClasses);
-      btnWebhook.classList.add(...inactiveClasses);
-    } else if (tabName === 'webhook') {
-      tabWebhook.classList.remove('hidden');
-      tabWebhook.classList.add('block');
-      tabGeral.classList.remove('block');
-      tabGeral.classList.add('hidden');
-      tabApi.classList.remove('block');
-      tabApi.classList.add('hidden');
-
-      btnWebhook.classList.remove(...inactiveClasses);
-      btnWebhook.classList.add(...activeClasses);
-      btnGeral.classList.remove(...activeClasses);
-      btnGeral.classList.add(...inactiveClasses);
-      btnApi.classList.remove(...activeClasses);
-      btnApi.classList.add(...inactiveClasses);
     }
   };
 
@@ -757,7 +740,6 @@
 
     getById('tabBtnGeral')?.addEventListener('click', () => switchTab('geral'));
     getById('tabBtnApi')?.addEventListener('click', () => switchTab('api'));
-    getById('tabBtnWebhook')?.addEventListener('click', () => switchTab('webhook'));
 
     getById('btnListView')?.addEventListener('click', () => {
       currentView = 'list';

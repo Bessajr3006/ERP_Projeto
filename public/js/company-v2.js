@@ -576,6 +576,7 @@
                     });
                     g_companySnapshot = { ...(g_companySnapshot || {}), swagger_api_token: newToken };
                     document.getElementById('swaggerToken').value = newToken;
+                    localStorage.setItem('bessa_swagger_token', newToken);
                     refreshParameterSummary();
                     UI.showAlert('alertMessage', 'Token Swagger gerado com sucesso!', 'success');
                 }

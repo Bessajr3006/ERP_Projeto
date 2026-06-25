@@ -107,6 +107,7 @@ export class ProductService {
 
             const categoryName = normalizeText(pickValue(payload, ['classificacao02', 'classificacao_02', 'classificacao2', 'classificacao', 'categoria', 'category', 'grupo', 'grupo_produto', 'familia', 'linha', 'secao', 'subgrupo'])) || undefined;
             const measureValue = normalizeText(pickValue(payload, ['unid_medida', 'unidade_medida', 'unidade', 'medida', 'measure', 'und', 'un'])) || undefined;
+            const manufacturerName = normalizeText(pickValue(payload, ['fabricante', 'ds_fabricante', 'marca', 'ds_marca', 'brand', 'manufacturer', 'manufacturer_name', 'marca_produto'])) || undefined;
 
             const sku = normalizeText(pickValue(payload, ['id_produto', 'cod_produto', 'codigo_produto', 'sku', 'codigo', 'codigo_interno', 'code', 'reference', 'referencia'])) || undefined;
             const ean = normalizeText(pickValue(payload, ['codigo_ean', 'ean', 'gtin', 'barcode', 'codigo_barras', 'cod_barra', 'cod_barras'])) || undefined;
@@ -131,6 +132,9 @@ export class ProductService {
             }
             if (measureValue) {
                 (data as any)._measureValue = measureValue;
+            }
+            if (manufacturerName) {
+                (data as any)._manufacturerName = manufacturerName;
             }
 
             return data;
@@ -170,6 +174,13 @@ export class ProductService {
                     measureId = measure.id;
                 }
 
+                let manufacturerId: number | null = null;
+                const manufacturerName = (mapped as any)._manufacturerName as string | undefined;
+                if (manufacturerName) {
+                    const manufacturer = await EstoqueService.getOrCreateManufacturerByName(companyId, manufacturerName);
+                    manufacturerId = manufacturer.id;
+                }
+
                 const existing = await ProductRepository.getBySkuOrEan(companyId, mapped.sku, mapped.ean);
                 if (existing) {
                     const updatePayload: Partial<CreateProductData> = {
@@ -187,6 +198,7 @@ export class ProductService {
                         max_stock: mapped.max_stock,
                         category_id: categoryId ?? undefined,
                         measure_id: measureId ?? undefined,
+                        manufacturer_id: manufacturerId ?? undefined,
                     };
                     await ProductRepository.update(existing.public_id, companyId, updatePayload);
                     result.updated += 1;
@@ -198,6 +210,7 @@ export class ProductService {
                     is_imported: true,
                     category_id: categoryId ?? undefined,
                     measure_id: measureId ?? undefined,
+                    manufacturer_id: manufacturerId ?? undefined,
                 });
                 result.created += 1;
             }

@@ -192,6 +192,36 @@ export class EstoqueRepository {
         await pool.query('DELETE FROM product_categories WHERE public_id = ? AND company_id = ?', [publicId, companyId]);
     }
 
+    static async bulkDeleteCategories(companyId: number, categoryIds: string[]): Promise<{ deletedCount: number; failedCount: number }> {
+        if (!categoryIds || categoryIds.length === 0) return { deletedCount: 0, failedCount: 0 };
+
+        let deletedCount = 0;
+        let failedCount = 0;
+
+        for (const publicId of categoryIds) {
+            try {
+                const [result] = await pool.query<ResultSetHeader>(
+                    'DELETE FROM product_categories WHERE public_id = ? AND company_id = ?',
+                    [publicId, companyId]
+                );
+
+                if (result.affectedRows === 1) {
+                    deletedCount++;
+                } else {
+                    failedCount++;
+                }
+            } catch (error: any) {
+                if (error?.code === 'ER_ROW_IS_REFERENCED_2') {
+                    failedCount++;
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        return { deletedCount, failedCount };
+    }
+
     // ================== STOCK TYPES ==================
     static async listStockTypes(companyId: number): Promise<StockType[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
@@ -244,6 +274,15 @@ export class EstoqueRepository {
             [companyId]
         );
         return rows as Manufacturer[];
+    }
+
+    static async getManufacturerByName(companyId: number, name: string): Promise<Manufacturer | null> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT * FROM manufacturers WHERE company_id = ? AND name = ? LIMIT 1',
+            [companyId, name]
+        );
+        if (!rows || rows.length === 0) return null;
+        return rows[0] as Manufacturer;
     }
 
     static async getManufacturerByPublicId(publicId: string, companyId: number): Promise<Manufacturer> {

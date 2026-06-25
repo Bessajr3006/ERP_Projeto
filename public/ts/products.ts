@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     await loadProducts();
                 } catch (error: any) {
-                    alert(error.message || 'Erro ao excluir produtos em lote.');
+                    UI.showAlert('alertMessage', error.message || 'Erro ao excluir produtos em lote.', 'error');
                 } finally {
                     btnBulkDelete.disabled = false;
                     btnBulkDelete.textContent = originalText;

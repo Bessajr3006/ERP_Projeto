@@ -161,7 +161,7 @@
             if (state.loading) {
                 els.loadingOverlay?.classList.remove('hidden');
                 els.notesContainer.parentElement.parentElement.classList.add('hidden');
-                els.emptyState.classList.add('hidden');
+                els.emptyState?.classList.add('hidden');
             }
             else {
                 els.loadingOverlay?.classList.add('hidden');
@@ -181,11 +181,11 @@
         }
         function renderRows() {
             if (!state.loading && state.filteredPurchases.length === 0) {
-                els.emptyState.classList.remove('hidden');
+                els.emptyState?.classList.remove('hidden');
                 els.notesContainer.parentElement.parentElement.classList.add('hidden');
             }
             else {
-                els.emptyState.classList.add('hidden');
+                els.emptyState?.classList.add('hidden');
                 if (!state.loading) {
                     els.notesContainer.parentElement.parentElement.classList.remove('hidden');
                 }

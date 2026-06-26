@@ -164,6 +164,12 @@
                                     Venda</th>
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Preço Final</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Tab. Preços</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Mín</th>
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -185,7 +191,7 @@
                         <tbody id="productsTable"
                             class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                             <tr>
-                                <td colspan="18" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
+                                <td colspan="20" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
                                     Carregando...</td>
                             </tr>
                         </tbody>
@@ -361,6 +367,14 @@
                                             (R$)</label>
                                         <input type="number" step="0.01" id="costPrice" name="costPrice" value="0.00" min="0"
                                             class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="applyPriceTable"
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Aplicar Margem da Tabela</label>
+                                        <select id="applyPriceTable" name="applyPriceTable"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            <option value="">Nenhuma</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label for="markupPercentage"

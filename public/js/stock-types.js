@@ -89,12 +89,54 @@
         }
     }
 
+    function bindCopyEvents(selector) {
+        qsa(selector).forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                const pid = btn.getAttribute('data-id') || '';
+                navigator.clipboard.writeText(pid).then(() => {
+                    const b = btn;
+                    if (b.classList.contains('animating')) return;
+                    b.classList.add('animating');
+                    const orig = b.innerHTML;
+                    const svgSize = 'h-3.5 w-3.5 inline';
+
+                    b.classList.add('scale-75', 'opacity-0');
+                    setTimeout(() => {
+                        b.innerHTML = `<svg class="animate-spin h-3.5 w-3.5 text-brand-600 dark:text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                        b.classList.remove('scale-75', 'opacity-0');
+
+                        setTimeout(() => {
+                            b.classList.add('scale-75', 'opacity-0');
+                            setTimeout(() => {
+                                b.innerHTML = `<svg class="${svgSize} text-green-500 transition-all duration-300 transform scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+                                b.classList.remove('scale-75', 'opacity-0');
+                                b.classList.add('scale-110', 'opacity-100');
+
+                                setTimeout(() => {
+                                    b.classList.remove('scale-110');
+                                }, 100);
+
+                                setTimeout(() => {
+                                    b.classList.add('scale-75', 'opacity-0');
+                                    setTimeout(() => {
+                                        b.innerHTML = orig;
+                                        b.classList.remove('scale-75', 'opacity-0', 'animating');
+                                    }, 200);
+                                }, 1000);
+                            }, 200);
+                        }, 400);
+                    }, 200);
+                });
+            });
+        });
+    }
+
     function renderTable(items = filteredStockTypes) {
         const tbody = getById('stockTypesTable');
         if (!tbody) return;
 
         if (items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum tipo de estoque cadastrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum tipo de estoque cadastrado.</td></tr>';
             return;
         }
 
@@ -103,7 +145,18 @@
                 <td class="px-3 py-4 whitespace-nowrap">
                     <input type="checkbox" value="${item.public_id}" class="item-checkbox rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-bwignore="true" data-lpignore="true" placeholder="">
                 </td>
-                <td class="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">${escapeHtml(item.name)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">#${String(item.id).padStart(4, '0')}</td>
+                <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                    <div class="font-semibold">${escapeHtml(item.name)}</div>
+                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <span class="font-mono text-[10px] select-all">${item.public_id}</span>
+                        <button type="button" data-action="view-id" data-id="${item.public_id}" data-pid="${item.public_id}" class="view-id-btn text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transform transition-all duration-200 ease-out" title="Copiar ID: ${item.public_id}">
+                            <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${escapeHtml(item.description || '-')}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button type="button" title="Editar" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-3 edit-btn" data-id="${item.public_id}">
@@ -122,6 +175,8 @@
         qsa('.delete-btn').forEach((btn) => {
             btn.addEventListener('click', () => removeStockType(btn.dataset.id));
         });
+
+        bindCopyEvents('#stockTypesTable .view-id-btn');
 
         const selectAll = getById('selectAll');
         if (selectAll) {
@@ -145,7 +200,18 @@
 
         grid.innerHTML = items.map((item) => `
             <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col border border-gray-100 dark:border-slate-700">
-                <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100">${escapeHtml(item.name)}</h4>
+                <div class="flex justify-between items-start">
+                    <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100">${escapeHtml(item.name)}</h4>
+                    <span class="text-xs font-mono text-gray-400 dark:text-gray-500">#${String(item.id).padStart(4, '0')}</span>
+                </div>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="font-mono text-[10px] text-gray-400 dark:text-gray-500 select-all">${item.public_id}</span>
+                    <button type="button" data-action="view-id" data-id="${item.public_id}" data-pid="${item.public_id}" class="view-id-btn text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transform transition-all duration-200 ease-out" title="Copiar ID: ${item.public_id}">
+                        <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                    </button>
+                </div>
                 <p class="mt-2 text-sm text-gray-600 dark:text-gray-300 min-h-14">${escapeHtml(item.description || 'Sem descrição.')}</p>
                 <div class="mt-4 pt-3 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-2">
                     <button type="button" title="Editar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 edit-btn" data-id="${item.public_id}">
@@ -164,6 +230,8 @@
         qsa('#stockTypesGridSection .delete-btn').forEach((btn) => {
             btn.addEventListener('click', () => removeStockType(btn.dataset.id));
         });
+
+        bindCopyEvents('#stockTypesGridSection .view-id-btn');
     }
 
     function closeModal() {

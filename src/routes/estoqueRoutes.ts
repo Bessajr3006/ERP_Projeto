@@ -172,9 +172,164 @@ router.delete('/categories/:id', (req, res, next) => EstoqueController.deleteCat
 router.post('/categories/bulk-delete', (req, res, next) => EstoqueController.bulkDeleteCategories(req, res).catch(next));
 
 // Stock Types
+/**
+ * @openapi
+ * /estoque/stock-types:
+ *   post:
+ *     tags: [Estoque]
+ *     summary: Criar tipo de estoque
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateStockTypeRequest'
+ *     responses:
+ *       201:
+ *         description: Tipo de estoque criado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 data:
+ *                   $ref: '#/components/schemas/StockType'
+ *       400:
+ *         description: Nome obrigatorio
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       401:
+ *         description: Nao autenticado
+ *       500:
+ *         description: Erro interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
 router.post('/stock-types', (req, res, next) => EstoqueController.createStockType(req, res).catch(next));
+/**
+ * @openapi
+ * /estoque/stock-types:
+ *   get:
+ *     tags: [Estoque]
+ *     summary: Listar tipos de estoque
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de tipos de estoque
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/StockType'
+ *       401:
+ *         description: Nao autenticado
+ *       500:
+ *         description: Erro interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
 router.get('/stock-types', (req, res, next) => EstoqueController.listStockTypes(req, res).catch(next));
+/**
+ * @openapi
+ * /estoque/stock-types/{id}:
+ *   put:
+ *     tags: [Estoque]
+ *     summary: Atualizar tipo de estoque
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         description: Public ID do tipo de estoque
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateStockTypeRequest'
+ *     responses:
+ *       200:
+ *         description: Tipo de estoque atualizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 data:
+ *                   $ref: '#/components/schemas/StockType'
+ *       401:
+ *         description: Nao autenticado
+ *       404:
+ *         description: Tipo de estoque nao encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       500:
+ *         description: Erro interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
 router.put('/stock-types/:id', (req, res, next) => EstoqueController.updateStockType(req, res).catch(next));
+/**
+ * @openapi
+ * /estoque/stock-types/{id}:
+ *   delete:
+ *     tags: [Estoque]
+ *     summary: Remover tipo de estoque
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         description: Public ID do tipo de estoque
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Tipo de estoque removido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 message: { type: string, example: 'Stock type deleted' }
+ *       401:
+ *         description: Nao autenticado
+ *       404:
+ *         description: Tipo de estoque nao encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       500:
+ *         description: Erro interno
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
 router.delete('/stock-types/:id', (req, res, next) => EstoqueController.deleteStockType(req, res).catch(next));
 
 // Manufacturers

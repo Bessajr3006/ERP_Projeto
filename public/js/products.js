@@ -5,6 +5,7 @@
     const qsa = (selector) => document.querySelectorAll(selector);
     let productsData = [];
     let g_allLoadedProducts = [];
+    let priceTablesData = [];
     const PRODUCTS_FILTER_STORAGE_KEY = 'products_filter_open';
     const PRODUCT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
     const PRODUCT_IMAGE_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
@@ -252,6 +253,25 @@
             markupInput.addEventListener('input', updateSellingFromMarkup);
             costPriceInput.addEventListener('input', updateSellingFromMarkup);
             sellingPriceInput.addEventListener('input', updateMarkupFromSelling);
+            const applyPriceTableSelect = getById('applyPriceTable');
+            if (applyPriceTableSelect) {
+                applyPriceTableSelect.addEventListener('change', () => {
+                    const selectedId = applyPriceTableSelect.value;
+                    if (!selectedId)
+                        return;
+                    const pt = (priceTablesData || []).find(p => String(p.id) === String(selectedId));
+                    if (pt) {
+                        markupInput.value = Number(pt.markup_percentage || 0).toFixed(2);
+                        updateSellingFromMarkup();
+                    }
+                });
+                markupInput.addEventListener('input', () => {
+                    applyPriceTableSelect.value = '';
+                });
+                sellingPriceInput.addEventListener('input', () => {
+                    applyPriceTableSelect.value = '';
+                });
+            }
         }
         // Bulk Markup Logic
         const bulkCostPriceInput = getById('bulkCostPrice');
@@ -650,6 +670,9 @@
             getById('productManufacturer').value = data.manufacturer_id || '';
             getById('productTaxRule').value = data.tax_rule_id || '';
             getById('productMeasure').value = data.measure_id || '';
+            const applyPriceTableEl = getById('applyPriceTable');
+            if (applyPriceTableEl)
+                applyPriceTableEl.value = '';
             form.dataset.id = data.public_id;
             // Setup Image — base64 no banco é a fonte principal; image_url fica como fallback.
             window.currentImageBase64 = null;
@@ -687,6 +710,9 @@
             getById('initialStock').value = '0';
             getById('minStock').value = '0';
             getById('maxStock').value = '0';
+            const applyPriceTableEl = getById('applyPriceTable');
+            if (applyPriceTableEl)
+                applyPriceTableEl.value = '';
             delete form.dataset.id;
             window.currentImageBase64 = null;
             window.currentImageUrl = null;
@@ -865,7 +891,7 @@
     function renderTable(elementId, items) {
         const tbody = getById(elementId);
         if (items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="18" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="20" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td></tr>`;
             return;
         }
         tbody.innerHTML = items.map(p => `
@@ -884,6 +910,26 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${formatCurrency(p.cost_price || 0)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-center">${p.cost_price > 0 ? (((p.selling_price / p.cost_price) - 1) * 100).toFixed(2) + '%' : '0.00%'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-bold">${formatCurrency(p.selling_price)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100">
+                ${p.is_promotional && Number(p.promotional_price) > 0 ? `
+                    <div class="flex flex-col">
+                        <span class="text-emerald-600 dark:text-emerald-400">${formatCurrency(p.promotional_price)}</span>
+                        <span class="text-[10px] line-through text-gray-400 font-normal">${formatCurrency(p.selling_price)}</span>
+                    </div>
+                ` : `
+                    <span>${formatCurrency(p.selling_price)}</span>
+                `}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-left">
+                <div class="space-y-0.5">
+                    ${(priceTablesData || []).filter(pt => pt.status === 'active').map(pt => `
+                        <div class="flex items-center gap-1 text-[11px] whitespace-nowrap">
+                            <span class="text-gray-400 dark:text-gray-500">${pt.name}:</span>
+                            <span class="font-semibold text-gray-700 dark:text-gray-300">${formatCurrency(Number(p.cost_price || 0) * (1 + Number(pt.markup_percentage || 0) / 100))}</span>
+                        </div>
+                    `).join('') || '<span class="text-gray-400 dark:text-gray-500 text-xs">-</span>'}
+                </div>
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-center">${p.min_stock || 0}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-center">${p.max_stock || 0}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-bold ${isLowStock(p) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
@@ -981,6 +1027,17 @@
                         <div class="bg-gray-50 dark:bg-slate-900/50 rounded p-2 border border-gray-100 dark:border-slate-700/50 min-w-0">
                             <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Markup</p>
                             <p class="font-medium text-gray-700 dark:text-gray-300 truncate">${markup}</p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-slate-900/50 rounded p-2 border border-gray-100 dark:border-slate-700/50 min-w-0 col-span-2">
+                            <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Tabelas de Preço</p>
+                            <div class="space-y-0.5 text-xs font-mono">
+                                ${(priceTablesData || []).filter(pt => pt.status === 'active').map(pt => `
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400 dark:text-gray-500">${pt.name}:</span>
+                                        <span class="font-semibold text-gray-900 dark:text-gray-100">${formatCurrency(Number(product.cost_price || 0) * (1 + Number(pt.markup_percentage || 0) / 100))}</span>
+                                    </div>
+                                `).join('') || '<span class="text-gray-400">-</span>'}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1106,20 +1163,23 @@
     // Loads Categories, Manufacturers, and TaxRules into the selects
     async function loadRelations() {
         try {
-            const [catsRes, manufsRes, taxesRes, measuresRes, stockTypesRes] = await Promise.all([
+            const [catsRes, manufsRes, taxesRes, measuresRes, stockTypesRes, pricesRes] = await Promise.all([
                 api('/estoque/categories'),
                 api('/estoque/manufacturers'),
                 api('/estoque/taxes'),
                 api('/estoque/measures'),
-                api('/estoque/stock-types')
+                api('/estoque/stock-types'),
+                api('/estoque/prices')
             ]);
             const categories = catsRes.data || [];
             const manufacturers = manufsRes.data || [];
+            priceTablesData = pricesRes.data || [];
             populateSelect('productCategory', categories, 'Nenhuma');
             populateSelect('productStockType', stockTypesRes.data, 'Nenhum');
             populateSelect('productManufacturer', manufacturers, 'Nenhum');
             populateSelect('productTaxRule', taxesRes.data, 'Nenhuma');
             populateSelect('productMeasure', measuresRes.data, 'Nenhuma');
+            populateSelect('applyPriceTable', priceTablesData, 'Nenhuma');
             populateSelect('filterCategory', categories, 'Todas as Categorias');
             populateSelect('filterManufacturer', manufacturers, 'Todos os Fabricantes');
             // Also populate bulk update modal dropdowns

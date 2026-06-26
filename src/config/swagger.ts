@@ -80,6 +80,33 @@ const swaggerSpec = swaggerJSDoc({
                         }
                     }
                 },
+                StockType: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        public_id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000' },
+                        company_id: { type: 'integer', example: 1 },
+                        name: { type: 'string', example: 'Mercadoria para Revenda' },
+                        description: { type: 'string', nullable: true, example: 'Produtos adquiridos para fins de comercializacao' },
+                        created_at: { type: 'string', format: 'date-time', example: '2026-05-31T10:00:00.000Z' },
+                        updated_at: { type: 'string', format: 'date-time', example: '2026-05-31T10:00:00.000Z' }
+                    }
+                },
+                CreateStockTypeRequest: {
+                    type: 'object',
+                    required: ['name'],
+                    properties: {
+                        name: { type: 'string', minLength: 1, example: 'Mercadoria para Revenda' },
+                        description: { type: 'string', nullable: true, example: 'Produtos adquiridos para fins de comercializacao' }
+                    }
+                },
+                UpdateStockTypeRequest: {
+                    type: 'object',
+                    properties: {
+                        name: { type: 'string', minLength: 1, example: 'Mercadoria para Revenda' },
+                        description: { type: 'string', nullable: true, example: 'Produtos adquiridos para fins de comercializacao' }
+                    }
+                },
                 Product: {
                     type: 'object',
                     properties: {
@@ -103,8 +130,8 @@ const swaggerSpec = swaggerJSDoc({
                         max_stock: { type: 'number', example: 500 },
                         category_id: { type: 'integer', nullable: true, example: 3 },
                         category_name: { type: 'string', nullable: true, example: 'Bebidas' },
-                        stock_type_id: { type: 'integer', nullable: true, example: 1 },
-                        stock_type_name: { type: 'string', nullable: true, example: 'Mercadoria para Revenda' },
+                        stock_type_id: { type: 'integer', nullable: true, description: 'ID do tipo de estoque (Tipo de Estoque)', example: 1 },
+                        stock_type_name: { type: 'string', nullable: true, description: 'Nome do tipo de estoque (Tipo de Estoque)', example: 'Mercadoria para Revenda' },
                         manufacturer_id: { type: 'integer', nullable: true, example: 5 },
                         manufacturer_name: { type: 'string', nullable: true, example: 'Coca-Cola Indústrias' },
                         tax_rule_id: { type: 'integer', nullable: true, example: 2 },
@@ -135,7 +162,7 @@ const swaggerSpec = swaggerJSDoc({
                         min_stock: { type: 'number', minimum: 0, example: 10 },
                         max_stock: { type: 'number', minimum: 0, example: 500 },
                         category_id: { type: 'integer', nullable: true, example: 3 },
-                        stock_type_id: { type: 'integer', nullable: true, example: 1 },
+                        stock_type_id: { type: 'integer', nullable: true, description: 'ID do tipo de estoque (Tipo de Estoque)', example: 1 },
                         manufacturer_id: { type: 'integer', nullable: true, example: 5 },
                         tax_rule_id: { type: 'integer', nullable: true, example: 2 },
                         measure_id: { type: 'integer', nullable: true, example: 1 },
@@ -158,7 +185,7 @@ const swaggerSpec = swaggerJSDoc({
                         min_stock: { type: 'number', minimum: 0, example: 10 },
                         max_stock: { type: 'number', minimum: 0, example: 500 },
                         category_id: { type: 'integer', nullable: true, example: 3 },
-                        stock_type_id: { type: 'integer', nullable: true, example: 1 },
+                        stock_type_id: { type: 'integer', nullable: true, description: 'ID do tipo de estoque (Tipo de Estoque)', example: 1 },
                         manufacturer_id: { type: 'integer', nullable: true, example: 5 },
                         tax_rule_id: { type: 'integer', nullable: true, example: 2 },
                         measure_id: { type: 'integer', nullable: true, example: 1 },
@@ -176,7 +203,7 @@ const swaggerSpec = swaggerJSDoc({
                             example: ['550e8400-e29b-41d4-a716-446655440000']
                         },
                         category_id: { type: 'integer', nullable: true, example: 3 },
-                        stock_type_id: { type: 'integer', nullable: true, example: 1 },
+                        stock_type_id: { type: 'integer', nullable: true, description: 'ID do tipo de estoque (Tipo de Estoque)', example: 1 },
                         manufacturer_id: { type: 'integer', nullable: true, example: 5 },
                         tax_rule_id: { type: 'integer', nullable: true, example: 2 },
                         measure_id: { type: 'integer', nullable: true, example: 1 },

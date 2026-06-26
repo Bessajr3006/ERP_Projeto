@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const state: any = {
         purchases: [],
         filteredPurchases: [],
-        viewMode: localStorage.getItem('nota_compra_view') || 'grid',
         selectedBatchPurchaseIds: new Set(),
         
         loading: true,
@@ -29,11 +28,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleFilterBtn: document.getElementById('toggleFilterBtn'),
         filterChevron: document.getElementById('filterChevron'),
         filterSearch: document.getElementById('filterSearch'),
+        filterNfeKey: document.getElementById('filterNfeKey'),
         filterStatus: document.getElementById('filterStatus'),
+        filterNfeStartDate: document.getElementById('filterNfeStartDate'),
+        filterStartDate: document.getElementById('filterStartDate'),
+        filterEndDate: document.getElementById('filterEndDate'),
+        filterNfeEndDate: document.getElementById('filterNfeEndDate'),
         btnClearFilters: document.getElementById('btnClearFilters'),
         
         btnRefresh: document.getElementById('btnRefresh'),
-        viewModeBtns: document.querySelectorAll('#viewModeToggles .view-btn'),
         
         batchToolbar: document.getElementById('batchToolbar'),
         batchSelectAll: document.getElementById('batchSelectAll'),
@@ -41,6 +44,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnEmitBatch: document.getElementById('btnEmitBatch'),
         
         alertMessage: document.getElementById('alertMessage'),
+        
+        footerCount: document.getElementById('footerCount'),
+        footerTotal: document.getElementById('footerTotal'),
         
         // Modals
         itemsModal: document.getElementById('itemsModal'),
@@ -71,6 +77,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!dateStr) return '';
         const d = new Date(dateStr);
         return d.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    };
+    const formatDateOnly = dateStr => {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('pt-BR');
     };
     
     function showAlert(message, type = 'success', timeout = 5000) {
@@ -118,8 +129,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- Filtering ---
     function applyFilters() {
-        const query = (els.filterSearch.value || '').toLowerCase().trim();
-        const statusVal = els.filterStatus.value; // 'pending' or 'invoiced'
+        const query = (els.filterSearch?.value || '').toLowerCase().trim();
+        const nfeKeyTerm = (els.filterNfeKey?.value || '').toLowerCase().trim();
+        const statusVal = els.filterStatus?.value; // '', 'pending', 'invoiced', 'cancelled'
+        const nfeStartDate = els.filterNfeStartDate?.value || '';
+        const startDate = els.filterStartDate?.value || '';
+        const endDate = els.filterEndDate?.value || '';
+        const nfeEndDate = els.filterNfeEndDate?.value || '';
         
         state.filteredPurchases = state.purchases.filter(p => {
             const matchesQuery = !query || 
@@ -127,18 +143,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                 String(p.supplier_name || '').toLowerCase().includes(query);
                 
             const isInvoiced = !!localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`);
+            const isCancelled = p.status === 'cancelled';
+            const mockNfeKey = isInvoiced 
+                ? `352606${p.supplier_cnpj || '12345678000199'}55001000000${p.public_id.slice(0, 5)}1000000001`
+                : '';
+                
+            const matchesNfeKey = !nfeKeyTerm || mockNfeKey.toLowerCase().includes(nfeKeyTerm);
             
             let matchesStatus = true;
             if (statusVal === 'pending') {
-                matchesStatus = !isInvoiced && p.status !== 'cancelled';
+                matchesStatus = !isInvoiced && !isCancelled;
             } else if (statusVal === 'invoiced') {
-                matchesStatus = isInvoiced && p.status !== 'cancelled';
+                matchesStatus = isInvoiced && !isCancelled;
+            } else if (statusVal === 'cancelled') {
+                matchesStatus = isCancelled;
             }
             
-            return matchesQuery && matchesStatus;
+            // Date checking
+            const purchaseDateStr = p.date ? p.date.split('T')[0] : '';
+            const nfeDateStr = isInvoiced 
+                ? (localStorage.getItem(`mock_purchase_nf_date_${p.public_id}`) || p.date).split('T')[0] 
+                : '';
+                
+            const matchesNfeStartDate = !nfeStartDate || (nfeDateStr && nfeDateStr >= nfeStartDate);
+            const matchesStartDate = !startDate || (purchaseDateStr && purchaseDateStr >= startDate);
+            const matchesEndDate = !endDate || (purchaseDateStr && purchaseDateStr <= endDate);
+            const matchesNfeEndDate = !nfeEndDate || (nfeDateStr && nfeDateStr <= nfeEndDate);
+            
+            return matchesQuery && matchesNfeKey && matchesStatus && matchesNfeStartDate && matchesStartDate && matchesEndDate && matchesNfeEndDate;
         });
         
-        renderGrid();
+        renderRows();
         renderBatchToolbar();
     }
 
@@ -146,28 +181,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderState() {
         if (state.loading) {
             els.loadingOverlay.classList.remove('hidden');
-            els.notesContainer.classList.add('hidden');
+            els.notesContainer.parentElement.parentElement.classList.add('hidden');
             els.emptyState.classList.add('hidden');
         } else {
             els.loadingOverlay.classList.add('hidden');
-            els.notesContainer.classList.remove('hidden');
+            els.notesContainer.parentElement.parentElement.classList.remove('hidden');
         }
-    }
-
-    function renderViewToggles() {
-        els.viewModeBtns.forEach(btn => {
-            const isActive = btn.dataset.view === state.viewMode;
-            const check = btn.querySelector('.check-icon');
-            if (isActive) {
-                btn.classList.add('bg-gray-100', 'dark:bg-slate-700', 'text-gray-900', 'dark:text-white', 'shadow-sm');
-                btn.classList.remove('text-gray-500');
-                if (check) check.classList.remove('hidden');
-            } else {
-                btn.classList.remove('bg-gray-100', 'dark:bg-slate-700', 'text-gray-900', 'dark:text-white', 'shadow-sm');
-                btn.classList.add('text-gray-500');
-                if (check) check.classList.add('hidden');
-            }
-        });
     }
 
     function renderBatchToolbar() {
@@ -175,109 +194,115 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (eligibles.length > 0) {
             els.batchToolbar.classList.remove('hidden');
             els.batchSelectedCount.textContent = `${state.selectedBatchPurchaseIds.size} selecionada(s)`;
-            els.batchSelectAll.checked = eligibles.length === state.selectedBatchPurchaseIds.size;
+            els.batchSelectAll.checked = eligibles.length === state.selectedBatchPurchaseIds.size && eligibles.length > 0;
         } else {
             els.batchToolbar.classList.add('hidden');
         }
     }
 
-    function renderGrid() {
+    function renderRows() {
         if (!state.loading && state.filteredPurchases.length === 0) {
             els.emptyState.classList.remove('hidden');
+            els.notesContainer.parentElement.parentElement.classList.add('hidden');
         } else {
             els.emptyState.classList.add('hidden');
+            if (!state.loading) {
+                els.notesContainer.parentElement.parentElement.classList.remove('hidden');
+            }
         }
 
+        let totalAmount = 0;
+        
         els.notesContainer.innerHTML = state.filteredPurchases.map(p => {
             const isInvoiced = !!localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`);
             const isCancelled = p.status === 'cancelled';
-            const borderTopColor = isCancelled ? 'border-t-red-500' : (isInvoiced ? 'border-t-green-500' : 'border-t-amber-500');
+            totalAmount += Number(p.total_amount || 0);
+            
+            const isEligible = p.status === 'completed' && !isInvoiced;
+            const checkboxHtml = isEligible 
+                ? `<input type="checkbox" value="${p.public_id}" class="batch-purchase-chk rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" ${state.selectedBatchPurchaseIds.has(p.public_id) ? 'checked' : ''} title="Selecionar compra #${p.public_id.slice(0, 8)}" aria-label="Selecionar compra #${p.public_id.slice(0, 8)}">` 
+                : '';
+                
+            const purchaseNum = `#${p.public_id.slice(0, 8)}`;
+            const nfeDateText = isInvoiced 
+                ? formatDateOnly(localStorage.getItem(`mock_purchase_nf_date_${p.public_id}`) || p.date) 
+                : '-';
+                
+            const nfeKeyText = isInvoiced 
+                ? `352606${p.supplier_cnpj || '12345678000199'}55001000000${p.public_id.slice(0, 5)}1000000001`
+                : '-';
+                
+            const nfeHeaderSummary = isInvoiced 
+                ? `NF-e mod. 55 | Serie 1 | Entrada` 
+                : '-';
+                
+            const supplierName = p.supplier_name || 'Fornecedor Desconhecido';
+            const purchaseDateText = formatDateOnly(p.date);
+            const totalVal = formatCurrency(p.total_amount);
             
             let statusBadge = '';
             if (isCancelled) {
-                statusBadge = '<span class="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-red-50 text-red-700 border border-red-200">Cancelada</span>';
+                statusBadge = '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Cancelada</span>';
             } else if (isInvoiced) {
-                statusBadge = '<span class="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-green-50 text-green-700 border border-green-200">Emitida</span>';
+                statusBadge = '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Emitida</span>';
             } else {
-                statusBadge = `<label class="inline-flex items-center gap-2 text-xs font-medium text-gray-500 cursor-pointer">
-                                   <input type="checkbox" value="${p.public_id}" class="batch-purchase-chk rounded text-brand-600 shadow-sm" ${state.selectedBatchPurchaseIds.has(p.public_id) ? 'checked' : ''}> Lote
-                               </label>`;
+                statusBadge = '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Pendente</span>';
             }
             
-            const reqBadgeColor = isCancelled ? 'bg-red-100 text-red-800' : (isInvoiced ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800');
-            const datesHtml = isInvoiced 
-                ? `<div class="flex flex-col items-end gap-1">
-                       <span class="text-[11px] text-gray-500 flex items-center gap-1" title="Data da Compra"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> ${formatDate(p.date)}</span>
-                       <span class="text-[11px] font-medium text-green-600 flex items-center gap-1" title="Data de Entrada"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> ${formatDate(localStorage.getItem(`mock_purchase_nf_date_${p.public_id}`) || p.date)}</span>
-                   </div>`
-                : `<span class="text-xs text-gray-400 font-mono">${formatDate(p.date)}</span>`;
-
-            let statusTextHtml = '';
-            if (isCancelled) {
-                statusTextHtml = `<div class="flex items-center text-sm text-red-500 mb-4 gap-2">
-                                     <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Compra Cancelada
-                                 </div>`;
-            } else if (isInvoiced) {
-                statusTextHtml = `<div class="flex flex-col items-start gap-2 mb-4">
-                                     <div class="flex items-center text-sm font-medium text-green-600 gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span>NFe Entrada Autorizada</span></div>
-                                     <div class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">OBS: REGISTRADA</div>
-                                 </div>`;
-            } else {
-                statusTextHtml = `<div class="flex items-center text-sm text-gray-500 mb-4 gap-2">
-                                     <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>Aguardando emissão/registro
-                                 </div>`;
-            }
-
             const btnGenDisabled = state.generatingId === p.public_id ? 'opacity-50 cursor-wait' : '';
             const btnGenIcon = state.generatingId === p.public_id 
-                ? `<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>` 
-                : `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 6H7a2 2 0 00-2 2v11m0 5l4-4m-4 4l-4-4m4 4V13"></path></svg>`;
+                ? `<svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>` 
+                : `Ver DANFE`;
                 
             const btnCancelIcon = state.cancelingId === p.public_id
-                ? `<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>`
-                : `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                ? `<svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>`
+                : `Estornar`;
 
             let actsHtml = '';
             if (isCancelled) {
                 actsHtml = '';
             } else if (isInvoiced) {
-                actsHtml = `<button type="button" class="btn-generate bg-brand-50 text-brand-600 border border-brand-200 p-2 rounded-lg text-sm font-bold shadow-sm flex items-center justify-center hover:bg-brand-100 transition-colors ${btnGenDisabled}" data-id="${p.public_id}" title="Visualizar DANFE">
-                                ${btnGenIcon}
-                           </button>
-                           <button type="button" class="btn-cancel bg-red-50 text-red-600 border border-red-200 p-2 rounded-lg text-sm font-bold shadow-sm flex items-center justify-center hover:bg-red-100 transition-colors" data-id="${p.public_id}" title="Desfazer Emissão">
-                               ${btnCancelIcon}
-                           </button>`;
+                actsHtml = `
+                    <button type="button" class="btn-generate bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${btnGenDisabled}" data-id="${p.public_id}" title="Visualizar DANFE">
+                        ${btnGenIcon}
+                    </button>
+                    <button type="button" class="btn-cancel bg-red-600 hover:bg-red-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}" title="Desfazer Emissão">
+                        ${btnCancelIcon}
+                    </button>
+                `;
             } else {
-                actsHtml = `<button type="button" class="btn-emit-single flex items-center justify-center p-2 bg-brand-600 text-white hover:bg-brand-700 rounded-lg transition-colors shadow-sm" data-id="${p.public_id}" title="Emitir NFe Entrada">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                           </button>`;
+                actsHtml = `
+                    <button type="button" class="btn-emit-single bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}" title="Emitir NFe Entrada">
+                        Emitir NFe
+                    </button>
+                `;
             }
+            
+            const actionsCell = `
+                <div class="flex items-center justify-center gap-1.5">
+                    <button type="button" class="btn-items bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}">Ver Itens</button>
+                    ${actsHtml}
+                </div>
+            `;
 
             return `
-            <div class="bg-white dark:bg-slate-800 border-t-4 ${borderTopColor} border-gray-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
-                <div>
-                    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="flex flex-wrap items-center gap-3 min-w-0">
-                            ${statusBadge}
-                            <span class="${reqBadgeColor} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold">Compra #${p.public_id.slice(0, 8)}</span>
-                        </div>
-                        ${datesHtml}
-                    </div>
-                    <h3 class="font-bold text-gray-900 dark:text-gray-100 text-lg mb-1 leading-tight line-clamp-2">${p.supplier_name || 'Fornecedor Desconhecido'}</h3>
-                    ${statusTextHtml}
-                </div>
-                
-                <div class="mt-2 flex flex-col gap-3 border-t border-gray-100 dark:border-slate-700 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    <span class="font-black text-gray-900 dark:text-gray-100 text-lg">${formatCurrency(p.total_amount)}</span>
-                    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
-                        <button type="button" class="btn-items flex items-center justify-center p-2 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors shadow-sm text-gray-700 dark:text-gray-300" data-id="${p.public_id}" title="Ver produtos">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                        </button>
-                        ${actsHtml}
-                    </div>
-                </div>
-            </div>`;
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                    <td class="px-3 py-2.5 text-left">${checkboxHtml}</td>
+                    <td class="px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100">${purchaseNum}</td>
+                    <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${nfeDateText}</td>
+                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200 font-mono">${nfeKeyText}</td>
+                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200">${nfeHeaderSummary}</td>
+                    <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 font-semibold">${supplierName}</td>
+                    <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${purchaseDateText}</td>
+                    <td class="px-3 py-2.5 text-sm text-right text-gray-900 dark:text-gray-100 font-bold">${totalVal}</td>
+                    <td class="px-3 py-2.5 text-center">${statusBadge}</td>
+                    <td class="px-3 py-2.5 text-center">${actionsCell}</td>
+                </tr>
+            `;
         }).join('');
+
+        if (els.footerCount) els.footerCount.textContent = String(state.filteredPurchases.length);
+        if (els.footerTotal) els.footerTotal.textContent = formatCurrency(totalAmount);
     }
 
     // --- Actions ---
@@ -392,7 +417,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function cancelNota(id) {
         if (!confirm('Deseja cancelar esta Nota Fiscal de Entrada?')) return;
         state.cancelingId = id;
-        renderGrid();
+        renderRows();
         try {
             localStorage.removeItem(`mock_purchase_nf_type_${id}`);
             localStorage.removeItem(`mock_purchase_nf_date_${id}`);
@@ -402,13 +427,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             showAlert(`Erro: ${e.message}`, 'error');
         } finally {
             state.cancelingId = null;
-            renderGrid();
+            renderRows();
         }
     }
 
     async function generateAndShowXml(id) {
         state.generatingId = id;
-        renderGrid();
+        renderRows();
         
         try {
             const nfeResult = await api('/nfe/generate', {
@@ -434,7 +459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             showAlert("Erro ao gerar XML: " + e.message, "error");
         } finally {
             state.generatingId = null;
-            renderGrid();
+            renderRows();
         }
     }
 
@@ -450,57 +475,63 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Listeners ---
     function setupListeners() {
-        // View mode toggles
-        els.viewModeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                state.viewMode = btn.dataset.view;
-                localStorage.setItem('nota_compra_view', state.viewMode);
-                renderViewToggles();
-            });
-        });
-
-        // Filters
+        // Filters toggle
         els.toggleFilterBtn.addEventListener('click', () => {
-            els.filterBody.classList.toggle('collapsed');
-            if (els.filterBody.classList.contains('collapsed')) {
-                els.filterChevron.classList.remove('rotate-0');
-                els.filterChevron.classList.add('-rotate-90');
-            } else {
-                els.filterChevron.classList.add('rotate-0');
+            const isHidden = els.filterBody.classList.contains('hidden');
+            if (isHidden) {
+                els.filterBody.classList.remove('hidden');
                 els.filterChevron.classList.remove('-rotate-90');
+            } else {
+                els.filterBody.classList.add('hidden');
+                els.filterChevron.classList.add('-rotate-90');
             }
         });
         
-        [els.filterSearch, els.filterStatus].forEach(el => {
-            el.addEventListener('input', applyFilters);
-            el.addEventListener('change', applyFilters);
+        // Filter inputs binding
+        [els.filterSearch, els.filterNfeKey, els.filterStatus, els.filterNfeStartDate, els.filterStartDate, els.filterEndDate, els.filterNfeEndDate].forEach(el => {
+            if (el) {
+                el.addEventListener('input', applyFilters);
+                el.addEventListener('change', applyFilters);
+            }
         });
 
         els.btnClearFilters.addEventListener('click', () => {
-            els.filterSearch.value = '';
-            els.filterStatus.value = '';
+            [els.filterSearch, els.filterNfeKey, els.filterNfeStartDate, els.filterStartDate, els.filterEndDate, els.filterNfeEndDate].forEach(el => {
+                if (el) el.value = '';
+            });
+            if (els.filterStatus) els.filterStatus.value = '';
             applyFilters();
         });
 
         els.btnRefresh.addEventListener('click', loadPurchases);
 
-        // Batch Action
-        els.batchSelectAll.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                const eligibles = getBatchEligiblePurchases();
-                eligibles.forEach(p => state.selectedBatchPurchaseIds.add(p.public_id));
-            } else {
-                state.selectedBatchPurchaseIds.clear();
-            }
-            applyFilters();
+        // Batch Select All Checkbox
+        els.batchSelectAll.addEventListener('change', (e: any) => {
+            const eligibles = getBatchEligiblePurchases();
+            const checked = e.target.checked;
+            
+            eligibles.forEach(p => {
+                if (checked) {
+                    state.selectedBatchPurchaseIds.add(p.public_id);
+                } else {
+                    state.selectedBatchPurchaseIds.delete(p.public_id);
+                }
+            });
+            
+            // Sync checkbox elements in tbody
+            els.notesContainer.querySelectorAll('.batch-purchase-chk').forEach((chk: any) => {
+                chk.checked = checked;
+            });
+            
+            renderBatchToolbar();
         });
 
         els.btnEmitBatch.addEventListener('click', () => {
             openEmitModal(Array.from(state.selectedBatchPurchaseIds));
         });
 
-        // Event Delegation for Grid Items
-        els.notesContainer.addEventListener('click', (e) => {
+        // Event Delegation for Table Rows Actions
+        els.notesContainer.addEventListener('click', (e: any) => {
             const btnItems = e.target.closest('.btn-items');
             if (btnItems) openItemsModal(btnItems.dataset.id);
 
@@ -514,11 +545,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (btnGen) generateAndShowXml(btnGen.dataset.id);
         });
         
-        els.notesContainer.addEventListener('change', (e) => {
+        els.notesContainer.addEventListener('change', (e: any) => {
             if (e.target.classList.contains('batch-purchase-chk')) {
                 const id = e.target.value;
-                if (e.target.checked) state.selectedBatchPurchaseIds.add(id);
-                else state.selectedBatchPurchaseIds.delete(id);
+                if (e.target.checked) {
+                    state.selectedBatchPurchaseIds.add(id);
+                } else {
+                    state.selectedBatchPurchaseIds.delete(id);
+                }
+                
+                const eligibles = getBatchEligiblePurchases();
+                els.batchSelectAll.checked = eligibles.length === state.selectedBatchPurchaseIds.size && eligibles.length > 0;
+                
                 renderBatchToolbar();
             }
         });
@@ -537,7 +575,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             els.xmlModal.classList.remove('flex');
         }));
 
-        // Emit Form
+        // Emit Form Submit
         els.emitForm.addEventListener('submit', confirmEmit);
 
         // XML Toggle & Download

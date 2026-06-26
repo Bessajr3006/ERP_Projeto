@@ -3,106 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>KEYSTONE - Notas de Compras / Entrada</title>
+    <title>KEYSTONE - Notas de Compras</title>
     <link href="/css/style.css" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
     <script src="/js/pwa.js"></script>
 </head>
-<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
-    <!-- Navbar -->
+<body data-required-module="notas_compras" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
     <div id="app-navbar"></div>
 
-    <!-- Main App -->
-    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto">
-        
-        <!-- Header & View Toggles -->
-        <div class="px-4 sm:px-0 mb-5 flex flex-wrap justify-between items-center gap-3 shrink-0">
-            <div><h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight">Notas de Compras / Entrada</h1></div>
-            <div class="flex items-center">
-                <div class="hidden sm:flex items-center bg-white dark:bg-slate-800 p-1 rounded-full border border-gray-200 dark:border-slate-700 mr-4 shadow-sm" id="viewModeToggles">
-                    <button type="button" data-view="list" class="view-btn flex items-center justify-center px-3 py-1.5 rounded-lg transition-all gap-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200" title="Ver como Lista">
-                        <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </button>
-                    <button type="button" data-view="grid" class="view-btn flex items-center justify-center px-3 py-1.5 rounded-lg transition-all gap-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200" title="Ver como Grade">
-                        <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                    </button>
-                </div>
-                <button type="button" id="btnRefresh" title="Atualizar" class="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm p-2 bg-brand-600 text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors disabled:opacity-50">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                </button>
-            </div>
-        </div>
-
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
         <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm border font-medium"></div>
 
         <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
-            <!-- ── FILTERS ───────────────────────────────────────────── -->
-            <div class="mb-4 shrink-0">
-                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
-                    <button type="button" id="toggleFilterBtn" class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors rounded-xl focus:outline-none">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
-                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
-                        </div>
-                        <svg id="filterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            <!-- Header Row -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Notas de Compras / Entrada</h3>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btnRefresh" title="Atualizar" class="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm p-2 bg-brand-600 text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors disabled:opacity-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
-                    <div id="filterBody" class="overflow-hidden collapsed">
-                        <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
-                            <form id="filterForm">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
-                                    <div>
-                                        <label for="filterSearch" class="block text-[10px] font-bold text-gray-500 uppercase">Busca</label>
-                                        <input type="text" id="filterSearch" placeholder="Compra ou fornecedor..." class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
-                                    </div>
-                                    <div>
-                                        <label for="filterStatus" class="block text-[10px] font-bold text-gray-500 uppercase">Status</label>
-                                        <select id="filterStatus" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
-                                            <option value="">Todos</option>
-                                            <option value="pending">Aguardando emissão</option>
-                                            <option value="invoiced">Emitidas</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="mt-4 flex justify-end gap-2">
-                                    <button type="button" id="btnClearFilters" title="Limpar Filtro" class="inline-flex items-center justify-center p-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                                </div>
-                            </form>
+                    <span class="hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                        Compra / NFe
+                    </span>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-b border-gray-200 dark:border-slate-700">
+                <button type="button" id="toggleFilterBtn"
+                    class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path>
+                        </svg>
+                        <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                    </div>
+                    <svg id="filterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+
+                <div id="filterBody" class="hidden border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div>
+                            <label for="filterSearch" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Buscar</label>
+                            <input
+                                type="text"
+                                id="filterSearch"
+                                placeholder="Número ou fornecedor"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                            />
+                        </div>
+                        <div>
+                            <label for="filterNfeKey" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Chave NF</label>
+                            <input
+                                type="text"
+                                id="filterNfeKey"
+                                placeholder="Chave da NF"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                            />
+                        </div>
+                        <div>
+                            <label for="filterStatus" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Status</label>
+                            <select
+                                id="filterStatus"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                            >
+                                <option value="">Todos os status</option>
+                                <option value="pending">Pendente (Aguardando emissão)</option>
+                                <option value="invoiced">Emitida (Registrada)</option>
+                                <option value="cancelled">Cancelada</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filterNfeStartDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Entrada Inicio</label>
+                            <input
+                                type="date"
+                                id="filterNfeStartDate"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                                title="Data inicial da NF"
+                            />
+                        </div>
+                        <div>
+                            <label for="filterStartDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Compra Início</label>
+                            <input
+                                type="date"
+                                id="filterStartDate"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                                title="Data inicial"
+                            />
+                        </div>
+                        <div>
+                            <label for="filterEndDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Compra Fim</label>
+                            <input
+                                type="date"
+                                id="filterEndDate"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                                title="Data final"
+                            />
+                        </div>
+                        <div>
+                            <label for="filterNfeEndDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Entrada Fim</label>
+                            <input
+                                type="date"
+                                id="filterNfeEndDate"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                                title="Data final da NF"
+                            />
+                        </div>
+                        <div class="flex items-end">
+                            <button type="button" id="btnClearFilters" class="w-full py-1.5 px-3 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition-colors">
+                                Limpar Filtros
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Batch Toolbar -->
-            <div id="batchToolbar" class="hidden mb-4 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm shrink-0">
+            <!-- Batch Action Toolbar -->
+            <div id="batchToolbar" class="hidden mb-4 p-3 border border-t-0 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm shrink-0">
                 <div class="flex flex-wrap items-center gap-3 justify-between">
                     <div class="flex flex-wrap items-center gap-3">
-                        <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                            <input type="checkbox" id="batchSelectAll" class="rounded text-brand-600 shadow-sm border-gray-300 focus:ring-brand-500">
-                            Selecionar compras pendentes
-                        </label>
-                        <span id="batchSelectedCount" class="text-sm text-gray-500">0 selecionado(s)</span>
+                        <span id="batchSelectedCount" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">0 selecionado(s)</span>
                     </div>
-                    <button id="btnEmitBatch" type="button" title="Emitir selecionadas" class="inline-flex items-center justify-center rounded-lg shadow-sm p-2 bg-brand-600 text-white hover:bg-brand-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <button id="btnEmitBatch" type="button" title="Emitir selecionadas" class="inline-flex items-center gap-2 justify-center rounded-lg shadow-sm px-4 py-2 bg-brand-600 text-white hover:bg-brand-700 transition-colors font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Emitir em Lote
                     </button>
                 </div>
             </div>
 
-            <!-- ── GRID & TABLE VIEW ────────────────────────────────────── -->
-            <div id="notesContainer" class="flex-1 min-h-0 overflow-y-auto p-1 pb-10 content-start grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
-                <!-- Gerado por JS -->
+            <!-- Table View -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
+                        <thead class="bg-gray-50 dark:bg-slate-900/40">
+                            <tr>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left w-8">
+                                    <input type="checkbox" id="batchSelectAll" title="Selecionar todas as compras" aria-label="Selecionar todas as compras"
+                                        class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                </th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Número</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Data Entrada</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Chave NF</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cabecalho</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Fornecedor</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Data Compra</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="notesContainer" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            
+
+            <!-- Footer Metrics -->
+            <div class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4">
+                <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+                    </svg>
+                    <span id="footerCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span>
+                    <span>nota(s) exibida(s)</span>
+                </span>
+                <span class="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Total:</span>
+                    <span id="footerTotal" class="text-brand-600 dark:text-brand-400">R$ 0,00</span>
+                </span>
+            </div>
+
+            <!-- Loading & Empty States -->
             <div id="loadingOverlay" class="hidden my-8 text-center text-gray-500 dark:text-gray-400 font-medium">
                 <div class="inline-flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm">
                     <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
                     Carregando notas...
                 </div>
             </div>
-            
+
             <div id="emptyState" class="hidden my-8 py-10 px-6 text-center text-gray-500 dark:text-gray-400 font-medium bg-gray-50 dark:bg-slate-800 rounded-xl border border-dashed border-gray-300 dark:border-slate-700">
                 Nenhuma nota de compra encontrada.
             </div>
@@ -111,17 +193,17 @@
         <!-- ── Modals ────────────────────────────────────────────────── -->
         
         <!-- Items Viewer Modal -->
-        <div id="itemsModal" class="fixed inset-0 z-100 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div id="itemsModal" class="fixed inset-0 z-10000 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
             <div class="bg-white dark:bg-slate-800 rounded-2xl w-[95%] max-w-3xl max-h-[90vh] shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700 flex flex-col transform transition-all">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/80">
-                    <h3 id="itemsModalTitle" class="text-lg font-bold text-gray-900 dark:text-gray-100">Compra Detalhes</h3>
-                    <button type="button" title="Fechar detalhes da compra" aria-label="Fechar detalhes da compra" class="close-items-modal text-gray-400 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+                    <h3 id="itemsModalTitle" class="text-lg font-bold text-gray-900 dark:text-gray-100">Detalhes dos Itens</h3>
+                    <button type="button" title="Fechar" aria-label="Fechar" class="close-items-modal text-gray-400 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
                 <div class="p-6 overflow-y-auto flex-1">
                     <div id="itemsModalBody" class="space-y-4">
-                        <!-- Items rendered via js -->
+                        <!-- Items rendered via JS -->
                     </div>
                 </div>
                 <div class="px-6 py-4 flex justify-end gap-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80">
@@ -131,11 +213,11 @@
         </div>
 
         <!-- Emit Options Modal -->
-        <div id="emitModal" class="fixed inset-0 z-120 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div id="emitModal" class="fixed inset-0 z-10000 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
             <div class="bg-white dark:bg-slate-800 rounded-2xl w-[95%] max-w-md shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700 flex flex-col transform transition-all">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/80">
                     <h3 id="emitModalTitle" class="text-lg font-bold text-gray-900 dark:text-gray-100">Emitir Nota Fiscal de Entrada</h3>
-                    <button type="button" title="Fechar emissão de nota" aria-label="Fechar emissão de nota" class="close-emit-modal text-gray-400 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+                    <button type="button" title="Fechar" aria-label="Fechar" class="close-emit-modal text-gray-400 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
@@ -166,14 +248,14 @@
         </div>
 
         <!-- XML/DANFE View Modal (Fullscreen-ish) -->
-        <div id="xmlModal" class="fixed inset-0 z-110 hidden items-start justify-center overflow-hidden bg-slate-900/70 backdrop-blur-sm p-2 sm:items-center sm:p-4">
+        <div id="xmlModal" class="fixed inset-0 z-10000 hidden items-start justify-center overflow-hidden bg-slate-900/70 backdrop-blur-sm p-2 sm:items-center sm:p-4">
             <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-full h-[calc(100dvh-1rem)] sm:h-auto sm:max-h-[90vh] sm:w-[95%] sm:max-w-5xl shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700 flex flex-col relative z-20">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800 shrink-0">
                     <div class="flex items-center gap-2">
                         <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         <h3 id="xmlModalTitle" class="text-lg font-bold text-gray-900 dark:text-gray-100">Visualização NFe/DANFE</h3>
                     </div>
-                    <button type="button" title="Fechar visualização XML/DANFE" aria-label="Fechar visualização XML/DANFE" class="close-xml-modal text-gray-400 p-1.5 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors rounded-lg">
+                    <button type="button" title="Fechar" aria-label="Fechar" class="close-xml-modal text-gray-400 p-1.5 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors rounded-lg">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
@@ -195,7 +277,6 @@
                 </div>
             </div>
         </div>
-
     </main>
 
     <script src="/js/api.js"></script>

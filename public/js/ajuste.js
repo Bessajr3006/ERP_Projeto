@@ -13,6 +13,20 @@
     const SALES_LAYOUT_KEY = 'sales_layout';
     const SPLIT_CART_SIZE_KEY = 'split_cart_size';
 
+    const SYSTEM_DEFAULTS = {
+        theme: 'dark',
+        theme_toggle_visible: true,
+        layout_align: 'responsive',
+        nav_align: 'responsive',
+        layout_width: 'system',
+        nav_width: 'system',
+        nav_color: '#0f172a',
+        footer_color: '#0f172a',
+        sales_cards_per_row: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+        sales_layout: 'drawer',
+        split_cart_size: 'medium'
+    };
+
     const qsa = (selector) => document.querySelectorAll(selector);
 
     function getSalesCardsPerRowValue() {
@@ -637,6 +651,42 @@
         const saveBtn = document.getElementById('saveSystemPreferencesBtn');
         if (!saveBtn) return;
 
+        const apiClient = window.api;
+        const authClient = window.Auth;
+
+        // Buscar dados do usuário logado para verificar o cargo/perfil
+        let userRole = '';
+        if (typeof apiClient === 'function' && authClient && typeof authClient.isAuthenticated === 'function' && authClient.isAuthenticated()) {
+            try {
+                const meRes = await apiClient('/auth/me');
+                userRole = meRes?.data?.role || '';
+            } catch (err) {
+                console.error('Erro ao buscar perfil de usuario:', err);
+            }
+        }
+
+        // Exibir seção do perfil de destino se for administrador geral
+        const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+        const targetProfileSection = document.getElementById('targetProfileSection');
+        const targetProfileSelect = document.getElementById('targetProfileSelect');
+
+        if (isAdmin && targetProfileSection && targetProfileSelect) {
+            targetProfileSection.classList.remove('hidden');
+            // Carregar perfis (cargos) da API
+            try {
+                const rolesRes = await apiClient('/roles');
+                const roles = rolesRes?.data || [];
+                roles.forEach(r => {
+                    const option = document.createElement('option');
+                    option.value = r.slug;
+                    option.textContent = r.name;
+                    targetProfileSelect.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Erro ao carregar perfis de acesso:', err);
+            }
+        }
+
         await hydratePreferencesFromServer();
         runEntranceAnimations();
 
@@ -676,6 +726,26 @@
             }
         };
 
+        const updateUIWithPreferences = (prefs) => {
+            setChecked('themeMode', prefs.theme || 'dark');
+            setChecked('themeToggleVisibility', (prefs.theme_toggle_visible !== false && prefs.theme_toggle_visible !== 'hide') ? 'show' : 'hide');
+            setChecked('layoutAlign', prefs.layout_align || 'responsive');
+            setChecked('navAlign', prefs.nav_align || prefs.layout_align || 'responsive');
+            setChecked('layoutWidth', prefs.layout_width || 'system');
+            setChecked('navWidth', prefs.nav_width || prefs.layout_width || 'system');
+            setChecked('salesCardsPerRow', prefs.sales_cards_per_row || 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5');
+            setChecked('salesLayout', prefs.sales_layout || 'drawer');
+            setChecked('splitCartSize', prefs.split_cart_size || 'medium');
+            updateNavColorUI(prefs.nav_color || '#0f172a');
+            updateFooterColorUI(prefs.footer_color || '#0f172a');
+
+            // Aplicar prévias no layout local imediatamente
+            applyTheme(prefs.theme || 'dark');
+            applyAlignment(prefs.layout_align || 'responsive', false);
+            applyNavAlignmentPreview(prefs.nav_align || prefs.layout_align || 'responsive', false);
+            updateChoiceCards();
+        };
+
         setChecked('themeMode', currentTheme);
         setChecked('themeToggleVisibility', currentThemeToggleVisibility);
         setChecked('layoutAlign', currentAlign);
@@ -709,6 +779,44 @@
             window.applyGlobalThemeToggleVisibility();
         }
         updateChoiceCards();
+
+        // Monitorar mudança no dropdown de perfil alvo
+        if (targetProfileSelect) {
+            targetProfileSelect.addEventListener('change', async () => {
+                const selectedRole = targetProfileSelect.value;
+                if (!selectedRole) {
+                    // Restaurar as preferências pessoais do admin
+                    const personalPrefs = {
+                        theme: getThemeValue(),
+                        layout_align: getAlignValue(),
+                        nav_align: getNavAlignValue(),
+                        layout_width: getWidthValue(),
+                        nav_width: getNavWidthValue(),
+                        nav_color: getNavColorValue(),
+                        footer_color: getFooterColorValue(),
+                        theme_toggle_visible: getThemeToggleVisibilityValue() === 'show',
+                        sales_cards_per_row: getSalesCardsPerRowValue(),
+                        sales_layout: getSalesLayoutValue(),
+                        split_cart_size: getSplitCartSizeValue(),
+                    };
+                    updateUIWithPreferences(personalPrefs);
+                } else {
+                    // Buscar as preferências configuradas para o perfil selecionado
+                    try {
+                        const res = await apiClient(`/ui-preferences?target_role=${selectedRole}`);
+                        if (res?.data) {
+                            updateUIWithPreferences(res.data);
+                        } else {
+                            // Sem preferências para esse perfil, carrega padrões do sistema
+                            updateUIWithPreferences(SYSTEM_DEFAULTS);
+                        }
+                    } catch (err) {
+                        console.error('Erro ao buscar preferencias do perfil:', err);
+                        showMessage('Erro ao carregar preferências do perfil selecionado.', 'error');
+                    }
+                }
+            });
+        }
 
         qsa('input[name="themeMode"]').forEach((input) => {
             input.addEventListener('change', () => {
@@ -851,17 +959,22 @@
             setSaveButtonState(saveBtn, 'loading');
 
             window.setTimeout(async () => {
-                localStorage.setItem(THEME_KEY, themeChoice);
-                localStorage.setItem(ALIGN_KEY, alignChoice);
-                localStorage.setItem(NAV_ALIGN_KEY, navAlignChoice);
-                localStorage.setItem(WIDTH_KEY, widthChoice);
-                localStorage.setItem(NAV_WIDTH_KEY, navWidthChoice);
-                localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, themeToggleVisibilityChoice === 'hide' ? 'hide' : 'show');
-                localStorage.setItem(SALES_CARDS_PER_ROW_KEY, salesCardsPerRowChoice);
-                localStorage.setItem(SALES_LAYOUT_KEY, qs('input[name="salesLayout"]:checked')?.value || 'drawer');
-                localStorage.setItem(SPLIT_CART_SIZE_KEY, qs('input[name="splitCartSize"]:checked')?.value || 'medium');
-                localStorage.setItem(NAV_COLOR_KEY, navColorChoice);
-                localStorage.setItem(FOOTER_COLOR_KEY, footerColorChoice);
+                const selectedRole = targetProfileSelect?.value || '';
+
+                // Se salvando para si mesmo (Pessoal), persiste localmente
+                if (!selectedRole) {
+                    localStorage.setItem(THEME_KEY, themeChoice);
+                    localStorage.setItem(ALIGN_KEY, alignChoice);
+                    localStorage.setItem(NAV_ALIGN_KEY, navAlignChoice);
+                    localStorage.setItem(WIDTH_KEY, widthChoice);
+                    localStorage.setItem(NAV_WIDTH_KEY, navWidthChoice);
+                    localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, themeToggleVisibilityChoice === 'hide' ? 'hide' : 'show');
+                    localStorage.setItem(SALES_CARDS_PER_ROW_KEY, salesCardsPerRowChoice);
+                    localStorage.setItem(SALES_LAYOUT_KEY, qs('input[name="salesLayout"]:checked')?.value || 'drawer');
+                    localStorage.setItem(SPLIT_CART_SIZE_KEY, qs('input[name="splitCartSize"]:checked')?.value || 'medium');
+                    localStorage.setItem(NAV_COLOR_KEY, navColorChoice);
+                    localStorage.setItem(FOOTER_COLOR_KEY, footerColorChoice);
+                }
 
                 let syncError = null;
                 const rawPattern = localStorage.getItem(FORM_PATTERN_KEY);
@@ -880,29 +993,33 @@
                     }
                 }
 
-                const apiClient = window.api;
-                const authClient = window.Auth;
                 if (typeof apiClient === 'function' && authClient && typeof authClient.isAuthenticated === 'function' && authClient.isAuthenticated()) {
                     try {
+                        const payload = {
+                            theme: themeChoice,
+                            layout_align: alignChoice,
+                            nav_align: navAlignChoice,
+                            layout_width: widthChoice,
+                            nav_width: navWidthChoice,
+                            nav_color: navColorChoice,
+                            footer_color: footerColorChoice,
+                            theme_toggle_visible: themeToggleVisibilityChoice !== 'hide',
+                            form_company_name: formPattern.empresa || null,
+                            form_profile: formPattern.perfil,
+                            form_accent: formPattern.cor,
+                            form_header_size: formPattern.cabecalho,
+                            sales_cards_per_row: salesCardsPerRowChoice,
+                            sales_layout: qs('input[name="salesLayout"]:checked')?.value || 'drawer',
+                            split_cart_size: qs('input[name="splitCartSize"]:checked')?.value || 'medium',
+                        };
+
+                        if (selectedRole) {
+                            payload.target_role = selectedRole;
+                        }
+
                         await apiClient('/ui-preferences', {
                             method: 'POST',
-                            body: JSON.stringify({
-                                theme: themeChoice,
-                                layout_align: alignChoice,
-                                nav_align: navAlignChoice,
-                                layout_width: widthChoice,
-                                nav_width: navWidthChoice,
-                                nav_color: navColorChoice,
-                                footer_color: footerColorChoice,
-                                theme_toggle_visible: themeToggleVisibilityChoice !== 'hide',
-                                form_company_name: formPattern.empresa || null,
-                                form_profile: formPattern.perfil,
-                                form_accent: formPattern.cor,
-                                form_header_size: formPattern.cabecalho,
-                                sales_cards_per_row: salesCardsPerRowChoice,
-                                sales_layout: qs('input[name="salesLayout"]:checked')?.value || 'drawer',
-                                split_cart_size: qs('input[name="splitCartSize"]:checked')?.value || 'medium',
-                            }),
+                            body: JSON.stringify(payload),
                         });
                     }
                     catch (error) {
@@ -910,38 +1027,50 @@
                     }
                 }
 
-                if (typeof window.applyGlobalLayoutAlign === 'function') {
-                    window.applyGlobalLayoutAlign();
-                }
-                if (typeof window.applyGlobalLayoutWidth === 'function') {
-                    window.applyGlobalLayoutWidth();
-                }
-                if (typeof window.applyGlobalNavWidth === 'function') {
-                    window.applyGlobalNavWidth();
-                }
-                if (typeof window.applyGlobalNavAlign === 'function') {
-                    window.applyGlobalNavAlign();
-                }
-                if (typeof window.applyGlobalNavColor === 'function') {
-                    window.applyGlobalNavColor();
-                }
-                if (typeof window.applyGlobalFooterColor === 'function') {
-                    window.applyGlobalFooterColor();
-                }
-                if (typeof window.applyGlobalThemeToggleVisibility === 'function') {
-                    window.applyGlobalThemeToggleVisibility();
-                }
+                // Se salvando para si mesmo, aplica no layout local imediatamente
+                if (!selectedRole) {
+                    if (typeof window.applyGlobalLayoutAlign === 'function') {
+                        window.applyGlobalLayoutAlign();
+                    }
+                    if (typeof window.applyGlobalLayoutWidth === 'function') {
+                        window.applyGlobalLayoutWidth();
+                    }
+                    if (typeof window.applyGlobalNavWidth === 'function') {
+                        window.applyGlobalNavWidth();
+                    }
+                    if (typeof window.applyGlobalNavAlign === 'function') {
+                        window.applyGlobalNavAlign();
+                    }
+                    if (typeof window.applyGlobalNavColor === 'function') {
+                        window.applyGlobalNavColor();
+                    }
+                    if (typeof window.applyGlobalFooterColor === 'function') {
+                        window.applyGlobalFooterColor();
+                    }
+                    if (typeof window.applyGlobalThemeToggleVisibility === 'function') {
+                        window.applyGlobalThemeToggleVisibility();
+                    }
 
-                applyTheme(themeChoice);
-                applyAlignment(alignChoice, true);
-                updateChoiceCards();
-                pulseThemeHero();
+                    applyTheme(themeChoice);
+                    applyAlignment(alignChoice, true);
+                    updateChoiceCards();
+                    pulseThemeHero();
+                }
 
                 setSaveButtonState(saveBtn, 'success');
                 if (syncError) {
-                    showMessage('Preferências salvas localmente. Falha ao sincronizar no banco.', 'error');
+                    if (selectedRole) {
+                        showMessage('Erro ao salvar preferências do perfil no banco de dados.', 'error');
+                    } else {
+                        showMessage('Preferências salvas localmente. Falha ao sincronizar no banco.', 'error');
+                    }
                 } else {
-                    showMessage('Preferências salvas com sucesso.');
+                    if (selectedRole) {
+                        const roleName = targetProfileSelect.options[targetProfileSelect.selectedIndex]?.text || selectedRole;
+                        showMessage(`Preferências salvas com sucesso para o perfil "${roleName}".`);
+                    } else {
+                        showMessage('Preferências salvas com sucesso.');
+                    }
                 }
 
                 window.setTimeout(() => {

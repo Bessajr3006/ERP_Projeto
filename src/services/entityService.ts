@@ -170,6 +170,170 @@ export class EntityService {
             }
             return undefined;
         };
+
+        const parseBrazilianAddress = (addressStr: string) => {
+            const result: {
+                street?: string;
+                number?: string;
+                complement?: string;
+                neighborhood?: string;
+                city?: string;
+                state?: string;
+                zipcode?: string;
+            } = {};
+
+            if (!addressStr || typeof addressStr !== 'string') return result;
+
+            let workingStr = addressStr.trim();
+
+            // 1. Extrair CEP: 01021-000 ou 01021000
+            const cepRegex = /\b(\d{5}-\d{3}|\d{8})\b/;
+            const cepMatch = workingStr.match(cepRegex);
+            if (cepMatch && cepMatch[1]) {
+                result.zipcode = cepMatch[1].replace('-', '');
+                workingStr = workingStr.replace(cepRegex, '').trim();
+            }
+
+            // 2. Extrair Estado (UF): e.g. " - SP", ", SP", "/SP"
+            const stateRegex = /\b(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/i;
+            const stateMatch = workingStr.match(stateRegex);
+            if (stateMatch && stateMatch[1]) {
+                result.state = stateMatch[1].toUpperCase();
+                workingStr = workingStr.replace(stateRegex, '').trim();
+            }
+
+            // Limpar pontuações extras
+            workingStr = workingStr.replace(/,\s*,/g, ',').replace(/-\s*-/g, '-').trim();
+
+            // 3. Dividir por vírgula ou hífen
+            let parts = workingStr.split(',').map(p => p.trim()).filter(Boolean);
+
+            if (parts.length >= 2) {
+                // Caso com vírgula: normalmente Parte 0 é Rua + Número (ou só Rua)
+                const streetPart = parts[0];
+                if (streetPart) {
+                    const numRegex = /\s+(\d+|s\/n|S\/N|s\/nº)\b$/i;
+                    const numMatch = streetPart.match(numRegex);
+                    if (numMatch && numMatch[1]) {
+                        result.street = streetPart.replace(numRegex, '').trim();
+                        result.number = numMatch[1].trim();
+                    } else {
+                        result.street = streetPart;
+                    }
+                }
+
+                // Se a parte 1 começar com número, pode ser o número e o complemento
+                if (!result.number && parts[1]) {
+                    const numStartMatch = parts[1].match(/^(\d+|s\/n|S\/N|s\/nº)\b/i);
+                    if (numStartMatch && numStartMatch[1]) {
+                        result.number = numStartMatch[1];
+                        const comp = parts[1].replace(/^(\d+|s\/n|S\/N|s\/nº)\b/i, '').replace(/^[\s,-/]+/, '').trim();
+                        if (comp) {
+                            result.complement = comp;
+                        }
+                        parts.splice(1, 1);
+                    }
+                }
+
+                // Tratar partes restantes
+                if (parts.length >= 2) {
+                    const lastPart = parts[parts.length - 1];
+                    if (lastPart) {
+                        result.city = lastPart;
+                    }
+                    parts.pop();
+
+                    if (parts.length >= 2) {
+                        const nextLastPart = parts[parts.length - 1];
+                        if (nextLastPart) {
+                            result.neighborhood = nextLastPart;
+                        }
+                        parts.pop();
+
+                        if (parts.length >= 2) {
+                            result.complement = parts.slice(1).join(', ').trim();
+                        }
+                    } else if (parts.length === 1 && parts[0]) {
+                        result.neighborhood = parts[0];
+                    }
+                } else if (parts.length === 1 && parts[0]) {
+                    result.neighborhood = parts[0];
+                }
+            } else {
+                // Caso sem vírgula: tenta por hífen
+                parts = workingStr.split('-').map(p => p.trim()).filter(Boolean);
+                if (parts.length >= 2) {
+                    const streetPart = parts[0];
+                    if (streetPart) {
+                        const numRegex = /\s+(\d+|s\/n|S\/N|s\/nº)\b$/i;
+                        const numMatch = streetPart.match(numRegex);
+                        if (numMatch && numMatch[1]) {
+                            result.street = streetPart.replace(numRegex, '').trim();
+                            result.number = numMatch[1].trim();
+                        } else {
+                            result.street = streetPart;
+                        }
+                    }
+
+                    if (parts.length >= 3) {
+                        const lastPart = parts[parts.length - 1];
+                        const nextLastPart = parts[parts.length - 2];
+                        if (lastPart) result.city = lastPart;
+                        if (nextLastPart) result.neighborhood = nextLastPart;
+                        if (parts.length > 3) {
+                            result.complement = parts.slice(1, parts.length - 2).join(' - ').trim();
+                        }
+                    } else if (parts[1]) {
+                        result.neighborhood = parts[1];
+                    }
+                } else {
+                    // Sem delimitadores: tenta encontrar o padrão "Nome 123"
+                    const numRegex = /\s+(\d+|s\/n|S\/N|s\/nº)\b/i;
+                    const numMatch = workingStr.match(numRegex);
+                    if (numMatch && numMatch[1] && numMatch.index !== undefined) {
+                        result.street = workingStr.substring(0, numMatch.index).trim();
+                        result.number = numMatch[1].trim();
+                        const rest = workingStr.substring(numMatch.index + numMatch[0].length).trim();
+                        if (rest) {
+                            result.complement = rest;
+                        }
+                    } else {
+                        result.street = workingStr;
+                    }
+                }
+            }
+
+            const cleanResult: {
+                street?: string;
+                number?: string;
+                complement?: string;
+                neighborhood?: string;
+                city?: string;
+                state?: string;
+                zipcode?: string;
+            } = {};
+
+            const setCleaned = (key: keyof typeof cleanResult, val?: string) => {
+                if (!val) return;
+                let s = val.trim();
+                if (s.startsWith('-') || s.startsWith(',') || s.startsWith('/')) s = s.substring(1).trim();
+                if (s.endsWith('-') || s.endsWith(',') || s.endsWith('/')) s = s.substring(0, s.length - 1).trim();
+                if (s) {
+                    cleanResult[key] = s;
+                }
+            };
+
+            setCleaned('street', result.street);
+            setCleaned('number', result.number);
+            setCleaned('complement', result.complement);
+            setCleaned('neighborhood', result.neighborhood);
+            setCleaned('city', result.city);
+            setCleaned('state', result.state);
+            setCleaned('zipcode', result.zipcode);
+
+            return cleanResult;
+        };
+
         const mapSolidconItem = (payload: any): CreateEntityData | null => {
             const name = normalizeText(pickValue(payload, ['cliente', 'name', 'nome', 'razao_social', 'razao', 'nome_fantasia', 'fantasia']));
             if (!name) return null;
@@ -177,18 +341,64 @@ export class EntityService {
             const docRaw = pickValue(payload, ['cnpj', 'cpf', 'cnpj_cpf', 'documento', 'doc', 'cpf_cnpj']);
             const docDigits = onlyDigits(docRaw);
 
+            let zipcode = normalizeText(pickValue(payload, ['cep', 'zipcode'])) || undefined;
+            let street = normalizeText(pickValue(payload, ['logradouro', 'rua', 'street', 'endereco', 'address'])) || undefined;
+            let number = normalizeText(pickValue(payload, ['numero', 'number'])) || undefined;
+            let complement = normalizeText(pickValue(payload, ['complemento', 'complement'])) || undefined;
+            let neighborhood = normalizeText(pickValue(payload, ['bairro', 'neighborhood'])) || undefined;
+            let city = normalizeText(pickValue(payload, ['cidade', 'city'])) || undefined;
+            let state = normalizeText(pickValue(payload, ['estado', 'uf', 'state'])) || undefined;
+            let cd_municipio: number | undefined = undefined;
+
+            const parseCdMunicipio = (val: any): number | undefined => {
+                if (val === undefined || val === null || val === '') return undefined;
+                const num = Number(val);
+                return isNaN(num) ? undefined : num;
+            };
+
+            cd_municipio = parseCdMunicipio(pickValue(payload, ['cdMunicipio', 'cd_municipio']));
+
+            // Se existir um objeto "endereco" aninhado (padrão Solidcon)
+            if (payload && typeof payload.endereco === 'object' && payload.endereco !== null) {
+                const end = payload.endereco;
+                zipcode = normalizeText(pickValue(end, ['cep', 'zipcode'])) || zipcode;
+                street = normalizeText(pickValue(end, ['logradouro', 'rua', 'street', 'endereco', 'address'])) || street;
+                number = normalizeText(pickValue(end, ['numero', 'number'])) || number;
+                complement = normalizeText(pickValue(end, ['complemento', 'complement'])) || complement;
+                neighborhood = normalizeText(pickValue(end, ['bairro', 'neighborhood'])) || neighborhood;
+                city = normalizeText(pickValue(end, ['cidade', 'city'])) || city;
+                state = normalizeText(pickValue(end, ['estado', 'uf', 'state'])) || state;
+                cd_municipio = parseCdMunicipio(pickValue(end, ['cdMunicipio', 'cd_municipio'])) ?? cd_municipio;
+            }
+
+            // Se o street conter uma string de endereço completa (ex: possui vírgula ou hífen ou número)
+            // e os outros campos essenciais estiverem em branco, tenta parsear o endereço.
+            if (street && (!number || !neighborhood || !city || !state || !zipcode)) {
+                const parsed = parseBrazilianAddress(street);
+                if (parsed.street) {
+                    street = parsed.street;
+                    if (!number) number = parsed.number;
+                    if (!complement) complement = parsed.complement;
+                    if (!neighborhood) neighborhood = parsed.neighborhood;
+                    if (!city) city = parsed.city;
+                    if (!state) state = parsed.state;
+                    if (!zipcode) zipcode = parsed.zipcode;
+                }
+            }
+
             return {
                 name,
                 cnpj_cpf: docDigits || undefined,
                 email: normalizeText(pickValue(payload, ['email', 'email_principal'])) || undefined,
                 phone: normalizeText(pickValue(payload, ['telefone', 'phone', 'celular', 'fone', 'telefone_principal'])) || undefined,
-                zipcode: normalizeText(pickValue(payload, ['cep', 'zipcode'])) || undefined,
-                street: normalizeText(pickValue(payload, ['logradouro', 'rua', 'street', 'endereco', 'address'])) || undefined,
-                number: normalizeText(pickValue(payload, ['numero', 'number'])) || undefined,
-                complement: normalizeText(pickValue(payload, ['complemento', 'complement'])) || undefined,
-                neighborhood: normalizeText(pickValue(payload, ['bairro', 'neighborhood'])) || undefined,
-                city: normalizeText(pickValue(payload, ['cidade', 'city'])) || undefined,
-                state: normalizeText(pickValue(payload, ['estado', 'uf', 'state'])) || undefined,
+                zipcode,
+                street,
+                number,
+                complement,
+                neighborhood,
+                city,
+                state,
+                cd_municipio,
             };
         };
 

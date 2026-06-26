@@ -728,6 +728,7 @@
                     getById('customerComplement').value = data.complement || '';
                     getById('customerNeighborhood').value = data.neighborhood || '';
                     getById('customerCity').value = data.city || '';
+                    getById('customerCdMunicipio').value = data.cd_municipio || '';
                     if (getById('customerTaxRegime'))
                         getById('customerTaxRegime').value = data.tax_regime || '';
                     if (getById('customerOpeningDate'))
@@ -1119,6 +1120,7 @@
                 neighborhood: getTrimmedValue('customerNeighborhood') || undefined,
                 city: getTrimmedValue('customerCity') || undefined,
                 state: getById('customerState')?.value || undefined,
+                cd_municipio: getTrimmedValue('customerCdMunicipio') ? Number(getTrimmedValue('customerCdMunicipio')) : undefined,
                 tax_regime: getById('customerTaxRegime')?.value || undefined,
                 opening_date: getTrimmedValue('customerOpeningDate') || undefined,
                 certificate_password: getTrimmedValue('customerCertPassword') || undefined,

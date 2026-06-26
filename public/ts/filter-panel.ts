@@ -120,6 +120,14 @@
                                 <div class="${gridClass}">
                                     ${config.fields.map(buildFieldMarkup).join('')}
                                 </div>
+                                <div class="flex justify-end mt-3">
+                                    <button type="button" id="${panelId}-clear" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-255 bg-gray-50 hover:bg-gray-100 dark:bg-slate-700 dark:hover:bg-slate-600 border border-gray-200 dark:border-slate-600 rounded-lg shadow-sm transition-colors cursor-pointer">
+                                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Limpar Filtros
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -152,6 +160,25 @@
                 chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
             });
             toggle.dataset.filterBound = 'true';
+        }
+
+        const clearBtn = document.getElementById(`${panelId}-clear`);
+        if (clearBtn && !clearBtn.dataset.bound) {
+            clearBtn.addEventListener('click', () => {
+                config.fields.forEach((field) => {
+                    const el = document.getElementById(field.id);
+                    if (el) {
+                        if (el instanceof HTMLSelectElement) {
+                            el.selectedIndex = 0;
+                            el.dispatchEvent(new Event('change'));
+                        } else if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+                            el.value = '';
+                            el.dispatchEvent(new Event('input'));
+                        }
+                    }
+                });
+            });
+            clearBtn.dataset.bound = 'true';
         }
 
         return {

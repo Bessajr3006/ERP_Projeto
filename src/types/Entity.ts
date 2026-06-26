@@ -46,6 +46,7 @@ export interface Entity {
     seller_name?: string | null;
     discount_type?: 'percentage' | 'fixed' | null;
     discount_value?: number | null;
+    cd_municipio?: number | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -80,6 +81,7 @@ export interface CreateEntityData {
     seller_public_id?: string | null | undefined;
     discount_type?: 'percentage' | 'fixed' | null | undefined;
     discount_value?: number | null | undefined;
+    cd_municipio?: number | null | undefined;
 }
 
 export type UpdateEntityData = Partial<CreateEntityData>;

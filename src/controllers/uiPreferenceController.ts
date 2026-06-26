@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { UiPreferenceService } from '../services/uiPreferenceService';
+import { AppError } from '../errors/AppError';
 
 const hexColor = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Cor invalida. Use formato hexadecimal #RRGGBB.').transform((v) => v.toLowerCase());
 
@@ -20,26 +21,50 @@ const uiPreferenceSchema = z.object({
     sales_cards_per_row: z.string().trim().max(120).nullable().optional(),
     sales_layout: z.enum(['drawer', 'split']).optional(),
     split_cart_size: z.enum(['small', 'medium', 'large']).optional(),
+    target_role: z.string().trim().max(80).nullable().optional(),
 });
 
 export class UiPreferenceController {
     static async get(req: Request, res: Response): Promise<void> {
         const companyId = req.user!.company_id;
-        const userPublicId = String(req.user!.id || '').trim();
+        const targetRole = req.query.target_role ? String(req.query.target_role).trim() : null;
 
-        const data = await UiPreferenceService.getByCompanyAndUser(companyId, userPublicId);
+        if (targetRole && req.user!.role !== 'admin' && req.user!.role !== 'super_admin') {
+            throw new AppError('Only administrators can access role-based preferences', 403);
+        }
+
+        const userPublicId = targetRole ? `role:${targetRole}` : String(req.user!.id || '').trim();
+        let data = await UiPreferenceService.getByCompanyAndUser(companyId, userPublicId);
+
+        // Se for uma busca comum (do proprio usuario) e nao tiver preferencia propria,
+        // busca a preferencia padrao do perfil (role) dele.
+        if (!data && !targetRole) {
+            const role = String(req.user!.role || '').trim();
+            data = await UiPreferenceService.getByCompanyAndUser(companyId, `role:${role}`);
+        }
+
         res.status(200).json({ status: 'success', data });
     }
 
     static async save(req: Request, res: Response): Promise<void> {
         const companyId = req.user!.company_id;
-        const userPublicId = String(req.user!.id || '').trim();
         const validated = uiPreferenceSchema.parse(req.body || {});
+        const targetRole = validated.target_role || null;
+
+        if (targetRole && req.user!.role !== 'admin' && req.user!.role !== 'super_admin') {
+            throw new AppError('Only administrators can save role-based preferences', 403);
+        }
+
+        const userPublicId = targetRole ? `role:${targetRole}` : String(req.user!.id || '').trim();
 
         const normalized = {
-            ...validated,
+            theme: validated.theme,
+            layout_align: validated.layout_align,
             nav_align: validated.nav_align || validated.layout_align,
+            layout_width: validated.layout_width,
             nav_width: validated.nav_width || validated.layout_width,
+            nav_color: validated.nav_color,
+            footer_color: validated.footer_color,
             form_company_name: (validated.form_company_name || '').trim() || null,
             form_profile: validated.form_profile || 'padrao',
             form_accent: (validated.form_accent || 'brand').trim().toLowerCase(),

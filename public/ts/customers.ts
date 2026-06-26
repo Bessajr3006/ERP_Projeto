@@ -751,6 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 getById('customerComplement').value = data.complement || '';
                 getById('customerNeighborhood').value = data.neighborhood || '';
                 getById('customerCity').value = data.city || '';
+                getById('customerCdMunicipio').value = data.cd_municipio || '';
                 if(getById('customerTaxRegime')) (getById('customerTaxRegime') as HTMLSelectElement).value = data.tax_regime || '';
                 if(getById('customerOpeningDate')) (getById('customerOpeningDate') as HTMLInputElement).value = data.opening_date ? data.opening_date.split('T')[0] : '';
                 getById('customerCertPassword').value = data.certificate_password || '';
@@ -1163,6 +1164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             neighborhood: getTrimmedValue('customerNeighborhood') || undefined,
             city: getTrimmedValue('customerCity') || undefined,
             state: getById('customerState')?.value || undefined,
+            cd_municipio: getTrimmedValue('customerCdMunicipio') ? Number(getTrimmedValue('customerCdMunicipio')) : undefined,
             tax_regime: (getById('customerTaxRegime') as HTMLSelectElement)?.value || undefined,
             opening_date: getTrimmedValue('customerOpeningDate') || undefined,
             certificate_password: getTrimmedValue('customerCertPassword') || undefined,

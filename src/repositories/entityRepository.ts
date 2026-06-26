@@ -18,7 +18,7 @@ const BASE_ENTITY_FIELDS = [
     'social_contract_url', 'cnpj_document_url',
 ] as const;
 
-const CUSTOMER_ENTITY_FIELDS = [...BASE_ENTITY_FIELDS, 'vencimento_dia', 'limite', 'seller_user_id', 'discount_type', 'discount_value', 'opening_date', 'tax_regime'] as const;
+const CUSTOMER_ENTITY_FIELDS = [...BASE_ENTITY_FIELDS, 'vencimento_dia', 'limite', 'seller_user_id', 'discount_type', 'discount_value', 'opening_date', 'tax_regime', 'cd_municipio'] as const;
 const CONTACT_ENTITY_FIELDS = [...BASE_ENTITY_FIELDS, 'birth_date'] as const;
 
 function getPersistedFields(table: EntityTable): readonly string[] {
@@ -96,6 +96,7 @@ export class EntityRepository {
         await this.addCustomerColumnIfMissing('seller_user_id', `seller_user_id INT DEFAULT NULL AFTER phone`);
         await this.addCustomerColumnIfMissing('vencimento_dia', `vencimento_dia TINYINT DEFAULT NULL COMMENT 'Dia do mes para vencimento (1-31)' AFTER phone`);
         await this.addCustomerColumnIfMissing('limite', `limite DECIMAL(15, 2) NOT NULL DEFAULT 0.00 COMMENT 'Limite de credito' AFTER vencimento_dia`);
+        await this.addCustomerColumnIfMissing('cd_municipio', `cd_municipio INT DEFAULT NULL AFTER state`);
 
         this.customerSchemaReady = true;
     }

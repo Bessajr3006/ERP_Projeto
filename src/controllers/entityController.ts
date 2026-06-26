@@ -54,6 +54,14 @@ const customerCreateSchema = baseEntitySchema.extend({
     discount_value: z.number().min(0).nullable().optional(),
     opening_date: z.string().nullable().optional(),
     tax_regime: z.string().nullable().optional(),
+    cd_municipio: z.preprocess(
+        (val) => {
+            if (val === '' || val === null || val === undefined) return null;
+            const parsed = Number(val);
+            return isNaN(parsed) ? undefined : parsed;
+        },
+        z.number().int().nullable().optional()
+    ),
 });
 
 const customerUpdateSchema = customerCreateSchema.partial();

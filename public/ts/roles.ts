@@ -123,6 +123,7 @@
                 groupName: 'Pedido_Compra',
                 links: [
                     { id: 'purchases', label: 'Compra' },
+                    { id: 'notas_compras', label: 'Notas de Compras' },
                     { id: 'manifestation', label: 'Manifesto' }
                 ]
             },

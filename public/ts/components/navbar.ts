@@ -212,7 +212,6 @@ function initMobileMenu() {
     setupMobileDropdown('mobileReportsDropdownBtn', 'mobileReportsDropdown', 'mobileReportsDropdownIcon');
     setupMobileDropdown('mobileConfigDropdownBtn', 'mobileConfigDropdown', 'mobileConfigDropdownIcon');
     setupMobileDropdown('mobileControleDropdownBtn', 'mobileControleDropdown', 'mobileControleDropdownIcon');
-    setupMobileDropdown('mobileUserSubmenuBtn', 'mobileUserSubmenu', 'mobileUserSubmenuIcon');
     setupMobileDropdown('mobileOrdersDropdownBtn', 'mobileOrdersDropdown', 'mobileOrdersDropdownIcon');
     setupMobileDropdown('mobilePurchasesDropdownBtn', 'mobilePurchasesDropdown', 'mobilePurchasesDropdownIcon');
 }
@@ -400,7 +399,6 @@ function initLogout() {
 
     bindOpenLogout('logoutBtn');
     bindOpenLogout('logoutBtnUserSubmenuDesktop');
-    bindOpenLogout('logoutBtnUserSubmenuMobile');
     bindOpenLogout('logoutBtnMobile');
 
     // Delegação para cenários em que a navbar é re-renderizada após o bind inicial.
@@ -410,7 +408,7 @@ function initLogout() {
             return;
         }
 
-        const trigger = target.closest('#logoutBtn, #logoutBtnUserSubmenuDesktop, #logoutBtnUserSubmenuMobile, #logoutBtnMobile');
+        const trigger = target.closest('#logoutBtn, #logoutBtnUserSubmenuDesktop, #logoutBtnMobile');
         if (trigger) {
             event.preventDefault();
             openLogoutModal();

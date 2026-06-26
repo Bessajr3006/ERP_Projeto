@@ -97,7 +97,9 @@ export class PurchaseRepository {
 
     static async getPurchaseById(publicId: string, companyId: number): Promise<any> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT p.*, e.name as supplier_name 
+            `SELECT p.*, e.name as supplier_name, e.cnpj_cpf as supplier_cnpj,
+             e.street as supplier_street, e.number as supplier_number,
+             e.neighborhood as supplier_neighborhood, e.city as supplier_city, e.state as supplier_state
              FROM purchase_orders p
              JOIN suppliers e ON p.supplier_id = e.id
              WHERE p.public_id = ? AND p.company_id = ? LIMIT 1`,

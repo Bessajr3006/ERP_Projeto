@@ -6,6 +6,7 @@ import { generateAndSignNFe } from '../services/nfeService';
 import { SefazClient } from '../services/sefazClient';
 import { CompanyService } from '../services/companyService';
 import { OrderService } from '../services/orderService';
+import { PurchaseService } from '../services/purchaseService';
 import logger from '../config/logger';
 
 export const testCertificate = async (req: Request, res: Response): Promise<void> => {
@@ -105,6 +106,28 @@ export const generateNFe = async (req: Request, res: Response): Promise<void> =>
         if (req.body.orderId && companyId) {
             const salesList = await OrderService.listSales(companyId);
             order = salesList.find(s => String(s.id) === String(req.body.orderId));
+        } else if (req.body.purchaseId && companyId) {
+            const purchase = await PurchaseService.getPurchaseById(req.body.purchaseId, companyId);
+            if (purchase) {
+                order = {
+                    ...purchase,
+                    customer_name: purchase.supplier_name,
+                    customer_document: purchase.supplier_cnpj || '12345678000199',
+                    customer_street: purchase.supplier_street || 'NAO INFORMADO',
+                    customer_number: purchase.supplier_number || '0',
+                    customer_neighborhood: purchase.supplier_neighborhood || 'NAO INFORMADO',
+                    customer_city: purchase.supplier_city || 'SAO PAULO',
+                    customer_state: purchase.supplier_state || 'SP',
+                    items: (purchase.items || []).map((item: any) => ({
+                        ...item,
+                        product_name: item.product_name,
+                        sku: item.sku,
+                        quantity: item.quantity,
+                        unit_price: item.unit_price,
+                        total_price: item.total_price
+                    }))
+                };
+            }
         }
 
         // Pass mapping

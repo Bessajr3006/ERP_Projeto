@@ -19,7 +19,7 @@ set -euo pipefail
 REMOTE="${1:-}"
 REMOTE_DIR="/opt/erp-bessa"
 COMPOSE_FILE="docker-compose.yml"
-SSH_CONTROL="/tmp/ssh_deploy_$$"
+SSH_CONTROL="/tmp/ssh_deploy_bessa"
 
 # ── Validação ────────────────────────────────────────────────────
 if [[ -z "$REMOTE" ]]; then

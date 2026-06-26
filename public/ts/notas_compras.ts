@@ -180,11 +180,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Renderers ---
     function renderState() {
         if (state.loading) {
-            els.loadingOverlay.classList.remove('hidden');
+            els.loadingOverlay?.classList.remove('hidden');
             els.notesContainer.parentElement.parentElement.classList.add('hidden');
             els.emptyState.classList.add('hidden');
         } else {
-            els.loadingOverlay.classList.add('hidden');
+            els.loadingOverlay?.classList.add('hidden');
             els.notesContainer.parentElement.parentElement.classList.remove('hidden');
         }
     }

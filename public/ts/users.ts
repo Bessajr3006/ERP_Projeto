@@ -57,8 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await api(`/users/${id}`, { method: 'DELETE' });
             UI.showAlert('alertMessage', 'Usuário excluído com sucesso!', 'success');
             await loadData();
-            renderTable();
-            renderGrid();
+            refreshView();
         } catch (e: any) {
             UI.showAlert('alertMessage', e.message || 'Erro ao excluir usuário', 'error');
         }
@@ -310,12 +309,150 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Render Grid ---
     function renderGrid() {
-        // Grid was removed.
+        const grid = getById('usersGridSection');
+        if (!grid) return;
+
+        const filtered = getFiltered();
+        if (!filtered.length) {
+            grid.innerHTML = `<div class="col-span-full text-center py-8 text-sm text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-lg">Nenhum usuário encontrado.</div>`;
+            return;
+        }
+
+        grid.innerHTML = filtered.map((u) => {
+            const statusBadge = u.is_active
+                ? `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Ativo</span>`
+                : `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Inativo</span>`;
+
+            const avatarMarkup = u.photo_base64
+                ? `<img src="${u.photo_base64}" alt="${u.full_name}" class="w-16 h-16 rounded-full object-cover shrink-0 ring-2 ring-gray-100 dark:ring-slate-700 shadow-sm">`
+                : `<div class="w-16 h-16 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold text-xl shrink-0 ring-2 ring-gray-100 dark:ring-slate-700 shadow-sm">${String(u.full_name || 'U').charAt(0).toUpperCase()}</div>`;
+
+            const roleLabels: any = {
+                admin: 'Administrador',
+                user: 'Usuário',
+                operator: 'Operador',
+                financial: 'Financeiro',
+                manager: 'Gerente',
+                seller: 'Vendedor',
+                accountant: 'Contador',
+                buyer: 'Comprador',
+                service_provider: 'Prestador de Serviço',
+                super_admin: 'Super Admin',
+                admin_basic: 'Admin Básico'
+            };
+            const roleLabel = roleLabels[u.role] || u.role;
+
+            return `
+                <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col border border-gray-100 dark:border-slate-700 relative group transition-all duration-200 hover:shadow-md ${!u.is_active ? 'opacity-65' : ''}">
+                    <div class="mb-4 flex items-center gap-4">
+                        ${avatarMarkup}
+                        <div class="min-w-0 flex-1">
+                            <h4 class="text-base font-bold text-gray-900 dark:text-gray-100 truncate">${u.full_name}</h4>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">${roleLabel}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1.5 mb-4 text-sm text-gray-600 dark:text-gray-300">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            <span class="truncate text-xs" title="${u.email}">${u.email}</span>
+                        </div>
+                        ${u.phone ? `
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                            <span class="text-xs">${u.phone}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="mt-auto pt-3 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center text-xs text-gray-400">
+                        <div>${statusBadge}</div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" title="Editar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 edit-btn" data-id="${u.public_id}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </button>
+                            <button type="button" title="${u.is_active ? 'Inativar' : 'Ativar'}" class="text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 p-1.5 rounded-full status-btn" data-id="${u.public_id}" data-active="${u.is_active}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                            ${u.is_deletable ? `
+                            <button type="button" title="Excluir" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-1.5 rounded-full delete-btn" data-id="${u.public_id}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        grid.querySelectorAll('.edit-btn').forEach((btn: any) => {
+            btn.addEventListener('click', () => {
+                const user = filtered.find(u => u.public_id === btn.dataset.id);
+                if (user) openModalDeferred(user);
+            });
+        });
+        grid.querySelectorAll('.status-btn').forEach((btn: any) => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                const active = btn.dataset.active === 'true';
+                toggleStatus(id, !active);
+            });
+        });
+        grid.querySelectorAll('.delete-btn').forEach((btn: any) => {
+            btn.addEventListener('click', () => {
+                deleteUser(btn.dataset.id);
+            });
+        });
+    }
+
+    function refreshView() {
+        if (currentView === 'list') {
+            renderTable();
+        } else {
+            renderGrid();
+        }
     }
 
     // --- View toggle ---
     function setView(view: any) {
-        renderTable();
+        currentView = view;
+        localStorage.setItem('usersView', view);
+
+        const tableSection = getById('usersSection');
+        const gridSection = getById('usersGridSection');
+        const btnList = getById('btnListView');
+        const btnGrid = getById('btnGridView');
+
+        if (tableSection && gridSection) {
+            if (view === 'list') {
+                tableSection.classList.remove('hidden');
+                gridSection.classList.add('hidden');
+                gridSection.classList.remove('grid');
+            } else {
+                tableSection.classList.add('hidden');
+                gridSection.classList.remove('hidden');
+                gridSection.classList.add('grid');
+            }
+        }
+
+        const activeClasses = ["bg-brand-100", "dark:bg-brand-900/40", "text-brand-700", "dark:text-brand-300", "shadow-sm"];
+        const inactiveClasses = ["text-gray-500", "hover:text-gray-700", "dark:text-gray-400", "dark:hover:text-gray-200"];
+
+        if (btnList && btnGrid) {
+            if (view === 'list') {
+                btnList.classList.add(...activeClasses);
+                btnList.classList.remove(...inactiveClasses);
+                btnGrid.classList.add(...inactiveClasses);
+                btnGrid.classList.remove(...activeClasses);
+            } else {
+                btnGrid.classList.add(...activeClasses);
+                btnGrid.classList.remove(...inactiveClasses);
+                btnList.classList.add(...inactiveClasses);
+                btnList.classList.remove(...activeClasses);
+            }
+        }
+
+        refreshView();
     }
 
     // --- Modal ---
@@ -1024,8 +1161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             closeModal();
             UI.showAlert('alertMessage', `Usuário ${isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
             await loadData();
-            renderTable();
-            renderGrid();
+            refreshView();
         } catch (e: any) {
             UI.showAlert('alertMessage', e.message || 'Falha ao salvar usuário.', 'error');
         } finally {
@@ -1040,8 +1176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             await api(`/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ is_active: isActive }) });
             await loadData();
-            renderTable();
-            renderGrid();
+            refreshView();
         } catch (e: any) {
             UI.showAlert('alertMessage', e.message || 'Falha ao alterar status.', 'error');
         }
@@ -1083,16 +1218,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         searchDebounceTimer = setTimeout(() => {
             filters.search = nextSearch;
-            renderTable();
-            renderGrid();
+            refreshView();
             searchDebounceTimer = null;
         }, 180);
     });
 
     getById('filterRole')?.addEventListener('change', (e: any) => {
         filters.role = e.target.value;
-        renderTable();
-        renderGrid();
+        refreshView();
     });
 
     const photoFileInput = getById('userPhotoFile');

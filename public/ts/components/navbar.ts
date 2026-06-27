@@ -346,6 +346,9 @@ function initLogout() {
         localStorage.removeItem('erp_token');
         sessionStorage.removeItem('erp_token');
         localStorage.removeItem('bessa_swagger_token');
+        localStorage.removeItem('keystone_last_user_name');
+        localStorage.removeItem('keystone_last_company_name');
+        localStorage.removeItem('keystone_last_company_cnpj');
 
         closeLogoutModal();
         window.location.replace('/');
@@ -420,6 +423,20 @@ async function loadUserGreeting() {
     const greetingEl = document.getElementById('userGreeting');
     if (!greetingEl) return;
 
+    // Carrega dados do cache local imediatamente para evitar delay visual na tela
+    const cachedName = localStorage.getItem('keystone_last_user_name');
+    const cachedCompanyName = localStorage.getItem('keystone_last_company_name');
+    const cachedCompanyCnpj = localStorage.getItem('keystone_last_company_cnpj');
+    if (cachedName) {
+        greetingEl.textContent = `Olá, ${cachedName}`;
+    }
+    if (cachedCompanyName) {
+        window.SharedFooter?.setCompanyContext({
+            name: cachedCompanyName,
+            cnpj: cachedCompanyCnpj || '',
+        });
+    }
+
     try {
         if (typeof api !== 'undefined') {
             const data = await api('/auth/me');
@@ -431,6 +448,16 @@ async function loadUserGreeting() {
                 const greetingName = role === 'super_admin' && (!rawName || isGenericName)
                     ? 'Super Admin'
                     : (rawName || 'Usuário');
+
+                // Salva no cache local para a próxima carga de página
+                localStorage.setItem('keystone_last_user_name', greetingName);
+                if (data.data.company) {
+                    localStorage.setItem('keystone_last_company_name', data.data.company.trade_name || data.data.company.company_name || '');
+                    localStorage.setItem('keystone_last_company_cnpj', data.data.company.cnpj || '');
+                } else {
+                    localStorage.removeItem('keystone_last_company_name');
+                    localStorage.removeItem('keystone_last_company_cnpj');
+                }
 
                 gNavbarAuthContext = {
                     user: data.data.user || null,

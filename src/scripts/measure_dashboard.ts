@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import pool from '../config/db';
-import { FinanceService } from '../services/financeService';
 
 async function main() {
     console.log('--- PERFORMANCE MEASUREMENT FOR DASHBOARD ANALYTICS ---');
@@ -19,7 +18,7 @@ async function main() {
         
         const data = await FinanceReportRepository.getDashboardAnalytics(companyId, today);
         const end = performance.now();
-        console.log(`Run ${i}: Database getDashboardAnalytics took ${(end - start).toFixed(2)} ms`);
+        console.log(`Run ${i}: Database getDashboardAnalytics took ${(end - start).toFixed(2)} ms (Products: ${data.totalProducts})`);
     }
     
     await pool.end();

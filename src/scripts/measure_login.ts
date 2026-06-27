@@ -27,7 +27,7 @@ async function main() {
     console.log('\nMeasuring AuthService.login performance (5 runs):');
     for (let i = 1; i <= 5; i++) {
         const startLogin = performance.now();
-        const result = await AuthService.login({ email, passwordRaw: password });
+        await AuthService.login({ email, passwordRaw: password });
         const endLogin = performance.now();
         console.log(`Run ${i}: AuthService.login took ${(endLogin - startLogin).toFixed(2)} ms`);
     }

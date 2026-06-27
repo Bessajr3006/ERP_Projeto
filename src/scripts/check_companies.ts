@@ -15,11 +15,11 @@ async function main() {
         const [products] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) as count FROM products WHERE company_id = ?', [company.id]);
         const [customers] = await pool.query<RowDataPacket[]>('SELECT COUNT(*) as count FROM customers WHERE company_id = ?', [company.id]);
         
-        console.log(`  Users: ${users[0].count}`);
-        console.log(`  Transactions: ${transactions[0].count}`);
-        console.log(`  Sales Orders: ${sales[0].count}`);
-        console.log(`  Products: ${products[0].count}`);
-        console.log(`  Customers: ${customers[0].count}`);
+        console.log(`  Users: ${users[0]?.count ?? 0}`);
+        console.log(`  Transactions: ${transactions[0]?.count ?? 0}`);
+        console.log(`  Sales Orders: ${sales[0]?.count ?? 0}`);
+        console.log(`  Products: ${products[0]?.count ?? 0}`);
+        console.log(`  Customers: ${customers[0]?.count ?? 0}`);
     }
     
     await pool.end();

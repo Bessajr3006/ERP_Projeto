@@ -746,6 +746,16 @@ function initNotifications() {
         try {
             if (!gNavbarAuthContext.user || !Auth.isAuthenticated()) return;
 
+            const now = Date.now();
+            const lastCheck = Number(localStorage.getItem('last_recent_paid_check') || '0');
+            if (now - lastCheck < 300000) { // 5 minutes throttle
+                return;
+            }
+            localStorage.setItem('last_recent_paid_check', String(now));
+
+            // Recarrega do localStorage para evitar alertas duplicados em múltiplas abas abertas
+            lastNotifiedTransactions = JSON.parse(localStorage.getItem('last_notified_txs') || '[]');
+
             // 1. Verificar recebimentos recentes (PIX/Boleto)
             const result = await api('/finance/revenues/recent-paid');
 
@@ -771,9 +781,9 @@ function initNotifications() {
         }
     };
 
-    // Polling a cada 30 segundos para não sobrecarregar o banco
-    setInterval(pollBackgroundTasks, 30000);
-    pollBackgroundTasks(); // Primeira execução imediata
+    // Polling a cada 60 segundos
+    setInterval(pollBackgroundTasks, 60000);
+    pollBackgroundTasks(); // Executa na carga (respeitando o throttle de 5 min)
 
     // Ouvinte de Notificações Customizadas (Disparado por outros scripts como manifestation.js ou ordens de venda)
     window.addEventListener('add-notification', (e) => {

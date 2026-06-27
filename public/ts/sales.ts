@@ -342,7 +342,7 @@
                         </div>
                     </div>
                     <div class="p-6 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
-                        <button type="button" id="btnConfirmSale" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-black py-4 px-6 rounded-xl uppercase transition-all disabled:opacity-50">
+                        <button type="button" id="btnConfirmSale" ${state.saving ? 'disabled' : ''} class="w-full bg-brand-600 hover:bg-brand-700 text-white font-black py-4 px-6 rounded-xl uppercase transition-all disabled:opacity-50">
                             ${state.saving ? 'Processando...' : 'Confirmar Venda'}
                         </button>
                     </div>
@@ -819,6 +819,7 @@
     }
 
     async function confirmSale(): Promise<void> {
+      if (state.saving) return;
       if (getMissingAmount() > 0) return void alert(`Falta pagar ${formatCurrency(getMissingAmount())}`);
       if (!state.defaultBankPublicId || !state.defaultCategoryPublicId)
         return void alert('Configure o banco/categoria padrão.');

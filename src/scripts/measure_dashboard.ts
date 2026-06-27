@@ -13,7 +13,7 @@ async function main() {
         
         // We'll call the repository directly to bypass CacheService
         const { FinanceReportRepository } = require('../repositories/financeReportRepository');
-        const { toBrazilDate } = require('../utils/date');
+        const { toBrazilDate } = require('../utils/dateTime');
         const today = toBrazilDate(new Date());
         
         const data = await FinanceReportRepository.getDashboardAnalytics(companyId, today);

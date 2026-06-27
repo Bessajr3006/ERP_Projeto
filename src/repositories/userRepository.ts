@@ -10,14 +10,31 @@ function parseMissingColumnFromError(error: unknown): string | null {
     const match = String(err?.message || '').match(/Unknown column '([^']+)'/i);
     return match?.[1] || null;
 }
-
 async function ensureUserColumn(column: string): Promise<boolean> {
-    if (column !== 'default_page') {
-        return false;
+    try {
+        if (column === 'default_page') {
+            await pool.query('ALTER TABLE users ADD COLUMN default_page VARCHAR(100) DEFAULT NULL');
+            return true;
+        }
+        if (column === 'photo_base64') {
+            await pool.query('ALTER TABLE users ADD COLUMN photo_base64 LONGTEXT DEFAULT NULL');
+            return true;
+        }
+        if (column === 'photo_filename') {
+            await pool.query('ALTER TABLE users ADD COLUMN photo_filename VARCHAR(255) DEFAULT NULL');
+            return true;
+        }
+        if (column === 'crc') {
+            await pool.query('ALTER TABLE users ADD COLUMN crc VARCHAR(50) DEFAULT NULL');
+            return true;
+        }
+    } catch (err: any) {
+        if (err.code === 'ER_DUP_FIELDNAME' || err.errno === 1060) {
+            return true;
+        }
+        throw err;
     }
-
-    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS default_page VARCHAR(100) DEFAULT NULL');
-    return true;
+    return false;
 }
 
 function removeListItem<T>(list: T[], predicate: (item: T, index: number) => boolean): { list: T[]; removed: boolean } {
@@ -189,6 +206,8 @@ export class UserRepository {
             'whatsapp_auto_reply_mode',
             'role',
             'is_active',
+            'photo_base64',
+            'photo_filename',
             'created_at',
             '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];
@@ -247,6 +266,8 @@ export class UserRepository {
             'whatsapp_auto_reply_mode',
             'role',
             'is_active',
+            'photo_base64',
+            'photo_filename',
             'created_at',
             '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];
@@ -305,6 +326,8 @@ export class UserRepository {
             'whatsapp_auto_reply_mode',
             'role',
             'is_active',
+            'photo_base64',
+            'photo_filename',
             'created_at',
             '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];

@@ -321,6 +321,9 @@ function initLogout() {
         localStorage.removeItem('erp_token');
         sessionStorage.removeItem('erp_token');
         localStorage.removeItem('bessa_swagger_token');
+        localStorage.removeItem('keystone_last_user_name');
+        localStorage.removeItem('keystone_last_company_name');
+        localStorage.removeItem('keystone_last_company_cnpj');
         closeLogoutModal();
         window.location.replace('/');
     };
@@ -383,6 +386,19 @@ async function loadUserGreeting() {
     const greetingEl = document.getElementById('userGreeting');
     if (!greetingEl)
         return;
+    // Carrega dados do cache local imediatamente para evitar delay visual na tela
+    const cachedName = localStorage.getItem('keystone_last_user_name');
+    const cachedCompanyName = localStorage.getItem('keystone_last_company_name');
+    const cachedCompanyCnpj = localStorage.getItem('keystone_last_company_cnpj');
+    if (cachedName) {
+        greetingEl.textContent = `Olá, ${cachedName}`;
+    }
+    if (cachedCompanyName) {
+        window.SharedFooter?.setCompanyContext({
+            name: cachedCompanyName,
+            cnpj: cachedCompanyCnpj || '',
+        });
+    }
     try {
         if (typeof api !== 'undefined') {
             const data = await api('/auth/me');
@@ -394,6 +410,16 @@ async function loadUserGreeting() {
                 const greetingName = role === 'super_admin' && (!rawName || isGenericName)
                     ? 'Super Admin'
                     : (rawName || 'Usuário');
+                // Salva no cache local para a próxima carga de página
+                localStorage.setItem('keystone_last_user_name', greetingName);
+                if (data.data.company) {
+                    localStorage.setItem('keystone_last_company_name', data.data.company.trade_name || data.data.company.company_name || '');
+                    localStorage.setItem('keystone_last_company_cnpj', data.data.company.cnpj || '');
+                }
+                else {
+                    localStorage.removeItem('keystone_last_company_name');
+                    localStorage.removeItem('keystone_last_company_cnpj');
+                }
                 gNavbarAuthContext = {
                     user: data.data.user || null,
                     company: data.data.company || null,
@@ -674,6 +700,14 @@ function initNotifications() {
         try {
             if (!gNavbarAuthContext.user || !Auth.isAuthenticated())
                 return;
+            const now = Date.now();
+            const lastCheck = Number(localStorage.getItem('last_recent_paid_check') || '0');
+            if (now - lastCheck < 300000) { // 5 minutes throttle
+                return;
+            }
+            localStorage.setItem('last_recent_paid_check', String(now));
+            // Recarrega do localStorage para evitar alertas duplicados em múltiplas abas abertas
+            lastNotifiedTransactions = JSON.parse(localStorage.getItem('last_notified_txs') || '[]');
             // 1. Verificar recebimentos recentes (PIX/Boleto)
             const result = await api('/finance/revenues/recent-paid');
             if (result?.status === 'success' && Array.isArray(result.data)) {
@@ -699,9 +733,9 @@ function initNotifications() {
             console.warn('Erro no polling de notificações:', err);
         }
     };
-    // Polling a cada 30 segundos para não sobrecarregar o banco
-    setInterval(pollBackgroundTasks, 30000);
-    pollBackgroundTasks(); // Primeira execução imediata
+    // Polling a cada 60 segundos
+    setInterval(pollBackgroundTasks, 60000);
+    pollBackgroundTasks(); // Executa na carga (respeitando o throttle de 5 min)
     // Ouvinte de Notificações Customizadas (Disparado por outros scripts como manifestation.js ou ordens de venda)
     window.addEventListener('add-notification', (e) => {
         const { title, message, type } = e.detail;

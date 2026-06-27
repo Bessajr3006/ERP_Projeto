@@ -23,6 +23,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     let waSessionLoadedOnce: boolean = false;
     let editingUserData: any = null;
     let editingUserWhatsAppAutoReplyMode: 'automatic' | 'manual' = 'automatic';
+    let selectedPhotoFile: File | null = null;
+    let selectedPhotoBase64: string | null = null;
+    let photoMarkedForRemoval = false;
+    let cameraStream: MediaStream | null = null;
+    let originalPhotoSrc: string | null = null;
+    let zoomPercent = 100;
+    let panX = 0;
+    let panY = 0;
+    let isDraggingPhoto = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let imgWidth = 0;
+    let imgHeight = 0;
+    const USER_PHOTO_ALLOWED_TYPES = new Set(['image/png', 'image/jpg', 'image/jpeg', 'image/webp']);
+    const USER_PHOTO_MAX_BYTES = 2 * 1024 * 1024; // 2MB
     let waSession: any = {
         status: 'idle',
         persisted_session: false,
@@ -222,14 +237,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         tbody.innerHTML = filtered.map(u => `
             <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 ${!u.is_active ? 'opacity-60' : ''}">
                 <td class="px-6 py-4 text-sm whitespace-nowrap">
-                    <div class="font-semibold text-gray-900 dark:text-gray-100">${u.full_name}</div>
-                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        <span class="font-mono text-[10px] select-all">${u.public_id}</span>
-                        <button type="button" class="view-id-btn text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transform transition-all duration-200 ease-out" data-id="${u.public_id}" title="Copiar ID: ${u.public_id}">
-                            <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
-                            </svg>
-                        </button>
+                    <div class="flex items-center gap-3">
+                        ${u.photo_base64
+                            ? `<img src="${u.photo_base64}" alt="${u.full_name}" class="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-gray-200 dark:ring-slate-700">`
+                            : `<div class="w-8 h-8 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-gray-200 dark:ring-slate-700">${String(u.full_name || 'U').charAt(0).toUpperCase()}</div>`
+                        }
+                        <div>
+                            <div class="font-semibold text-gray-900 dark:text-gray-100">${u.full_name}</div>
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                <span class="font-mono text-[10px] select-all">${u.public_id}</span>
+                                <button type="button" class="view-id-btn text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transform transition-all duration-200 ease-out" data-id="${u.public_id}" title="Copiar ID: ${u.public_id}">
+                                    <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </td>
                 <td class="px-6 py-4 text-sm">
@@ -321,7 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         populateRoleSelects();
         getById('formRole').value = user?.role || '';
 
-        // WhatsApp/Email tabs
+        // WhatsApp/Email/Photo tabs
         const tabsList = getById('userModalTabs');
         const existingWaTab = tabsList.querySelector('[data-tab="whatsapp"]')?.closest('li');
         if (existingWaTab) existingWaTab.remove();
@@ -329,14 +352,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         const existingEmailTab = tabsList.querySelector('[data-tab="email"]')?.closest('li');
         if (existingEmailTab) existingEmailTab.remove();
 
-        if (user) {
-            const liWhatsapp = document.createElement('li');
-            liWhatsapp.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp</button>`;
-            tabsList.appendChild(liWhatsapp);
-            
-            const liEmail = document.createElement('li');
-            liEmail.innerHTML = `<button type="button" data-tab="email" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">E-mail</button>`;
-            tabsList.appendChild(liEmail);
+        const existingPhotoTab = tabsList.querySelector('[data-tab="photo"]')?.closest('li');
+        if (existingPhotoTab) existingPhotoTab.remove();
+
+        const liWhatsapp = document.createElement('li');
+        liWhatsapp.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp</button>`;
+        tabsList.appendChild(liWhatsapp);
+        
+        const liEmail = document.createElement('li');
+        liEmail.innerHTML = `<button type="button" data-tab="email" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">E-mail</button>`;
+        tabsList.appendChild(liEmail);
+
+        const liPhoto = document.createElement('li');
+        liPhoto.innerHTML = `<button type="button" data-tab="photo" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">Foto</button>`;
+        tabsList.appendChild(liPhoto);
+
+        // Reset photo upload fields
+        selectedPhotoFile = null;
+        selectedPhotoBase64 = null;
+        photoMarkedForRemoval = false;
+        
+        const photoFileInput = getById('userPhotoFile') as HTMLInputElement | null;
+        if (photoFileInput) photoFileInput.value = '';
+        
+        if (user && user.photo_base64) {
+            setUserPhotoPreviewState({
+                src: user.photo_base64,
+                fileName: user.photo_filename || 'foto_usuario.png',
+                showPreview: true
+            });
+        } else {
+            setUserPhotoPreviewState();
         }
 
         switchTab('data');
@@ -360,7 +406,157 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearWaPolling();
         waSessionLoadedOnce = false;
         editingUserId = null;
+        
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        
+        const cameraContainer = getById('userCameraContainer');
+        const uploadContainer = getById('userPhotoUploadContainer');
+        const adjustContainer = getById('userPhotoAdjustmentContainer');
+        if (cameraContainer) {
+            cameraContainer.classList.add('hidden');
+            cameraContainer.classList.remove('flex');
+        }
+        if (adjustContainer) {
+            adjustContainer.classList.add('hidden');
+            adjustContainer.classList.remove('flex');
+        }
+        if (uploadContainer) uploadContainer.classList.remove('hidden');
+        
         getById('userModal').classList.add('hidden');
+    }
+
+    interface UserPhotoState {
+        src?: string;
+        fileName?: string;
+        showPreview?: boolean;
+    }
+
+    function setUserPhotoPreviewState(state: UserPhotoState = {}) {
+        const preview = getById('userPhotoPreview') as HTMLImageElement | null;
+        const container = getById('userPhotoPreviewContainer');
+        const actions = getById('userPhotoActions');
+        const fileNameLabel = getById('userPhotoFileName');
+        const photoInfo = getById('userPhotoInfo');
+
+        if (!preview) return;
+
+        if (state.showPreview && state.src) {
+            preview.src = state.src;
+            preview.classList.remove('hidden');
+            if (container) container.classList.add('opacity-0');
+            if (actions) {
+                actions.classList.remove('hidden');
+                actions.classList.add('flex');
+            }
+            if (fileNameLabel) fileNameLabel.textContent = state.fileName || 'foto.png';
+            if (photoInfo) photoInfo.textContent = 'Foto carregada.';
+        } else {
+            preview.src = '';
+            preview.classList.add('hidden');
+            if (container) container.classList.remove('opacity-0');
+            if (actions) {
+                actions.classList.add('hidden');
+                actions.classList.remove('flex');
+            }
+            if (fileNameLabel) fileNameLabel.textContent = '';
+            if (photoInfo) {
+                photoInfo.textContent = photoMarkedForRemoval
+                    ? 'Ao salvar, a foto atual será removida.'
+                    : 'Nenhuma foto salva.';
+            }
+        }
+    }
+
+    function startPhotoAdjustment(base64: string) {
+        originalPhotoSrc = base64;
+        const img = getById('userPhotoToAdjust') as HTMLImageElement | null;
+        if (img) {
+            img.onload = () => {
+                imgWidth = img.naturalWidth;
+                imgHeight = img.naturalHeight;
+                zoomPercent = 100;
+                panX = 0;
+                panY = 0;
+                const slider = getById('userPhotoZoomSlider');
+                if (slider) slider.value = '100';
+                updateAdjustedImageStyle();
+            };
+            img.src = base64;
+        }
+
+        const adjustContainer = getById('userPhotoAdjustmentContainer');
+        const uploadContainer = getById('userPhotoUploadContainer');
+        if (adjustContainer) {
+            adjustContainer.classList.remove('hidden');
+            adjustContainer.classList.add('flex');
+        }
+        if (uploadContainer) uploadContainer.classList.add('hidden');
+    }
+
+    function updateAdjustedImageStyle() {
+        const img = getById('userPhotoToAdjust') as HTMLImageElement | null;
+        if (!img) return;
+
+        const scale = zoomPercent / 100;
+        let displayWidth = 192;
+        let displayHeight = 192;
+
+        if (imgWidth && imgHeight) {
+            const aspect = imgWidth / imgHeight;
+            if (aspect > 1) {
+                displayHeight = 192;
+                displayWidth = 192 * aspect;
+            } else {
+                displayWidth = 192;
+                displayHeight = 192 / aspect;
+            }
+        }
+
+        const finalWidth = displayWidth * scale;
+        const finalHeight = displayHeight * scale;
+
+        const minPanX = 192 - finalWidth;
+        const minPanY = 192 - finalHeight;
+
+        if (panX > 0) panX = 0;
+        if (panY > 0) panY = 0;
+        if (panX < minPanX) panX = minPanX;
+        if (panY < minPanY) panY = minPanY;
+
+        img.style.width = `${finalWidth}px`;
+        img.style.height = `${finalHeight}px`;
+        img.style.left = `${panX}px`;
+        img.style.top = `${panY}px`;
+    }
+
+    function applyUserPhotoFile(file: File | undefined) {
+        if (!file) return;
+
+        if (!USER_PHOTO_ALLOWED_TYPES.has(file.type)) {
+            UI.showAlert('alertMessage', 'Formato de foto inválido. Use PNG, JPG, JPEG ou WEBP.', 'error');
+            const fileInput = getById('userPhotoFile');
+            if (fileInput) fileInput.value = '';
+            return;
+        }
+
+        if (file.size > USER_PHOTO_MAX_BYTES) {
+            UI.showAlert('alertMessage', 'A foto deve ter no máximo 2MB.', 'error');
+            const fileInput = getById('userPhotoFile');
+            if (fileInput) fileInput.value = '';
+            return;
+        }
+
+        selectedPhotoFile = file;
+        photoMarkedForRemoval = false;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            startPhotoAdjustment(String(evt.target?.result || ''));
+        };
+        reader.readAsDataURL(file);
+        UI.hideAlert('alertMessage');
     }
 
     function switchTab(tab: any) {
@@ -369,11 +565,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tabData      = getById('tabData');
         const tabWhatsapp  = getById('tabWhatsapp');
         const tabEmail     = getById('tabEmail');
+        const tabPhoto     = getById('tabPhoto');
         const footer       = getById('userModalFooter');
 
         if (tabData) tabData.classList.toggle('hidden', tab !== 'data');
         if (tabWhatsapp) tabWhatsapp.classList.toggle('hidden', tab !== 'whatsapp');
         if (tabEmail) tabEmail.classList.toggle('hidden', tab !== 'email');
+        if (tabPhoto) tabPhoto.classList.toggle('hidden', tab !== 'photo');
         footer.classList.remove('hidden');
 
         qsa('.tab-btn').forEach((btn: any) => {
@@ -386,11 +584,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (tab === 'whatsapp') {
             renderWhatsappContent();
-            if (!waSessionLoadedOnce) {
-                waSessionLoadedOnce = true;
-                void loadWaSession({ autoStart: true });
-            } else {
-                scheduleWaPolling();
+            if (editingUserId) {
+                if (!waSessionLoadedOnce) {
+                    waSessionLoadedOnce = true;
+                    void loadWaSession({ autoStart: true });
+                } else {
+                    scheduleWaPolling();
+                }
+            }
+        } else if (tab === 'email') {
+            const hasUser = !!editingUserId;
+            const saveEmailBtn = getById('saveUserEmailConfigBtn');
+            if (saveEmailBtn) {
+                saveEmailBtn.classList.toggle('hidden', !hasUser);
+            }
+            let newNotice = getById('emailCreationNotice');
+            if (!newNotice) {
+                newNotice = document.createElement('p');
+                newNotice.id = 'emailCreationNotice';
+                newNotice.className = 'text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium italic';
+                newNotice.textContent = '* As configurações de e-mail serão salvas automaticamente junto com os dados básicos do usuário.';
+                saveEmailBtn?.parentNode?.appendChild(newNotice);
+            }
+            newNotice.classList.toggle('hidden', hasUser);
+
+            if (hasUser) {
+                void loadUserEmailConfig(editingUserId!);
             }
         }
     }
@@ -408,13 +627,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = getById('whatsappContent');
         if (!container) return;
 
+        const isNewUser = !editingUserId;
         const statusMeta  = getWaStatusMeta();
-        const hasQr       = !!waSession.qr_code_data_url;
-        const hasPairingCode = !!waSession.pairing_code;
-        const isBusy      = waSession.status === 'initializing';
-        const connectedNumberDisplay = formatConnectedNumber();
-        const connectedNumberDigits = resolveConnectedNumber();
-        const lastEventAt = waSession.last_event_at
+        const hasQr       = !isNewUser && !!waSession.qr_code_data_url;
+        const hasPairingCode = !isNewUser && !!waSession.pairing_code;
+        const isBusy      = !isNewUser && waSession.status === 'initializing';
+        const connectedNumberDisplay = isNewUser ? 'Não disponível' : formatConnectedNumber();
+        const connectedNumberDigits = isNewUser ? '' : resolveConnectedNumber();
+        const lastEventAt = !isNewUser && waSession.last_event_at
             ? new Date(waSession.last_event_at).toLocaleString('pt-BR')
             : null;
 
@@ -422,7 +642,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="max-w-2xl mx-auto w-full">
                 <div class="flex justify-between items-center mb-4">
                     <h4 class="text-base font-semibold dark:text-white">WhatsApp Business</h4>
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusMeta.badgeClass}">${statusMeta.label}</span>
+                    ${isNewUser ? '' : `<span class="px-3 py-1 rounded-full text-xs font-semibold ${statusMeta.badgeClass}">${statusMeta.label}</span>`}
                 </div>
                 <div class="p-4 bg-gray-50 dark:bg-slate-900/30 rounded-xl border dark:border-slate-700">
                     <div class="space-y-4">
@@ -442,51 +662,64 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">No modo automático, o sistema responde e monta pedidos sozinho. No modo manual, o WhatsApp continua recebendo e enviando mensagens sem auto-resposta.</p>
                         </div>
-                        <div class="grid grid-cols-[1.7fr,0.8fr] gap-5">
-                            <div class="space-y-3">
-                                <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700 text-sm dark:text-gray-300">${statusMeta.helper}</div>
-                                <div class="grid grid-cols-2 gap-3 text-sm">
-                                    <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700">
-                                        <div class="text-xs uppercase tracking-wide text-gray-400 mb-1">Número conectado</div>
-                                        <div class="font-medium dark:text-white">${connectedNumberDisplay}</div>
-                                    </div>
-                                    <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700">
-                                        <div class="text-xs uppercase tracking-wide text-gray-400 mb-1">Última atualização</div>
-                                        <div class="font-medium dark:text-white">${lastEventAt || 'Aguardando'}</div>
-                                    </div>
+                        
+                        ${isNewUser ? `
+                            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-sm text-yellow-700 dark:text-yellow-400 flex items-start gap-3">
+                                <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div>
+                                    <p class="font-medium">Pareamento temporariamente indisponível</p>
+                                    <p class="mt-1 text-xs opacity-90">A conexão (leitura do QR Code ou código de pareamento) estará disponível assim que você salvar este novo usuário.</p>
                                 </div>
-                                <div class="flex gap-2">
-                                    <button type="button" id="btnStartWa" class="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700 transition-colors" ${isBusy ? 'disabled' : ''}>${isBusy ? 'Gerando QR...' : 'Iniciar Sessão'}</button>
-                                    <button type="button" id="btnDisconnectWa" class="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">Desconectar</button>
-                                </div>
-                                <div class="grid grid-cols-[1fr,auto] gap-2 items-end">
-                                    <div>
-                                        <label for="waPairPhone" class="block text-xs uppercase tracking-wide text-gray-400 mb-1">Parear por telefone (DDI + DDD + numero)</label>
-                                        <input type="tel" id="waPairPhone" placeholder="Ex: 5511999999999" value="${connectedNumberDigits}" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100" />
-                                    </div>
-                                    <button type="button" id="btnPairWa" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition-colors" ${isBusy ? 'disabled' : ''}>Gerar codigo</button>
-                                </div>
-                                ${waSession.last_error ? `<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">${waSession.last_error}</div>` : ''}
                             </div>
-                            <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-dashed dark:border-slate-700 flex flex-col items-center justify-center gap-2 min-h-56">
-                                ${hasPairingCode ? `
-                                    <div class="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-4 text-center">
-                                        <div class="text-xs uppercase tracking-wide text-indigo-600">Codigo de pareamento</div>
-                                        <div class="mt-2 text-3xl font-bold tracking-widest text-indigo-700">${waSession.pairing_code}</div>
+                        ` : `
+                            <div class="grid grid-cols-[1.7fr,0.8fr] gap-5">
+                                <div class="space-y-3">
+                                    <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700 text-sm dark:text-gray-300">${statusMeta.helper}</div>
+                                    <div class="grid grid-cols-2 gap-3 text-sm">
+                                        <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700">
+                                            <div class="text-xs uppercase tracking-wide text-gray-400 mb-1">Número conectado</div>
+                                            <div class="font-medium dark:text-white">${connectedNumberDisplay}</div>
+                                        </div>
+                                        <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border dark:border-slate-700">
+                                            <div class="text-xs uppercase tracking-wide text-gray-400 mb-1">Última atualização</div>
+                                            <div class="font-medium dark:text-white">${lastEventAt || 'Aguardando'}</div>
+                                        </div>
                                     </div>
-                                    <p class="text-xs text-center text-gray-500 dark:text-gray-400">No celular: WhatsApp > Dispositivos conectados > Conectar com numero de telefone.</p>
-                                ` : hasQr ? `
-                                    <div class="flex items-center justify-center rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-gray-100">
-                                        <img src="${waSession.qr_code_data_url}" alt="QR Code WhatsApp" class="block rounded-lg" style="width: 200px; height: 200px; image-rendering: pixelated;">
+                                    <div class="flex gap-2">
+                                        <button type="button" id="btnStartWa" class="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-700 transition-colors" ${isBusy ? 'disabled' : ''}>${isBusy ? 'Gerando QR...' : 'Iniciar Sessão'}</button>
+                                        <button type="button" id="btnDisconnectWa" class="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">Desconectar</button>
                                     </div>
-                                    <p class="text-xs text-center text-gray-500 dark:text-gray-400">Escaneie com o WhatsApp no celular. Se expirar, clique em Iniciar Sessão.</p>
-                                ` : `
-                                    <div class="flex items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/40 px-4 text-center" style="width: 200px; height: 200px;">
-                                        <span class="text-xs text-gray-400">O QR Code aparecerá aqui após iniciar a sessão.</span>
+                                    <div class="grid grid-cols-[1fr,auto] gap-2 items-end">
+                                        <div>
+                                            <label for="waPairPhone" class="block text-xs uppercase tracking-wide text-gray-400 mb-1">Parear por telefone (DDI + DDD + numero)</label>
+                                            <input type="tel" id="waPairPhone" placeholder="Ex: 5511999999999" value="${connectedNumberDigits}" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100" />
+                                        </div>
+                                        <button type="button" id="btnPairWa" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition-colors" ${isBusy ? 'disabled' : ''}>Gerar codigo</button>
                                     </div>
-                                `}
+                                    ${waSession.last_error ? `<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">${waSession.last_error}</div>` : ''}
+                                </div>
+                                <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-dashed dark:border-slate-700 flex flex-col items-center justify-center gap-2 min-h-56">
+                                    ${hasPairingCode ? `
+                                        <div class="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-4 text-center">
+                                            <div class="text-xs uppercase tracking-wide text-indigo-600">Codigo de pareamento</div>
+                                            <div class="mt-2 text-3xl font-bold tracking-widest text-indigo-700">${waSession.pairing_code}</div>
+                                        </div>
+                                        <p class="text-xs text-center text-gray-500 dark:text-gray-400">No celular: WhatsApp > Dispositivos conectados > Conectar com numero de telefone.</p>
+                                    ` : hasQr ? `
+                                        <div class="flex items-center justify-center rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-gray-100">
+                                            <img src="${waSession.qr_code_data_url}" alt="QR Code WhatsApp" class="block rounded-lg" style="width: 200px; height: 200px; image-rendering: pixelated;">
+                                        </div>
+                                        <p class="text-xs text-center text-gray-500 dark:text-gray-400">Escaneie com o WhatsApp no celular. Se expirar, clique em Iniciar Sessão.</p>
+                                    ` : `
+                                        <div class="flex items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/40 px-4 text-center" style="width: 200px; height: 200px;">
+                                            <span class="text-xs text-gray-400">O QR Code aparecerá aqui após iniciar a sessão.</span>
+                                        </div>
+                                    `}
+                                </div>
                             </div>
-                        </div>
+                        `}
                     </div>
                 </div>
             </div>
@@ -702,7 +935,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const userId   = getById('userId').value;
         const isEdit   = Boolean(userId);
-        const payload  = {
+        const payload: any  = {
             full_name:    getById('formFullName').value.trim(),
             email:        getById('formEmail').value.trim(),
             phone:        getById('formPhone').value.trim(),
@@ -711,6 +944,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             default_page: getById('formDefaultPage').value,
             whatsapp_auto_reply_mode: (getById('formWhatsAppAutoReplyMode')?.value || editingUserWhatsAppAutoReplyMode || editingUserData?.whatsapp_auto_reply_mode || 'automatic'),
         };
+
+        if (selectedPhotoBase64) {
+            payload.photo_base64 = selectedPhotoBase64;
+            payload.photo_filename = selectedPhotoFile ? selectedPhotoFile.name : 'foto.png';
+        } else if (photoMarkedForRemoval) {
+            payload.photo_base64 = null;
+            payload.photo_filename = null;
+        }
 
         // Remove campos opcionais vazios para não falhar na validação do backend
         if (!payload.passwordRaw) delete payload.passwordRaw;
@@ -749,6 +990,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (savedUser && (savedUser.default_page || null) !== selectedDefaultPage) {
                 throw new Error('A página inicial após login não foi gravada. Verifique se a migração do campo default_page foi aplicada no banco.');
+            }
+
+            if (savedUser && !isEdit) {
+                const smtpHost = getById('userSmtpHost').value.trim();
+                const smtpUser = getById('userSmtpUser').value.trim();
+                if (smtpHost && smtpUser) {
+                    const emailPayload = {
+                        smtp_host: smtpHost,
+                        smtp_port: parseInt(getById('userSmtpPort').value) || 587,
+                        smtp_secure: getById('userSmtpSecure').checked,
+                        imap_host: getById('userImapHost').value.trim(),
+                        imap_port: parseInt(getById('userImapPort').value) || 993,
+                        imap_secure: getById('userImapSecure').checked,
+                        smtp_user: smtpUser,
+                        smtp_password: getById('userSmtpPassword').value,
+                        sender_name: getById('userSenderName').value.trim(),
+                        sender_email: getById('userSenderEmail').value.trim(),
+                        is_active: getById('userEmailIsActive').checked
+                    };
+                    
+                    try {
+                        await api(`/users/${savedUser.public_id}/email-config`, {
+                            method: 'POST',
+                            body: JSON.stringify(emailPayload)
+                        });
+                    } catch (emailErr) {
+                        console.error('Erro ao salvar configuração de e-mail inicial:', emailErr);
+                    }
+                }
             }
 
             closeModal();
@@ -823,6 +1093,232 @@ document.addEventListener('DOMContentLoaded', async () => {
         filters.role = e.target.value;
         renderTable();
         renderGrid();
+    });
+
+    const photoFileInput = getById('userPhotoFile');
+    photoFileInput?.addEventListener('change', (event: any) => {
+        applyUserPhotoFile(event.target?.files?.[0]);
+    });
+
+    const photoDropzone = getById('userPhotoDropzone');
+    if (photoDropzone) {
+        ['dragenter', 'dragover'].forEach((eventName) => {
+            photoDropzone.addEventListener(eventName, (event: any) => {
+                event.preventDefault();
+                event.stopPropagation();
+                photoDropzone.classList.add('border-brand-500', 'bg-brand-50/20');
+            });
+        });
+        ['dragleave', 'drop'].forEach((eventName) => {
+            photoDropzone.addEventListener(eventName, (event: any) => {
+                event.preventDefault();
+                event.stopPropagation();
+                photoDropzone.classList.remove('border-brand-500', 'bg-brand-50/20');
+            });
+        });
+        photoDropzone.addEventListener('drop', (event: any) => {
+            applyUserPhotoFile(event.dataTransfer?.files?.[0]);
+        });
+    }
+
+    getById('btnRemoveUserPhoto')?.addEventListener('click', () => {
+        selectedPhotoFile = null;
+        selectedPhotoBase64 = null;
+        photoMarkedForRemoval = true;
+        const fileInput = getById('userPhotoFile');
+        if (fileInput) fileInput.value = '';
+        setUserPhotoPreviewState();
+    });
+
+    getById('btnOpenCamera')?.addEventListener('click', async () => {
+        const cameraContainer = getById('userCameraContainer');
+        const uploadContainer = getById('userPhotoUploadContainer');
+        const video = getById('userCameraVideo') as HTMLVideoElement | null;
+        
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                },
+                audio: false
+            });
+            
+            if (video) {
+                video.srcObject = stream;
+                cameraStream = stream;
+            }
+            
+            if (cameraContainer) {
+                cameraContainer.classList.remove('hidden');
+                cameraContainer.classList.add('flex');
+            }
+            if (uploadContainer) uploadContainer.classList.add('hidden');
+            UI.hideAlert('alertMessage');
+        } catch (err: any) {
+            console.error('Erro ao acessar a camera:', err);
+            UI.showAlert('alertMessage', 'Não foi possível acessar a câmera. Verifique as permissões do navegador.', 'error');
+        }
+    });
+
+    getById('btnCancelCamera')?.addEventListener('click', () => {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        const cameraContainer = getById('userCameraContainer');
+        const uploadContainer = getById('userPhotoUploadContainer');
+        if (cameraContainer) {
+            cameraContainer.classList.add('hidden');
+            cameraContainer.classList.remove('flex');
+        }
+        if (uploadContainer) uploadContainer.classList.remove('hidden');
+    });
+
+    getById('btnCaptureCamera')?.addEventListener('click', () => {
+        const video = getById('userCameraVideo') as HTMLVideoElement | null;
+        if (video) {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const capturedBase64 = canvas.toDataURL('image/jpeg', 0.9);
+                startPhotoAdjustment(capturedBase64);
+            }
+        }
+        
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        const cameraContainer = getById('userCameraContainer');
+        if (cameraContainer) {
+            cameraContainer.classList.add('hidden');
+            cameraContainer.classList.remove('flex');
+        }
+    });
+
+    const cropFrame = getById('userPhotoCropFrame');
+    if (cropFrame) {
+        const startDrag = (clientX: number, clientY: number) => {
+            isDraggingPhoto = true;
+            dragStartX = clientX - panX;
+            dragStartY = clientY - panY;
+        };
+
+        const moveDrag = (clientX: number, clientY: number) => {
+            if (!isDraggingPhoto) return;
+            panX = clientX - dragStartX;
+            panY = clientY - dragStartY;
+            updateAdjustedImageStyle();
+        };
+
+        const endDrag = () => {
+            isDraggingPhoto = false;
+        };
+
+        cropFrame.addEventListener('mousedown', (e: MouseEvent) => {
+            startDrag(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e: MouseEvent) => {
+            moveDrag(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', endDrag);
+
+        cropFrame.addEventListener('touchstart', (e: TouchEvent) => {
+            const touch = e.touches[0];
+            if (touch) startDrag(touch.clientX, touch.clientY);
+        });
+        window.addEventListener('touchmove', (e: TouchEvent) => {
+            const touch = e.touches[0];
+            if (touch) moveDrag(touch.clientX, touch.clientY);
+        });
+        window.addEventListener('touchend', endDrag);
+    }
+
+    getById('userPhotoZoomSlider')?.addEventListener('input', (e: any) => {
+        zoomPercent = parseInt(e.target.value) || 100;
+        updateAdjustedImageStyle();
+    });
+
+    getById('btnCancelAdjustment')?.addEventListener('click', () => {
+        getById('userPhotoAdjustmentContainer')?.classList.add('hidden');
+        getById('userPhotoAdjustmentContainer')?.classList.remove('flex');
+        getById('userPhotoUploadContainer')?.classList.remove('hidden');
+        
+        selectedPhotoFile = null;
+        selectedPhotoBase64 = null;
+        photoMarkedForRemoval = true;
+        const fileInput = getById('userPhotoFile');
+        if (fileInput) fileInput.value = '';
+        setUserPhotoPreviewState();
+    });
+
+    getById('btnConfirmAdjustment')?.addEventListener('click', () => {
+        const img = getById('userPhotoToAdjust') as HTMLImageElement | null;
+        if (!img || !originalPhotoSrc) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            const scale = zoomPercent / 100;
+            let displayWidth = 192;
+            let displayHeight = 192;
+
+            if (imgWidth && imgHeight) {
+                const aspect = imgWidth / imgHeight;
+                if (aspect > 1) {
+                    displayHeight = 192;
+                    displayWidth = 192 * aspect;
+                } else {
+                    displayWidth = 192;
+                    displayHeight = 192 / aspect;
+                }
+            }
+
+            const finalWidth = displayWidth * scale;
+            const finalHeight = displayHeight * scale;
+            const ratio = 256 / 192;
+
+            const imageObj = new Image();
+            imageObj.onload = () => {
+                ctx.clearRect(0, 0, 256, 256);
+                
+                // Draw circular clipping path on canvas
+                ctx.beginPath();
+                ctx.arc(128, 128, 128, 0, Math.PI * 2, true);
+                ctx.closePath();
+                ctx.clip();
+                
+                ctx.drawImage(
+                    imageObj,
+                    panX * ratio,
+                    panY * ratio,
+                    finalWidth * ratio,
+                    finalHeight * ratio
+                );
+
+                selectedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.9);
+                selectedPhotoFile = null;
+                photoMarkedForRemoval = false;
+
+                setUserPhotoPreviewState({
+                    src: selectedPhotoBase64,
+                    fileName: 'foto_ajustada.jpg',
+                    showPreview: true
+                });
+                
+                getById('userPhotoAdjustmentContainer')?.classList.add('hidden');
+                getById('userPhotoAdjustmentContainer')?.classList.remove('flex');
+                getById('userPhotoUploadContainer')?.classList.remove('hidden');
+            };
+            imageObj.src = originalPhotoSrc;
+        }
     });
 });
 

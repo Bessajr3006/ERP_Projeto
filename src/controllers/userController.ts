@@ -54,6 +54,8 @@ const createUserSchema = z.object({
     city: optionalTrimmedString(100),
     state: optionalTrimmedString(50),
     default_page: optionalNullableTrimmedString(100),
+    photo_base64: z.string().optional().nullable(),
+    photo_filename: z.string().optional().nullable(),
     whatsapp_auto_reply_mode: whatsappAutoReplyModeSchema.optional().default('automatic'),
 });
 
@@ -74,6 +76,8 @@ const updateUserSchema = z.object({
     city: optionalTrimmedString(100),
     state: optionalTrimmedString(50),
     default_page: optionalNullableTrimmedString(100),
+    photo_base64: z.string().optional().nullable(),
+    photo_filename: z.string().optional().nullable(),
     whatsapp_auto_reply_mode: whatsappAutoReplyModeSchema.optional(),
 });
 

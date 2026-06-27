@@ -17,6 +17,8 @@ export const PublicUserSchema = z.object({
     city: z.string().nullable().optional(),
     state: z.string().nullable().optional(),
     default_page: z.string().nullable().optional(),
+    photo_base64: z.string().nullable().optional(),
+    photo_filename: z.string().nullable().optional(),
     whatsapp_auto_reply_mode: z.enum(['automatic', 'manual']).nullable().optional(),
     role: UserRoleSchema,
     is_active: z.boolean().or(z.number().transform(val => Boolean(val))),

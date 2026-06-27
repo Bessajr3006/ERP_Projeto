@@ -6,7 +6,7 @@ import { PublicUserSchema, PublicUserListSchema, ScopedUserSchema } from '../sch
 import { UserRepository } from '../repositories/userRepository';
 
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || '10', 10);
-const USER_PROFILE_FIELDS = ['cpf_cnpj', 'crc', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page'] as const;
+const USER_PROFILE_FIELDS = ['cpf_cnpj', 'crc', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page', 'photo_base64', 'photo_filename'] as const;
 const WHATSAPP_AUTO_REPLY_MODES = ['automatic', 'manual'] as const;
 
 type UserProfileField = typeof USER_PROFILE_FIELDS[number];
@@ -94,7 +94,7 @@ export class UserService {
         const columns = [
             'public_id', 'company_id', 'email', 'password_hash', 'raw_password', 'full_name',
             'cpf_cnpj', 'crc', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page', 'whatsapp_auto_reply_mode',
-            'role', 'is_active'
+            'role', 'is_active', 'photo_base64', 'photo_filename'
         ];
         const placeholders = columns.map(() => '?');
         const values = [
@@ -118,6 +118,8 @@ export class UserService {
             whatsappAutoReplyMode,
             role,
             is_active,
+            profile.photo_base64,
+            profile.photo_filename,
         ];
 
         await UserRepository.create(columns, placeholders, values);

@@ -579,6 +579,7 @@ async function loadUserGreeting() {
                     // Mapeamento de página para módulo de permissão
                     'stock-vision': 'stock_vision',
                     'finance-vision': 'finance_vision',
+                    'receivable-types': 'receivable_types',
                 };
                 const normalizeModule = (name?: string) => {
                     const value = String(name || '').trim();
@@ -593,6 +594,9 @@ async function loadUserGreeting() {
                     }
                     if (moduleName === 'stock_types') {
                         return 'stock-types';
+                    }
+                    if (moduleName === 'receivable_types') {
+                        return 'receivable-types';
                     }
                     return moduleName;
                 };

@@ -12,9 +12,10 @@
     const getEl = (id) => document.getElementById(id);
     document.addEventListener('DOMContentLoaded', () => {
         void init();
-        let currentView = 'list';
-        localStorage.setItem('receivableTypesView', 'list');
+        let currentView = localStorage.getItem('receivableTypesView') || 'list';
         function updateViewToggle() {
+            const btnList = getEl('btnListView');
+            const btnGrid = getEl('btnGridView');
             const tableSection = getEl('receivableTypesSection');
             const gridSection = getEl('receivableTypesGridSection');
             if (tableSection && gridSection) {
@@ -27,7 +28,33 @@
                     gridSection.classList.remove('hidden');
                 }
             }
+            if (btnList && btnGrid) {
+                btnList.className =
+                    'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
+                btnGrid.className =
+                    'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
+                if (currentView === 'list') {
+                    btnList.className =
+                        'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
+                }
+                else {
+                    btnGrid.className =
+                        'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
+                }
+            }
         }
+        const btnListView = getEl('btnListView');
+        btnListView?.addEventListener('click', () => {
+            currentView = 'list';
+            localStorage.setItem('receivableTypesView', 'list');
+            updateViewToggle();
+        });
+        const btnGridView = getEl('btnGridView');
+        btnGridView?.addEventListener('click', () => {
+            currentView = 'grid';
+            localStorage.setItem('receivableTypesView', 'grid');
+            updateViewToggle();
+        });
         updateViewToggle();
         // Event Delegation: Ações na Tabela e Grid
         function handleTypeAction(e) {

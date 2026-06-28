@@ -23,9 +23,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     void fetchTypes();
-
-    let currentView = 'list';
-    localStorage.setItem('financeCategoryTypesView', 'list');
+    let currentView = localStorage.getItem('financeCategoryTypesView') || 'list';
 
     function updateViewToggle(): void {
       const btnList = getEl('btnListView');

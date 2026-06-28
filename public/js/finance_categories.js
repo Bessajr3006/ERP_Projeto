@@ -12,8 +12,7 @@
     const getEl = (id) => document.getElementById(id);
     document.addEventListener('DOMContentLoaded', () => {
         void fetchCategories();
-        let currentView = 'list';
-        localStorage.setItem('financeCategoriesView', 'list');
+        let currentView = localStorage.getItem('financeCategoriesView') || 'list';
         function updateViewToggle() {
             const btnList = getEl('btnListView');
             const btnGrid = getEl('btnGridView');

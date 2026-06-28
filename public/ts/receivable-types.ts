@@ -403,8 +403,8 @@
                     }</h4>
                 </div>
 
-                <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Conta: <span class="font-semibold text-gray-700 dark:text-gray-300">${typeObj.bank_account_name || 'Sem conta'}</span>
+                <div class="mt-2 flex flex-wrap gap-1 items-start">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-brand-50/50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 border border-brand-200/50 dark:border-brand-800/40">${typeObj.bank_account_name || 'Sem conta'}</span>
                 </div>
 
                 <div class="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">

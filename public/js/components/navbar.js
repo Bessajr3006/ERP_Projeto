@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initNotifications();
         loadUserGreeting();
         initUserMenuWhatsAppConfig();
+        initUserMenuChangePassword();
     }
     catch (error) {
         console.error('Erro ao injetar navbar:', error);
@@ -1076,5 +1077,130 @@ async function initUserMenuWhatsAppConfig() {
     }
     catch (e) {
         console.error(e);
+    }
+}
+async function initUserMenuChangePassword() {
+    const modal = document.getElementById('navChangePasswordModal');
+    const openBtn = document.getElementById('navOpenChangePasswordModalBtn');
+    const closeBtn = document.getElementById('closeNavChangePasswordBtn');
+    const closeFooterBtn = document.getElementById('closeNavChangePasswordFooterBtn');
+    const backdrop = document.getElementById('navChangePasswordModalBackdrop');
+    const form = document.getElementById('navChangePasswordForm');
+    const errorDiv = document.getElementById('navChangePasswordError');
+    const successDiv = document.getElementById('navChangePasswordSuccess');
+    const spinner = document.getElementById('navChangePasswordSpinner');
+    const saveText = document.getElementById('navChangePasswordSaveText');
+    if (!modal)
+        return;
+    if (openBtn) {
+        openBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Reset form fields and alerts
+            if (form)
+                form.reset();
+            if (errorDiv) {
+                errorDiv.classList.add('hidden');
+                errorDiv.textContent = '';
+            }
+            if (successDiv) {
+                successDiv.classList.add('hidden');
+                successDiv.textContent = '';
+            }
+            modal.classList.remove('hidden');
+            // Close the user submenu dropdown
+            const userSubmenuWrapper = document.getElementById('userSubmenuWrapper');
+            if (userSubmenuWrapper) {
+                userSubmenuWrapper.classList.add('hidden');
+                userSubmenuWrapper.classList.remove('block');
+            }
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            if (userMenuBtn) {
+                userMenuBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+    const closeActions = [closeBtn, closeFooterBtn, backdrop];
+    closeActions.forEach(btn => {
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                modal.classList.add('hidden');
+            });
+        }
+    });
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currentPass = document.getElementById('navCurrentPassword').value;
+            const newPass = document.getElementById('navNewPassword').value;
+            const confirmPass = document.getElementById('navConfirmNewPassword').value;
+            // Clear alerts
+            if (errorDiv)
+                errorDiv.classList.add('hidden');
+            if (successDiv)
+                successDiv.classList.add('hidden');
+            // Simple validation checks
+            if (newPass.length < 6) {
+                if (errorDiv) {
+                    errorDiv.textContent = 'A nova senha deve ter pelo menos 6 caracteres.';
+                    errorDiv.classList.remove('hidden');
+                }
+                return;
+            }
+            if (newPass !== confirmPass) {
+                if (errorDiv) {
+                    errorDiv.textContent = 'As senhas não coincidem.';
+                    errorDiv.classList.remove('hidden');
+                }
+                return;
+            }
+            // Show loading spinner
+            if (spinner)
+                spinner.classList.remove('hidden');
+            if (saveText)
+                saveText.textContent = 'Alterando...';
+            try {
+                // @ts-ignore
+                const response = await api('/auth/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPasswordRaw: currentPass, newPasswordRaw: newPass })
+                });
+                if (response && (response.status === 'success' || response.message)) {
+                    if (successDiv) {
+                        successDiv.textContent = 'Senha alterada com sucesso!';
+                        successDiv.classList.remove('hidden');
+                    }
+                    form.reset();
+                    // Auto-close after 1.5 seconds
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                    }, 1500);
+                }
+                else {
+                    const msg = response?.message || 'Erro ao alterar a senha. Verifique os dados inseridos.';
+                    if (errorDiv) {
+                        errorDiv.textContent = msg;
+                        errorDiv.classList.remove('hidden');
+                    }
+                }
+            }
+            catch (err) {
+                console.error(err);
+                const msg = err?.message || 'Erro de conexão. Tente novamente mais tarde.';
+                if (errorDiv) {
+                    errorDiv.textContent = msg;
+                    errorDiv.classList.remove('hidden');
+                }
+            }
+            finally {
+                if (spinner)
+                    spinner.classList.add('hidden');
+                if (saveText)
+                    saveText.textContent = 'Alterar Senha';
+            }
+        });
     }
 }

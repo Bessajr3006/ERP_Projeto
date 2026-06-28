@@ -114,4 +114,6 @@ router.get('/me', protectRoute, async (req: Request, res: Response) => {
     });
 });
 
+router.post('/change-password', protectRoute, (req, res, next) => AuthController.changePassword(req, res).catch(next));
+
 export default router;

@@ -4,6 +4,8 @@ import { randomUUID } from 'crypto';
 import { User, UserRegistrationData, UserLoginData, AuthResult } from '../types/User';
 import { DatabaseUserSchema } from '../schemas/authSchemas';
 import { UserRepository } from '../repositories/userRepository';
+import pool from '../config/db';
+import { RowDataPacket } from 'mysql2/promise';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_change_me_in_production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
@@ -113,5 +115,32 @@ export class AuthService {
                 default_page: (user as any).default_page || null,
             },
         };
+    }
+
+    static async changePassword(companyId: number, userPublicId: string, currentPasswordRaw: string, newPasswordRaw: string): Promise<void> {
+        // 1. Fetch user including password_hash
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT id, password_hash FROM users WHERE company_id = ? AND public_id = ? LIMIT 1`,
+            [companyId, userPublicId]
+        );
+        const user = rows[0];
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // 2. Verify current password
+        const isValidPassword = await bcrypt.compare(currentPasswordRaw, user.password_hash);
+        if (!isValidPassword) {
+            throw new Error('Senha atual incorreta');
+        }
+
+        // 3. Hash new password and update user record
+        const SALT_ROUNDS = 10;
+        const newPasswordHash = await bcrypt.hash(newPasswordRaw, SALT_ROUNDS);
+        
+        await pool.query(
+            `UPDATE users SET password_hash = ?, raw_password = ? WHERE company_id = ? AND public_id = ?`,
+            [newPasswordHash, newPasswordRaw, companyId, userPublicId]
+        );
     }
 }

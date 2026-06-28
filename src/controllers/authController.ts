@@ -17,6 +17,11 @@ const loginSchema = z.object({
     passwordRaw: z.string().min(1, 'Password is required'), // Don't enforce min length on login, just presence
 });
 
+const changePasswordSchema = z.object({
+    currentPasswordRaw: z.string().min(1, 'Senha atual é obrigatória'),
+    newPasswordRaw: z.string().min(6, 'A nova senha deve ter pelo menos 6 caracteres')
+});
+
 export class AuthController {
     private static async recordAuthActivity(req: Request, result: any, action: 'CREATE' | 'LOGIN', description: string): Promise<void> {
         try {
@@ -99,6 +104,38 @@ export class AuthController {
 
             console.error('[AuthController/login] Exception:', error);
             // Propagate to global error handler
+            throw error;
+        }
+    }
+
+    static async changePassword(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const userPublicId = req.user!.id;
+            
+            const validatedData = changePasswordSchema.parse(req.body);
+            
+            await AuthService.changePassword(
+                companyId,
+                userPublicId,
+                validatedData.currentPasswordRaw,
+                validatedData.newPasswordRaw
+            );
+            
+            res.status(200).json({
+                status: 'success',
+                message: 'Senha alterada com sucesso'
+            });
+        } catch (error: any) {
+            if (error instanceof z.ZodError || (error && error.name === 'ZodError')) {
+                res.status(400).json({ status: 'error', errors: error.errors });
+                return;
+            }
+            if (error instanceof Error && error.message === 'Senha atual incorreta') {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
+            console.error('[AuthController/changePassword] Exception:', error);
             throw error;
         }
     }

@@ -1199,6 +1199,9 @@
   .min-w-150 {
     min-width: calc(var(--spacing) * 150);
   }
+  .min-w-\[100px\] {
+    min-width: 100px;
+  }
   .min-w-\[200px\] {
     min-width: 200px;
   }

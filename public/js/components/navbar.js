@@ -213,7 +213,8 @@ function initDesktopMenuTouch() {
         { btn: 'desktopAccountingDropdownBtn', wrapper: 'desktopAccountingDropdownWrapper' },
         { btn: 'desktopReportsDropdownBtn', wrapper: 'desktopReportsDropdownWrapper' },
         { btn: 'desktopConfigDropdownBtn', wrapper: 'desktopConfigDropdownWrapper' },
-        { btn: 'desktopControleDropdownBtn', wrapper: 'desktopControleDropdownWrapper' }
+        { btn: 'desktopControleDropdownBtn', wrapper: 'desktopControleDropdownWrapper' },
+        { btn: 'userMenuBtn', wrapper: 'userSubmenuWrapper' }
     ];
     desktopDropdowns.forEach(item => {
         const btn = document.getElementById(item.btn);

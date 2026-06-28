@@ -19,6 +19,7 @@ import swaggerUi from 'swagger-ui-express';
 import authRoutes from './routes/authRoutes';
 import companyRoutes from './routes/companyRoutes';
 import bankAccountRoutes from './routes/bankAccountRoutes';
+import receivableTypeRoutes from './routes/receivableTypeRoutes';
 import productRoutes from './routes/productRoutes';
 import entityRoutes from './routes/entityRoutes';
 import orderRoutes from './routes/orderRoutes';
@@ -274,6 +275,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api/v1/bank-accounts', bankAccountRoutes);
+app.use('/api/v1/receivable-types', receivableTypeRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/entities', entityRoutes);
 app.use('/api/v1/finance', financeRoutes);

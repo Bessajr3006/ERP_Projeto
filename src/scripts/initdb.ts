@@ -94,6 +94,7 @@ import { runMigration97BankAccountsWebhookBoleto } from './run_migration_97_bank
 import { runMigration98BankStatements } from './run_migration_98_bank_statements';
 import { runMigration99AddAdminBasicRole } from './run_migration_99_add_admin_basic_role';
 import runMigration100NotasComprasPermissions from './run_migration_100_notas_compras_permissions';
+import runMigration101ReceivableTypes from './run_migration_101_receivable_types';
 
 
 type SeedRole = 'admin' | 'operator' | 'financial' | 'seller' | 'contact' | 'accountant' | 'buyer' | 'service_provider' | 'user' | 'super_admin' | 'admin_basic';
@@ -162,13 +163,14 @@ const ALL_MODULES = [
     'ajuste',
     'whatsapp',
     'email',
+    'receivable_types',
     'swagger'
 ] as const;
 
 const ROLE_MODULES: Record<SeedRole, readonly string[]> = {
     admin: ALL_MODULES,
     operator: ['dashboard', 'sales', 'restaurant', 'picking', 'nota'],
-    financial: ['dashboard', 'finance_vision', 'expenses', 'revenues', 'finance_categories', 'finance_category_types', 'banks', 'statements', 'purchases', 'notas_compras', 'accountant'],
+    financial: ['dashboard', 'finance_vision', 'expenses', 'revenues', 'finance_categories', 'finance_category_types', 'banks', 'statements', 'purchases', 'notas_compras', 'accountant', 'receivable_types'],
     seller: ['dashboard', 'sales', 'customers', 'contacts', 'sellers'],
     contact: ['dashboard', 'contacts'],
     accountant: ['dashboard', 'company', 'accountant'],
@@ -482,8 +484,7 @@ async function runInitDb(): Promise<void> {
     await runMigration98BankStatements();
     await runMigration99AddAdminBasicRole();
     await runMigration100NotasComprasPermissions();
-
-
+    await runMigration101ReceivableTypes();
 
     const systemCompany = await ensureSystemCompany();
     await ensureAtLeastOneVisibleCompany();

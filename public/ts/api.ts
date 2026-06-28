@@ -440,7 +440,21 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
     };
 
     try {
-        const response = await fetch(`${API_BASE}${endpoint}`, config);
+        let targetUrl = `${API_BASE}${endpoint}`;
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocalhost) {
+            const isWaEndpoint = normalizedEndpoint.includes('/whatsapp-business/');
+            const isWaModeUpdate = normalizedEndpoint.startsWith('/users/') && 
+                                   options.method === 'PATCH' && 
+                                   options.body && 
+                                   typeof options.body === 'string' && 
+                                   options.body.includes('whatsapp_auto_reply_mode');
+                                   
+            if (isWaEndpoint || isWaModeUpdate) {
+                targetUrl = `http://187.77.24.126${API_BASE}${endpoint}`;
+            }
+        }
+        const response = await fetch(targetUrl, config);
 
         let data: any = null;
         // Avoid crashing on 204 No Content since body is completely empty
@@ -464,9 +478,11 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
         if (!response.ok) {
             if (response.status === 401) {
                 // Token expired or invalid
-                Auth.clearToken();
-                if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
-                    window.location.href = '/';
+                if (!targetUrl.startsWith('http://187.77.24.126')) {
+                    Auth.clearToken();
+                    if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+                        window.location.href = '/';
+                    }
                 }
             }
             let errorMsg: string | null = null;

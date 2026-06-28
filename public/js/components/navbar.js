@@ -786,16 +786,38 @@ async function initUserMenuWhatsAppConfig() {
     const navContent = document.getElementById('whatsappContentNav');
     if (!navContent)
         return;
-    const wrapper = document.getElementById('navWaConfigWrapper');
-    const panel = document.getElementById('navWaConfigPanel');
-    if (wrapper && panel) {
-        wrapper.addEventListener('mouseenter', () => {
-            panel.classList.remove('hidden');
-        });
-        wrapper.addEventListener('mouseleave', () => {
-            panel.classList.add('hidden');
+    const modal = document.getElementById('navWaConfigModal');
+    const openBtn = document.getElementById('navOpenWaConfigModalBtn');
+    const closeBtn = document.getElementById('closeNavWaConfigBtn');
+    const closeFooterBtn = document.getElementById('closeNavWaConfigFooterBtn');
+    const backdrop = document.getElementById('navWaConfigModalBackdrop');
+    if (openBtn && modal) {
+        openBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            modal.classList.remove('hidden');
+            // Close the user submenu dropdown
+            const userSubmenuWrapper = document.getElementById('userSubmenuWrapper');
+            if (userSubmenuWrapper) {
+                userSubmenuWrapper.classList.add('hidden');
+                userSubmenuWrapper.classList.remove('block');
+            }
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            if (userMenuBtn) {
+                userMenuBtn.setAttribute('aria-expanded', 'false');
+            }
         });
     }
+    const closeActions = [closeBtn, closeFooterBtn, backdrop];
+    closeActions.forEach(btn => {
+        if (btn && modal) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                modal.classList.add('hidden');
+            });
+        }
+    });
     let userId = '';
     let waSession = { status: 'idle', pairing_code: null, qr_code_data_url: null, last_event_at: null, last_error: null };
     let waPollingInterval = null;

@@ -72,17 +72,9 @@ function applySharedFooterState() {
     const companyInfo = footerContainer.querySelector('#footerCompanyInfo');
     if (!companyInfo)
         return;
-    const hasCompanyContext = Boolean(sharedFooterState.companyText);
-    companyInfo.classList.toggle('hidden', !hasCompanyContext);
-    // Se for um contexto de empresa, podemos adicionar um ícone ou label para indicar "Empresa Atual"
-    companyInfo.innerHTML = `
-        <span class="inline-flex items-center gap-1.5 py-0.5 px-2 rounded bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
-            <svg class="w-3 h-3 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-10V4m-5 4V4m1 8h1m4 4h1m-5 4h1" />
-            </svg>
-            ${sharedFooterState.companyText}
-        </span>
-    `;
+    // A pedido do usuário, as informações da empresa foram removidas do footer e agora ficam no menu de usuário.
+    companyInfo.classList.add('hidden');
+    companyInfo.innerHTML = '';
 }
 window.SharedFooter = {
     setCompanyContext(context = {}) {

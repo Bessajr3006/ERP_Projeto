@@ -392,11 +392,16 @@ async function loadUserGreeting() {
     const cachedCompanyCnpj = localStorage.getItem('keystone_last_company_cnpj');
     const cachedPhoto = localStorage.getItem('keystone_last_user_photo');
     const avatarEl = document.getElementById('userGreetingAvatar');
+    const companyEl = document.getElementById('userGreetingCompany');
     if (cachedName) {
         greetingEl.textContent = `Olá, ${cachedName}`;
     }
     if (cachedPhoto && avatarEl) {
         avatarEl.src = cachedPhoto;
+    }
+    if (companyEl && cachedCompanyName) {
+        const compCnpj = cachedCompanyCnpj ? ` - CNPJ: ${cachedCompanyCnpj}` : '';
+        companyEl.textContent = `${cachedCompanyName}${compCnpj}`;
     }
     if (cachedCompanyName) {
         window.SharedFooter?.setCompanyContext({
@@ -429,6 +434,11 @@ async function loadUserGreeting() {
                 if (data.data.company) {
                     localStorage.setItem('keystone_last_company_name', data.data.company.trade_name || data.data.company.company_name || '');
                     localStorage.setItem('keystone_last_company_cnpj', data.data.company.cnpj || '');
+                    if (companyEl) {
+                        const compName = data.data.company.trade_name || data.data.company.company_name || '';
+                        const compCnpj = data.data.company.cnpj ? ` - CNPJ: ${data.data.company.cnpj}` : '';
+                        companyEl.textContent = `${compName}${compCnpj}`;
+                    }
                 }
                 else {
                     localStorage.removeItem('keystone_last_company_name');

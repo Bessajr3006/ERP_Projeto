@@ -427,8 +427,13 @@ async function loadUserGreeting() {
     const cachedName = localStorage.getItem('keystone_last_user_name');
     const cachedCompanyName = localStorage.getItem('keystone_last_company_name');
     const cachedCompanyCnpj = localStorage.getItem('keystone_last_company_cnpj');
+    const cachedPhoto = localStorage.getItem('keystone_last_user_photo');
+    const avatarEl = document.getElementById('userGreetingAvatar') as HTMLImageElement | null;
     if (cachedName) {
         greetingEl.textContent = `Olá, ${cachedName}`;
+    }
+    if (cachedPhoto && avatarEl) {
+        avatarEl.src = cachedPhoto;
     }
     if (cachedCompanyName) {
         window.SharedFooter?.setCompanyContext({
@@ -451,6 +456,14 @@ async function loadUserGreeting() {
 
                 // Salva no cache local para a próxima carga de página
                 localStorage.setItem('keystone_last_user_name', greetingName);
+                if (data.data.user.photo_base64) {
+                    localStorage.setItem('keystone_last_user_photo', data.data.user.photo_base64);
+                    if (avatarEl) {
+                        avatarEl.src = data.data.user.photo_base64;
+                    }
+                } else {
+                    localStorage.removeItem('keystone_last_user_photo');
+                }
                 if (data.data.company) {
                     localStorage.setItem('keystone_last_company_name', data.data.company.trade_name || data.data.company.company_name || '');
                     localStorage.setItem('keystone_last_company_cnpj', data.data.company.cnpj || '');

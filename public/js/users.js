@@ -1090,6 +1090,26 @@
                         }
                     }
                 }
+                if (savedUser) {
+                    const currentUser = window.gNavbarAuthContext?.user;
+                    if (currentUser && (currentUser.id === savedUser.id || currentUser.public_id === savedUser.public_id || currentUser.email === savedUser.email)) {
+                        const navAvatar = document.getElementById('userGreetingAvatar');
+                        if (navAvatar) {
+                            if (savedUser.photo_base64) {
+                                navAvatar.src = savedUser.photo_base64;
+                                localStorage.setItem('keystone_last_user_photo', savedUser.photo_base64);
+                            }
+                            else {
+                                localStorage.removeItem('keystone_last_user_photo');
+                            }
+                        }
+                        const navGreeting = document.getElementById('userGreeting');
+                        if (navGreeting && savedUser.full_name) {
+                            navGreeting.textContent = `Olá, ${savedUser.full_name}`;
+                            localStorage.setItem('keystone_last_user_name', savedUser.full_name);
+                        }
+                    }
+                }
                 closeModal();
                 UI.showAlert('alertMessage', `Usuário ${isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
                 await loadData();

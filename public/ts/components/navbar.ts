@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initLogout();
         initNotifications();
         loadUserGreeting();
+        initUserMenuWhatsAppConfig();
 
     } catch (error) {
         console.error('Erro ao injetar navbar:', error);
@@ -857,4 +858,276 @@ function initNotifications() {
             detail: { title: 'Venda via WhatsApp', message: 'Mensagem enviada para o cliente com sucesso!', type: 'success' }
         }));
     });
+}
+
+async function initUserMenuWhatsAppConfig() {
+    const navContent = document.getElementById('whatsappContentNav');
+    if (!navContent) return;
+
+    let userId = '';
+    let waSession = { status: 'idle', pairing_code: null, qr_code_data_url: null, last_event_at: null, last_error: null };
+    let waPollingInterval = null;
+    let editingUserWhatsAppAutoReplyMode = 'automatic';
+
+    function getById(id) {
+        return document.getElementById(id);
+    }
+
+    function formatConnectedNumber() {
+        const phone = waSession.connected_phone || '';
+        if (!phone) return 'Não conectado';
+        return `+${phone}`;
+    }
+
+    function resolveConnectedNumber() {
+        return waSession.connected_phone || '';
+    }
+
+    function getWaStatusMeta() {
+        const status = waSession.status || 'idle';
+        const map = {
+            'idle':          { badgeClass: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300', label: 'Desconectado', helper: 'Inicie a sessão para conectar seu WhatsApp.' },
+            'disconnected':  { badgeClass: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300', label: 'Desconectado', helper: 'Inicie a sessão para conectar seu WhatsApp.' },
+            'initializing':  { badgeClass: 'bg-blue-100 text-blue-800',           label: 'Iniciando...', helper: 'Aguarde, gerando conexão...' },
+            'awaiting_qr':   { badgeClass: 'bg-amber-100 text-amber-800',        label: 'Aguardando Pareamento', helper: waSession.pairing_code ? 'Use o código abaixo no WhatsApp do celular para conectar.' : 'Escaneie o QR code no WhatsApp do celular em Dispositivos conectados.' },
+            'ready':         { badgeClass: 'bg-green-100 text-green-800',         label: 'Conectado', helper: 'Sua sessão do WhatsApp Business está ativa e pronta para uso.' },
+            'auth_failure':  { badgeClass: 'bg-red-100 text-red-800',            label: 'Falha de Autenticação', helper: 'Falha ao autenticar. Inicie a sessão novamente.' },
+            'error':         { badgeClass: 'bg-red-100 text-red-800',            label: 'Erro', helper: waSession.last_error || 'Erro na sessão do WhatsApp.' }
+        };
+        return map[status] || map.idle;
+    }
+
+    function renderNav() {
+        const container = getById('whatsappContentNav');
+        if (!container) return;
+
+        const isNewUser = !userId;
+        const statusMeta  = getWaStatusMeta();
+        const hasQr       = !isNewUser && !!waSession.qr_code_data_url;
+        const hasPairingCode = !isNewUser && !!waSession.pairing_code;
+        const isBusy      = !isNewUser && waSession.status === 'initializing';
+        const connectedNumberDisplay = isNewUser ? 'Não disponível' : formatConnectedNumber();
+        const connectedNumberDigits = isNewUser ? '' : resolveConnectedNumber();
+        const lastEventAt = !isNewUser && waSession.last_event_at
+            ? new Date(waSession.last_event_at).toLocaleString('pt-BR')
+            : null;
+
+        container.innerHTML = `
+            <div class="w-full text-left">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="text-sm font-semibold dark:text-white">WhatsApp Business</h4>
+                    ${isNewUser ? '' : `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusMeta.badgeClass}">${statusMeta.label}</span>`}
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-slate-900/30 rounded-lg border dark:border-slate-700 text-xs">
+                    <div class="space-y-3">
+                        <div class="bg-white dark:bg-slate-800 rounded border dark:border-slate-700 p-2.5">
+                            <div class="flex items-start justify-between gap-3 flex-wrap">
+                                <div>
+                                    <div class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Modo de atendimento</div>
+                                    <h5 class="text-xs font-semibold dark:text-white">Respostas automáticas / manual</h5>
+                                </div>
+                                <div class="w-full sm:w-40">
+                                    <label for="formWhatsAppAutoReplyModeNav" class="sr-only">Modo de atendimento</label>
+                                    <select id="formWhatsAppAutoReplyModeNav" class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100">
+                                        <option value="automatic" ${editingUserWhatsAppAutoReplyMode === 'automatic' ? 'selected' : ''}>Automático</option>
+                                        <option value="manual" ${editingUserWhatsAppAutoReplyMode === 'manual' ? 'selected' : ''}>Manual</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${isNewUser ? `
+                            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-2.5 text-xs text-yellow-700 dark:text-yellow-400">
+                                Por favor, faça login para configurar o pareamento.
+                            </div>
+                        ` : `
+                            <div class="grid grid-cols-[1.5fr,1fr] gap-3">
+                                <div class="space-y-2">
+                                    <div class="bg-white dark:bg-slate-800 p-2 rounded border dark:border-slate-700 text-[11px] dark:text-gray-300 leading-normal">${statusMeta.helper}</div>
+                                    <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                        <div class="bg-white dark:bg-slate-800 p-2 rounded border dark:border-slate-700">
+                                            <div class="text-gray-400 mb-0.5">Conectado</div>
+                                            <div class="font-medium truncate dark:text-white">${connectedNumberDisplay}</div>
+                                        </div>
+                                        <div class="bg-white dark:bg-slate-800 p-2 rounded border dark:border-slate-700">
+                                            <div class="text-gray-400 mb-0.5">Atualizado</div>
+                                            <div class="font-medium truncate dark:text-white">${lastEventAt ? lastEventAt.split(', ')[1] || lastEventAt : 'Aguardando'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-1.5">
+                                        <button type="button" id="btnStartWaNav" class="px-2.5 py-1 bg-brand-600 text-white rounded text-xs font-medium disabled:opacity-50 hover:bg-brand-700" ${isBusy ? 'disabled' : ''}>${isBusy ? 'Gerando...' : 'Iniciar'}</button>
+                                        <button type="button" id="btnDisconnectWaNav" class="px-2.5 py-1 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-xs font-medium hover:bg-red-100">Desconectar</button>
+                                    </div>
+                                    <div class="grid grid-cols-[1fr,auto] gap-1.5 items-end">
+                                        <div>
+                                            <label for="waPairPhoneNav" class="block text-[9px] uppercase tracking-wide text-gray-400 mb-0.5">Parear por telefone</label>
+                                            <input type="tel" id="waPairPhoneNav" placeholder="5511999999999" value="${connectedNumberDigits}" class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100" />
+                                        </div>
+                                        <button type="button" id="btnPairWaNav" class="px-2.5 py-1 bg-indigo-600 text-white rounded text-xs font-medium disabled:opacity-50 hover:bg-indigo-700" ${isBusy ? 'disabled' : ''}>Gerar</button>
+                                    </div>
+                                </div>
+                                <div class="bg-white dark:bg-slate-800 p-2 rounded border border-dashed dark:border-slate-700 flex flex-col items-center justify-center gap-1.5 min-h-[160px]">
+                                    ${hasPairingCode ? `
+                                        <div class="w-full rounded border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/20 px-2 py-3 text-center">
+                                            <div class="text-[9px] uppercase text-indigo-600 dark:text-indigo-400">Código</div>
+                                            <div class="mt-1 text-2xl font-bold tracking-widest text-indigo-700 dark:text-indigo-300">${waSession.pairing_code}</div>
+                                        </div>
+                                        <p class="text-[9px] text-center text-gray-500 dark:text-gray-400 leading-normal">Digite no seu WhatsApp.</p>
+                                    ` : hasQr ? `
+                                        <div class="flex items-center justify-center rounded bg-white p-1 shadow-sm ring-1 ring-gray-100">
+                                            <img src="${waSession.qr_code_data_url}" alt="QR Code" class="block rounded" style="width: 120px; height: 120px; image-rendering: pixelated;">
+                                        </div>
+                                        <p class="text-[9px] text-center text-gray-500 dark:text-gray-400 leading-normal">Escaneie com o celular.</p>
+                                    ` : `
+                                        <div class="flex items-center justify-center rounded border border-dashed border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/40 p-2 text-center" style="width: 120px; height: 120px;">
+                                            <span class="text-[9px] text-gray-400 leading-normal">O QR Code aparecerá aqui.</span>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const whatsappModeSelect = getById('formWhatsAppAutoReplyModeNav');
+        if (whatsappModeSelect) {
+            whatsappModeSelect.value = editingUserWhatsAppAutoReplyMode;
+            whatsappModeSelect.addEventListener('change', () => {
+                const targetMode = whatsappModeSelect.value === 'manual' ? 'manual' : 'automatic';
+                editingUserWhatsAppAutoReplyMode = targetMode;
+                void updateAutoReplyMode(targetMode);
+            });
+        }
+
+        getById('btnStartWaNav')?.addEventListener('click', () => {
+            void startWaSession();
+        });
+        getById('btnPairWaNav')?.addEventListener('click', () => {
+            void requestWaPairingCode();
+        });
+        getById('btnDisconnectWaNav')?.addEventListener('click', () => {
+            void disconnectWaSession();
+        });
+    }
+
+    async function updateAutoReplyMode(mode) {
+        try {
+            await api(`/users/${userId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ whatsapp_auto_reply_mode: mode })
+            });
+        } catch (e) {
+            console.error('[WhatsAppConfigNav] Erro ao atualizar modo:', e);
+        }
+    }
+
+    async function startWaSession() {
+        if (!userId) return;
+        try {
+            waSession.status = 'initializing';
+            waSession.qr_code_data_url = null;
+            waSession.pairing_code = null;
+            renderNav();
+
+            await api(`/users/${userId}/whatsapp-business/session`, { method: 'POST' });
+            scheduleWaPolling(1000);
+        } catch (e) {
+            waSession.status = 'error';
+            waSession.last_error = e?.message || 'Erro ao iniciar.';
+            renderNav();
+        }
+    }
+
+    async function disconnectWaSession() {
+        if (!userId) return;
+        try {
+            await api(`/users/${userId}/whatsapp-business/session`, { method: 'DELETE' });
+            waSession = { status: 'disconnected', pairing_code: null, qr_code_data_url: null, last_event_at: null, last_error: null };
+            renderNav();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function requestWaPairingCode() {
+        if (!userId) return;
+        const phoneInput = getById('waPairPhoneNav');
+        const phone = phoneInput?.value?.replace(/\D/g, '') || '';
+        if (!phone) {
+            return;
+        }
+
+        try {
+            waSession.status = 'initializing';
+            renderNav();
+
+            await api(`/users/${userId}/whatsapp-business/session/pairing-code`, {
+                method: 'POST',
+                body: JSON.stringify({ phone }),
+            });
+            scheduleWaPolling(1500);
+        } catch (e) {
+            waSession.status = 'error';
+            waSession.last_error = e?.message || 'Erro ao solicitar código.';
+            renderNav();
+        }
+    }
+
+    function scheduleWaPolling(delay = 3000) {
+        if (waPollingInterval) window.clearTimeout(waPollingInterval);
+        waPollingInterval = window.setTimeout(async () => {
+            if (!userId) return;
+            try {
+                const res = await api(`/users/${userId}/whatsapp-business/session`);
+                const session = res.data || res;
+                waSession = session;
+                renderNav();
+
+                if (session.status === 'initializing' || session.status === 'awaiting_qr') {
+                    scheduleWaPolling(3000);
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        }, delay);
+    }
+
+    async function loadWaSession() {
+        if (!userId) return;
+
+        try {
+            const res = await api(`/users/${userId}/whatsapp-business/session`);
+            waSession = res.data || res;
+            renderNav();
+
+            if (waSession.status === 'initializing' || waSession.status === 'awaiting_qr') {
+                scheduleWaPolling(3000);
+            }
+        } catch (e) {
+            console.warn(e);
+            waSession = {
+                ...waSession,
+                status: 'error',
+                last_error: e?.message || 'Erro na carga.',
+                qr_code_data_url: null,
+                has_qr_code: false,
+            };
+            renderNav();
+        }
+    }
+
+    try {
+        const res = await api('/auth/me');
+        if (res && res.data && res.data.user) {
+            userId = res.data.user.public_id;
+            editingUserWhatsAppAutoReplyMode = res.data.user.whatsapp_auto_reply_mode || 'automatic';
+        }
+        if (userId) {
+            await loadWaSession();
+        }
+    } catch (e) {
+        console.error(e);
+    }
 }

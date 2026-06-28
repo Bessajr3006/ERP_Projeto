@@ -26,32 +26,71 @@
                 </div>
                 <!-- Desktop Navigation Links -->
                 <div class="hidden lg:ml-6 lg:flex lg:space-x-4 pr-6" id="desktopNavLinks">
-                    <a href="/pages/sales.html" title="Vendas"
-                        class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium">
-                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                    </a>
-                    <a href="/pages/quotes.html" title="Orçamentos" data-module="quotes"
-                        class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium">
-                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </a>
-                    <a href="/pages/lancamento_servico.html" title="Lançamento de Serviço" data-module="service_launches"
-                        class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium">
-                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 3h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z" />
-                        </svg>
-                    </a>
-                    <a href="/pages/restaurant.html" title="Restaurante"
-                        class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium">
-                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                    </a>
+                    <div class="relative group h-full flex items-center">
+                        <button type="button"
+                            class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 text-sm font-medium focus:outline-none"
+                            aria-haspopup="true" aria-expanded="false" id="desktopOperationsDropdownBtn" title="Operação">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <svg class="ml-1 h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <!-- Dropdown panel -->
+                        <div class="absolute left-0 top-full pt-1 w-52 hidden group-hover:block transition-all z-10000 transform origin-top"
+                            id="desktopOperationsDropdownWrapper">
+                            <div class="rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700"
+                                id="desktopOperationsDropdown">
+                                <div class="py-1" role="menu" aria-orientation="vertical"
+                                    aria-labelledby="desktopOperationsDropdownBtn">
+                                    <div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
+                                        <span class="mr-2 inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        Operação
+                                    </div>
+                                    <a href="/pages/sales.html"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        Vendas
+                                    </a>
+                                    <a href="/pages/quotes.html" data-module="quotes"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        Orçamentos
+                                    </a>
+                                    <a href="/pages/lancamento_servico.html" data-module="service_launches"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 3h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z" />
+                                        </svg>
+                                        Lançamento de Serviço
+                                    </a>
+                                    <a href="/pages/restaurant.html"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                        </svg>
+                                        Restaurante
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="relative group h-full flex items-center">
                         <button type="button"
                             class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 text-sm font-medium focus:outline-none"
@@ -828,32 +867,63 @@
     <!-- Mobile Menu Display -->
     <div class="lg:hidden hidden bg-brand-900 border-t border-brand-800 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain" id="mobile-menu">
         <div class="pt-2 pb-3 space-y-1" id="mobileNavLinks">
-            <a href="/pages/sales.html" title="Vendas"
-                class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white flex items-center justify-start pl-3 pr-4 py-3 border-l-4 text-base font-medium">
-                <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg> <span class="ml-3">Vendas</span>
-            </a>
-            <a href="/pages/quotes.html" title="Orçamentos" data-module="quotes"
-                class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white flex items-center justify-start pl-3 pr-4 py-3 border-l-4 text-base font-medium">
-                <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg> <span class="ml-3">Orçamentos</span>
-            </a>
-            <a href="/pages/lancamento_servico.html" title="Lançamento de Serviço" data-module="service_launches"
-                class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white flex items-center justify-start pl-3 pr-4 py-3 border-l-4 text-base font-medium">
-                <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 3h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z" />
-                </svg> <span class="ml-3">Lançamento de Serviço</span>
-            </a>
-            <a href="/pages/restaurant.html" title="Restaurante"
-                class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white flex items-center justify-start pl-3 pr-4 py-3 border-l-4 text-base font-medium">
-                <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg> <span class="ml-3">Restaurante</span>
-            </a>
+            <!-- Operação Dropdown on Mobile -->
+            <div class="space-y-1">
+                <button type="button" title="Operação"
+                    class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white w-full flex items-center justify-between pl-3 pr-4 py-3 border-l-4 text-base font-medium focus:outline-none"
+                    aria-controls="mobileOperationsDropdown" aria-expanded="false" id="mobileOperationsDropdownBtn">
+                    <div class="flex-1 flex justify-start">
+                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg> <span class="ml-3">Operação</span>
+                    </div>
+                    <svg class="h-5 w-5 shrink-0 transform transition-transform duration-200"
+                        id="mobileOperationsDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                        fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <div class="hidden space-y-1" id="mobileOperationsDropdown">
+                    <div class="px-3 pr-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
+                        <span class="mr-2 inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Operação
+                    </div>
+                    <a href="/pages/sales.html" title="Vendas"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Vendas
+                    </a>
+                    <a href="/pages/quotes.html" title="Orçamentos" data-module="quotes"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Orçamentos
+                    </a>
+                    <a href="/pages/lancamento_servico.html" title="Lançamento de Serviço" data-module="service_launches"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 3h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z" />
+                        </svg>
+                        Lançamento de Serviço
+                    </a>
+                    <a href="/pages/restaurant.html" title="Restaurante"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        Restaurante
+                    </a>
+                </div>
+            </div>
             <!-- Pedido_Compra Dropdown on Mobile -->
             <div class="space-y-1">
                 <button type="button" title="Pedido_Compra"

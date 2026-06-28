@@ -368,7 +368,6 @@ function initLogout() {
         }
     };
     bindOpenLogout('logoutBtn');
-    bindOpenLogout('logoutBtnUserSubmenuDesktop');
     bindOpenLogout('logoutBtnMobile');
     // Delegação para cenários em que a navbar é re-renderizada após o bind inicial.
     document.addEventListener('click', (event) => {
@@ -376,7 +375,7 @@ function initLogout() {
         if (!target) {
             return;
         }
-        const trigger = target.closest('#logoutBtn, #logoutBtnUserSubmenuDesktop, #logoutBtnMobile');
+        const trigger = target.closest('#logoutBtn, #logoutBtnMobile');
         if (trigger) {
             event.preventDefault();
             openLogoutModal();

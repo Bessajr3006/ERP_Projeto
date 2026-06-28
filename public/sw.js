@@ -1,7 +1,7 @@
 "use strict";
 /// <reference lib="webworker" />
 const sw = self;
-const CACHE_NAME = 'keystone-pwa-v20260628000828';
+const CACHE_NAME = 'keystone-pwa-v20260628012249';
 const ASSETS_TO_CACHE = [
     '/index.html',
     '/register.html',

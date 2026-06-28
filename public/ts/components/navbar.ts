@@ -864,6 +864,17 @@ async function initUserMenuWhatsAppConfig() {
     const navContent = document.getElementById('whatsappContentNav');
     if (!navContent) return;
 
+    const wrapper = document.getElementById('navWaConfigWrapper');
+    const panel = document.getElementById('navWaConfigPanel');
+    if (wrapper && panel) {
+        wrapper.addEventListener('mouseenter', () => {
+            panel.classList.remove('hidden');
+        });
+        wrapper.addEventListener('mouseleave', () => {
+            panel.classList.add('hidden');
+        });
+    }
+
     let userId = '';
     let waSession = { status: 'idle', pairing_code: null, qr_code_data_url: null, last_event_at: null, last_error: null };
     let waPollingInterval = null;

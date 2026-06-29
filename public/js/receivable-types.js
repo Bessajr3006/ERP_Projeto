@@ -368,6 +368,12 @@
         });
         renderTable();
         renderGrid();
+        window.GridSummaryFooter?.update({
+            footerId: 'receivableTypesResultsFooter',
+            anchorId: 'receivableTypesGridSection',
+            count: g_filteredTypes.length,
+            label: 'tipo(s) de recebível exibido(s)',
+        });
     }
     // --- Modal Actions ---
     function openModal(typeObj = null) {

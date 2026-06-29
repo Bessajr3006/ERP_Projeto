@@ -315,34 +315,14 @@
         grid.innerHTML = items
             .map((typeObj) => {
             return `
-        <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col border border-gray-100 dark:border-slate-700 relative group transition-all duration-200 hover:shadow-md">
-            <!-- Top Row: Checkbox and Short ID -->
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center z-10">
+        <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col border border-gray-100 dark:border-slate-700 relative group">
+            <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center z-10 pt-1">
                     <input type="checkbox" value="${typeObj.public_id || ''}" class="item-checkbox rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 dark:border-slate-600" data-bwignore="true" data-lpignore="true">
                     <span class="ml-2 text-xs font-mono font-medium text-gray-500 dark:text-gray-400">#${String(typeObj.id || '').padStart(4, '0')}</span>
                 </div>
-            </div>
 
-            <!-- Content Area: Title and Badge -->
-            <div class="flex-1 min-w-0 mb-4">
-                <h4 class="text-base font-bold text-gray-900 dark:text-gray-100 truncate">${typeObj.name || ''}</h4>
-                <div class="mt-2 flex flex-wrap gap-1 items-start">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-brand-50/50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 border border-brand-200/50 dark:border-brand-800/40">${typeObj.bank_account_name || 'Sem conta'}</span>
-                </div>
-            </div>
-
-            <!-- Footer: Public ID and Actions -->
-            <div class="mt-auto pt-3 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center text-xs text-gray-400">
-                <div class="flex items-center gap-1.5 min-w-0">
-                    <span class="font-mono text-[10px] select-all truncate max-w-[120px] sm:max-w-none">${typeObj.public_id || ''}</span>
-                    <button type="button" data-action="view-id" data-id="${typeObj.public_id || ''}" data-pid="${typeObj.public_id || ''}" class="text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 shrink-0 transform transition-all duration-200 ease-out" title="Copiar ID: ${typeObj.public_id || ''}">
-                        <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="flex space-x-1 shrink-0">
+                <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
                     <button data-action="edit" data-id="${typeObj.public_id || ''}" class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-md transition-colors" title="Editar">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -351,6 +331,25 @@
                     <button data-action="delete" data-id="${typeObj.public_id || ''}" class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30 rounded-md transition-colors" title="Excluir">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 mt-0">
+                <div class="flex justify-between items-start gap-2">
+                    <h4 class="text-base font-bold text-gray-900 dark:text-gray-100 wrap-break-word flex-1 leading-tight">${typeObj.name || ''}</h4>
+                </div>
+
+                <div class="mt-2 flex flex-wrap gap-1 items-start">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-brand-50/50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 border border-brand-200/50 dark:border-brand-800/40">${typeObj.bank_account_name || 'Sem conta'}</span>
+                </div>
+
+                <div class="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium">
+                    <span class="font-mono text-[10px] select-all">${typeObj.public_id || ''}</span>
+                    <button type="button" data-action="view-id" data-id="${typeObj.public_id || ''}" data-pid="${typeObj.public_id || ''}" class="text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transform transition-all duration-200 ease-out font-normal" title="Copiar ID: ${typeObj.public_id || ''}">
+                        <svg class="h-3.5 w-3.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
                         </svg>
                     </button>
                 </div>

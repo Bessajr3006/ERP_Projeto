@@ -349,6 +349,12 @@
         });
         renderTable();
         renderGrid();
+        window.GridSummaryFooter?.update({
+            footerId: 'financeCategoryTypesResultsFooter',
+            anchorId: 'typesGridSection',
+            count: g_filteredTypes.length,
+            label: 'tipo(s) de categoria exibido(s)',
+        });
     }
     // --- Modal Actions ---
     function openModal(typeObj = null) {

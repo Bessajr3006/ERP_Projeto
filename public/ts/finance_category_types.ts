@@ -405,6 +405,12 @@
 
     renderTable();
     renderGrid();
+    (window as any).GridSummaryFooter?.update({
+      footerId: 'financeCategoryTypesResultsFooter',
+      anchorId: 'typesGridSection',
+      count: g_filteredTypes.length,
+      label: 'tipo(s) de categoria exibido(s)',
+    });
   }
 
   // --- Modal Actions ---

@@ -430,7 +430,7 @@ const api = async (endpoint, options = {}) => {
                 typeof options.body === 'string' &&
                 options.body.includes('whatsapp_auto_reply_mode');
             if (isWaEndpoint || isWaModeUpdate) {
-                targetUrl = `http://187.77.24.126${API_BASE}${endpoint}`;
+                targetUrl = `https://erp.keystones.dev${API_BASE}${endpoint}`;
             }
         }
         const response = await fetch(targetUrl, config);
@@ -457,7 +457,7 @@ const api = async (endpoint, options = {}) => {
         if (!response.ok) {
             if (response.status === 401) {
                 // Token expired or invalid
-                if (!targetUrl.startsWith('http://187.77.24.126')) {
+                if (!targetUrl.startsWith('http://187.77.24.126') && !targetUrl.startsWith('https://erp.keystones.dev')) {
                     Auth.clearToken();
                     if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
                         window.location.href = '/';
@@ -611,6 +611,7 @@ const NAV_COLOR_KEY = 'nav_color';
 const FOOTER_COLOR_KEY = 'footer_color';
 const FORM_PATTERN_KEY = 'form_pattern_preferences';
 const THEME_TOGGLE_VISIBLE_KEY = 'theme_toggle_visible';
+const WA_FLOAT_BTN_VISIBLE_KEY = 'wa_float_btn_visible';
 async function syncUiPreferencesFromServer() {
     if (!Auth.isAuthenticated()) {
         return;
@@ -656,6 +657,9 @@ async function syncUiPreferencesFromServer() {
         }
         if (data.split_cart_size === 'small' || data.split_cart_size === 'medium' || data.split_cart_size === 'large') {
             localStorage.setItem('split_cart_size', data.split_cart_size);
+        }
+        if (typeof data.wa_float_btn_visible === 'boolean') {
+            localStorage.setItem(WA_FLOAT_BTN_VISIBLE_KEY, data.wa_float_btn_visible ? 'show' : 'hide');
         }
         if (Object.prototype.hasOwnProperty.call(data, 'form_company_name')
             || Object.prototype.hasOwnProperty.call(data, 'form_profile')

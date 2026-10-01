@@ -23,13 +23,13 @@ export class FechamentoService {
 
         // Check if there is already a closing for this customer and competence
         const [existing] = await pool.query<RowDataPacket[]>(
-            `SELECT id FROM fechamentos 
+            `SELECT id, public_id FROM fechamentos 
              WHERE company_id = ? AND customer_id = ? AND competencia = ? LIMIT 1`,
             [companyId, customerId, data.competencia]
         );
 
-        if (existing && existing.length > 0) {
-            throw new AppError('Já existe um fechamento cadastrado para este cliente nesta competência.', 400);
+        if (existing && existing.length > 0 && existing[0]?.public_id) {
+            return this.update(existing[0].public_id, companyId, data as any);
         }
 
         const publicId = randomUUID();

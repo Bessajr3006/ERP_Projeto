@@ -1197,6 +1197,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             },
             observacao: formData.get('observacao') || null
         };
+        const customerId = Number(formData.get('customerId'));
+        const competenciaVal = formData.get('competencia');
+        // If currentFechamentoPublicId is not set, check if already in loadedFechamentos
+        if (!currentFechamentoPublicId && customerId && competenciaVal && loadedFechamentos) {
+            const match = loadedFechamentos.find((f) => Number(f.customer_id) === customerId && f.competencia === competenciaVal);
+            if (match && match.public_id) {
+                currentFechamentoPublicId = match.public_id;
+            }
+        }
         try {
             const url = currentFechamentoPublicId
                 ? `/fechamentos/${currentFechamentoPublicId}`
@@ -1607,11 +1616,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     currentPgdasParsedData = data;
                     // Open modal if closed
                     if (fechamentoModal.classList.contains('hidden')) {
+                        openModal();
+                    }
+                    // If existing closing exists for this competence, set currentFechamentoPublicId to edit
+                    if (data.existingFechamento && data.existingFechamento.public_id) {
+                        currentFechamentoPublicId = data.existingFechamento.public_id;
+                        const modalTitle = document.getElementById('modalTitle');
+                        if (modalTitle)
+                            modalTitle.textContent = 'Editar Fechamento';
+                    }
+                    else {
                         currentFechamentoPublicId = null;
                         const modalTitle = document.getElementById('modalTitle');
                         if (modalTitle)
                             modalTitle.textContent = 'Lançar Fechamento';
-                        openModal();
                     }
                     // Match customer
                     if (data.customerFound && data.customer) {

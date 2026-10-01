@@ -1,7 +1,7 @@
 let deferredPrompt: BeforeInstallPromptEvent | null;
 let installButtonsObserverStarted = false;
 const PWA_DEV_RESET_KEY = 'keystone_dev_sw_reset';
-const PWA_FORCE_RESET_KEY = 'keystone_sw_force_reset_20260601';
+const PWA_FORCE_RESET_KEY = 'keystone_sw_force_reset_20260923_v3';
 
 const PWA_THEME_COLOR = '#5283AE';
 const PWA_APP_NAME = 'KEYSTONE';
@@ -210,7 +210,10 @@ function createMaskAdapter(input: HTMLInputElement | null, options: { mask?: any
   const completeListeners: Array<() => void> = [];
 
   const applyFormattedValue = (rawValue: any) => {
-    const digits = String(rawValue || '').replace(/\D/g, '');
+    const isAlphanumeric = options.mask && JSON.stringify(options.mask).includes('X');
+    const digits = isAlphanumeric 
+      ? String(rawValue || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+      : String(rawValue || '').replace(/\D/g, '');
     const pattern = chooseMaskPattern(patterns, digits.length);
     input.value = formatDigitsWithPattern(digits, pattern);
 
@@ -231,7 +234,10 @@ function createMaskAdapter(input: HTMLInputElement | null, options: { mask?: any
       applyFormattedValue(nextValue || '');
     },
     get unmaskedValue() {
-      return (input.value || '').replace(/\D/g, '');
+      const isAlphanumeric = options.mask && JSON.stringify(options.mask).includes('X');
+      return isAlphanumeric
+        ? (input.value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+        : (input.value || '').replace(/\D/g, '');
     },
     set unmaskedValue(nextValue) {
       applyFormattedValue(nextValue || '');
@@ -273,7 +279,7 @@ function chooseMaskPattern(patterns, digitsLength) {
 }
 
 function countMaskSlots(pattern) {
-  return (pattern.match(/0/g) || []).length;
+  return (pattern.match(/0|X/g) || []).length;
 }
 
 function formatDigitsWithPattern(digits, pattern) {
@@ -283,7 +289,7 @@ function formatDigitsWithPattern(digits, pattern) {
   let digitIndex = 0;
 
   for (const token of pattern) {
-    if (token === '0') {
+    if (token === '0' || token === 'X') {
       if (digitIndex >= digits.length) break;
       formatted += digits[digitIndex];
       digitIndex += 1;

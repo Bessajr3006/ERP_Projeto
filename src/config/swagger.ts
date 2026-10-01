@@ -212,6 +212,62 @@ const swaggerSpec = swaggerJSDoc({
                         min_stock: { type: 'number', minimum: 0, example: 10 },
                         max_stock: { type: 'number', minimum: 0, example: 500 }
                     }
+                },
+                ReportRafaelItem: {
+                    type: 'object',
+                    properties: {
+                        cdProduto: { type: 'integer', description: 'Código identificador do produto', example: 1001 },
+                        superProduto: { type: 'integer', description: 'Código do super produto / produto pai', example: 501 },
+                        Produto: { type: 'string', description: 'Descrição e variação completa do produto', example: 'ARROZ TIO JOAO 5KG TIPO 1' },
+                        qtItem: { type: 'number', description: 'Quantidade total vendida do produto no período', example: 120.5 },
+                        vlCustodia: { type: 'number', description: 'Valor total ponderado de custo do dia', example: 450.25 },
+                        vlCustovenda: { type: 'number', description: 'Valor total ponderado de custo de venda', example: 480.10 },
+                        vlVenda: { type: 'number', description: 'Valor líquido total de venda (com rateio de acréscimos e descontos)', example: 750.90 },
+                        Acrescimos: { type: 'number', description: 'Valor total de acréscimos rateados no período', example: 12.50 },
+                        Descontos: { type: 'number', description: 'Valor total de descontos rateados no período', example: 5.20 },
+                        vlunCusto: { type: 'number', description: 'Preço de custo unitário cadastral', example: 15.30 },
+                        vlunvenda: { type: 'number', description: 'Preço de venda unitário cadastral', example: 24.90 },
+                        classificacao: { type: 'string', nullable: true, description: 'Seção ou classificação principal do produto', example: 'MERCEARIA' },
+                        subclassificacao: { type: 'string', nullable: true, description: 'Subclassificação ou categoria do produto', example: 'GRAOS' },
+                        markup: { type: 'number', nullable: true, description: 'Markup percentual calculado: ((vlVenda - vlCustovenda) / vlCustovenda) * 100', example: 56.40 }
+                    }
+                },
+                ReportRafaelResponse: {
+                    type: 'object',
+                    properties: {
+                        status: { type: 'string', example: 'success' },
+                        data: {
+                            type: 'array',
+                            items: {
+                                $ref: '#/components/schemas/ReportRafaelItem'
+                            }
+                        }
+                    }
+                },
+                ReportRafaelDetailItem: {
+                    type: 'object',
+                    properties: {
+                        dtCupom: { type: 'string', format: 'date-time', description: 'Data e hora da emissão do cupom de venda', example: '2026-09-15T14:30:00.000Z' },
+                        qtItem: { type: 'number', description: 'Quantidade vendida do item no cupom', example: 2 },
+                        Cliente: { type: 'string', nullable: true, description: 'Nome do cliente identificado na venda', example: 'JOAO SILVA' },
+                        valorUnitario: { type: 'number', description: 'Preço unitário praticado na venda', example: 24.90 },
+                        valorTotal: { type: 'number', description: 'Valor total líquido do item (quantidade * unitário - desconto)', example: 49.80 },
+                        valorCustoDia: { type: 'number', description: 'Valor de custo do dia total para o item', example: 30.60 },
+                        valorCustoVenda: { type: 'number', description: 'Valor de custo de venda total para o item', example: 31.00 },
+                        Operador: { type: 'string', nullable: true, description: 'Nome do operador de caixa que realizou o atendimento', example: 'MARIA CAIXA 01' }
+                    }
+                },
+                ReportRafaelDetailResponse: {
+                    type: 'object',
+                    properties: {
+                        status: { type: 'string', example: 'success' },
+                        data: {
+                            type: 'array',
+                            items: {
+                                $ref: '#/components/schemas/ReportRafaelDetailItem'
+                            }
+                        }
+                    }
                 }
             }
         },

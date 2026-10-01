@@ -101,6 +101,20 @@ const DateUtils = {
     getTodayDateInputValue() {
         return DateUtils.toDateInputValue(new Date());
     },
+    toDateTimeInputValue(value: any) {
+        if (!value) return '';
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value.trim())) {
+            return value.trim().slice(0, 16);
+        }
+        if (isDateOnlyString(value)) {
+            return `${value.trim()}T00:00`;
+        }
+        const parts = getBrazilParts(value);
+        return parts ? `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}` : '';
+    },
+    getCurrentDateTimeInputValue() {
+        return DateUtils.toDateTimeInputValue(new Date());
+    },
     formatDate(value: any) {
         if (!value) return '-';
         if (isDateOnlyString(value)) {
@@ -161,6 +175,105 @@ const DateUtils = {
         const d = String(date.getUTCDate()).padStart(2, '0');
         return `${y}-${m}-${d}`;
     },
+    getEasterSunday(year: number): Date {
+        if (!year || isNaN(year) || year < 1900 || year > 2100) return new Date(2000, 0, 1);
+        const a = year % 19;
+        const b = Math.floor(year / 100);
+        const c = year % 100;
+        const d = Math.floor(b / 4);
+        const e = b % 4;
+        const f = Math.floor((b + 8) / 25);
+        const g = Math.floor((b - f + 1) / 3);
+        const h = (19 * a + b - d - g + 15) % 30;
+        const i = Math.floor(c / 4);
+        const k = c % 4;
+        const l = (32 + 2 * e + 2 * i - h - k) % 7;
+        const m = Math.floor((a + 11 * h + 22 * l) / 451);
+        const month = Math.floor((h + l - 7 * m + 114) / 31);
+        const day = ((h + l - 7 * m + 114) % 31) + 1;
+        return new Date(year, month - 1, day);
+    },
+    getBrazilianHolidays(year: number): Set<string> {
+        if (!year || isNaN(year) || year < 1900 || year > 2100) return new Set();
+        const holidays = new Set<string>();
+        const fixedHolidays = [
+            '01-01', // Ano Novo
+            '04-21', // Tiradentes
+            '05-01', // Dia do Trabalho
+            '09-07', // Independência do Brasil
+            '10-12', // Nossa Senhora Aparecida
+            '11-02', // Finados
+            '11-15', // Proclamação da República
+            '11-20', // Dia da Consciência Negra (Lei 14.759/2023)
+            '12-25', // Natal
+            '12-31'  // Feriado Bancário (Febraban)
+        ];
+        for (const f of fixedHolidays) {
+            holidays.add(`${year}-${f}`);
+        }
+
+        const easter = DateUtils.getEasterSunday(year);
+        if (easter && !isNaN(easter.getTime())) {
+            const addDays = (base: Date, days: number): Date => {
+                const res = new Date(base.getTime());
+                res.setDate(res.getDate() + days);
+                return res;
+            };
+            const formatKey = (d: Date): string => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+
+            holidays.add(formatKey(addDays(easter, -48))); // Carnaval Segunda
+            holidays.add(formatKey(addDays(easter, -47))); // Carnaval Terça
+            holidays.add(formatKey(addDays(easter, -2)));  // Sexta-feira Santa
+            holidays.add(formatKey(easter));              // Páscoa
+            holidays.add(formatKey(addDays(easter, 60)));  // Corpus Christi
+        }
+
+        return holidays;
+    },
+    isNationalHoliday(value: any): boolean {
+        const dateInput = DateUtils.toDateInputValue(value);
+        if (!dateInput || !/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) return false;
+        const [year] = dateInput.split('-').map(Number);
+        if (!year || isNaN(year) || year < 1900 || year > 2100) return false;
+        const holidays = DateUtils.getBrazilianHolidays(year);
+        return holidays.has(dateInput);
+    },
+    isBusinessDay(value: any) {
+        const dateInput = DateUtils.toDateInputValue(value);
+        if (!dateInput || !/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) return true;
+        const [year, month, day] = dateInput.split('-').map(Number);
+        if (!year || !month || !day || year < 1900 || year > 2100) return true;
+        const date = new Date(year, month - 1, day);
+        if (isNaN(date.getTime())) return true;
+        const dayOfWeek = date.getDay(); // 0 = Domingo, 6 = Sábado
+        if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+        return !DateUtils.isNationalHoliday(dateInput);
+    },
+    getNextBusinessDay(value: any) {
+        const dateInput = DateUtils.toDateInputValue(value);
+        if (!dateInput || !/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) return '';
+        const [year, month, day] = dateInput.split('-').map(Number);
+        if (!year || !month || !day || year < 1900 || year > 2100) return '';
+        const date = new Date(year, month - 1, day);
+        if (isNaN(date.getTime())) return '';
+        date.setHours(0, 0, 0, 0);
+
+        let guard = 0;
+        while (!DateUtils.isBusinessDay(date) && guard < 30) {
+            date.setDate(date.getDate() + 1);
+            guard++;
+        }
+
+        const y = String(date.getFullYear());
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    },
 };
 
 (window as any).DateUtils = DateUtils;
@@ -171,16 +284,19 @@ const Auth = {
         const normalizedToken = typeof token === 'string' ? token.trim() : '';
         if (!normalizedToken || normalizedToken === 'undefined' || normalizedToken === 'null') {
             sessionStorage.removeItem('erp_token');
+            localStorage.removeItem('erp_token');
             return false;
         }
 
         sessionStorage.setItem('erp_token', normalizedToken);
+        localStorage.setItem('erp_token', normalizedToken);
         return true;
     },
     getToken() {
-        const token = sessionStorage.getItem('erp_token');
+        let token = localStorage.getItem('erp_token') || sessionStorage.getItem('erp_token');
         if (!token || token === 'undefined' || token === 'null') {
             sessionStorage.removeItem('erp_token');
+            localStorage.removeItem('erp_token');
             return null;
         }
 
@@ -188,11 +304,89 @@ const Auth = {
     },
     clearToken() {
         sessionStorage.removeItem('erp_token');
+        localStorage.removeItem('erp_token');
     },
     isAuthenticated() {
         return !!Auth.getToken();
+    },
+    getCompanyId() {
+        return getActiveCompanyScope();
+    },
+    getCompanyScopedKey(key: string) {
+        return getCompanyScopedStorageKey(key);
+    },
+    getActiveCompanyScope() {
+        return getActiveCompanyScope();
     }
 };
+
+function getActiveCompanyScope(): string {
+    const navCompany = (window as any).gNavbarAuthContext?.company;
+    if (navCompany?.public_id) return String(navCompany.public_id).trim();
+    if (navCompany?.id) return String(navCompany.id).trim();
+
+    const cachedPublicId = localStorage.getItem('keystone_last_company_public_id');
+    if (cachedPublicId && cachedPublicId !== 'null' && cachedPublicId !== 'undefined' && cachedPublicId.trim() !== '') {
+        return cachedPublicId.trim();
+    }
+
+    try {
+        const token = Auth.getToken?.() || localStorage.getItem('erp_token') || sessionStorage.getItem('erp_token');
+        if (token && typeof token === 'string' && token.includes('.')) {
+            const parts = token.split('.');
+            if (parts.length >= 2) {
+                const base64Url = parts[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64)
+                        .split('')
+                        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                        .join('')
+                );
+                const decoded = JSON.parse(jsonPayload);
+                if (decoded.company_public_id) return String(decoded.company_public_id).trim();
+                if (decoded.company_id) return String(decoded.company_id).trim();
+            }
+        }
+    } catch (_e) {
+        // ignore
+    }
+
+    return 'default';
+}
+
+function getCompanyScopedStorageKey(key: string): string {
+    if (!key) return key;
+    const scope = getActiveCompanyScope();
+    return `${key}_comp_${scope}`;
+}
+
+const CompanyStorage = {
+    getScope: getActiveCompanyScope,
+    getKey: getCompanyScopedStorageKey,
+    getItem(key: string): string | null {
+        if (!key) return null;
+        const scopedKey = getCompanyScopedStorageKey(key);
+        const val = localStorage.getItem(scopedKey);
+        if (val !== null) return val;
+        return localStorage.getItem(key);
+    },
+    setItem(key: string, value: string): void {
+        if (!key) return;
+        const scopedKey = getCompanyScopedStorageKey(key);
+        localStorage.setItem(scopedKey, value);
+    },
+    removeItem(key: string): void {
+        if (!key) return;
+        const scopedKey = getCompanyScopedStorageKey(key);
+        localStorage.removeItem(scopedKey);
+        localStorage.removeItem(key);
+    }
+};
+
+(window as any).getActiveCompanyScope = getActiveCompanyScope;
+(window as any).getCompanyScopedStorageKey = getCompanyScopedStorageKey;
+(window as any).CompanyStorage = CompanyStorage;
 
 // LocalStorage Cache Manager for Offline PWA Support
 const CacheManager = {
@@ -415,20 +609,39 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
         || normalizedEndpoint.startsWith('/tasks/')
         || normalizedEndpoint === '/organizer'
         || normalizedEndpoint.includes('/auth/me')
-        || normalizedEndpoint.includes('/health');
+        || normalizedEndpoint.includes('/health')
+        || normalizedEndpoint.includes('/permissions')
+        || normalizedEndpoint.includes('/roles')
+        || normalizedEndpoint.includes('/users');
+
+    const isGetRequest = !options.method || options.method.toUpperCase() === 'GET';
+    const shouldBypassCache = isVolatileEndpoint || isGetRequest;
 
     if (Auth.isAuthenticated()) {
         defaultHeaders['Authorization'] = `Bearer ${Auth.getToken()}`;
+    }
+
+    let reqBody = options.body;
+    const isFormData = typeof FormData !== 'undefined' && reqBody instanceof FormData;
+    const isBlob = typeof Blob !== 'undefined' && reqBody instanceof Blob;
+    const isArrayBuffer = typeof ArrayBuffer !== 'undefined' && reqBody instanceof ArrayBuffer;
+    const isSearchParams = typeof URLSearchParams !== 'undefined' && reqBody instanceof URLSearchParams;
+
+    if (isFormData) {
+        delete defaultHeaders['Content-Type'];
+    } else if (reqBody && typeof reqBody === 'object' && !isBlob && !isArrayBuffer && !isSearchParams) {
+        reqBody = JSON.stringify(reqBody);
     }
 
     const optionHeaders = normalizeHeaders(options.headers);
 
     const config: RequestInit & { headers: Record<string, string> } = {
         ...options,
-        cache: isVolatileEndpoint ? 'no-store' : options.cache,
+        body: reqBody as BodyInit | undefined,
+        cache: shouldBypassCache ? 'no-store' : options.cache,
         headers: {
             ...defaultHeaders,
-            ...(isVolatileEndpoint
+            ...(shouldBypassCache
                 ? {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
                     Pragma: 'no-cache',
@@ -454,31 +667,60 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
                 targetUrl = `https://erp.keystones.dev${API_BASE}${endpoint}`;
             }
         }
-        const response = await fetch(targetUrl, config);
 
+        let response: Response | undefined;
+        let lastFetchError: any = null;
         let data: any = null;
-        // Avoid crashing on 204 No Content since body is completely empty
-        if (response.status !== 204) {
-            const contentType = response.headers.get('Content-Type') || '';
-            if (contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                // Try JSON anyway (some servers omit or vary Content-Type)
-                const text = await response.text();
-                try {
-                    data = JSON.parse(text);
-                } catch (_) {
-                    // Backend returned non-JSON (e.g. nginx HTML error page)
-                    console.error('[API] Non-JSON response', response.status, endpoint, text.slice(0, 200));
-                    throw new Error('Servidor indisponível. Tente novamente em instantes.');
+        const isGetMethod = !options.method || options.method.toUpperCase() === 'GET';
+        const maxRetries = isGetMethod ? 3 : 0;
+
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                response = await fetch(targetUrl, config);
+                lastFetchError = null;
+
+                // Se o proxy/gateway retornar erro temporário (502, 503, 504) em GET, tenta novamente com backoff
+                if (isGetMethod && (response.status === 502 || response.status === 503 || response.status === 504) && attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, (attempt + 1) * 600));
+                    continue;
+                }
+
+                // Evita crash no 204 No Content pois o body é totalmente vazio
+                if (response.status !== 204) {
+                    const text = await response.text();
+                    try {
+                        data = text ? JSON.parse(text) : null;
+                    } catch (_) {
+                        // Resposta não-JSON recebida (ex: página de erro do Traefik/Nginx durante restart)
+                        if (isGetMethod && attempt < maxRetries) {
+                            await new Promise(r => setTimeout(r, (attempt + 1) * 600));
+                            continue;
+                        }
+                        console.error('[API] Non-JSON response', response.status, endpoint, text.slice(0, 200));
+                        throw new Error('Servidor indisponível. Tente novamente em instantes.');
+                    }
+                }
+                break;
+            } catch (err: any) {
+                lastFetchError = err;
+                if (err?.message === 'Servidor indisponível. Tente novamente em instantes.') {
+                    throw err;
+                }
+                if (attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, (attempt + 1) * 500));
                 }
             }
         }
 
+        if (lastFetchError || !response) {
+            throw (lastFetchError || new Error('Falha na conexão de rede.'));
+        }
+
         if (!response.ok) {
             if (response.status === 401) {
-                // Token expired or invalid
-                 if (!targetUrl.startsWith('http://187.77.24.126') && !targetUrl.startsWith('https://erp.keystones.dev')) {
+                // Se a rota não for tentativa de autenticação, invalida o token e redireciona para login
+                const isAuthAttempt = normalizedEndpoint.startsWith('/auth/login') || normalizedEndpoint.startsWith('/auth/register');
+                if (!isAuthAttempt) {
                     Auth.clearToken();
                     if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
                         window.location.href = '/';
@@ -487,14 +729,36 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
             }
             let errorMsg: string | null = null;
             if (data && typeof data === 'object') {
-                const anyData = data as any;
-                errorMsg = anyData.message || anyData.error || anyData.details || null;
+                let anyData = data as any;
+                if (anyData.status === 'error' && anyData.data) {
+                    if (typeof anyData.data === 'object') {
+                        anyData = anyData.data;
+                    } else if (typeof anyData.data === 'string') {
+                        errorMsg = anyData.data;
+                    }
+                }
+                
+                if (!errorMsg) {
+                    const genericTitle = anyData.message || anyData.error || anyData.details || anyData.title || null;
+                    let detailsMsg = '';
 
-                if (!errorMsg && Array.isArray(anyData.errors) && anyData.errors.length > 0) {
-                    errorMsg = anyData.errors
-                        .map((e: any) => e?.message)
-                        .filter(Boolean)
-                        .join('; ');
+                    if (anyData.errors && typeof anyData.errors === 'object') {
+                        if (Array.isArray(anyData.errors)) {
+                            detailsMsg = anyData.errors
+                                .map((e: any) => e?.message || e)
+                                .filter(Boolean)
+                                .join('; ');
+                        } else {
+                            detailsMsg = Object.entries(anyData.errors)
+                                .map(([key, val]) => {
+                                    const details = Array.isArray(val) ? val.join(', ') : String(val);
+                                    return `${key}: ${details}`;
+                                })
+                                .join('; ');
+                        }
+                    }
+
+                    errorMsg = detailsMsg || genericTitle;
                 }
             }
 
@@ -504,7 +768,12 @@ const api = async (endpoint: string, options: RequestInit = {}) => {
                 errorMsg = 'Este e-mail já está sendo utilizado por outro usuário.';
             }
             console.error('[API Error]', response.status, endpoint, data);
-            throw new Error(errorMsg);
+            const err: any = new Error(errorMsg);
+            err.status = response.status;
+            err.code = data?.code || null;
+            err.data = data?.data || null;
+            err.response = data;
+            throw err;
         }
 
         // Cache successful GET requests
@@ -726,6 +995,7 @@ async function syncUiPreferencesFromServer() {
         // Mantem o fallback local quando a API nao estiver disponivel.
     }
 }
+(window as any).syncUiPreferencesFromServer = syncUiPreferencesFromServer;
 
 function getThemeToggleVisibilityPreference() {
     const raw = String(localStorage.getItem(THEME_TOGGLE_VISIBLE_KEY) || '').trim().toLowerCase();
@@ -1018,28 +1288,35 @@ window.addEventListener('resize', () => {
 
 // Run init immediately on load to prevent blinding flash
 initTheme();
+
+function applyAllLocalPreferences() {
+    initTheme();
+    applyLayoutWidthPreference();
+    applyNavWidthPreference();
+    applyLayoutAlignPreference();
+    applyNavAlignPreference();
+    applyNavColorPreference();
+    applyFooterColorPreference();
+    applyThemeToggleVisibilityPreference();
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', async () => {
-        await syncUiPreferencesFromServer();
-        initTheme();
-        applyLayoutWidthPreference();
-        applyNavWidthPreference();
-        applyLayoutAlignPreference();
-        applyNavAlignPreference();
-        applyNavColorPreference();
-        applyFooterColorPreference();
-        applyThemeToggleVisibilityPreference();
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Apply local preferences immediately (no flash!)
+        applyAllLocalPreferences();
+
+        // 2. Fetch/sync from server in the background and update/re-apply if changed
+        syncUiPreferencesFromServer().finally(() => {
+            applyAllLocalPreferences();
+        });
     });
 } else {
+    // 1. Apply local preferences immediately
+    applyAllLocalPreferences();
+
+    // 2. Fetch/sync from server in the background and update/re-apply if changed
     syncUiPreferencesFromServer().finally(() => {
-        initTheme();
-        applyLayoutWidthPreference();
-        applyNavWidthPreference();
-        applyLayoutAlignPreference();
-        applyNavAlignPreference();
-        applyNavColorPreference();
-        applyFooterColorPreference();
-        applyThemeToggleVisibilityPreference();
+        applyAllLocalPreferences();
     });
 }
 

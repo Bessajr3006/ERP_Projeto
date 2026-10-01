@@ -1,4 +1,3 @@
-/// <reference path="./globals.d.ts" />
 (() => {
     let userId = '';
     let waSession = { status: 'idle', pairing_code: null, qr_code_data_url: null, last_event_at: null, last_error: null };

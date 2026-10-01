@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Nova Reforma Tributária para o Simples Nacional</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+    <style>
+        @media print {
+            #globalNavRoot, #app-navbar, #app-footer, .no-print {
+                display: none !important;
+            }
+            main {
+                max-width: 100% !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+            .tab-panel-container {
+                display: block !important;
+            }
+            [data-tab-panel] {
+                display: block !important;
+                margin-bottom: 2rem;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-gray-100 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main id="taxReformContent" class="flex-1 min-h-0 overflow-y-auto w-full pt-4 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col">
+        
+        <!-- TOP HEADER: BREADCRUMB & TITLE & ACTIONS -->
+        <div class="mb-5 no-print">
+            <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                <a href="/pages/dashboard.html" class="hover:text-brand-500 transition-colors">Início</a>
+                <span>/</span>
+                <span class="text-gray-400 dark:text-gray-500">Informações</span>
+                <span>/</span>
+                <span class="text-blue-600 dark:text-blue-400 font-medium">Reforma Tributária Simples Nacional</span>
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                            Nova Reforma Tributária (Simples Nacional)
+                        </h1>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                EC 132/2023 & PLP 68/2024
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                IVA Dual (CBS + IBS)
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-3xl">
+                        Guia prático e comparativo das novas regras para Micro e Pequenas Empresas: Comércio, Restaurantes/Bares e Prestadores de Serviços.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" id="taxReformPrintBtn"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 shadow-sm transition-colors">
+                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m10 0v4H7v-4m10 0H7m10-8V3H7v6"/>
+                        </svg>
+                        Imprimir / PDF
+                    </button>
+                    <button type="button" data-goto-tab="simulador"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-sm transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        Simulador Estratégico
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 KPI SUMMARY CARDS GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5 no-print">
+            
+            <!-- KPI 1: Tributos Extintos -->
+            <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700/80 rounded-xl p-4 shadow-sm relative overflow-hidden group hover:border-rose-300 dark:hover:border-rose-600/50 transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Tributos Extintos</span>
+                    <span class="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </span>
+                </div>
+                <div class="mt-2">
+                    <span class="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">5 Impostos</span>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">PIS, COFINS, IPI, ICMS e ISS</p>
+                </div>
+            </div>
+
+            <!-- KPI 2: Novos Tributos (IVA Dual) -->
+            <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700/80 rounded-xl p-4 shadow-sm relative overflow-hidden group hover:border-emerald-300 dark:hover:border-emerald-600/50 transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Novo IVA Dual</span>
+                    <span class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </span>
+                </div>
+                <div class="mt-2">
+                    <span class="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">CBS + IBS</span>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">+ Imposto Seletivo (IS)</p>
+                </div>
+            </div>
+
+            <!-- KPI 3: Status do Simples -->
+            <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700/80 rounded-xl p-4 shadow-sm relative overflow-hidden group hover:border-sky-300 dark:hover:border-sky-600/50 transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Regime do Simples</span>
+                    <span class="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </span>
+                </div>
+                <div class="mt-2">
+                    <span class="text-xl sm:text-2xl font-black text-sky-600 dark:text-sky-400">100% Mantido</span>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Opção DAS ou Regime Híbrido</p>
+                </div>
+            </div>
+
+            <!-- KPI 4: Início dos Testes -->
+            <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700/80 rounded-xl p-4 shadow-sm relative overflow-hidden group hover:border-amber-300 dark:hover:border-amber-600/50 transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Início da Transição</span>
+                    <span class="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>
+                    </span>
+                </div>
+                <div class="mt-2">
+                    <span class="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400">Ano de 2026</span>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Transição gradual até 2033</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SEARCH BAR & MATCH BADGE -->
+        <div class="mb-4 no-print flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="relative w-full sm:max-w-lg">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <input type="text" id="taxReformSearchInput"
+                    placeholder="Filtrar por tema (ex: split payment, gorjeta, crédito, atacado, B2B, simples)..."
+                    class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 shadow-xs transition-all">
+                <button type="button" id="taxReformClearSearchBtn" class="hidden absolute inset-y-0 right-0 pr-2.5 items-center text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <span id="searchMatchCount" class="hidden text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                0 encontrados
+            </span>
+        </div>
+
+        <!-- NAVIGATION TABS -->
+        <div class="no-print mb-5 overflow-x-auto pb-1">
+            <div class="flex items-center gap-1.5 min-w-max bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-xl border border-gray-200 dark:border-slate-700">
+                <button type="button" data-tab-target="overview"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-brand-600 text-white shadow-sm transition-all cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Visão Geral & Dilema do Simples
+                </button>
+                <button type="button" data-tab-target="comercio"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-pointer">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5m1.6 8l-2 2h12"/></svg>
+                    Comércio (Varejo & Atacado)
+                </button>
+                <button type="button" data-tab-target="restaurante"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-pointer">
+                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Restaurantes & Bares
+                </button>
+                <button type="button" data-tab-target="servico"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-pointer">
+                    <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Prestadores de Serviços
+                </button>
+                <button type="button" data-tab-target="cronograma"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-pointer">
+                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>
+                    Cronograma (2026-2033)
+                </button>
+                <button type="button" data-tab-target="simulador"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-pointer">
+                    <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Simulador Estratégico
+                </button>
+                <button type="button" data-tab-target="faq"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all cursor-pointer">
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9a3.5 3.5 0 116.544 1.5c0 1.5-1.5 2.25-2.25 2.75-.75.5-.75 1-.75 1.75M12 17h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Perguntas Frequentes (FAQ)
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: VISÃO GERAL & DILEMA DO SIMPLES     -->
+        <!-- ========================================== -->
+        <div data-tab-panel="overview" class="space-y-6">
+            
+            <!-- Cards de Destaque -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-3" data-search-tags="iva dual cbs federal ibs estadual municipal pis cofins icms iss">
+                    <div class="flex items-center justify-between">
+                        <span class="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/30">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <span class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase">O que é o IVA Dual?</span>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">CBS (Federal) + IBS (Estados/Municípios)</h3>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Substituição de 5 tributos acumulativos (PIS, COFINS, IPI, ICMS e ISS) por apenas 2 tributos sobre o valor agregado + 1 Imposto Seletivo (IS). Base ampla e cobrança no <strong>destino do consumo</strong>.
+                    </p>
+                </div>
+
+                <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-3" data-search-tags="simples nacional mantido art 146 constituicao das unificado">
+                    <div class="flex items-center justify-between">
+                        <span class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        </span>
+                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase">Simples Garantido</span>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">O Simples Nacional NÃO vai acabar!</h3>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        O regime constitucional do Simples Nacional (Art. 146 da CF/88) foi mantido intacto. As empresas continuam com o teto de R$ 4,8 milhões/ano e com a guia única DAS simplificada.
+                    </p>
+                </div>
+
+                <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-3" data-search-tags="split payment retencao automatica pix cartao maquininha banco">
+                    <div class="flex items-center justify-between">
+                        <span class="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </span>
+                        <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase">Tecnologia no Pagamento</span>
+                    </div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Split Payment Automático</h3>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Na liquidação de compras via Cartão, PIX ou Boleto, o sistema financeiro deduzirá o tributo automaticamente, direcionando o imposto ao Fisco e o valor líquido à conta da empresa.
+                    </p>
+                </div>
+            </div>
+
+            <!-- O GRANDE DILEMA DO SIMPLES: AS DUAS OPÇÕES -->
+            <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-6" data-search-tags="dilema simples nacional opcao 1 opcao 2 regime hibrido credito pj b2b b2c">
+                <div class="border-b border-gray-100 dark:border-slate-700 pb-4">
+                    <span class="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        Decisão Estratégica Fundamental
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-2">
+                        O Grande Dilema: Qual opção escolher para o Simples Nacional?
+                    </h2>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1">
+                        A Reforma Tributária cria uma bifurcação sem precedentes para quem está no Simples. Toda empresa precisará avaliar seu perfil de clientes (Pessoa Física vs Empresas):
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- OPÇÃO 1: DAS UNIFICADO -->
+                    <div class="rounded-xl p-5 bg-linear-to-b from-slate-50 to-white dark:from-slate-800/80 dark:to-slate-800 border-2 border-emerald-500/40 dark:border-emerald-500/30 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                    OPÇÃO 1 • PADRÃO
+                                </span>
+                                <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold">Simplicidade Máxima</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                                Manter Tudo no Simples Nacional (Guia Única DAS)
+                            </h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                                A empresa continua recolhendo todos os tributos unificados na guia DAS exatamente como hoje.
+                            </p>
+                            
+                            <div class="space-y-2 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs sm:text-sm">
+                                <div class="flex items-start gap-2 text-emerald-700 dark:text-emerald-300">
+                                    <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <span><strong>Carga tributária menor e unificada:</strong> paga a alíquota reduzida do anexo da sua faixa.</span>
+                                </div>
+                                <div class="flex items-start gap-2 text-emerald-700 dark:text-emerald-300">
+                                    <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <span><strong>Ideal para Varejo B2C:</strong> perfeito para quem vende a consumidor final (pessoa física).</span>
+                                </div>
+                                <div class="flex items-start gap-2 text-rose-600 dark:text-rose-400">
+                                    <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    <span><strong>Crédito limitado para clientes PJ:</strong> o cliente empresa só se credita da pequena parcela de CBS/IBS paga no DAS (aprox. 1,5% a 3,5%).</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/50 text-xs text-emerald-800 dark:text-emerald-200">
+                            <strong>Indicado para:</strong> Lojas de varejo, restaurantes de rua, lanchonetes, salões de beleza, oficinas e pequenos prestadores B2C.
+                        </div>
+                    </div>
+
+                    <!-- OPÇÃO 2: REGIME HÍBRIDO (CBS/IBS POR FORA) -->
+                    <div class="rounded-xl p-5 bg-linear-to-b from-slate-50 to-white dark:from-slate-800/80 dark:to-slate-800 border-2 border-sky-500/40 dark:border-sky-500/30 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
+                                    OPÇÃO 2 • REGIME HÍBRIDO
+                                </span>
+                                <span class="text-xs text-sky-600 dark:text-sky-400 font-bold">Competitividade B2B</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                                Recolher CBS e IBS "Por Fora" do Simples
+                            </h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                                A empresa recolhe a CBS e o IBS no regime regular não-cumulativo (débito e crédito) e continua no DAS apenas para IRPJ, CSLL e CPP.
+                            </p>
+                            
+                            <div class="space-y-2 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs sm:text-sm">
+                                <div class="flex items-start gap-2 text-sky-700 dark:text-sky-300">
+                                    <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <span><strong>Crédito Integral de 100% (26,5%):</strong> seus clientes PJ aproveitam crédito total nas compras.</span>
+                                </div>
+                                <div class="flex items-start gap-2 text-sky-700 dark:text-sky-300">
+                                    <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <span><strong>Toma crédito de tudo que compra:</strong> apropriação integral de CBS/IBS sobre insumos, aluguel, energia e mercadorias.</span>
+                                </div>
+                                <div class="flex items-start gap-2 text-amber-600 dark:text-amber-400">
+                                    <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    <span><strong>Maior controle e apuração:</strong> exige apuração fiscal contínua de créditos e débitos de IVA.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 rounded-lg bg-sky-50/50 dark:bg-sky-950/30 border border-sky-200/50 dark:border-sky-800/50 text-xs text-sky-800 dark:text-sky-200">
+                            <strong>Indicado para:</strong> Atacadistas, distribuidoras, indústrias e empresas de serviços com forte carteira de clientes PJ (empresas de grande porte).
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- TABELA COMPARATIVA DE TRIBUTOS -->
+            <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-4" data-search-tags="tabela comparativa pis cofins icms iss ipi cbs ibs imposto seletivo">
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                    Tabela Comparativa: Como é Hoje vs Como Ficará
+                </h3>
+                
+                <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700 text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-slate-900/60 text-gray-600 dark:text-gray-300 font-bold text-left">
+                                <th class="py-3 px-4">Tributos Atuais (Até 2026)</th>
+                                <th class="py-3 px-4">Novo Tributo da Reforma</th>
+                                <th class="py-3 px-4">Competência</th>
+                                <th class="py-3 px-4">Impacto no Simples Nacional</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-slate-800 text-gray-700 dark:text-gray-200">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                                <td class="py-3 px-4 font-semibold text-rose-500">PIS + COFINS</td>
+                                <td class="py-3 px-4 font-bold text-sky-500">CBS (Contribuição sobre Bens e Serviços)</td>
+                                <td class="py-3 px-4">Federal (União)</td>
+                                <td class="py-3 px-4">Substitui as parcelas de PIS/Cofins da guia DAS ou recolhido por fora.</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                                <td class="py-3 px-4 font-semibold text-rose-500">ICMS + ISS</td>
+                                <td class="py-3 px-4 font-bold text-emerald-500">IBS (Imposto sobre Bens e Serviços)</td>
+                                <td class="py-3 px-4">Estadual & Municipal (Comitê Gestor)</td>
+                                <td class="py-3 px-4">Substitui ICMS/ISS na guia DAS. Acaba com a guerra fiscal e o ICMS-ST.</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                                <td class="py-3 px-4 font-semibold text-rose-500">IPI</td>
+                                <td class="py-3 px-4 font-bold text-amber-500">Imposto Seletivo (IS)</td>
+                                <td class="py-3 px-4">Federal</td>
+                                <td class="py-3 px-4">Incide apenas sobre bens nocivos à saúde e meio ambiente (álcool, açúcar, fumo).</td>
+                            </tr>
+                            <tr class="bg-emerald-50/30 dark:bg-emerald-950/20 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/40 transition-colors">
+                                <td class="py-3 px-4 font-semibold text-emerald-600 dark:text-emerald-400">IRPJ, CSLL, CPP</td>
+                                <td class="py-3 px-4 font-bold text-emerald-600 dark:text-emerald-400">Mantidos no Simples</td>
+                                <td class="py-3 px-4">Federal</td>
+                                <td class="py-3 px-4">Continuam existindo normalmente no Simples e recolhidos no DAS.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: COMÉRCIO (VAREJO & ATACADO)        -->
+        <!-- ========================================== -->
+        <div data-tab-panel="comercio" class="hidden space-y-6">
+            
+            <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-4" data-search-tags="comercio varejo atacado icms st substituicao tributaria compras creditos b2b b2c">
+                <div class="flex items-center gap-3">
+                    <span class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    </span>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Comércio: Varejo vs Atacado no Simples</h2>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Principais impactos práticos nas compras de estoque, vendas de balcão e fim do ICMS-ST.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    
+                    <!-- Varejo -->
+                    <div class="p-5 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-base font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                                🛒 Varejo (Vendas para Pessoa Física - B2C)
+                            </h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                                Alta Vantagem no Simples
+                            </span>
+                        </div>
+                        <ul class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 space-y-2 list-disc pl-4 leading-relaxed">
+                            <li><strong>Vantagem de Carga:</strong> O consumidor final pessoa física não se credita de impostos. Portanto, continuar pagando a alíquota unificada do Simples (ex: 4% a 8%) mantém seu preço muito mais competitivo que grandes magazines do Lucro Real (que recolherão ~26,5%).</li>
+                            <li><strong>Fim do ICMS-ST:</strong> A temida Substituição Tributária do ICMS será extinta gradualmente. Acabam as margens MVA arbitrárias e o desembolso antecipado de caixa na entrada do estoque!</li>
+                            <li><strong>Split Payment no Caixa:</strong> As maquininhas de cartão e TEF farão a retenção instantânea da parcela de IBS/CBS na hora que o cliente passar o cartão ou pagar no PIX.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Atacado -->
+                    <div class="p-5 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-base font-bold text-sky-600 dark:text-sky-400 flex items-center gap-2">
+                                📦 Atacado / Distribuição (Vendas B2B)
+                            </h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">
+                                Exige Análise Estratégica
+                            </span>
+                        </div>
+                        <ul class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 space-y-2 list-disc pl-4 leading-relaxed">
+                            <li><strong>A Pressão dos Clientes PJ:</strong> Seus compradores que estão no Lucro Real/Presumido vão exigir crédito integral de 26,5% na nota fiscal para poder abater em seus débitos.</li>
+                            <li><strong>Opção de Recolher por Fora:</strong> Empresas atacadistas do Simples podem optar por pagar CBS/IBS pelo regime geral de débito e crédito, gerando 100% de crédito para seus compradores e tomando crédito de 100% de seus fornecedores.</li>
+                            <li><strong>Equação de Preço:</strong> Se mantiver no Simples DAS unificado, o atacadista precisará dar um desconto comercial equivalente à perda de crédito do cliente PJ para não perder vendas.</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+                <!-- Destaques Práticos -->
+                <div class="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-3 text-xs sm:text-sm text-amber-800 dark:text-amber-200">
+                    <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div>
+                        <strong>Atenção ao Princípio do Destino:</strong> A partir de 2029, a alíquota de IBS aplicada será a do Estado e Município onde o cliente está localizado (destino), e não mais a da sua sede. A nota fiscal eletrônica calculará isso automaticamente.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: RESTAURANTES, BARES & ALIMENTAÇÃO   -->
+        <!-- ========================================== -->
+        <div data-tab-panel="restaurante" class="hidden space-y-6">
+            
+            <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-5" data-search-tags="restaurante bar alimentacao gorjeta taxa de servico bebida imposto seletivo ifood delivery">
+                <div class="flex items-center gap-3">
+                    <span class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </span>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Restaurantes, Bares & Alimentação Fora do Lar</h2>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Regras específicas para gorjetas, bebidas alcoólicas, imposto seletivo e delivery.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    
+                    <!-- Card 1: Gorjetas e Taxa de Serviço -->
+                    <div class="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-2">
+                        <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Gorjetas 100% Isentas de IBS/CBS
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                            A gorjeta espontânea e a taxa de serviço (10% a 13%) repassadas integralmente aos garçons e equipe <strong>não integram a base de cálculo</strong> do IBS e da CBS.
+                        </p>
+                    </div>
+
+                    <!-- Card 2: Imposto Seletivo nas Bebidas -->
+                    <div class="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-2">
+                        <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            Bebidas com Imposto Seletivo (IS)
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Bebidas alcoólicas (cervejas, destilados, vinhos) e refrigerantes/bebidas açucaradas terão incidência do Imposto Seletivo na indústria, encarecendo o custo de compra.
+                        </p>
+                    </div>
+
+                    <!-- Card 3: Insumos com Alíquota Reduzida -->
+                    <div class="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-2">
+                        <div class="flex items-center gap-2 text-sky-600 dark:text-sky-400 font-bold text-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+                            Cesta Básica Nacional (Alíquota Zero)
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Carnes, arroz, feijão, hortifrutis, leite e pão terão alíquota zero de CBS/IBS ou redução de 60%, reduzindo o custo de aquisição dos ingredientes dos pratos.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Delivery e Split Payment -->
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-3 text-xs sm:text-sm">
+                    <h4 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        📱 Plataformas de Delivery (iFood, Rappi, Delivery Direto)
+                    </h4>
+                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        As plataformas de delivery e marketplaces de alimentação serão integradas diretamente ao sistema de <strong>Split Payment</strong> do Fisco. Quando o cliente fizer o pedido online e pagar pelo app, a taxa do imposto do Simples Nacional ou CBS/IBS será retida na própria fonte de liquidação, repassando o valor líquido para o restaurante.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: PRESTADORES DE SERVIÇOS            -->
+        <!-- ========================================== -->
+        <div data-tab-panel="servico" class="hidden space-y-6">
+            
+            <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-5" data-search-tags="prestador de servico b2b b2c iss folha de pagamento lucro presumido anexo iii anexo v">
+                <div class="flex items-center gap-3">
+                    <span class="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/30">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </span>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Prestadores de Serviços no Simples</h2>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Impactos da folha de pagamento, comparação com Lucro Presumido e estratégias B2B vs B2C.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <div class="p-5 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-3">
+                        <h3 class="text-base font-bold text-sky-600 dark:text-sky-400 flex items-center gap-2">
+                            💼 Serviços para Consumidor Final (B2C)
+                        </h3>
+                        <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                            Academias, barbearias, pet shops, oficinas mecânicas, escolas de cursos livres, consultórios que atendem particulares.
+                        </p>
+                        <div class="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-xs text-emerald-800 dark:text-emerald-200">
+                            <strong>Estratégia:</strong> Permaneça 100% no Simples Nacional tradicional (Anexo III ou IV). Você não tem pressão de clientes por crédito e sua alíquota de 6% a 10% é imensamente inferior à do regime geral (26,5%).
+                        </div>
+                    </div>
+
+                    <div class="p-5 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-3">
+                        <h3 class="text-base font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                            🏢 Serviços para Empresas (B2B)
+                        </h3>
+                        <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                            TI e software, consultorias empresariais, agências de marketing, manutenção industrial, segurança e limpeza para empresas.
+                        </p>
+                        <div class="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-200">
+                            <strong>Estratégia:</strong> Simule o recolhimento de CBS/IBS por fora. Como a folha de pagamento <em>não gera crédito</em>, recolher 26,5% aumentará seu custo fiscal direto, mas permitirá repassar crédito total ao tomador do serviço.
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Comparativo Simples vs Lucro Presumido para Serviços -->
+                <div class="p-5 rounded-xl bg-slate-900 text-white space-y-3 border border-slate-700">
+                    <h3 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+                        🌟 O Simples Nacional Ficará Ainda Mais Valioso em Serviços!
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        Hoje, muitos prestadores de serviços utilizam o <strong>Lucro Presumido</strong> pagando cerca de 8,65% a 14,25% de tributos totais (PIS 0,65% + COFINS 3% + ISS 2% a 5% + IRPJ/CSLL).<br>
+                        Com a reforma, empresas no Lucro Presumido pagarão a alíquota cheia de <strong>CBS + IBS de aproximadamente 26,5%</strong>. Isso fará com que o Simples Nacional (com alíquotas a partir de 6%) se torne <strong>o regime mais vantajoso do país</strong> para o setor de serviços!
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 5: CRONOGRAMA DE TRANSIÇÃO (2026-2033) -->
+        <!-- ========================================== -->
+        <div data-tab-panel="cronograma" class="hidden space-y-6">
+            
+            <div class="searchable-card bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-6" data-search-tags="cronograma transicao 2026 2027 2028 2029 2030 2031 2032 2033 aliquota teste cbs ibs">
+                <div class="border-b border-gray-100 dark:border-slate-700 pb-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Cronograma Oficial de Transição (2026 a 2033)</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">A substituição do sistema tributário atual pelo novo IVA Dual ocorrerá em etapas graduais.</p>
+                </div>
+
+                <!-- Timeline Visual -->
+                <div class="relative border-l-2 border-brand-500/40 ml-4 space-y-8 py-2">
+                    
+                    <!-- 2026 -->
+                    <div class="relative pl-6 group">
+                        <span class="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full bg-amber-500 ring-4 ring-white dark:ring-slate-800"></span>
+                        <div class="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-1">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                                2026 • FASE DE TESTES
+                            </span>
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white">Início do Teste Operacional (Alíquota 1,0%)</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                Criação da CBS com alíquota de <strong>0,9%</strong> e do IBS com alíquota de <strong>0,1%</strong> (total 1,0%). O valor recolhido é abatido do PIS/COFINS devido. As empresas do Simples Nacional não recolhem essa alíquota de teste se mantiverem no DAS unificado.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 2027 -->
+                    <div class="relative pl-6 group">
+                        <span class="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full bg-sky-500 ring-4 ring-white dark:ring-slate-800"></span>
+                        <div class="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-1">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">
+                                2027 • VIGÊNCIA PLENA DA CBS FEDERAL
+                            </span>
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white">Extinção Definitiva do PIS e COFINS</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                O PIS e a COFINS deixam de existir para sempre. A CBS entra em vigor integralmente (alíquota estimada de ~8,8%). O Imposto Seletivo (IS) começa a ser cobrado sobre produtos prejudiciais à saúde/ambiente. Alíquota de IPI é zerada para a maioria dos itens.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 2028 -->
+                    <div class="relative pl-6 group">
+                        <span class="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full bg-blue-500 ring-4 ring-white dark:ring-slate-800"></span>
+                        <div class="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-1">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                                2028 • CALIBRAÇÃO E AJUSTES
+                            </span>
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white">Consolidação do Comitê Gestor do IBS</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                Manutenção do modelo federal e ajustes finos nos sistemas de arrecadação do IBS pelos Estados e Municípios.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 2029-2032 -->
+                    <div class="relative pl-6 group">
+                        <span class="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-white dark:ring-slate-800"></span>
+                        <div class="p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 space-y-1">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                2029 A 2032 • TRANSIÇÃO GRADUAL ICMS/ISS → IBS
+                            </span>
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white">Redução Gradual do ICMS e ISS</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                Redução progressiva das alíquotas de ICMS e ISS: <strong>-10% em 2029</strong>, <strong>-20% em 2030</strong>, <strong>-30% em 2031</strong> e <strong>-40% em 2032</strong>, com aumento correspondente do IBS estadual/municipal.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 2033 -->
+                    <div class="relative pl-6 group">
+                        <span class="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-slate-800"></span>
+                        <div class="p-4 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 space-y-1">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                                2033 • SISTEMA NOVO 100% DEFINITIVO
+                            </span>
+                            <h3 class="text-base font-bold text-emerald-800 dark:text-emerald-300">Extinção Total do ICMS e ISS</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                O Brasil passa a operar exclusivamente com o novo modelo unificado (CBS + IBS + IS), completando a maior modernização tributária em 60 anos.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 6: SIMULADOR ESTRATÉGICO INTERATIVO    -->
+        <!-- ========================================== -->
+        <div data-tab-panel="simulador" class="hidden space-y-6">
+            
+            <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-6">
+                <div>
+                    <span class="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                        Ferramenta Interativa de Decisão
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-2">
+                        Simulador: Simples no DAS vs CBS/IBS por Fora
+                    </h2>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Ajuste os parâmetros da sua empresa e compare a carga tributária estimada, os créditos gerados para clientes PJ e a recomendação estratégica.
+                    </p>
+                </div>
+
+                <!-- Input Controls Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 text-xs sm:text-sm">
+                    
+                    <div>
+                        <label for="simSector" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Setor de Atuação</label>
+                        <select id="simSector" class="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                            <option value="comercio">Comércio Varejista / Atacadista</option>
+                            <option value="restaurante">Restaurantes, Bares & Alimentação</option>
+                            <option value="servico">Prestador de Serviços em Geral</option>
+                            <option value="servico_tecnico">Serviços Técnicos / Intelectuais</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="simRevenue" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Faturamento Mensal (R$)</label>
+                        <input type="text" id="simRevenue" value="50.000" class="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                    <div>
+                        <label for="simSimplesRate" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alíquota Efetiva do Simples (%)</label>
+                        <input type="number" id="simSimplesRate" step="0.1" value="6.8" class="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="simB2bShare" class="font-bold text-gray-700 dark:text-gray-300">% Vendas para Empresas PJ</label>
+                            <span id="simB2bShareVal" class="font-mono font-bold text-blue-600 dark:text-blue-400">20%</span>
+                        </div>
+                        <input type="range" id="simB2bShare" min="0" max="100" step="5" value="20" class="w-full accent-brand-600">
+                        <span class="text-[10px] text-gray-500">0% = 100% Consumidor Final (PF)</span>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="simCostShare" class="font-bold text-gray-700 dark:text-gray-300">% Compras c/ Crédito</label>
+                            <span id="simCostShareVal" class="font-mono font-bold text-sky-600 dark:text-sky-400">60%</span>
+                        </div>
+                        <input type="range" id="simCostShare" min="0" max="100" step="5" value="60" class="w-full accent-sky-600">
+                        <span class="text-[10px] text-gray-500">Mercadorias, insumos, energia</span>
+                    </div>
+
+                    <div>
+                        <label for="simStandardIvaRate" class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Alíquota Padrão IVA (CBS+IBS %)</label>
+                        <input type="number" id="simStandardIvaRate" step="0.1" value="26.5" class="w-full px-3 py-2 rounded-lg border bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                </div>
+
+                <!-- RESULTS COMPARISON DISPLAY -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                    
+                    <!-- CENÁRIO A -->
+                    <div class="rounded-xl p-5 bg-gray-50 dark:bg-slate-800/80 border-2 border-emerald-500/40 space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3">
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                                CENÁRIO A • SIMPLES UNIFICADO (DAS)
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Guia Única</span>
+                        </div>
+
+                        <div class="space-y-2.5">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 dark:text-gray-300">Guia DAS a Pagar:</span>
+                                <span id="simResultDasTotal" class="font-mono font-extrabold text-lg text-emerald-600 dark:text-emerald-400">R$ 3.400,00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-gray-500">
+                                <span>Alíquota Efetiva:</span>
+                                <span id="simResultDasRate" class="font-mono">6.8%</span>
+                            </div>
+                            <div class="border-t border-gray-200 dark:border-slate-700 my-2"></div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 dark:text-gray-300">Crédito gerado para clientes PJ:</span>
+                                <span id="simResultCreditTransferredA" class="font-mono font-bold text-amber-600 dark:text-amber-400">R$ 258,40</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-gray-500">
+                                <span>Taxa de crédito repassada:</span>
+                                <span id="simResultCreditRateA" class="font-mono">2.58%</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm pt-1 font-bold text-gray-800 dark:text-gray-200">
+                                <span>Custo líquido p/ Cliente PJ:</span>
+                                <span id="simResultClientNetCostA" class="font-mono">R$ 9.741,60</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CENÁRIO B -->
+                    <div class="rounded-xl p-5 bg-gray-50 dark:bg-slate-800/80 border-2 border-sky-500/40 space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3">
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">
+                                CENÁRIO B • SIMPLES HÍBRIDO (CBS/IBS POR FORA)
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Débito & Crédito</span>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs text-gray-600 dark:text-gray-300">
+                                <span>Débito CBS/IBS s/ Vendas (26,5%):</span>
+                                <span id="simResultIvaDebit" class="font-mono">R$ 13.250,00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-gray-600 dark:text-gray-300">
+                                <span>(-) Crédito CBS/IBS Compras:</span>
+                                <span id="simResultIvaCredit" class="font-mono text-emerald-600">R$ 8.612,50</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-gray-600 dark:text-gray-300">
+                                <span>(=) Saldo CBS/IBS Líquido a Pagar:</span>
+                                <span id="simResultNetIva" class="font-mono font-bold">R$ 4.637,50</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-gray-600 dark:text-gray-300">
+                                <span>(+) DAS Residual (IRPJ/CSLL/CPP):</span>
+                                <span id="simResultResidualDas" class="font-mono">R$ 2.108,00</span>
+                            </div>
+                            <div class="border-t border-gray-200 dark:border-slate-700 my-2"></div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="font-bold text-gray-700 dark:text-gray-200">Total Tributos da Empresa:</span>
+                                <span id="simResultTotalTaxB" class="font-mono font-extrabold text-lg text-sky-600 dark:text-sky-400">R$ 6.745,50</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-gray-500">
+                                <span>Carga Efetiva Total:</span>
+                                <span id="simResultEffectiveRateB" class="font-mono">13.5%</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm pt-1">
+                                <span class="text-gray-600 dark:text-gray-300">Crédito gerado p/ Cliente PJ:</span>
+                                <span id="simResultCreditTransferredB" class="font-mono font-bold text-emerald-600 dark:text-emerald-400">R$ 2.650,00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm font-bold text-gray-800 dark:text-gray-200">
+                                <span>Custo líquido p/ Cliente PJ:</span>
+                                <span id="simResultClientNetCostB" class="font-mono">R$ 7.350,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- VEREDITO ESTRATÉGICO -->
+                <div class="p-5 rounded-xl bg-linear-to-r from-slate-900 to-slate-800 text-white border border-slate-700 space-y-2">
+                    <div class="flex items-center gap-3">
+                        <span id="simVerdictBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                            RECOMENDAÇÃO: MANTER NO SIMPLES UNIFICADO (DAS)
+                        </span>
+                    </div>
+                    <h4 id="simVerdictTitle" class="text-base font-bold text-emerald-400">
+                        Permanecer 100% no Simples Nacional (Guia DAS)
+                    </h4>
+                    <p id="simVerdictDesc" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        Como a maior parte de suas vendas é para consumidor final, permanecer na guia única do Simples gera a menor carga direta e menor complexidade contábil.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 7: PERGUNTAS FREQUENTES (FAQ)          -->
+        <!-- ========================================== -->
+        <div data-tab-panel="faq" class="hidden space-y-4">
+            
+            <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <div class="border-b border-gray-100 dark:border-slate-700 pb-3">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Perguntas Frequentes (FAQ)</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Tire suas principais dúvidas sobre o funcionamento prático da Reforma para sua empresa.</p>
+                </div>
+
+                <div class="space-y-3">
+                    
+                    <!-- FAQ 1 -->
+                    <div class="searchable-card border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden" data-search-tags="acabar simples nacional extincao continuar regras">
+                        <button type="button" class="faq-toggle-btn w-full px-4 py-3.5 text-left font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                            <span>1. O Simples Nacional vai acabar com a Reforma Tributária?</span>
+                            <svg class="faq-icon w-5 h-5 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="hidden px-4 pb-4 pt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30">
+                            <strong>Não!</strong> O Simples Nacional é garantido pelo Artigo 146 da Constituição Federal e foi expressamente preservado na Emenda Constitucional nº 132/2023. As empresas continuam podendo recolher todos os seus tributos unificados na guia DAS.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 2 -->
+                    <div class="searchable-card border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden" data-search-tags="2026 pagar imposto aliquota teste teste aumento">
+                        <button type="button" class="faq-toggle-btn w-full px-4 py-3.5 text-left font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                            <span>2. Minha empresa no Simples vai pagar mais imposto já em 2026?</span>
+                            <svg class="faq-icon w-5 h-5 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="hidden px-4 pb-4 pt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30">
+                            <strong>Não.</strong> O ano de 2026 é apenas um ano de teste técnico para a Receita Federal calibrar os sistemas com alíquota de 0,9% (CBS) e 0,1% (IBS). As empresas do Simples Nacional que permanecerem no regime regular do DAS não pagarão nada a mais em 2026.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 3 -->
+                    <div class="searchable-card border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden" data-search-tags="split payment maquininha cartao pix retencao caixa">
+                        <button type="button" class="faq-toggle-btn w-full px-4 py-3.5 text-left font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                            <span>3. Como funciona o Split Payment nas vendas por Cartão e PIX?</span>
+                            <svg class="faq-icon w-5 h-5 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="hidden px-4 pb-4 pt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30">
+                            No momento em que o consumidor efetua o pagamento (por cartão de crédito/débito, PIX ou TEF), a instituição financeira ou adquirente separa automaticamente a parcela do imposto devido e a transfere diretamente para a conta do Fisco. A empresa recebe em sua conta corrente apenas o valor líquido da venda, eliminando inadimplência e guias atrasadas.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 4 -->
+                    <div class="searchable-card border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden" data-search-tags="restaurante bar gorjeta taxa garcom imposto seletivo refrigerante cerveja">
+                        <button type="button" class="faq-toggle-btn w-full px-4 py-3.5 text-left font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                            <span>4. Sou restaurante, vou pagar Imposto Seletivo sobre cerveja e refrigerante?</span>
+                            <svg class="faq-icon w-5 h-5 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="hidden px-4 pb-4 pt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30">
+                            O Imposto Seletivo (IS) incide <strong>uma única vez na fabricação ou importação</strong> (na cervejaria ou fabricante de refrigerantes). O restaurante não recolhe o IS na venda ao consumidor, mas o custo de compra da mercadoria pode vir reajustado pelo fabricante.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 5 -->
+                    <div class="searchable-card border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden" data-search-tags="credito nota fiscal cliente pj empresa b2b transferir">
+                        <button type="button" class="faq-toggle-btn w-full px-4 py-3.5 text-left font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                            <span>5. Como meu cliente PJ vai se creditar das notas que eu emitir?</span>
+                            <svg class="faq-icon w-5 h-5 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="hidden px-4 pb-4 pt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30">
+                            Se sua empresa estiver no Simples com <strong>DAS unificado</strong>, o cliente PJ só poderá tomar crédito do percentual exato de IBS e CBS que você pagou dentro do DAS (geralmente entre 1,5% e 3,5%). Se você optar pelo <strong>regime híbrido</strong>, o cliente tomará o crédito integral de 26,5% a 28%.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 6 -->
+                    <div class="searchable-card border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden" data-search-tags="opcao mudar trocar ano janeiro migrar das hibrido">
+                        <button type="button" class="faq-toggle-btn w-full px-4 py-3.5 text-left font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" aria-expanded="false">
+                            <span>6. Posso mudar a opção (DAS vs CBS/IBS por fora) a qualquer momento?</span>
+                            <svg class="faq-icon w-5 h-5 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div class="hidden px-4 pb-4 pt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30">
+                            A opção é anual, exercida sempre no mês de <strong>janeiro de cada ano-calendário</strong>, sendo irretratável para todo o ano, exatamente como a opção atual pelo Simples Nacional.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <div id="app-footer" class="shrink-0"></div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+    <script src="/js/nova_reforma_simples.js?v=20261001145619"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+</body>
+
+</html>

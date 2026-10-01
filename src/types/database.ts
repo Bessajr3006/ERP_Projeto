@@ -106,6 +106,7 @@ export interface BankAccounts {
   public_id: string;
   type: Generated<"cash" | "checking" | "savings">;
   updated_at: Generated<Date | null>;
+  solidcon_bank_id: Generated<string | null>;
 }
 
 export interface Categories {
@@ -134,6 +135,7 @@ export interface ChartOfAccounts {
 
 export interface Companies {
   allow_print_without_confirmation: Generated<number>;
+  show_new_measure_button: Generated<number>;
   api_token: Generated<string | null>;
   bd_dorsal: Generated<string | null>;
   bd_solidcon: Generated<string | null>;
@@ -177,6 +179,9 @@ export interface Companies {
   im: Generated<string | null>;
   is_active: Generated<number>;
   is_system: Generated<number>;
+  is_general_admin: Generated<number>;
+  is_group_master: Generated<number>;
+  company_group_id: Generated<number | null>;
   login_dorsal: Generated<string | null>;
   login_solidcon: Generated<string | null>;
   logo_base64: Generated<string | null>;
@@ -214,12 +219,15 @@ export interface Companies {
   serv_dorsal: Generated<string | null>;
   serv_solidcon: Generated<string | null>;
   cdfilial: Generated<string | null>;
+  cdpdv: Generated<string | null>;
   solidcon_api_token: Generated<string | null>;
   solidcon_url_1: Generated<string | null>;
   solidcon_url_2: Generated<string | null>;
   solidcon_url_3: Generated<string | null>;
   solidcon_url_4: Generated<string | null>;
   solidcon_url_5: Generated<string | null>;
+  solidcon_customer_cpf: Generated<string | null>;
+  solidcon_customer_name: Generated<string | null>;
   state: Generated<string | null>;
   street: Generated<string | null>;
   swagger_api_token: Generated<string | null>;
@@ -363,15 +371,19 @@ export interface Customers {
   discount_value: Generated<Decimal | null>;
   email: Generated<string | null>;
   id: Generated<number>;
+  inscricao_estadual: Generated<string | null>;
+  inscricao_municipal: Generated<string | null>;
   /**
    * Limite de credito
    */
   limite: Generated<Decimal>;
   name: string;
+  trade_name: Generated<string | null>;
   neighborhood: Generated<string | null>;
   number: Generated<string | null>;
   opening_date: Generated<Date | null>;
   phone: Generated<string | null>;
+  phone_landline: Generated<string | null>;
   public_id: string;
   seller_user_id: Generated<number | null>;
   social_contract_url: Generated<string | null>;
@@ -555,6 +567,9 @@ export interface ProductCategories {
   description: Generated<string | null>;
   id: Generated<number>;
   image_base64: Generated<string | null>;
+  idgrupopos: Generated<string | null>;
+  poscontrol_synced: Generated<number>;
+  active: Generated<number>;
   name: string;
   public_id: string;
   updated_at: Generated<Date | null>;
@@ -586,6 +601,7 @@ export interface Products {
   selling_price: Generated<Decimal>;
   sku: Generated<string | null>;
   stock_type_id: Generated<number | null>;
+  product_type_id: Generated<number | null>;
   tax_rule_id: Generated<number | null>;
   updated_at: Generated<Date | null>;
 }
@@ -732,6 +748,11 @@ export interface Services {
   name: string;
   national_tax_code: Generated<string | null>;
   nbs_item: Generated<string | null>;
+  cost: Generated<Decimal>;
+  tax_percent: Generated<Decimal>;
+  tax_amount: Generated<Decimal>;
+  total_cost: Generated<Decimal>;
+  markup: Generated<Decimal>;
   price: Generated<Decimal>;
   public_id: string;
   service_type_id: Generated<number | null>;
@@ -753,6 +774,17 @@ export interface StockTypes {
   created_at: Generated<Date | null>;
   description: Generated<string | null>;
   id: Generated<number>;
+  name: string;
+  public_id: string;
+  updated_at: Generated<Date | null>;
+}
+
+export interface ProductTypes {
+  company_id: number;
+  created_at: Generated<Date | null>;
+  description: Generated<string | null>;
+  id: Generated<number>;
+  idprodutotipopos: Generated<string | null>;
   name: string;
   public_id: string;
   updated_at: Generated<Date | null>;
@@ -834,6 +866,7 @@ export interface Transactions {
   bank_account_id: number;
   barcode: Generated<string | null>;
   billet_url: Generated<string | null>;
+  billet_batch_generated: Generated<number | null>;
   category_id: number;
   company_id: number;
   created_at: Generated<Date | null>;
@@ -849,6 +882,11 @@ export interface Transactions {
    */
   payment_method: Generated<"boleto" | "cash" | "credit" | "debit" | "pix" | "transfer" | null>;
   pix_code: Generated<string | null>;
+  cdfilial: Generated<string | null>;
+  solidcon_quitado: Generated<number | null>;
+  solidcon_key: Generated<string | null>;
+  solidcon_interest_key: Generated<string | null>;
+  pdv: Generated<string | null>;
   public_id: string;
   /**
    * Vinculo com ordem de compra (Despesa)
@@ -900,6 +938,7 @@ export interface Users {
   company_id: number;
   complement: Generated<string | null>;
   cpf_cnpj: Generated<string | null>;
+  cnpj_document_url: Generated<string | null>;
   created_at: Generated<Date | null>;
   default_page: Generated<string | null>;
   email: string;
@@ -1051,6 +1090,7 @@ export interface DB {
   service_types: ServiceTypes;
   services: Services;
   stock_types: StockTypes;
+  product_types: ProductTypes;
   suppliers: Suppliers;
   tasks: Tasks;
   tax_rules: TaxRules;

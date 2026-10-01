@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Serviço</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body data-required-module="services" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -50,7 +50,7 @@
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serviço</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo de Serviço</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço Total de Venda</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descrição</th>
                                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
                             </tr>
@@ -122,10 +122,41 @@
                                     </select>
                                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">As referências são cadastradas na tela Tributação Federal.</p>
                                 </div>
-                                <div>
-                                    <label for="servicePrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Preço <span class="text-red-500">*</span></label>
-                                    <input type="number" id="servicePrice" name="servicePrice" required min="0" step="0.01"
-                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="serviceCost" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Custo</label>
+                                        <input type="number" id="serviceCost" name="serviceCost" min="0" step="0.01"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
+                                    </div>
+                                    <div>
+                                        <label for="serviceTaxPercent" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Imposto (%)</label>
+                                        <input type="number" id="serviceTaxPercent" name="serviceTaxPercent" min="0" step="0.01"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="serviceTaxAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total do Imposto</label>
+                                        <input type="number" id="serviceTaxAmount" name="serviceTaxAmount" min="0" step="0.01"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
+                                    </div>
+                                    <div>
+                                        <label for="serviceTotalCost" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Preço Total de Custo</label>
+                                        <input type="number" id="serviceTotalCost" name="serviceTotalCost" min="0" step="0.01"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="serviceMarkup" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Markup (%)</label>
+                                        <input type="number" id="serviceMarkup" name="serviceMarkup" min="0" step="0.01"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
+                                    </div>
+                                    <div>
+                                        <label for="servicePrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Preço Total de Venda <span class="text-red-500">*</span></label>
+                                        <input type="number" id="servicePrice" name="servicePrice" required min="0" step="0.01"
+                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
+                                    </div>
                                 </div>
                                 <div>
                                     <label for="serviceDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
@@ -161,13 +192,13 @@
         </div>
     </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/pagination.js"></script>
-    <script src="/js/service.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/pagination.js?v=20261001145619"></script>
+    <script src="/js/service.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

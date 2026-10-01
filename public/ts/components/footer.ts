@@ -5,12 +5,12 @@
 
 
 window.GridSummaryFooter = {
-    update({ footerId, anchorId, count = 0, label = 'registro(s) exibido(s)' }) {
-        const anchor = document.getElementById(anchorId);
-        if (!anchor) return;
-
+    update({ footerId, anchorId, count = 0, label = 'registro(s) exibido(s)', extraHtml = '' }) {
         let footer = document.getElementById(footerId);
         if (!footer) {
+            const anchor = document.getElementById(anchorId);
+            if (!anchor) return;
+
             footer = document.createElement('div');
             footer.id = footerId;
             footer.className = 'shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4';
@@ -24,6 +24,7 @@ window.GridSummaryFooter = {
                     <span data-grid-footer-count class="font-semibold text-gray-700 dark:text-gray-200">0</span>
                     <span data-grid-footer-label>${label}</span>
                 </span>
+                <div data-grid-footer-extra class="flex items-center gap-4"></div>
             `;
             anchor.insertAdjacentElement('afterend', footer);
         }
@@ -34,22 +35,38 @@ window.GridSummaryFooter = {
 
         countEl.textContent = Number(count || 0).toLocaleString('pt-BR');
         labelEl.textContent = label;
+
+        const extraEl = footer.querySelector('[data-grid-footer-extra]');
+        if (extraEl) {
+            extraEl.innerHTML = extraHtml;
+        }
     },
 };
 
+let cachedAccessibleCompanies: any[] = [];
+try {
+    const raw = localStorage.getItem('keystone_accessible_companies');
+    if (raw) cachedAccessibleCompanies = JSON.parse(raw);
+} catch (_e) {
+    cachedAccessibleCompanies = [];
+}
+
 const sharedFooterState = {
-    companyText: localStorage.getItem('erp_last_company_name') || '',
-    companyCnpj: localStorage.getItem('erp_last_company_cnpj') || '',
+    companyText: localStorage.getItem('keystone_last_company_name') || '',
+    companyCnpj: localStorage.getItem('keystone_last_company_cnpj') || '',
+    companyPublicId: localStorage.getItem('keystone_last_company_public_id') || '',
+    accessibleCompanies: Array.isArray(cachedAccessibleCompanies) ? cachedAccessibleCompanies : [],
 };
 
 // Se recuperou do cache, formata o texto inicial
 if (sharedFooterState.companyText) {
     const name = sharedFooterState.companyText;
     const cnpj = sharedFooterState.companyCnpj;
-    sharedFooterState.companyText = formatFooterCompanyText({ name, cnpj });
+    const public_id = sharedFooterState.companyPublicId;
+    sharedFooterState.companyText = formatFooterCompanyText({ name, cnpj, public_id });
 }
 
-function formatFooterCnpj(value) {
+function formatFooterCnpj(value: any) {
     const digits = String(value || '').replace(/\D/g, '');
     if (digits.length !== 14) {
         return String(value || '').trim();
@@ -58,13 +75,18 @@ function formatFooterCnpj(value) {
     return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 }
 
-function formatFooterCompanyText({ text = '', name = '', meta = '', cnpj = '' } = {}) {
+function formatFooterCompanyText({ text = '', name = '', meta = '', cnpj = '', public_id = '' } = {}) {
     const normalizedText = String(text || '').trim();
     if (normalizedText) return normalizedText;
 
     const normalizedName = String(name || '').trim();
     const normalizedMeta = String(meta || '').trim();
     const normalizedCnpj = formatFooterCnpj(cnpj);
+    const normalizedId = String(public_id || '').trim();
+
+    if (normalizedName && normalizedCnpj && normalizedId) {
+        return `${normalizedName} - CNPJ: ${normalizedCnpj} | ID: ${normalizedId}`;
+    }
 
     if (normalizedName && normalizedCnpj) {
         return `${normalizedName} - CNPJ: ${normalizedCnpj}`;
@@ -77,6 +99,15 @@ function formatFooterCompanyText({ text = '', name = '', meta = '', cnpj = '' } 
     return normalizedName || normalizedMeta || normalizedCnpj;
 }
 
+function formatOptionCompanyText(comp: any): string {
+    const name = comp.trade_name || comp.company_name || 'Empresa';
+    const isMaster = comp.is_group_master === true || comp.is_group_master === 1;
+    const masterTag = isMaster ? ' (Matriz)' : '';
+    const cnpj = comp.cnpj ? ` - CNPJ: ${formatFooterCnpj(comp.cnpj)}` : '';
+    const publicId = comp.public_id ? ` | ID: ${comp.public_id}` : '';
+    return `${name}${masterTag}${cnpj}${publicId}`;
+}
+
 function applySharedFooterState() {
     const footerContainer = document.getElementById('app-footer');
     if (!footerContainer) return;
@@ -84,23 +115,145 @@ function applySharedFooterState() {
     const companyInfo = footerContainer.querySelector('#footerCompanyInfo');
     if (!companyInfo) return;
 
-    // A pedido do usuário, as informações da empresa foram removidas do footer e agora ficam no menu de usuário.
-    companyInfo.classList.add('hidden');
-    companyInfo.innerHTML = '';
+    const switcherContainer = footerContainer.querySelector('#footerCompanySwitcherContainer');
+    const selectEl = footerContainer.querySelector('#footerCompanySelect') as HTMLSelectElement | null;
+
+    const companies = sharedFooterState.accessibleCompanies || [];
+    const hasCompaniesList = Array.isArray(companies) && companies.length > 0;
+
+    if (switcherContainer && selectEl && (hasCompaniesList || sharedFooterState.companyText)) {
+        companyInfo.classList.remove('hidden');
+        switcherContainer.classList.remove('hidden');
+        switcherContainer.classList.add('inline-flex');
+
+        // Render options in select
+        selectEl.innerHTML = '';
+        if (hasCompaniesList) {
+            companies.forEach((comp: any) => {
+                const opt = document.createElement('option');
+                opt.value = comp.public_id || String(comp.id);
+                opt.textContent = formatOptionCompanyText(comp);
+
+                if (comp.public_id === sharedFooterState.companyPublicId || String(comp.id) === sharedFooterState.companyPublicId) {
+                    opt.selected = true;
+                }
+                selectEl.appendChild(opt);
+            });
+        } else if (sharedFooterState.companyText) {
+            const opt = document.createElement('option');
+            opt.value = sharedFooterState.companyPublicId || '';
+            opt.textContent = sharedFooterState.companyText;
+            opt.selected = true;
+            selectEl.appendChild(opt);
+        }
+
+        if (!selectEl.value && sharedFooterState.companyPublicId) {
+            selectEl.value = sharedFooterState.companyPublicId;
+        }
+
+        // Attach switch listener
+        if (!(selectEl as any)._hasSwitchHandler) {
+            (selectEl as any)._hasSwitchHandler = true;
+            selectEl.addEventListener('change', async (e: Event) => {
+                const targetPublicId = (e.target as HTMLSelectElement).value;
+                if (!targetPublicId || targetPublicId === sharedFooterState.companyPublicId) return;
+
+                const selectedComp = companies.find((c: any) => c.public_id === targetPublicId || String(c.id) === targetPublicId);
+                const compName = selectedComp ? (selectedComp.trade_name || selectedComp.company_name) : 'empresa selecionada';
+
+                if (!window.confirm(`Deseja migrar seu acesso para a empresa "${compName}"? O sistema será recarregado no novo ambiente.`)) {
+                    selectEl.value = sharedFooterState.companyPublicId;
+                    return;
+                }
+
+                const spinner = footerContainer.querySelector('#footerCompanySwitchSpinner');
+                try {
+                    if (spinner) spinner.classList.remove('hidden');
+                    selectEl.disabled = true;
+
+                    const apiFn = (window as any).api;
+                    if (typeof apiFn !== 'function') {
+                        throw new Error('Serviço de API indisponível.');
+                    }
+
+                    const response = await apiFn(`/companies/${targetPublicId}/switch-context`, {
+                        method: 'POST'
+                    });
+
+                    if (response && response.data && response.data.token) {
+                        if (typeof (window as any).Auth !== 'undefined' && typeof (window as any).Auth.setToken === 'function') {
+                            (window as any).Auth.setToken(response.data.token);
+                        } else {
+                            localStorage.setItem('erp_token', response.data.token);
+                            sessionStorage.setItem('erp_token', response.data.token);
+                        }
+
+                        if (response.data.company) {
+                            const comp = response.data.company;
+                            const newName = comp.trade_name || comp.company_name || '';
+                            const newCnpj = comp.cnpj || '';
+                            const newId = comp.public_id || '';
+                            localStorage.setItem('keystone_last_company_name', newName);
+                            localStorage.setItem('keystone_last_company_cnpj', newCnpj);
+                            localStorage.setItem('keystone_last_company_public_id', newId);
+                        }
+
+                        window.location.reload();
+                    } else {
+                        throw new Error(response?.message || 'Falha ao alternar contexto da empresa.');
+                    }
+                } catch (err: any) {
+                    console.error('Falha ao alternar empresa no footer:', err);
+                    alert(err?.message || 'Erro ao trocar de empresa.');
+                    selectEl.disabled = false;
+                    if (spinner) spinner.classList.add('hidden');
+                    selectEl.value = sharedFooterState.companyPublicId;
+                }
+            });
+        }
+    } else {
+        companyInfo.classList.add('hidden');
+        if (switcherContainer) {
+            switcherContainer.classList.add('hidden');
+            switcherContainer.classList.remove('inline-flex');
+        }
+    }
 }
 
 window.SharedFooter = {
-    setCompanyContext(context = {}) {
+    setCompanyContext(context: any = {}) {
         sharedFooterState.companyText = formatFooterCompanyText(context);
+        if (context.public_id) {
+            sharedFooterState.companyPublicId = context.public_id;
+        }
+        if (context.cnpj) {
+            sharedFooterState.companyCnpj = context.cnpj;
+        }
+        applySharedFooterState();
+    },
+    setAccessibleCompanies(companies: any[] = [], currentPublicId: string = '') {
+        sharedFooterState.accessibleCompanies = Array.isArray(companies) ? companies : [];
+        if (currentPublicId) {
+            sharedFooterState.companyPublicId = currentPublicId;
+        }
+        try {
+            if (companies && companies.length > 0) {
+                localStorage.setItem('keystone_accessible_companies', JSON.stringify(companies));
+            } else {
+                localStorage.removeItem('keystone_accessible_companies');
+            }
+        } catch (_e) {}
         applySharedFooterState();
     },
     clearCompanyContext() {
         sharedFooterState.companyText = '';
+        sharedFooterState.accessibleCompanies = [];
+        localStorage.removeItem('keystone_accessible_companies');
         applySharedFooterState();
     },
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+function initFooter() {
     const footerContainer = document.getElementById('app-footer');
     if (!footerContainer) return;
 
@@ -111,7 +264,22 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="h-2 w-2 rounded-full bg-brand-500"></span>
             <span>KEYSTONE ERP</span>
         </div>
-        <p id="footerCompanyInfo" class="hidden col-span-2 min-w-0 text-center text-[10px] sm:text-[11px] font-medium leading-tight text-gray-500 dark:text-gray-400 sm:flex-1 sm:px-4 sm:flex sm:justify-center"></p>
+        <div id="footerCompanyInfo" class="hidden col-span-2 min-w-0 text-center text-[10px] sm:text-[11px] font-medium leading-tight text-gray-500 dark:text-gray-400 sm:flex-1 sm:px-4 sm:flex sm:justify-center">
+            <div id="footerCompanySwitcherContainer" class="hidden items-center gap-1.5 py-0.5 px-2 rounded-lg bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 shadow-xs max-w-full">
+                <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-10V4m-5 4V4m1 8h1m4 4h1m-5 4h1"></path>
+                </svg>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 shrink-0 hidden md:inline">Empresa:</span>
+                <select id="footerCompanySelect" aria-label="Alternar Empresa do Grupo" class="bg-transparent border-0 text-[10px] sm:text-[11px] font-semibold text-gray-900 dark:text-gray-100 py-0.5 pl-1 pr-6 focus:ring-0 focus:outline-none cursor-pointer truncate max-w-70 xs:max-w-90 sm:max-w-130 md:max-w-162.5 lg:max-w-212.5 [&>option]:bg-white [&>option]:text-gray-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-gray-100">
+                </select>
+                <span id="footerCompanySwitchSpinner" class="hidden shrink-0">
+                    <svg class="animate-spin h-3 w-3 text-indigo-600 dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </span>
+            </div>
+        </div>
         <div class="flex items-center justify-end gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
             <p class="text-right text-[11px] text-gray-600 dark:text-gray-400 sm:text-xs">&copy; <span data-footer-year></span></p>
         </div>
@@ -138,10 +306,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applySharedFooterState();
     injectWhatsAppButton();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFooter);
+} else {
+    initFooter();
+}
 
 function injectWhatsAppButton(): void {
     if (window.location.pathname.includes('/pages/whatsapp.html')) return;
+
+    const visible = localStorage.getItem('wa_float_btn_visible');
+    if (visible === 'hide') {
+        const existing = document.getElementById('waFloatingBtn');
+        if (existing) {
+            existing.remove();
+        }
+        return;
+    }
 
     if (document.getElementById('waFloatingBtn')) return;
 
@@ -168,7 +351,7 @@ function injectWhatsAppButton(): void {
     btn.id = 'waFloatingBtn';
     btn.href = '#';
     btn.title = 'Abrir WhatsApp';
-    btn.className = 'fixed bottom-6 right-6 z-[9999] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white transition-all duration-300 hover:scale-110 hover:-translate-y-1 active:scale-95 shadow-lg shadow-emerald-500/20 wa-float-btn group';
+    btn.className = 'fixed bottom-6 right-6 z-9999 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white transition-all duration-300 hover:scale-110 hover:-translate-y-1 active:scale-95 shadow-lg shadow-emerald-500/20 wa-float-btn group';
     btn.innerHTML = `
         <svg class="h-7 w-7 transition-transform group-hover:rotate-12 duration-300" fill="currentColor" viewBox="0 0 24 24">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -316,7 +499,7 @@ function injectWhatsAppSidebar(): void {
                          </div>
                          <div class="flex-1 min-w-0">
                              <div id="waAttachmentInfo" class="wa-attachment-meta hidden text-[10px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded items-center justify-between mb-1" aria-live="polite">
-                                 <span id="waAttachmentName" class="truncate max-w-[150px]"></span>
+                                 <span id="waAttachmentName" class="truncate max-w-37.5"></span>
                                  <button type="button" id="waAttachmentClearBtn" class="text-emerald-700 font-bold hover:text-emerald-950">&times;</button>
                              </div>
                              <textarea id="waMessageInput" rows="1" placeholder="Digite uma mensagem..."
@@ -343,3 +526,5 @@ function injectWhatsAppSidebar(): void {
     script.src = '/js/whatsapp.js';
     document.body.appendChild(script);
 }
+
+(window as any).injectWhatsAppButton = injectWhatsAppButton;

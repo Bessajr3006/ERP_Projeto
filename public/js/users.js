@@ -10,11 +10,13 @@
         const api = window.api;
         const UI = window.UI;
         let waSessionPollTimer = null;
-        let currentView = localStorage.getItem('usersView') || 'list';
+        let currentView = 'list';
         let activeTab = 'data';
         let editingUserId = null; // public_id do usuário sendo editado
+        let currentUserId = null; // public_id do usuário logado
         let usersData = [];
         let rolesData = [];
+        let bankAccountsData = [];
         let filters = { search: '', role: '' };
         let searchDebounceTimer = null;
         let saving = false;
@@ -24,6 +26,30 @@
         let selectedPhotoFile = null;
         let selectedPhotoBase64 = null;
         let photoMarkedForRemoval = false;
+        let selectedFaceDescriptor = null;
+        async function ensureFaceApiLoaded() {
+            if (window.faceapi)
+                return true;
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js';
+                script.onload = async () => {
+                    try {
+                        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
+                        await window.faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                        await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                        await window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                        resolve(true);
+                    }
+                    catch (err) {
+                        console.error('Erro ao carregar modelos do face-api:', err);
+                        resolve(false);
+                    }
+                };
+                script.onerror = () => resolve(false);
+                document.body.appendChild(script);
+            });
+        }
         let cameraStream = null;
         let originalPhotoSrc = null;
         let zoomPercent = 100;
@@ -127,10 +153,18 @@
         };
         // --- Data ---
         async function loadData() {
-            const [rRoles, rUsers] = await Promise.all([api('/roles'), api('/users')]);
+            const [rRoles, rUsers, rBanks, rMe] = await Promise.all([
+                api('/roles'),
+                api('/users'),
+                api('/bank-accounts'),
+                api('/auth/me').catch(() => null)
+            ]);
             rolesData = rRoles.data || [];
             usersData = rUsers.data || [];
+            bankAccountsData = rBanks.data || [];
+            currentUserId = rMe?.data?.public_id || rMe?.public_id || null;
             populateRoleSelects();
+            populateBankAccountSelect();
         }
         function populateRoleSelects() {
             const filterSel = getById('filterRole');
@@ -143,6 +177,13 @@
             if (formSel) {
                 formSel.innerHTML = '<option value="">Selecione...</option>' + optionsHtml;
             }
+        }
+        function populateBankAccountSelect() {
+            const formSel = getById('formDefaultBankAccount');
+            if (!formSel)
+                return;
+            const optionsHtml = bankAccountsData.map(b => `<option value="${b.public_id}">${b.name} (${b.institution || ''})</option>`).join('');
+            formSel.innerHTML = '<option value="">Nenhuma conta padrão</option>' + optionsHtml;
         }
         function getFiltered() {
             let list = usersData;
@@ -381,8 +422,7 @@
         }
         // --- View toggle ---
         function setView(view) {
-            currentView = view;
-            localStorage.setItem('usersView', view);
+            currentView = 'list';
             const tableSection = getById('usersSection');
             const gridSection = getById('usersGridSection');
             const btnList = getById('btnListView');
@@ -436,10 +476,11 @@
             getById('formPassword').value = '';
             getById('formPassword').placeholder = user ? 'Deixe em branco para manter' : 'Mínimo 6 caracteres';
             getById('formDefaultPage').value = user?.default_page || '';
+            getById('formDefaultBankAccount').value = user?.default_bank_account_public_id || '';
             // Populate role select and set value
             populateRoleSelects();
             getById('formRole').value = user?.role || '';
-            // WhatsApp/Email/Photo tabs
+            // WhatsApp/Email/Photo/Config tabs
             const tabsList = getById('userModalTabs');
             const existingWaTab = tabsList.querySelector('[data-tab="whatsapp"]')?.closest('li');
             if (existingWaTab)
@@ -450,19 +491,28 @@
             const existingPhotoTab = tabsList.querySelector('[data-tab="photo"]')?.closest('li');
             if (existingPhotoTab)
                 existingPhotoTab.remove();
-            const liWhatsapp = document.createElement('li');
-            liWhatsapp.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp</button>`;
-            tabsList.appendChild(liWhatsapp);
+            const existingConfigTab = tabsList.querySelector('[data-tab="config"]')?.closest('li');
+            if (existingConfigTab)
+                existingConfigTab.remove();
+            if (user && currentUserId && String(user.public_id) === String(currentUserId)) {
+                const liWhatsapp = document.createElement('li');
+                liWhatsapp.innerHTML = `<button type="button" data-tab="whatsapp" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">WhatsApp</button>`;
+                tabsList.appendChild(liWhatsapp);
+            }
             const liEmail = document.createElement('li');
             liEmail.innerHTML = `<button type="button" data-tab="email" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">E-mail</button>`;
             tabsList.appendChild(liEmail);
             const liPhoto = document.createElement('li');
             liPhoto.innerHTML = `<button type="button" data-tab="photo" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">Foto</button>`;
             tabsList.appendChild(liPhoto);
+            const liConfig = document.createElement('li');
+            liConfig.innerHTML = `<button type="button" data-tab="config" class="tab-btn pb-3 border-b-2 border-transparent text-gray-500 font-medium px-1 text-sm flex gap-2 items-center">Configuração</button>`;
+            tabsList.appendChild(liConfig);
             // Reset photo upload fields
             selectedPhotoFile = null;
             selectedPhotoBase64 = null;
             photoMarkedForRemoval = false;
+            selectedFaceDescriptor = user?.face_descriptor || null;
             const photoFileInput = getById('userPhotoFile');
             if (photoFileInput)
                 photoFileInput.value = '';
@@ -599,14 +649,24 @@
             }
             const finalWidth = displayWidth * scale;
             const finalHeight = displayHeight * scale;
-            const minPanX = 192 - finalWidth;
-            const minPanY = 192 - finalHeight;
-            if (panX > 0)
-                panX = 0;
-            if (panY > 0)
-                panY = 0;
+            let minPanX = 192 - finalWidth;
+            let maxPanX = 0;
+            if (finalWidth < 192) {
+                minPanX = 0;
+                maxPanX = 192 - finalWidth;
+            }
+            let minPanY = 192 - finalHeight;
+            let maxPanY = 0;
+            if (finalHeight < 192) {
+                minPanY = 0;
+                maxPanY = 192 - finalHeight;
+            }
+            if (panX > maxPanX)
+                panX = maxPanX;
             if (panX < minPanX)
                 panX = minPanX;
+            if (panY > maxPanY)
+                panY = maxPanY;
             if (panY < minPanY)
                 panY = minPanY;
             img.style.width = `${finalWidth}px`;
@@ -646,6 +706,7 @@
             const tabWhatsapp = getById('tabWhatsapp');
             const tabEmail = getById('tabEmail');
             const tabPhoto = getById('tabPhoto');
+            const tabConfig = getById('tabConfig');
             const footer = getById('userModalFooter');
             if (tabData)
                 tabData.classList.toggle('hidden', tab !== 'data');
@@ -655,6 +716,8 @@
                 tabEmail.classList.toggle('hidden', tab !== 'email');
             if (tabPhoto)
                 tabPhoto.classList.toggle('hidden', tab !== 'photo');
+            if (tabConfig)
+                tabConfig.classList.toggle('hidden', tab !== 'config');
             footer.classList.remove('hidden');
             qsa('.tab-btn').forEach((btn) => {
                 const isActive = btn.dataset.tab === tab;
@@ -1015,14 +1078,20 @@
                 passwordRaw: getById('formPassword').value,
                 default_page: getById('formDefaultPage').value,
                 whatsapp_auto_reply_mode: (getById('formWhatsAppAutoReplyMode')?.value || editingUserWhatsAppAutoReplyMode || editingUserData?.whatsapp_auto_reply_mode || 'automatic'),
+                default_bank_account_public_id: getById('formDefaultBankAccount')?.value || null,
             };
             if (selectedPhotoBase64) {
                 payload.photo_base64 = selectedPhotoBase64;
                 payload.photo_filename = selectedPhotoFile ? selectedPhotoFile.name : 'foto.png';
+                payload.face_descriptor = selectedFaceDescriptor;
             }
             else if (photoMarkedForRemoval) {
                 payload.photo_base64 = null;
                 payload.photo_filename = null;
+                payload.face_descriptor = null;
+            }
+            else {
+                payload.face_descriptor = selectedFaceDescriptor;
             }
             // Remove campos opcionais vazios para não falhar na validação do backend
             if (!payload.passwordRaw)
@@ -1093,15 +1162,14 @@
                 if (savedUser) {
                     const currentUser = window.gNavbarAuthContext?.user;
                     if (currentUser && (currentUser.id === savedUser.id || currentUser.public_id === savedUser.public_id || currentUser.email === savedUser.email)) {
-                        const navAvatar = document.getElementById('userGreetingAvatar');
-                        if (navAvatar) {
-                            if (savedUser.photo_base64) {
-                                navAvatar.src = savedUser.photo_base64;
-                                localStorage.setItem('keystone_last_user_photo', savedUser.photo_base64);
-                            }
-                            else {
-                                localStorage.removeItem('keystone_last_user_photo');
-                            }
+                        if (window.updateNavbarAvatar) {
+                            window.updateNavbarAvatar(savedUser.full_name || 'Usuário', savedUser.photo_base64 || null);
+                        }
+                        if (savedUser.photo_base64) {
+                            localStorage.setItem('keystone_last_user_photo', savedUser.photo_base64);
+                        }
+                        else {
+                            localStorage.removeItem('keystone_last_user_photo');
                         }
                         const navGreeting = document.getElementById('userGreeting');
                         if (navGreeting && savedUser.full_name) {
@@ -1143,8 +1211,6 @@
         await loadData();
         setView(currentView);
         // Static event listeners
-        getById('btnListView')?.addEventListener('click', () => setView('list'));
-        getById('btnGridView')?.addEventListener('click', () => setView('grid'));
         getById('btnNewUser')?.addEventListener('click', () => openModalDeferred());
         getById('btnCancelModal')?.addEventListener('click', closeModal);
         getById('userModalBackdrop')?.addEventListener('click', closeModal);
@@ -1262,7 +1328,7 @@
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth || 640;
                 canvas.height = video.videoHeight || 480;
-                const ctx = canvas.getContext('2d');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
                 if (ctx) {
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const capturedBase64 = canvas.toDataURL('image/jpeg', 0.9);
@@ -1331,14 +1397,20 @@
                 fileInput.value = '';
             setUserPhotoPreviewState();
         });
-        getById('btnConfirmAdjustment')?.addEventListener('click', () => {
+        getById('btnConfirmAdjustment')?.addEventListener('click', async () => {
             const img = getById('userPhotoToAdjust');
             if (!img || !originalPhotoSrc)
                 return;
+            const confirmBtn = getById('btnConfirmAdjustment');
+            if (!confirmBtn)
+                return;
+            const originalText = confirmBtn.textContent;
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Processando...';
             const canvas = document.createElement('canvas');
             canvas.width = 256;
             canvas.height = 256;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             if (ctx) {
                 const scale = zoomPercent / 100;
                 let displayWidth = 192;
@@ -1358,22 +1430,51 @@
                 const finalHeight = displayHeight * scale;
                 const ratio = 256 / 192;
                 const imageObj = new Image();
-                imageObj.onload = () => {
-                    ctx.clearRect(0, 0, 256, 256);
+                imageObj.onload = async () => {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, 256, 256);
                     // Draw circular clipping path on canvas
                     ctx.beginPath();
                     ctx.arc(128, 128, 128, 0, Math.PI * 2, true);
                     ctx.closePath();
                     ctx.clip();
+                    // Fill circular clip with white background
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
                     ctx.drawImage(imageObj, panX * ratio, panY * ratio, finalWidth * ratio, finalHeight * ratio);
                     selectedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.9);
                     selectedPhotoFile = null;
                     photoMarkedForRemoval = false;
+                    try {
+                        const loaded = await ensureFaceApiLoaded();
+                        if (loaded) {
+                            const faceapi = window.faceapi;
+                            const detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+                            if (detection) {
+                                selectedFaceDescriptor = JSON.stringify(Array.from(detection.descriptor));
+                                UI.showAlert('alertMessage', 'Biometria facial registrada com sucesso!', 'success', 3000);
+                            }
+                            else {
+                                selectedFaceDescriptor = null;
+                                UI.showAlert('alertMessage', 'Aviso: Rosto não identificado. A foto foi salva, mas a biometria para login não estará ativa.', 'error', 5000);
+                            }
+                        }
+                        else {
+                            selectedFaceDescriptor = null;
+                            UI.showAlert('alertMessage', 'Aviso: Não foi possível carregar a biblioteca de biometria. A foto foi salva sem biometria.', 'error', 5000);
+                        }
+                    }
+                    catch (err) {
+                        console.error('Erro na biometria facial:', err);
+                        selectedFaceDescriptor = null;
+                    }
                     setUserPhotoPreviewState({
                         src: selectedPhotoBase64,
                         fileName: 'foto_ajustada.jpg',
                         showPreview: true
                     });
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = originalText;
                     getById('userPhotoAdjustmentContainer')?.classList.add('hidden');
                     getById('userPhotoAdjustmentContainer')?.classList.remove('flex');
                     getById('userPhotoUploadContainer')?.classList.remove('hidden');

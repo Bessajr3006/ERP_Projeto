@@ -11,6 +11,24 @@
         return;
     }
 
+    const checkMeasureButtonVisibility = async () => {
+        try {
+            const userRes = await api('/auth/me');
+            const companyPublicId = userRes.data?.company?.public_id;
+            if (companyPublicId) {
+                const companyRes = await api(`/companies/${companyPublicId}`);
+                const company = companyRes.data || {};
+                if (company.show_new_measure_button === false || company.show_new_measure_button === 0) {
+                    const btn = getById('btnOpenModal');
+                    if (btn) btn.classList.add('hidden');
+                }
+            }
+        } catch (err) {
+            console.error('Failed to check measure button visibility', err);
+        }
+    };
+    checkMeasureButtonVisibility();
+
     measuresManager = new CrudManager({
         entityName: 'Medida',
         endpoint: '/estoque/measures',
@@ -29,7 +47,7 @@
         renderTable: (items) => {
             const tbody = getById('measuresTable');
             if (items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma medida cadastrada.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma medida cadastrada.</td></tr>`;
                 return;
             }
 
@@ -43,6 +61,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500 dark:text-gray-400">
                         <span class="bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded text-xs">${m.abbreviation}</span>
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500 dark:text-gray-400 truncate max-w-xs">${m.idmedidapos || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button type="button" title="Editar" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-3 edit-btn" data-item='${JSON.stringify(m).replace(/'/g, "&#39;")}'>
                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -71,6 +90,7 @@
                         <input type="checkbox" value="${m.public_id}" class="item-checkbox rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 dark:border-slate-600" data-bwignore="true" data-lpignore="true" placeholder="">
                     </div>
                     <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate mb-1 pl-8 pr-14">${m.name} <span class="text-xs font-mono ml-2 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded-md text-gray-500 dark:text-gray-400">${m.abbreviation}</span></h4>
+                    ${m.idmedidapos ? `<div class="pl-8 text-xs font-mono text-gray-400 dark:text-gray-500 mb-2">POS ID: ${m.idmedidapos}</div>` : ''}
                     <div class="mt-auto pt-4 flex justify-between items-center text-xs text-gray-400">
                         <span class="pl-8">ID: ${m.id}</span>
                         <div class="flex space-x-2">
@@ -98,14 +118,17 @@
                 title.textContent = 'Editar Medida';
                 getById('measureName').value = data.name || '';
                 getById('measureAbbr').value = data.abbreviation || '';
+                getById('measureIdmedidapos').value = data.idmedidapos || '';
                 form.dataset.id = data.public_id;
             } else if (data && data.name) {
                 title.textContent = 'Duplicar Medida';
                 getById('measureName').value = data.name || '';
                 getById('measureAbbr').value = data.abbreviation || '';
+                getById('measureIdmedidapos').value = data.idmedidapos || '';
                 delete form.dataset.id;
             } else {
                 title.textContent = 'Cadastrar Medida';
+                getById('measureIdmedidapos').value = '';
                 delete form.dataset.id;
             }
 
@@ -124,7 +147,8 @@ getById('measureForm')?.addEventListener('submit', async (e) => {
     const form = getById('measureForm');
     const payload = {
         name: getById('measureName').value,
-        abbreviation: getById('measureAbbr').value
+        abbreviation: getById('measureAbbr').value,
+        idmedidapos: getById('measureIdmedidapos').value || null
     };
 
     saveBtn.disabled = true;
@@ -145,13 +169,52 @@ getById('measureForm')?.addEventListener('submit', async (e) => {
             UI.showAlert('alertMessage', 'Medida salva com sucesso!', 'success');
         }
 
-        measuresManager.closeModal();
+            measuresManager.closeModal();
         measuresManager.loadData();
-    } catch (error) {
+    } catch (error: any) {
         alert(error.message);
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Salvar';
+    }
+});
+
+getById('btnImportPosControl')?.addEventListener('click', async () => {
+    const btn = getById('btnImportPosControl');
+    const originalText = btn.innerHTML;
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Buscando...`;
+
+        const userRes = await api('/auth/me');
+        const companyPublicId = userRes.data?.company?.public_id;
+        if (!companyPublicId) {
+            throw new Error('Empresa do usuário não identificada.');
+        }
+
+        const configRes = await api(`/companies/${companyPublicId}/poscontrol-configs`);
+        const configs = configRes.data || [];
+        if (configs.length === 0) {
+            throw new Error('Nenhuma credencial do Pos-Controll configurada. Cadastre-a no menu Minha Empresa > API/Pos-Controll.');
+        }
+
+        const activeConfig = configs[0];
+
+        const res = await api(`/companies/${companyPublicId}/poscontrol-sync/import-unittypes`, {
+            method: 'POST',
+            body: JSON.stringify({
+                configId: activeConfig.id
+            })
+        });
+
+        alert(`Importação concluída!\n\nImportadas: ${res.data.imported}\nIgnoradas (já existentes): ${res.data.skipped}`);
+        measuresManager.loadData();
+    } catch (err: any) {
+        alert(err.message || 'Erro ao importar unidades do Pos-Controll.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
 });
 

@@ -1,2 +1,2 @@
-#!/bin/sh
-echo "30Mariafnamor@"
+#!/usr/bin/env bash
+echo "30Simoneamor@"

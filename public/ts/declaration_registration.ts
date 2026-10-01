@@ -3,10 +3,53 @@
 
     const getById = (id: string): any => document.getElementById(id);
 
+    const TAX_REGIME_LABELS: Record<string, string> = {
+        'SIMPLES_NACIONAL': 'Simples Nacional',
+        'LUCRO_PRESUMIDO': 'Lucro Presumido',
+        'LUCRO_REAL': 'Lucro Real',
+        'MEI': 'MEI',
+        'PF': 'Pessoa Física',
+        'GERAL': 'Geral',
+        'OUTROS': 'Outros / Isento'
+    };
+
+    function renderTaxRegimesBadges(taxRegimeStr: string | null | undefined): string {
+        if (!taxRegimeStr) return '<span class="text-gray-400 dark:text-gray-500 text-xs">Não definida</span>';
+        const regimes = String(taxRegimeStr).split(',').map((s) => s.trim()).filter(Boolean);
+        if (regimes.length === 0) return '<span class="text-gray-400 dark:text-gray-500 text-xs">Não definida</span>';
+
+        return `<div class="flex flex-wrap gap-1">${regimes.map((r) => {
+            const label = TAX_REGIME_LABELS[r] || r;
+            let colorClass = 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800/40';
+            if (r === 'GERAL') colorClass = 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800/40';
+            if (r === 'SIMPLES_NACIONAL') colorClass = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40';
+            if (r === 'MEI') colorClass = 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800/40';
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${colorClass} border whitespace-nowrap">${label}</span>`;
+        }).join('')}</div>`;
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         if (!(window as any).Auth.isAuthenticated()) {
             window.location.href = '/';
             return;
+        }
+
+        // Setup quick select / clear buttons for tax regimes
+        const btnSelectAll = getById('btnSelectAllTaxRegimes');
+        const btnClearAll = getById('btnClearAllTaxRegimes');
+        if (btnSelectAll) {
+            btnSelectAll.addEventListener('click', () => {
+                document.querySelectorAll<HTMLInputElement>('input[name="tax_regimes"]').forEach(cb => {
+                    cb.checked = true;
+                });
+            });
+        }
+        if (btnClearAll) {
+            btnClearAll.addEventListener('click', () => {
+                document.querySelectorAll<HTMLInputElement>('input[name="tax_regimes"]').forEach(cb => {
+                    cb.checked = false;
+                });
+            });
         }
 
         declarationManager = new (window as any).CrudManager({
@@ -27,7 +70,7 @@
             renderTable: (items: any[]) => {
                 const tbody = getById('declarationTypesTable');
                 if (items.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum tipo de declaração cadastrado.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum tipo de declaração cadastrado.</td></tr>`;
                     return;
                 }
 
@@ -40,15 +83,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100">${d.name}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">${d.description || '-'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${d.frequency}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${
-                            d.tax_regime === 'SIMPLES_NACIONAL' ? 'Simples Nacional' : 
-                            d.tax_regime === 'LUCRO_PRESUMIDO' ? 'Lucro Presumido' : 
-                            d.tax_regime === 'LUCRO_REAL' ? 'Lucro Real' : 
-                            d.tax_regime === 'GERAL' ? 'Geral' : 
-                            d.tax_regime === 'MEI' ? 'MEI' : 
-                            d.tax_regime === 'PF' ? 'Pessoa Física' : 
-                            (d.tax_regime || '-')
-                        }</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${renderTaxRegimesBadges(d.tax_regime)}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${d.due_day ? `Dia ${d.due_day}` : '-'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${d.active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}">
@@ -80,15 +115,10 @@
                             <div class="min-w-0 flex-1">
                                 <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate pr-14">${d.name}</h4>
                                 <div class="text-sm text-gray-500 dark:text-gray-400 truncate">Venc: Dia ${d.due_day || '-'}</div>
-                                <div class="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">Tributação: ${
-                                    d.tax_regime === 'SIMPLES_NACIONAL' ? 'Simples Nacional' : 
-                                    d.tax_regime === 'LUCRO_PRESUMIDO' ? 'Lucro Presumido' : 
-                                    d.tax_regime === 'LUCRO_REAL' ? 'Lucro Real' : 
-                                    d.tax_regime === 'GERAL' ? 'Geral' : 
-                                    d.tax_regime === 'MEI' ? 'MEI' : 
-                                    d.tax_regime === 'PF' ? 'Pessoa Física' : 
-                                    (d.tax_regime || 'Não definida')
-                                }</div>
+                                <div class="mt-1.5 flex flex-col gap-1">
+                                    <span class="text-xs text-gray-400 dark:text-gray-500 font-medium">Tributação:</span>
+                                    ${renderTaxRegimesBadges(d.tax_regime)}
+                                </div>
                             </div>
                             <span class="text-xs text-gray-400">ID: #${String(d.id).padStart(4, '0')}</span>
                         </div>
@@ -119,12 +149,22 @@
                     getById('description').value = declaration.description || '';
                     getById('frequency').value = declaration.frequency || 'MENSAL';
                     getById('due_day').value = declaration.due_day || '';
-                    getById('tax_regime').value = declaration.tax_regime || '';
+                    
+                    const selectedRegimes = declaration.tax_regime 
+                        ? String(declaration.tax_regime).split(',').map(s => s.trim()) 
+                        : [];
+                    document.querySelectorAll<HTMLInputElement>('input[name="tax_regimes"]').forEach(cb => {
+                        cb.checked = selectedRegimes.includes(cb.value);
+                    });
+
                     getById('active').checked = !!declaration.active;
                     form.dataset.id = declaration.public_id;
                 } else {
                     title.textContent = 'Nova Declaração';
                     delete form.dataset.id;
+                    document.querySelectorAll<HTMLInputElement>('input[name="tax_regimes"]').forEach(cb => {
+                        cb.checked = false;
+                    });
                     getById('active').checked = true;
                 }
 
@@ -141,12 +181,15 @@
 
         const saveBtn = getById('saveBtn');
         const form = getById('declarationTypeForm');
+
+        const checkedRegimes = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="tax_regimes"]:checked')).map(cb => cb.value);
+
         const payload: any = {
             name: getById('name').value,
             description: getById('description').value || null,
             frequency: getById('frequency').value,
             due_day: parseInt(getById('due_day').value, 10) || null,
-            tax_regime: getById('tax_regime').value || null,
+            tax_regime: checkedRegimes.length > 0 ? checkedRegimes.join(',') : null,
             active: getById('active').checked
         };
 

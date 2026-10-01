@@ -105,7 +105,12 @@
                 listIconCheck?.classList.remove('hidden');
                 gridIconCheck?.classList.add('hidden');
                 gridContainer.className = 'overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 gap-4 content-start';
-                localStorage.setItem('picking_view', 'list');
+                if (window.CompanyStorage) {
+                    window.CompanyStorage.setItem('picking_view', 'list');
+                }
+                else {
+                    localStorage.setItem('picking_view', 'list');
+                }
             }
             else {
                 btnGridView.className =
@@ -116,13 +121,18 @@
                 listIconCheck?.classList.add('hidden');
                 gridContainer.className =
                     'overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 content-start';
-                localStorage.setItem('picking_view', 'grid');
+                if (window.CompanyStorage) {
+                    window.CompanyStorage.setItem('picking_view', 'grid');
+                }
+                else {
+                    localStorage.setItem('picking_view', 'grid');
+                }
             }
         };
         btnListView.addEventListener('click', () => setView('list'));
         btnGridView.addEventListener('click', () => setView('grid'));
         // Apply from saved memory
-        const savedView = localStorage.getItem('picking_view') || 'grid';
+        const savedView = (window.CompanyStorage?.getItem('picking_view') ?? localStorage.getItem('picking_view')) || 'grid';
         setView(savedView);
     }
     async function loadSales() {

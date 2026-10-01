@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Clientes</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
     <script src="/vendor/forge.min.js"></script>
 </head>
 
@@ -39,7 +39,7 @@
                         <span class="hidden sm:inline">Excluir em Lote </span>(<span id="bulkCustomersCount">0</span>)
                     </button>
                     <button type="button" id="btnOpenSolidconCustomersModal" title="Importar Solidcon"
-                        class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        class="hidden items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
                         Solidcon
                     </button>
                     <button type="button" id="btnOpenModal" title="Novo Cliente"
@@ -64,11 +64,8 @@
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Contato</th>
                                 <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Venc. / Limite</th>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Vendedor</th>
+                                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Regime / Documentos</th>
                                 <th scope="col"
                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Ações</th>
@@ -77,7 +74,7 @@
                         <tbody id="customersTable"
                             class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                             <tr>
-                                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                     Carregando...</td>
                             </tr>
                         </tbody>
@@ -100,54 +97,114 @@
     </main>
 
     <!-- Solidcon Customers Modal -->
-    <div id="solidconCustomersModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="solidcon-customers-modal-title"
-        role="dialog" aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
-                id="solidconCustomersModalBackdrop"></div>
-            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6">
-                    <div class="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                            <h3 id="solidcon-customers-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Importar Clientes Solidcon</h3>
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Busque o JSON pela URL configurada ou cole o payload para importar clientes.</p>
+    <div id="solidconCustomersModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="solidcon-customers-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen pt-10 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="solidconCustomersModalBackdrop" class="fixed inset-0 bg-black/15 dark:bg-black/25 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-top bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-[94vw] mx-auto sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="solidconCustomersImportForm" class="space-y-0">
+                    <div class="bg-white dark:bg-slate-800 px-5 pt-5 pb-4 sm:p-6 max-h-[68vh] overflow-y-auto">
+                        <div class="flex items-start justify-between gap-4 mb-4">
+                            <div>
+                                <h3 id="solidcon-customers-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Importar Clientes Solidcon</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Busque pela API usando o período ou consulte o banco de dados Solidcon para importar clientes.</p>
+                                <div class="mt-2 text-xs text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/50 rounded-md p-2 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 shrink-0 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span><strong>Segurança:</strong> A sincronização atualiza apenas dados cadastrais (Razão, Fantasia, Documentos, Endereço e Contato). Todos os parâmetros criados no Keystone (Vendedor, Grupos, Limites, Travas e Anotações) são rigorosamente preservados.</span>
+                                </div>
+                            </div>
+                            <button type="button" id="btnCloseSolidconCustomersModal" title="Fechar"
+                                class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                                <span class="sr-only">Fechar</span>
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
-                        <button type="button" id="btnCloseSolidconCustomersModal" title="Fechar"
-                            class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
-                            <span class="sr-only">Fechar</span>
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+
+                        <!-- Configurações da Importação -->
+                        <div class="mb-4">
+                            <label for="solidconConnectionType" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                Tipo de Conexão
+                            </label>
+                            <select id="solidconConnectionType" name="solidconConnectionType"
+                                class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-sans">
+                                <option value="api">API (Solidcon URL)</option>
+                                <option value="solidcon_db">Banco de Dados Solidcon (SQL Server)</option>
+                                <option value="dorsal_db">Banco de Dados Dorsal (SQL Server)</option>
+                            </select>
+                        </div>
+
+                        <div id="solidconCustomerUrlContainer" class="mb-4">
+                            <label for="solidconCustomerUrlSelect" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                URL Solidcon
+                            </label>
+                            <select id="solidconCustomerUrlSelect" name="solidconCustomerUrlSelect"
+                                class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-sans">
+                                <option value="1">Solidcon URL 1</option>
+                                <option value="2" selected>Solidcon URL 2</option>
+                                <option value="3">Solidcon URL 3</option>
+                                <option value="4">Solidcon URL 4</option>
+                                <option value="5">Solidcon URL 5</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="solidconStartDate" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Data Inicial
+                                </label>
+                                <input type="date" id="solidconStartDate" name="solidconStartDate"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-sans">
+                            </div>
+                            <div>
+                                <label for="solidconEndDate" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Data Final
+                                </label>
+                                <input type="date" id="solidconEndDate" name="solidconEndDate"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-sans">
+                            </div>
+                        </div>
+
+                        <!-- Ação de buscar da API/Banco -->
+                        <div class="flex justify-end mb-4">
+                            <button type="button" id="btnFetchSolidconCustomers" 
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-all shadow-sm">
+                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                Consulta
+                            </button>
+                        </div>
+
+                        <!-- Manual JSON Input fallback (collapsible / details) -->
+                        <div class="mt-3">
+                            <details class="group text-xs">
+                                <summary class="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 select-none flex items-center gap-1">
+                                    <span class="font-medium">Opção Avançada: Colar Payload JSON Manualmente</span>
+                                </summary>
+                                <div class="mt-2">
+                                    <textarea id="solidconCustomersJsonInput" name="solidconCustomersJsonInput" rows="5" class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 sm:text-xs font-mono" placeholder="Cole aqui o JSON retornado pela Solidcon se preferir importar manualmente..."></textarea>
+                                </div>
+                            </details>
+                        </div>
+
+                        <div id="solidconCustomersStatus" class="hidden mt-3 text-sm rounded-md px-3 py-2"></div>
+                        <div id="solidconCustomersDetails" class="hidden mt-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-100"></div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                        <button type="button" id="btnCancelSolidconCustomersModal"
+                            class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnImportSolidconCustomers"
+                            class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            Importar
                         </button>
                     </div>
-                    <div class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-md border border-gray-200 dark:border-slate-700">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                            <div class="flex-1">
-                                <label for="solidconCustomerUrlSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL Solidcon</label>
-                                <select id="solidconCustomerUrlSelect" name="solidconCustomerUrlSelect" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
-                                    <option value="1">Solidcon URL 1</option>
-                                    <option value="2" selected>Solidcon URL 2</option>
-                                    <option value="3">Solidcon URL 3</option>
-                                    <option value="4">Solidcon URL 4</option>
-                                    <option value="5">Solidcon URL 5</option>
-                                </select>
-                            </div>
-                            <div class="flex gap-2">
-                                <button type="button" id="btnFetchSolidconCustomers" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
-                                    Buscar JSON
-                                </button>
-                                <button type="button" id="btnImportSolidconCustomers" class="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-3 py-2 bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
-                                    Importar JSON
-                                </button>
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <label for="solidconCustomersJsonInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payload JSON</label>
-                            <textarea id="solidconCustomersJsonInput" name="solidconCustomersJsonInput" rows="6" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Cole aqui o JSON ou clique em &quot;Buscar JSON&quot;"></textarea>
-                        </div>
-                        <div id="solidconCustomersStatus" class="hidden mt-3 text-sm rounded-md px-3 py-2"></div>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -173,6 +230,18 @@
                                             data-customer-tab-target="customerInfoTab" aria-controls="customerInfoTab" aria-selected="true">
                                             Dados
                                         </button>
+                                        <button type="button" id="customerCommercialTabButton"
+                                            class="customer-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                            role="tab"
+                                            data-customer-tab-target="customerCommercialTab" aria-controls="customerCommercialTab" aria-selected="false">
+                                            Dados Comerciais
+                                        </button>
+                                        <button type="button" id="customerFiscalTabButton"
+                                            class="customer-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                            role="tab"
+                                            data-customer-tab-target="customerFiscalTab" aria-controls="customerFiscalTab" aria-selected="false">
+                                            Documentos Fiscais
+                                        </button>
                                         <button type="button" id="customerDetailsTabButton"
                                             class="customer-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
                                             role="tab"
@@ -191,11 +260,25 @@
                                             <input type="text" id="customerName" name="customerName"
                                                 class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
                                         </div>
+                                        <div class="sm:col-span-2">
+                                            <label for="customerTradeName"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Fantasia</label>
+                                            <input type="text" id="customerTradeName" name="customerTradeName"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
                                         <div>
                                             <label for="customerEmail"
                                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                                             <input type="email" id="customerEmail" name="customerEmail" autocomplete="off"
                                                 class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
+                                        <div>
+                                            <label for="customerGroupParam"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grupo de Cliente</label>
+                                            <select id="customerGroupParam" name="customerGroupParam"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                                <option value="">Nenhum</option>
+                                            </select>
                                         </div>
                                         <div>
                                             <label for="customerSellerParam"
@@ -205,45 +288,14 @@
                                                 <option value="">Nenhum</option>
                                             </select>
                                         </div>
-                                    </div>
-
-                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
-                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Dados Comerciais</h4>
-                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div>
-                                                <label for="customerTaxRegime" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Regime Tributário</label>
-                                                <select id="customerTaxRegime" name="customerTaxRegime"
-                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
-                                                    <option value="">Selecione...</option>
-                                                    <option value="Simples Nacional">Simples Nacional</option>
-                                                    <option value="MEI">MEI</option>
-                                                    <option value="Lucro Presumido">Lucro Presumido</option>
-                                                    <option value="Lucro Real">Lucro Real</option>
-                                                    <option value="Outros / Isento">Outros / Isento</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label for="customerOpeningDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data de Abertura</label>
-                                                <input type="date" id="customerOpeningDate" name="customerOpeningDate"
-                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
-                                            </div>
-                                            <div>
-                                                <label for="customerDocument"
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF/CNPJ</label>
-                                                <div class="flex">
-                                                    <input type="text" id="customerDocument" name="customerDocument" placeholder="000.000.000-00"
-                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
-                                                    <button type="button" id="btnSearchCnpj" class="mt-1 px-3 py-2 bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 text-white border border-brand-600 dark:border-brand-500 rounded-r-md font-medium text-sm transition-colors">Buscar</button>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label for="customerPhone"
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
-                                                <input type="text" id="customerPhone" name="customerPhone"
-                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        <div class="sm:col-span-2">
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grupo de Atividade</label>
+                                            <div id="customerActivitiesContainer" class="mt-1 block w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 max-h-32 overflow-y-auto space-y-2">
+                                                <!-- Checkboxes will be populated dynamically -->
                                             </div>
                                         </div>
                                     </div>
+
 
                                     <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
                                         <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Endereço</h4>
@@ -310,41 +362,60 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
-                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Documentos Fiscais</h4>
-                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div class="sm:col-span-2 bg-gray-50 dark:bg-slate-900/50 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
-                                                <label for="customerCertFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Certificado Digital A1 (.pfx)</label>
-                                                <input type="file" id="customerCertFile" name="customerCertFile" accept=".pfx,.p12" title="Selecionar certificado digital do cliente"
-                                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-brand-900/40 dark:file:text-brand-300 dark:text-gray-400" data-bwignore="true" data-lpignore="true" placeholder="">
-                                                
-                                                <div class="mt-3 grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <label for="customerCertPassword" class="block text-xs font-semibold text-gray-500 dark:text-gray-400">Senha do Certificado</label>
-                                                        <input type="password" id="customerCertPassword" name="customerCertPassword" autocomplete="new-password"
-                                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 sm:text-sm outline-none" data-bwignore="true" data-lpignore="true" placeholder="">
-                                                    </div>
-                                                    <div>
-                                                        <label for="customerCertExpiration" class="block text-xs font-semibold text-gray-500 dark:text-gray-400">Data de Validade</label>
-                                                        <input type="date" id="customerCertExpiration" name="customerCertExpiration"
-                                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 sm:text-sm outline-none" data-bwignore="true" data-lpignore="true" placeholder="">
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="sm:col-span-2">
-                                                <label for="customerCnpjFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cartão CNPJ / Docs Adicionais</label>
-                                                <input type="file" id="customerCnpjFile" name="customerCnpjFile" accept=".pdf,.png,.jpg" title="Selecionar cartão CNPJ ou documentos adicionais"
-                                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-gray-300 dark:text-gray-400" data-bwignore="true" data-lpignore="true" placeholder="">
-                                                <p id="docSavedIndicator" class="text-xs text-green-600 mt-1 hidden">✔ Documento já salvo anteriormente.</p>
+                                </div>
+                                <div id="customerCommercialTab" class="customer-modal-tab-panel hidden mt-4 space-y-4" role="tabpanel" aria-labelledby="customerCommercialTabButton">
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label for="customerTaxRegime" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Regime Tributário</label>
+                                            <select id="customerTaxRegime" name="customerTaxRegime"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                                <option value="">Selecione...</option>
+                                                <option value="Pessoa Física">Pessoa Física</option>
+                                                <option value="Simples Nacional">Simples Nacional</option>
+                                                <option value="MEI">MEI</option>
+                                                <option value="Lucro Presumido">Lucro Presumido</option>
+                                                <option value="Lucro Real">Lucro Real</option>
+                                                <option value="Outros / Isento">Outros / Isento</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="customerOpeningDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data de Abertura</label>
+                                            <input type="date" id="customerOpeningDate" name="customerOpeningDate"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                        </div>
+                                        <div>
+                                            <label for="customerDocument"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF/CNPJ</label>
+                                            <div class="flex">
+                                                <input type="text" id="customerDocument" name="customerDocument" placeholder="000.000.000-00"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                <button type="button" id="btnSearchCnpj" class="mt-1 px-3 py-2 bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 text-white border border-brand-600 dark:border-brand-500 rounded-r-md font-medium text-sm transition-colors">Buscar</button>
                                             </div>
                                         </div>
-                                    </div>
-
-                                </div>
-                                <div id="customerDetailsTab" class="customer-modal-tab-panel hidden mt-4 space-y-4" role="tabpanel" aria-labelledby="customerDetailsTabButton">
-                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label for="customerInscricaoEstadual"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Inscrição Estadual (IE)</label>
+                                            <input type="text" id="customerInscricaoEstadual" name="customerInscricaoEstadual"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Isento ou numeração">
+                                        </div>
+                                        <div>
+                                            <label for="customerInscricaoMunicipal"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Inscrição Municipal (IM)</label>
+                                            <input type="text" id="customerInscricaoMunicipal" name="customerInscricaoMunicipal"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
+                                        <div>
+                                            <label for="customerPhone"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
+                                            <input type="text" id="customerPhone" name="customerPhone"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
+                                        <div>
+                                            <label for="customerPhoneLandline"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Celular - WhatsApp</label>
+                                            <input type="text" id="customerPhoneLandline" name="customerPhoneLandline"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
+                                        </div>
                                         <div>
                                             <label for="customerDueDay"
                                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Dia de vencimento</label>
@@ -358,14 +429,142 @@
                                                 class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="0,00">
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Desconto Padrão</label>
+                                            <label for="customerDiscountValue" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Desconto Padrão</label>
                                             <div class="mt-1 flex gap-2">
                                                 <input type="number" id="customerDiscountValue" name="customerDiscountValue" step="0.01" min="0" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0,00">
-                                                <select id="customerDiscountType" name="customerDiscountType" class="block w-24 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <select id="customerDiscountType" name="customerDiscountType" title="Tipo de Desconto" aria-label="Tipo de Desconto" class="block w-24 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
                                                     <option value="percentage">%</option>
                                                     <option value="fixed">R$</option>
                                                 </select>
                                             </div>
+                                        </div>
+
+                                        <div class="sm:col-span-2">
+                                            <div class="flex items-start gap-3 p-3.5 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20">
+                                                <div class="flex items-center h-5">
+                                                    <input type="checkbox" id="customerOnlyPix" name="customerOnlyPix"
+                                                        class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-slate-600 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                                </div>
+                                                <div class="text-sm">
+                                                    <label for="customerOnlyPix" class="font-semibold text-amber-900 dark:text-amber-300 cursor-pointer select-none flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                        </svg>
+                                                        Travar Emissão de Boleto (Somente PIX)
+                                                    </label>
+                                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                                        Bloqueia a emissão de boletos para este cliente, autorizando pagamentos exclusivamente via PIX. Ao ativar, boletos em aberto são cancelados e alterados para PIX.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="sm:col-span-2">
+                                            <div class="flex items-start gap-3 p-3.5 rounded-lg border border-purple-200 dark:border-purple-900/40 bg-purple-50/60 dark:bg-purple-950/20">
+                                                <div class="flex items-center h-5">
+                                                    <input type="checkbox" id="customerOnlySolidconBaixa" name="customerOnlySolidconBaixa"
+                                                        class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-slate-600 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                                </div>
+                                                <div class="text-sm">
+                                                    <label for="customerOnlySolidconBaixa" class="font-semibold text-purple-900 dark:text-purple-300 cursor-pointer select-none flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                        </svg>
+                                                        Travar Baixa no Keystone (Baixa Exclusiva Solidcon)
+                                                    </label>
+                                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                                        Não permite a baixa manual de títulos deste cliente diretamente pelo Keystone. A baixa será efetuada apenas quando vier importada/sincronizada da Solidcon.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="sm:col-span-2">
+                                            <div class="flex items-start gap-3 p-3.5 rounded-lg border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20">
+                                                <div class="flex items-center h-5">
+                                                    <input type="checkbox" id="customerExemptInterestFine" name="customerExemptInterestFine"
+                                                        class="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                                </div>
+                                                <div class="text-sm">
+                                                    <label for="customerExemptInterestFine" class="font-semibold text-emerald-900 dark:text-emerald-300 cursor-pointer select-none flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        </svg>
+                                                        Isentar Juros e Multa (Não cobrar juros e multa)
+                                                    </label>
+                                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                                        Não cobra e nem calcula juros ou multa por atraso na emissão de boletos, baixas e apurações deste cliente.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="sm:col-span-2">
+                                            <div class="flex items-start gap-3 p-3.5 rounded-lg border border-rose-200 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-950/20">
+                                                <div class="flex items-center h-5">
+                                                    <input type="checkbox" id="customerHideInRevenues" name="customerHideInRevenues"
+                                                        class="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500 dark:border-slate-600 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                                </div>
+                                                <div class="text-sm">
+                                                    <label for="customerHideInRevenues" class="font-semibold text-rose-900 dark:text-rose-300 cursor-pointer select-none flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                                        </svg>
+                                                        Não exibir no grid receita (revenues.html)
+                                                    </label>
+                                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                                        Oculta os lançamentos e títulos a receber deste cliente da listagem e grid de receitas financeiras.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="customerFiscalTab" class="customer-modal-tab-panel hidden mt-4 space-y-4" role="tabpanel" aria-labelledby="customerFiscalTabButton">
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div class="sm:col-span-2 bg-gray-50 dark:bg-slate-900/50 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                                            <label for="customerCertFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Certificado Digital A1 (.pfx)</label>
+                                            <input type="file" id="customerCertFile" name="customerCertFile" accept=".pfx,.p12" title="Selecionar certificado digital do cliente"
+                                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-brand-900/40 dark:file:text-brand-300 dark:text-gray-400" data-bwignore="true" data-lpignore="true" placeholder="">
+                                            
+                                            <div class="mt-3 grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label for="customerCertPassword" class="block text-xs font-semibold text-gray-500 dark:text-gray-400">Senha do Certificado</label>
+                                                    <input type="password" id="customerCertPassword" name="customerCertPassword" autocomplete="new-password"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 sm:text-sm outline-none" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                </div>
+                                                <div>
+                                                    <label for="customerCertExpiration" class="block text-xs font-semibold text-gray-500 dark:text-gray-400">Data de Validade</label>
+                                                    <input type="date" id="customerCertExpiration" name="customerCertExpiration"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-1.5 px-3 sm:text-sm outline-none" data-bwignore="true" data-lpignore="true" placeholder="">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="customerDetailsTab" class="customer-modal-tab-panel hidden mt-4 space-y-4" role="tabpanel" aria-labelledby="customerDetailsTabButton">
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label for="customerContact"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Contato</label>
+                                            <input type="text" id="customerContact" name="customerContact"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Nome do contato">
+                                        </div>
+                                        <div id="customerCreatedAtWrapper" class="hidden">
+                                            <label for="customerCreatedAt"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data de Cadastro</label>
+                                            <input type="text" id="customerCreatedAt" name="customerCreatedAt" readonly disabled
+                                                class="mt-1 block w-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm cursor-not-allowed">
+                                        </div>
+                                    </div>
+
+                                    <div id="registerAsCompanyWrapper" class="hidden border-t border-gray-200 pt-4 dark:border-slate-700">
+                                        <div class="flex items-center gap-2 py-2">
+                                            <input type="checkbox" id="customerRegisterAsCompany" name="customerRegisterAsCompany"
+                                                class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                            <label for="customerRegisterAsCompany" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                                                Cadastrar como Empresa no Sistema (Criar empresa correspondente em Empresas)
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -380,6 +579,67 @@
                         </button>
                         <button type="button" id="btnCancelModal"
                             class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company User Customization Modal -->
+    <div id="companyUserModal" class="hidden fixed inset-0 z-20000 overflow-y-auto" aria-labelledby="company-user-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="companyUserModalBackdrop"></div>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <form id="companyUserForm" action="#" method="POST" novalidate class="space-y-0">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6">
+                        <h3 id="company-user-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">
+                            Configurar Usuário da Empresa
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                            Deseja customizar os dados de login do primeiro usuário supervisor desta nova empresa? Se não, usaremos os dados padrão do cliente.
+                        </p>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label for="companyUserFullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Completo</label>
+                                <input type="text" id="companyUserFullName" name="companyUserFullName"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500" placeholder="Nome do usuário" data-bwignore="true" data-lpignore="true">
+                            </div>
+                            <div>
+                                <label for="companyUserEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail (Login)</label>
+                                <input type="email" id="companyUserEmail" name="companyUserEmail"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500" placeholder="exemplo@email.com" data-bwignore="true" data-lpignore="true">
+                            </div>
+                            <div>
+                                <label for="companyUserPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
+                                <input type="password" id="companyUserPassword" name="companyUserPassword" autocomplete="new-password"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500" placeholder="Senha de login" data-bwignore="true" data-lpignore="true">
+                            </div>
+                            <div>
+                                <label for="companyUserRole" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Perfil</label>
+                                <select id="companyUserRole" name="companyUserRole"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500" data-bwignore="true" data-lpignore="true">
+                                    <option value="supervisor">Supervisor Completo</option>
+                                    <option value="admin">Administrador</option>
+                                    <option value="financial">Financeiro</option>
+                                    <option value="operator">Operador</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse gap-2 dark:border-t dark:border-slate-700">
+                        <button type="submit" id="btnConfirmCompanyUser"
+                            class="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:text-sm">
+                            Confirmar
+                        </button>
+                        <button type="button" id="btnDefaultCompanyUser"
+                            class="inline-flex justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:text-sm">
+                            Usar Padrão
+                        </button>
+                        <button type="button" id="btnCancelCompanyUser"
+                            class="inline-flex justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:text-sm">
                             Cancelar
                         </button>
                     </div>
@@ -418,12 +678,51 @@
                                 </select>
                             </div>
                             <div>
+                                <label for="bulkCustomerGroupParam" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grupo de Cliente</label>
+                                <select id="bulkCustomerGroupParam" name="bulkCustomerGroupParam" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <option value="">Não alterar</option>
+                                    <option value="clear">Remover grupo (Nenhum)</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label for="bulkCustomerDueDay" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Dia de Vencimento</label>
                                 <input type="number" id="bulkCustomerDueDay" name="bulkCustomerDueDay" min="1" max="31" step="1" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Deixe em branco para não alterar">
                             </div>
                             <div>
                                 <label for="bulkCustomerCreditLimit" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Limite de Crédito</label>
                                 <input type="number" id="bulkCustomerCreditLimit" name="bulkCustomerCreditLimit" min="0" step="0.01" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Deixe em branco para não alterar">
+                            </div>
+                            <div>
+                                <label for="bulkCustomerOnlyPix" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Emissão de Boleto / PIX</label>
+                                <select id="bulkCustomerOnlyPix" name="bulkCustomerOnlyPix" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <option value="">Não alterar</option>
+                                    <option value="1">Travar Emissão de Boleto (Somente PIX)</option>
+                                    <option value="0">Liberar Emissão de Boletos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="bulkCustomerOnlySolidconBaixa" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Travar Baixa no Keystone</label>
+                                <select id="bulkCustomerOnlySolidconBaixa" name="bulkCustomerOnlySolidconBaixa" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <option value="">Não alterar</option>
+                                    <option value="1">Travar Baixa (Exclusiva Solidcon)</option>
+                                    <option value="0">Liberar Baixa no Keystone</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="bulkCustomerExemptInterestFine" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Isenção de Juros e Multa</label>
+                                <select id="bulkCustomerExemptInterestFine" name="bulkCustomerExemptInterestFine" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <option value="">Não alterar</option>
+                                    <option value="1">Isentar Juros e Multa</option>
+                                    <option value="0">Cobrar Juros e Multa Normalmente</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="bulkCustomerHideInRevenues" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Exibição no Grid Receita (revenues.html)</label>
+                                <select id="bulkCustomerHideInRevenues" name="bulkCustomerHideInRevenues" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <option value="">Não alterar</option>
+                                    <option value="1">Não exibir no grid receita (Ocultar)</option>
+                                    <option value="0">Exibir no grid receita (Normal)</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -442,10 +741,10 @@
 
     <!-- View Customer Details Modal -->
     <div id="viewCustomerDetailsModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="view-details-modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+        <div class="flex items-start justify-center min-h-screen p-4 sm:p-6 sm:pt-8">
             <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="viewDetailsModalBackdrop"></div>
-            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6">
+            <div class="relative z-10 w-full max-w-6xl h-[90vh] bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all flex flex-col">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 flex-1 overflow-y-auto">
                     <div class="flex items-start justify-between gap-4 mb-4">
                         <div>
                             <h3 id="view-details-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Detalhes do Cliente: <span id="viewDetailsCustomerName" class="font-semibold text-brand-600 dark:text-brand-400"></span></h3>
@@ -458,6 +757,59 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
+                    </div>
+
+                    <!-- Resumo Comercial -->
+                    <div class="mb-6 grid grid-cols-1 sm:grid-cols-4 gap-4 p-4 rounded-lg bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-700 font-sans">
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Dia do Vencimento</span>
+                            <span id="viewDetailsVencimentoDia" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Limite de Crédito</span>
+                            <span id="viewDetailsLimite" class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Desconto Padrão</span>
+                            <span id="viewDetailsDesconto" class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Vendedor</span>
+                            <span id="viewDetailsVendedor" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Grupo de Cliente</span>
+                            <span id="viewDetailsGrupoCliente" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Emissão de Boleto</span>
+                            <span id="viewDetailsOnlyPix" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Baixa no Keystone</span>
+                            <span id="viewDetailsOnlySolidconBaixa" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Juros e Multa</span>
+                            <span id="viewDetailsExemptInterestFine" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Grid Receita (revenues.html)</span>
+                            <span id="viewDetailsHideInRevenues" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div class="sm:col-span-4">
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Grupo de Atividade</span>
+                            <div id="viewDetailsGrupoAtividade" class="flex flex-wrap gap-1 mt-1">
+                                <!-- Tags will be populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="viewDetailsRegisterAsCompanyWrapper" class="hidden mb-6 p-3 bg-brand-600 dark:bg-brand-700 rounded-xl items-center gap-2.5 text-white text-sm font-sans">
+                        <svg class="h-5 w-5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span>Este cliente está cadastrado como empresa correspondente no sistema.</span>
                     </div>
 
                     <!-- Abas -->
@@ -480,6 +832,30 @@
                                 role="tab"
                                 data-details-tab-target="tabPanelFinanceiro" aria-controls="tabPanelFinanceiro" aria-selected="false">
                                 Financeiro
+                            </button>
+                            <button type="button" id="tabButtonDocumento"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelDocumento" aria-controls="tabPanelDocumento" aria-selected="false">
+                                Documento
+                            </button>
+                            <button type="button" id="tabButtonNotas"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelNotas" aria-controls="tabPanelNotas" aria-selected="false">
+                                Notas
+                            </button>
+                            <button type="button" id="tabButtonTarefas"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelTarefas" aria-controls="tabPanelTarefas" aria-selected="false">
+                                Tarefas
+                            </button>
+                            <button type="button" id="tabButtonMapa"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelMapa" aria-controls="tabPanelMapa" aria-selected="false">
+                                Mapa
                             </button>
                         </nav>
                     </div>
@@ -538,14 +914,129 @@
                                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vencimento</th>
                                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                             <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documentos</th>
                                         </tr>
                                     </thead>
                                     <tbody id="viewDetailsFinancialsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                                         <tr>
-                                            <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento financeiro encontrado.</td>
+                                            <td colspan="5" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento financeiro encontrado.</td>
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Aba Documento -->
+                        <div id="tabPanelDocumento" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonDocumento">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-gray-200 dark:border-slate-700">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Documentos do Cliente</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Gerencie e anexe novos arquivos organizados por data.</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm cursor-pointer transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        Anexar Documento
+                                        <input type="file" id="detailCnpjFile" class="hidden" multiple />
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="viewDetailsDocumentContainer" class="p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/30 min-h-125 max-h-150 overflow-y-auto pr-2">
+                                <div class="flex items-center justify-center h-112.5">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 animate-pulse">Carregando documento...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Aba Notas -->
+                        <div id="tabPanelNotas" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonNotas">
+                            <div class="flex flex-col gap-4">
+                                <div class="bg-gray-50 dark:bg-slate-900/30 p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Adicionar Nova Anotação</h4>
+                                    <textarea id="txtNewCustomerNote" rows="3" class="w-full rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-brand-500 focus:border-brand-500 placeholder-gray-400" placeholder="Digite sua anotação aqui..."></textarea>
+                                    <div class="mt-2 flex justify-end">
+                                        <button type="button" id="btnSaveCustomerNote" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm cursor-pointer transition-colors">
+                                            Salvar Anotação
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Histórico de Anotações</h4>
+                                    <div id="customerNotesList" class="space-y-3 max-h-75 overflow-y-auto pr-2">
+                                        <!-- Anotações dinâmicas aqui -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba Tarefas -->
+                        <div id="tabPanelTarefas" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonTarefas">
+                            <div class="flex flex-col gap-4 font-sans">
+                                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-gray-50 dark:bg-slate-900/20 p-3 rounded-xl border border-gray-200 dark:border-slate-700">
+                                    <div class="flex items-center gap-3 flex-wrap">
+                                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Tarefas Relacionadas</h4>
+                                        <div class="flex items-center bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-x-auto">
+                                            <button type="button" class="customer-view-mode-btn active relative flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-brand-700 dark:text-brand-300 bg-white dark:bg-slate-700 shadow-sm transition-all whitespace-nowrap" data-view="list" title="Lista" aria-label="Visualização em Lista">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                                            </button>
+                                            <button type="button" class="customer-view-mode-btn relative flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all whitespace-nowrap" data-view="day" title="Dia" aria-label="Visualização do Dia">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            </button>
+                                            <button type="button" class="customer-view-mode-btn relative flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all whitespace-nowrap" data-view="calendar" title="Mês" aria-label="Visualização Mensal">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            </button>
+                                        </div>
+
+                                        <div class="flex items-center bg-white dark:bg-slate-800 px-1 py-1 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-x-auto">
+                                            <button type="button" class="task-filter-btn flex items-center justify-center p-2 rounded-lg hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors text-gray-500" data-filter="all" title="Todas as Tarefas">
+                                                <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                                            </button>
+                                            <button type="button" class="task-filter-btn flex items-center justify-center p-2 rounded-lg transition-colors text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30" data-filter="pending" title="A Fazer">
+                                                <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                            </button>
+                                            <button type="button" class="task-filter-btn flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" data-filter="progress" title="Em Andamento">
+                                                <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            </button>
+                                            <button type="button" class="task-filter-btn flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" data-filter="completed" title="Concluídas">
+                                                <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <a href="/pages/tasks.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm cursor-pointer transition-colors">
+                                        Gerenciar na Agenda
+                                    </a>
+                                </div>
+                                <div id="customerTasksList" class="space-y-3 max-h-75 overflow-y-auto pr-2">
+                                    <!-- Tarefas dinâmicas aqui -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba Mapa -->
+                        <div id="tabPanelMapa" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonMapa">
+                            <div class="p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/30 min-h-125 font-sans">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Localização do Cliente</h4>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Rota do endereço da empresa até o endereço do cliente.</p>
+                                
+                                <div id="mapAddressInfo" class="mb-4 text-sm text-gray-700 dark:text-gray-300">
+                                    <strong>Endereço do Cliente:</strong> <span id="mapCustomerAddress">Carregando...</span>
+                                </div>
+                                
+                                <div class="flex gap-3 mb-4">
+                                    <a id="btnOpenWaze" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-lg shadow-sm transition-colors">
+                                        Abrir no Waze
+                                    </a>
+                                    <a id="btnOpenGoogleMaps" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors">
+                                        Abrir no Google Maps
+                                    </a>
+                                </div>
+
+                                <div class="w-full h-100 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center">
+                                    <iframe id="googleMapsIframe" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -559,14 +1050,87 @@
         </div>
     </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/filter-panel.js"></script>
-    <script src="/js/components/crud-manager.js"></script>
-    <script src="/js/customers.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <!-- PDF Document Viewer Modal -->
+    <div id="pdfViewerModal" class="hidden fixed inset-0 z-10001 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="pdfViewerModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700">
+                <div class="flex justify-between items-center p-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-100" id="pdfViewerModalTitle">Visualizar Documento</h3>
+                    <div class="flex items-center gap-2">
+                        <a id="downloadPdfModal" href="" download class="text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer mr-2" title="Baixar Arquivo">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </a>
+                        <button type="button" id="closePdfModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer" title="Fechar">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 bg-gray-100 dark:bg-slate-900 overflow-hidden relative">
+                    <iframe id="pdfIframe" src="" title="Visualização do documento em PDF" class="w-full h-full border-0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Renomear Documento -->
+    <div id="renameDocumentModal" class="hidden fixed inset-0 z-10002 overflow-y-auto font-sans" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="renameDocumentModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md flex flex-col overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700">
+                <div class="flex justify-between items-center p-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <h3 class="font-semibold text-base text-gray-800 dark:text-gray-100">Renomear Documento</h3>
+                    <button type="button" id="closeRenameDocumentModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer" title="Fechar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form id="renameDocumentForm" class="p-4 space-y-4">
+                    <div>
+                        <label for="renameDocumentInput" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Nome do Arquivo</label>
+                        <input type="text" id="renameDocumentInput" required class="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 text-sm" placeholder="Digite o novo nome..." />
+                    </div>
+                    <div class="flex justify-end gap-2.5 pt-2">
+                        <button type="button" id="btnCancelRenameDocument" class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors cursor-pointer">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors cursor-pointer">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirmar Exclusão de Documento -->
+    <div id="deleteDocumentModal" class="hidden fixed inset-0 z-10003 overflow-y-auto font-sans" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="deleteDocumentModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md flex flex-col overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700 p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-base text-gray-800 dark:text-gray-100">Excluir Documento</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Esta ação não pode ser desfeita.</p>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Deseja realmente excluir o documento <strong id="deleteDocumentName" class="text-gray-900 dark:text-gray-100 font-semibold"></strong>?</p>
+                </div>
+                <div class="flex justify-end gap-2.5">
+                    <button type="button" id="btnCancelDeleteDocument" class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors cursor-pointer">Cancelar</button>
+                    <button type="button" id="btnConfirmDeleteDocument" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors cursor-pointer">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/filter-panel.js?v=20261001145619"></script>
+    <script src="/js/components/crud-manager.js?v=20261001145619"></script>
+    <script src="/js/customers.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

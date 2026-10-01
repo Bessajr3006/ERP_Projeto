@@ -12,6 +12,117 @@ const PRODUCTS_FILTER_STORAGE_KEY = 'products_filter_open';
 const PRODUCT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 const PRODUCT_IMAGE_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 let filterSearchTimer: ReturnType<typeof setTimeout> | null = null;
+let g_filtersRestored = false;
+
+const FiltersStorage = {
+    save() {
+        if (!g_filtersRestored) return;
+        const filters = {
+            search: getById('filterSearch')?.value || '',
+            category: getById('filterCategory')?.value || '',
+            manufacturer: getById('filterManufacturer')?.value || '',
+            stock: getById('filterStock')?.value || '',
+            image: getById('filterImage')?.value || '',
+            status: getById('filterStatus')?.value || '',
+            posControl: getById('filterPosControl')?.value || '',
+        };
+        if ((window as any).CompanyStorage) {
+            (window as any).CompanyStorage.setItem('keystone_products_filters_v1', JSON.stringify(filters));
+        } else {
+            localStorage.setItem('keystone_products_filters_v1', JSON.stringify(filters));
+        }
+    },
+    load() {
+        try {
+            const raw = (window as any).CompanyStorage?.getItem('keystone_products_filters_v1') ?? localStorage.getItem('keystone_products_filters_v1');
+            if (raw) return JSON.parse(raw);
+        } catch (e) {
+            console.error('Failed to load saved filters', e);
+        }
+        return null;
+    },
+    restoreStatic() {
+        const saved = this.load();
+        if (!saved) return;
+        const staticIds = {
+            filterSearch: saved.search,
+            filterStock: saved.stock,
+            filterImage: saved.image,
+            filterStatus: saved.status,
+            filterPosControl: saved.posControl
+        };
+        Object.entries(staticIds).forEach(([id, value]) => {
+            const el = getById(id);
+            if (el && value !== undefined) {
+                el.value = value;
+            }
+        });
+    },
+    restoreDynamic() {
+        const saved = this.load();
+        if (!saved) return;
+        const dynamicIds = {
+            filterCategory: saved.category,
+            filterManufacturer: saved.manufacturer
+        };
+        Object.entries(dynamicIds).forEach(([id, value]) => {
+            const el = getById(id);
+            if (el && value !== undefined) {
+                el.value = value;
+            }
+        });
+    }
+};
+
+const toggleRowSelection = (cb: any) => {
+    let parentRow = cb.closest('tr');
+    if (!parentRow) parentRow = cb.closest('[data-product-card]');
+    if (parentRow) {
+        if (cb.checked) {
+            parentRow.classList.add('bg-orange-50', 'dark:bg-orange-900/20', 'border-orange-200');
+            parentRow.classList.remove('bg-white', 'dark:bg-slate-800', 'border-gray-100');
+        } else {
+            parentRow.classList.remove('bg-orange-50', 'dark:bg-orange-900/20', 'border-orange-200');
+            parentRow.classList.add('bg-white', 'dark:bg-slate-800', 'border-gray-100');
+        }
+    }
+};
+
+const updateBulkActionsButton = () => {
+    const checkedCount = qsa('.product-checkbox:checked').length;
+    const btnBulk = getById('btnBulkUpdate');
+    const countSpan = getById('bulkCount');
+    const btnBulkDelete = getById('btnBulkDelete');
+    const bulkDeleteCountSpan = getById('bulkDeleteCount');
+
+    if (btnBulk) {
+        if (checkedCount > 0) {
+            btnBulk.classList.remove('hidden');
+            btnBulk.classList.add('inline-flex', 'items-center', 'justify-center');
+            if (countSpan) countSpan.textContent = String(checkedCount);
+        } else {
+            btnBulk.classList.add('hidden');
+            btnBulk.classList.remove('inline-flex', 'items-center', 'justify-center');
+        }
+    }
+
+    if (btnBulkDelete) {
+        if (bulkDeleteCountSpan) bulkDeleteCountSpan.textContent = String(checkedCount);
+    }
+
+    const btnPosControl = getById('btnPosControl');
+    const posControlCountSpan = getById('posControlCount');
+    if (btnPosControl) {
+        if (checkedCount > 0) {
+            btnPosControl.classList.remove('hidden');
+            btnPosControl.classList.add('inline-flex', 'items-center', 'justify-center');
+            if (posControlCountSpan) posControlCountSpan.textContent = String(checkedCount);
+        } else {
+            btnPosControl.classList.add('hidden');
+            btnPosControl.classList.remove('inline-flex', 'items-center', 'justify-center');
+        }
+    }
+};
 
 function hasProductImage(product) {
     return Boolean(product?.image_url || product?.image_base64);
@@ -138,6 +249,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 company.solidcon_url_4 || '',
                 company.solidcon_url_5 || '',
             ];
+            const showSolidcon = company.show_solidcon !== false && company.show_solidcon !== 0;
+            const btn = getById('btnOpenSolidconModal');
+            if (btn) {
+                if (!showSolidcon) {
+                    btn.classList.add('hidden');
+                    btn.classList.remove('inline-flex');
+                    btn.style.setProperty('display', 'none', 'important');
+                } else {
+                    btn.classList.remove('hidden');
+                    btn.classList.add('inline-flex');
+                    btn.style.display = '';
+                }
+            }
         }
     }).catch(err => {
         console.error('Falha ao carregar usuário', err);
@@ -146,19 +270,17 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('productsView', 'list');
 
     function updateViewToggle() {
-        const btnList = getById('btnListView');
         const tableSection = getById('productsSection');
         const gridSection = getById('productsGridSection');
 
-        if (!btnList || !tableSection || !gridSection) return;
+        if (!tableSection || !gridSection) return;
 
         currentView = 'list';
         localStorage.setItem('productsView', 'list');
 
-        btnList.className = "flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1";
-        btnList.querySelector('.check-icon')?.classList.remove('hidden');
         tableSection.classList.remove('hidden');
         gridSection.classList.add('products-grid-section--hidden');
+        gridSection.classList.remove('grid');
     }
 
     // Bind Modal Events (CSP Fix)
@@ -181,23 +303,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnCloseSolidconModal = getById('btnCloseSolidconModal');
     if (btnCloseSolidconModal) btnCloseSolidconModal.addEventListener('click', closeSolidconModal);
+    
+    // Setup Solidcon query mode toggles
+    const setupSolidconQueryModeToggles = () => {
+        const eanContainer = getById('solidconEanInputContainer');
+        const updateQueryModeUI = () => {
+            const isEan = (document.querySelector('input[name="solidconQueryMode"]:checked') as HTMLInputElement | null)?.value === 'ean';
+            if (isEan) {
+                eanContainer?.classList.remove('hidden');
+            } else {
+                eanContainer?.classList.add('hidden');
+            }
+        };
 
-    const solidconModalBackdrop = getById('solidconModalBackdrop');
-    if (solidconModalBackdrop) {
-        solidconModalBackdrop.addEventListener('click', (e) => {
-            if (e.target === solidconModalBackdrop) closeSolidconModal();
+        document.querySelectorAll('input[name="solidconQueryMode"]').forEach(radio => {
+            radio.addEventListener('change', updateQueryModeUI);
         });
-    }
 
-    // Bind Toggle events
-    const btnListView = getById('btnListView');
-    if (btnListView) {
-        btnListView.addEventListener('click', () => {
-            currentView = 'list';
-            localStorage.setItem('productsView', 'list');
-            updateViewToggle();
-        });
-    }
+        // Initialize UI state
+        updateQueryModeUI();
+    };
+    setupSolidconQueryModeToggles();
+
+
 
     // Modal Tabs logic
     const tabBtnData = getById('tabBtn-data');
@@ -385,30 +513,192 @@ document.addEventListener('DOMContentLoaded', () => {
         const urls = (window as any).currentSolidconUrls || [];
         return urls.find((url: string) => String(url || '').trim()) || '';
     };
+    const normalizeItems = (value: any, depth = 0): any[] => {
+        if (depth > 4) return [];
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'object' && value !== null) {
+            const containers = ['body', 'items', 'data', 'products', 'produtos', 'registros', 'resultado', 'results', 'rows'];
+            for (const key of containers) {
+                if (value[key] !== undefined && value[key] !== null) {
+                    const nestedItems = normalizeItems(value[key], depth + 1);
+                    if (nestedItems.length) return nestedItems;
+                }
+            }
+        }
+        return [];
+    };
+
+    const pickUniqueKey = (item: any): string => {
+        const eanKeys = ['codigo_ean', 'ean', 'gtin', 'barcode', 'codigo_barras', 'cod_barra', 'cod_barras'];
+        for (const key of eanKeys) {
+            if (item?.[key]) return 'ean_' + String(item[key]).trim();
+        }
+        const idKeys = ['codigo', 'id', 'id_produto', 'idproduto', 'idprodutopos'];
+        for (const key of idKeys) {
+            if (item?.[key]) return 'id_' + String(item[key]).trim();
+        }
+        const nameKeys = ['descricao', 'description', 'nome', 'name'];
+        for (const key of nameKeys) {
+            if (item?.[key]) return 'name_' + String(item[key]).trim();
+        }
+        return '';
+    };
+
     if (btnFetchSolidconJson && solidconJsonInput) {
         btnFetchSolidconJson.addEventListener('click', async () => {
             clearSolidconStatus();
-            const url = getSelectedSolidconUrl();
-            if (!url) {
-                setSolidconStatus('URL Solidcon nao configurada. Salve na tela Minha Empresa > API/Solidcon.', 'warning');
-                return;
-            }
-            btnFetchSolidconJson.disabled = true;
-            const originalText = btnFetchSolidconJson.textContent;
-            btnFetchSolidconJson.textContent = 'Buscando...';
-            try {
-                const response = await api('/companies/proxy-consulta', {
-                    method: 'POST',
-                    body: JSON.stringify({ url })
-                });
-                const payload = response?.data ?? response;
-                solidconJsonInput.value = JSON.stringify(payload, null, 2);
-                setSolidconStatus('JSON carregado com sucesso.', 'success');
-            } catch (err: any) {
-                setSolidconStatus(err.message || 'Erro ao buscar JSON da Solidcon.', 'error');
-            } finally {
-                btnFetchSolidconJson.textContent = originalText;
-                btnFetchSolidconJson.disabled = false;
+            
+            const queryMode = (document.querySelector('input[name="solidconQueryMode"]:checked') as HTMLInputElement | null)?.value || 'all';
+            const urls = (window as any).currentSolidconUrls || [];
+            
+            if (queryMode === 'all') {
+                const url = urls[0] || '';
+                if (!url) {
+                    setSolidconStatus('URL de Integração Produto não configurada na tela Minha Empresa > API/Solidcon.', 'warning');
+                    return;
+                }
+                btnFetchSolidconJson.disabled = true;
+                const originalText = btnFetchSolidconJson.textContent;
+                btnFetchSolidconJson.textContent = 'Buscando...';
+                try {
+                    const response = await api('/companies/proxy-consulta', {
+                        method: 'POST',
+                        body: JSON.stringify({ url })
+                    });
+                    const payload = response?.data ?? response;
+                    const responseBody = payload?.body ?? payload;
+                    const pageItems = normalizeItems(responseBody);
+                    solidconJsonInput.value = JSON.stringify(pageItems, null, 2);
+                    setSolidconStatus('JSON carregado com sucesso.', 'success');
+                } catch (err: any) {
+                    setSolidconStatus(err.message || 'Erro ao buscar JSON da Solidcon.', 'error');
+                } finally {
+                    btnFetchSolidconJson.textContent = originalText;
+                    btnFetchSolidconJson.disabled = false;
+                }
+            } else {
+                const url = urls[2] || '';
+                if (!url) {
+                    setSolidconStatus('URL de Integração Produto por EAN não configurada na tela Minha Empresa > API/Solidcon.', 'warning');
+                    return;
+                }
+                const eanInputEl = document.getElementById('solidconEanInput') as HTMLTextAreaElement | null;
+                const eanText = eanInputEl?.value || '';
+                const eans = eanText.split('\n').map(e => e.trim()).filter(Boolean);
+                if (eans.length === 0) {
+                    setSolidconStatus('Por favor, digite pelo menos um código EAN.', 'warning');
+                    return;
+                }
+                
+                btnFetchSolidconJson.disabled = true;
+                const originalText = btnFetchSolidconJson.textContent;
+                
+                const allItems: any[] = [];
+                const seenKeys = new Set<string>();
+                let successCount = 0;
+                let failCount = 0;
+
+                try {
+                    for (let i = 0; i < eans.length; i++) {
+                        const ean = eans[i];
+                        btnFetchSolidconJson.textContent = `Buscando (${i + 1}/${eans.length})...`;
+                        
+                        let eanUrl = url;
+                        const lowerUrl = eanUrl.toLowerCase();
+                        if (lowerUrl.includes('{ean}')) {
+                            eanUrl = eanUrl.replace(/\{ean\}/gi, ean);
+                        } else if (eanUrl.includes('?')) {
+                            eanUrl = `${eanUrl}&ean=${ean}`;
+                        } else {
+                            if (eanUrl.endsWith('/')) {
+                                eanUrl = `${eanUrl}${ean}`;
+                            } else {
+                                eanUrl = `${eanUrl}/${ean}`;
+                            }
+                        }
+
+                        try {
+                            let responseBody: any = null;
+                            try {
+                                const response = await api('/companies/proxy-consulta', {
+                                    method: 'POST',
+                                    body: JSON.stringify({ url: eanUrl })
+                                });
+                                const payload = response?.data ?? response;
+                                if (payload && (payload.statusCode === 400 || payload.ok === false) && urls[0]) {
+                                    throw new Error('EAN specific endpoint returned 400 or failed. Triggering fallback.');
+                                }
+                                responseBody = payload?.body ?? payload;
+                            } catch (err) {
+                                if (urls[0]) {
+                                    console.log(`EAN endpoint failed, trying general products URL fallback for EAN ${ean}...`);
+                                    let fallbackUrl = urls[0];
+                                    if (fallbackUrl.toLowerCase().includes('{ean}')) {
+                                        fallbackUrl = fallbackUrl.replace(/\{ean\}/gi, ean);
+                                    } else if (fallbackUrl.includes('?')) {
+                                        fallbackUrl = `${fallbackUrl}&ean=${ean}`;
+                                    } else {
+                                        if (fallbackUrl.endsWith('/')) {
+                                            fallbackUrl = `${fallbackUrl}${ean}`;
+                                        } else {
+                                            fallbackUrl = `${fallbackUrl}/${ean}`;
+                                        }
+                                    }
+                                    try {
+                                        const fallbackResponse = await api('/companies/proxy-consulta', {
+                                            method: 'POST',
+                                            body: JSON.stringify({ url: fallbackUrl })
+                                        });
+                                        const fallbackPayload = fallbackResponse?.data ?? fallbackResponse;
+                                        responseBody = fallbackPayload?.body ?? fallbackPayload;
+                                    } catch (fallbackErr) {
+                                        console.error(`Erro ao consultar fallback EAN ${ean}:`, fallbackErr);
+                                        throw err;
+                                    }
+                                } else {
+                                    throw err;
+                                }
+                            }
+                            const pageItems = normalizeItems(responseBody);
+                            
+                            if (pageItems.length === 0 && responseBody && typeof responseBody === 'object' && !Array.isArray(responseBody)) {
+                                const hasProductKeys = ['descricao', 'description', 'nome', 'name', 'codigo_ean', 'ean'].some(k => responseBody[k] !== undefined);
+                                if (hasProductKeys) {
+                                    pageItems.push(responseBody);
+                                }
+                            }
+
+                            if (pageItems.length > 0) {
+                                for (const item of pageItems) {
+                                    const key = pickUniqueKey(item);
+                                    if (key) {
+                                        if (seenKeys.has(key)) continue;
+                                        seenKeys.add(key);
+                                    }
+                                    allItems.push(item);
+                                }
+                                successCount++;
+                            } else {
+                                failCount++;
+                            }
+                        } catch (err) {
+                            console.error(`Erro ao consultar EAN ${ean}:`, err);
+                            failCount++;
+                        }
+                    }
+
+                    if (allItems.length === 0) {
+                        setSolidconStatus('Nenhum produto correspondente aos EANs informados foi encontrado.', 'warning');
+                    } else {
+                        solidconJsonInput.value = JSON.stringify(allItems, null, 2);
+                        setSolidconStatus(`JSON carregado com sucesso (${allItems.length} produtos carregados sem duplicidade, ${successCount} EANs encontrados, ${failCount} falhas).`, 'success');
+                    }
+                } catch (err: any) {
+                    setSolidconStatus(err.message || 'Erro ao processar busca por EAN.', 'error');
+                } finally {
+                    btnFetchSolidconJson.textContent = originalText;
+                    btnFetchSolidconJson.disabled = false;
+                }
             }
         });
     }
@@ -508,8 +798,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     UI.showAlert('alertMessage', response.message || 'Produtos excluídos com sucesso!', 'success');
                     
-                    // Hide bulk buttons
-                    btnBulkDelete.classList.add('hidden');
+                    // Hide bulk buttons and modal
+                    getById('bulkUpdateModal')?.classList.add('hidden');
                     getById('btnBulkUpdate')?.classList.add('hidden');
                     
                     await loadProducts();
@@ -520,6 +810,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     btnBulkDelete.textContent = originalText;
                 }
             }
+        });
+    }
+
+    const bulkNcmInput = getById('bulkNcm') as HTMLInputElement;
+    if (bulkNcmInput) {
+        bulkNcmInput.addEventListener('input', function(this: HTMLInputElement) {
+            this.value = this.value.replace(/\D/g, '');
         });
     }
 
@@ -536,6 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const category_id = getById('bulkCategory').value ? parseInt(getById('bulkCategory').value) : undefined;
             const stock_type_id = getById('bulkStockType')?.value ? parseInt(getById('bulkStockType').value) : undefined;
+            const product_type_id = getById('bulkProductType')?.value ? parseInt(getById('bulkProductType').value) : undefined;
             const manufacturer_id = getById('bulkManufacturer').value ? parseInt(getById('bulkManufacturer').value) : undefined;
             const tax_rule_id = getById('bulkTaxRule').value ? parseInt(getById('bulkTaxRule').value) : undefined;
             const measure_id = getById('bulkMeasure').value ? parseInt(getById('bulkMeasure').value) : undefined;
@@ -543,18 +841,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const cost_price = getById('bulkCostPrice') && getById('bulkCostPrice').value ? parseNumber(getById('bulkCostPrice').value) : undefined;
             const min_stock = getById('bulkMinStock') && getById('bulkMinStock').value ? parseInt(getById('bulkMinStock').value) : undefined;
             const max_stock = getById('bulkMaxStock') && getById('bulkMaxStock').value ? parseInt(getById('bulkMaxStock').value) : undefined;
+            const ncm = getById('bulkNcm') && (getById('bulkNcm') as HTMLInputElement).value ? (getById('bulkNcm') as HTMLInputElement).value.replace(/\D/g, '') : undefined;
+            const activeVal = getById('bulkActive') ? (getById('bulkActive') as HTMLSelectElement).value : '';
+            const active = activeVal === 'true' ? true : (activeVal === 'false' ? false : undefined);
 
             const payload = {
                 productIds: selectedIds,
                 category_id,
                 stock_type_id,
+                product_type_id,
                 manufacturer_id,
                 tax_rule_id,
                 measure_id,
                 selling_price,
                 cost_price,
                 min_stock,
-                max_stock
+                max_stock,
+                ncm,
+                active
             };
 
             // Remove undefined values
@@ -590,7 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleFilterBtn = getById('toggleFilterBtn');
     const filterBody = getById('filterBody');
     const filterChevron = getById('filterChevron');
-    let filterIsOpen = localStorage.getItem(PRODUCTS_FILTER_STORAGE_KEY) === 'true';
+    let filterIsOpen = ((window as any).CompanyStorage?.getItem(PRODUCTS_FILTER_STORAGE_KEY) ?? localStorage.getItem(PRODUCTS_FILTER_STORAGE_KEY)) === 'true';
 
     if (filterBody && filterChevron) {
         filterBody.style.transition = 'none';
@@ -604,7 +908,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (toggleFilterBtn) {
             toggleFilterBtn.addEventListener('click', () => {
                 filterIsOpen = !filterIsOpen;
-                localStorage.setItem(PRODUCTS_FILTER_STORAGE_KEY, String(filterIsOpen));
+                if ((window as any).CompanyStorage) {
+                    (window as any).CompanyStorage.setItem(PRODUCTS_FILTER_STORAGE_KEY, String(filterIsOpen));
+                } else {
+                    localStorage.setItem(PRODUCTS_FILTER_STORAGE_KEY, String(filterIsOpen));
+                }
                 filterBody.style.maxHeight = filterIsOpen ? `${filterBody.scrollHeight}px` : '0px';
                 filterChevron.style.transform = filterIsOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
             });
@@ -616,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnClearFilters.addEventListener('click', () => {
             const fs = getById('filterSearch') as HTMLInputElement | null;
             if (fs) fs.value = '';
-            ['filterCategory', 'filterManufacturer', 'filterStock', 'filterImage'].forEach(id => {
+            ['filterCategory', 'filterManufacturer', 'filterStock', 'filterImage', 'filterStatus', 'filterPosControl'].forEach(id => {
                 const el = getById(id) as HTMLSelectElement | null;
                 if (el) el.value = '';
             });
@@ -624,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const filterSelectors = ['filterSearch', 'filterCategory', 'filterManufacturer', 'filterStock', 'filterImage'];
+    const filterSelectors = ['filterSearch', 'filterCategory', 'filterManufacturer', 'filterStock', 'filterImage', 'filterStatus', 'filterPosControl'];
     filterSelectors.forEach((id) => {
         const el = getById(id);
         if (!el) return;
@@ -640,6 +948,394 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('change', applyFilters);
     });
 
+    // Initialize Master Checkbox once
+    const selectAllCheckbox = getById('selectAllCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e: any) => {
+            qsa('.product-checkbox').forEach((cb: any) => {
+                cb.checked = e.target.checked;
+                toggleRowSelection(cb);
+            });
+            updateBulkActionsButton();
+        });
+    }
+
+    // Static Pos-Control modal events registered once
+    const btnPosControlEl = getById('btnPosControl');
+    if (btnPosControlEl) {
+        btnPosControlEl.addEventListener('click', () => {
+            const selectedCheckboxValues = Array.from(qsa('.product-checkbox:checked') as any).map((cb: any) => String(cb.value));
+            const selectedProducts = g_allLoadedProducts.filter(p => 
+                selectedCheckboxValues.includes(String(p.public_id)) || selectedCheckboxValues.includes(String(p.id))
+            );
+
+            if (selectedProducts.length === 0) {
+                alert('Nenhum produto selecionado.');
+                return;
+            }
+
+            const posControlFormatted = selectedProducts.map(p => {
+                const prod: any = {
+                    ProductID: p.idprodutopos ? String(p.idprodutopos) : "",
+                    StatusID: p.status_pos_id || ((p.active !== 0 && p.active !== false && p.active !== '0')
+                        ? 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1758966'
+                        : 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1457822'),
+                    ProductGroupID: p.category_pos_id ? String(p.category_pos_id) : "",
+                    ProductTypeID: p.product_type_pos_id ? String(p.product_type_pos_id) : "55550E77-10D1-40DA-A067-075CB2124577",
+                    UnitTypeID: p.measure_pos_id ? String(p.measure_pos_id) : "55550E77-10D1-40DA-A067-075CB2124ACC",
+                    Name: String(p.name || '').substring(0, 50),
+                    NameEng: String(p.name_eng || p.name || '').substring(0, 50),
+                    InternalCode: String(p.sku || p.external_code || ''),
+                    BarCode: String(p.ean || ''),
+                    BarCodeJS: p.ean ? [{ BarCode: String(p.ean) }] : [],
+                    ImageBase64: String(p.image_base64 || ''),
+                    NFCeNCM: String(p.ncm || ''),
+                    NFCeCFOP: String(p.cfop || p.nfce_cfop || ''),
+                    NFCeCST: String(p.cst || p.cst_icms || p.csosn || ''),
+                    NFCeAliqICMS: String(p.icms_percentage ?? p.aliq_icms ?? '0.00'),
+                    NFCeCEST: String(p.cest || ''),
+                    NFCeCSTPIS: String(p.cst_pis || ''),
+                    NFCeAliqPIS: String(p.pis_percentage ?? p.aliq_pis ?? '0.00'),
+                    NFCeCSTCOFINS: String(p.cst_cofins || ''),
+                    NFCeAliqCOFINS: String(p.cofins_percentage ?? p.aliq_cofins ?? '0.00'),
+                    NFCeCodANP: "",
+                    NFCeBaseRedICMS: "",
+                    NFCeCodBenef: "",
+                    NFCecBenef: "",
+                    NFCeMotBenef: "",
+                    SalePrice: String((p.is_promotional && Number(p.promotional_price) > 0 ? p.promotional_price : p.selling_price) ?? '0.00'),
+                    NFCeIBS_CBS_CST: "",
+                    NFCeIBS_AliqUF: "",
+                    NFCeIBS_AliqMUN: "",
+                    NFCeIBS_PercRedBase: "",
+                    NFCeIBS_PercRedAliq: "",
+                    NFCeCBS_Aliq: "",
+                    NFCeCBS_PercRedBase: "",
+                    NFCeCBS_PercRedAliq: ""
+                };
+                return { Product: prod };
+            });
+
+            const textarea = getById('posControlJsonTextarea');
+            const modalCount = getById('posControlModalCount');
+            if (textarea) {
+                textarea.value = JSON.stringify(posControlFormatted, null, 4);
+            }
+            if (modalCount) {
+                modalCount.textContent = selectedProducts.length;
+            }
+
+            const endpointInput = getById('posControlEndpointInput') as HTMLInputElement;
+            const jwtInput = getById('posControlJwtInput') as HTMLInputElement;
+            if (endpointInput) endpointInput.value = 'Carregando...';
+            if (jwtInput) jwtInput.value = 'Carregando...';
+
+            api('/auth/me')
+                .then(userRes => {
+                    const companyPublicId = userRes.data?.company?.public_id || userRes.data?.user?.company?.public_id;
+                    if (!companyPublicId) throw new Error('Empresa do usuário não identificada.');
+                    return api(`/companies/${companyPublicId}/poscontrol-sync/debug-info`);
+                })
+                .then(debugRes => {
+                    if (debugRes && debugRes.data) {
+                        let url = debugRes.data.endpoint || '';
+                        if (url.includes('/productgroups')) {
+                            url = url.replace('/productgroups', '/products');
+                        }
+                        if (endpointInput) endpointInput.value = url;
+                        if (jwtInput) jwtInput.value = debugRes.data.jwt || '';
+                    }
+                })
+                .catch(err => {
+                    if (endpointInput) endpointInput.value = 'Erro ao carregar';
+                    if (jwtInput) jwtInput.value = 'Erro ao carregar';
+                    console.error('Erro ao carregar info de debug do Pos-Control:', err);
+                });
+
+            const modal = getById('posControlModal');
+            if (modal) modal.classList.remove('hidden');
+        });
+    }
+
+    const closePosControlModal = () => {
+        const modal = getById('posControlModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    const showPosControlErrorModal = (errorText: string) => {
+        const modal = getById('posControlErrorModal');
+        const textarea = getById('posControlErrorTextarea');
+        if (textarea) {
+            try {
+                const parsed = JSON.parse(errorText);
+                textarea.value = JSON.stringify(parsed, null, 4);
+            } catch {
+                textarea.value = errorText;
+            }
+        }
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    const closePosControlErrorModal = () => {
+        const modal = getById('posControlErrorModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    getById('btnCancelPosControlModal')?.addEventListener('click', closePosControlModal);
+    getById('btnClosePosControlModalX')?.addEventListener('click', closePosControlModal);
+    getById('posControlModalBackdrop')?.addEventListener('click', closePosControlModal);
+
+    getById('btnClosePosControlErrorModalX')?.addEventListener('click', closePosControlErrorModal);
+    getById('btnClosePosControlErrorModal')?.addEventListener('click', closePosControlErrorModal);
+    getById('posControlErrorModalBackdrop')?.addEventListener('click', closePosControlErrorModal);
+
+    const closePosControlSyncResultModal = () => {
+        const modal = getById('posControlSyncResultModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    getById('btnClosePosControlSyncResultModalX')?.addEventListener('click', closePosControlSyncResultModal);
+    getById('btnClosePosControlSyncResultModal')?.addEventListener('click', closePosControlSyncResultModal);
+    getById('posControlSyncResultModalBackdrop')?.addEventListener('click', closePosControlSyncResultModal);
+
+    getById('btnCopyPosControlJson')?.addEventListener('click', () => {
+        const textarea = getById('posControlJsonTextarea');
+        if (textarea && textarea.value) {
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const btn = getById('btnCopyPosControlJson');
+                if (btn) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Copiado!
+                    `;
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                    }, 2000);
+                }
+            }).catch(() => {
+                alert('Erro ao copiar JSON.');
+            });
+        }
+    });
+
+    getById('btnCopyPosControlEndpoint')?.addEventListener('click', () => {
+        const input = getById('posControlEndpointInput') as HTMLInputElement;
+        if (input && input.value && input.value !== 'Carregando...' && input.value !== 'Erro ao carregar') {
+            navigator.clipboard.writeText(input.value).then(() => {
+                const btn = getById('btnCopyPosControlEndpoint');
+                if (btn) {
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copiado!';
+                    setTimeout(() => { btn.textContent = originalText; }, 2000);
+                }
+            });
+        }
+    });
+
+    getById('btnCopyPosControlJwt')?.addEventListener('click', () => {
+        const input = getById('posControlJwtInput') as HTMLInputElement;
+        if (input && input.value && input.value !== 'Carregando...' && input.value !== 'Erro ao carregar') {
+            navigator.clipboard.writeText(input.value).then(() => {
+                const btn = getById('btnCopyPosControlJwt');
+                if (btn) {
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copiado!';
+                    setTimeout(() => { btn.textContent = originalText; }, 2000);
+                }
+            });
+        }
+    });
+
+    getById('btnSyncPosControl')?.addEventListener('click', async () => {
+        const btn = getById('btnSyncPosControl');
+        const originalText = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sincronizando...`;
+
+            const userRes = await api('/auth/me');
+            const companyPublicId = userRes.data?.company?.public_id;
+            if (!companyPublicId) {
+                throw new Error('Empresa do usuário não identificada.');
+            }
+
+            const configRes = await api(`/companies/${companyPublicId}/poscontrol-configs`);
+            const configs = configRes.data || [];
+            if (configs.length === 0) {
+                throw new Error('Nenhuma credencial do Pos-Controll configurada. Cadastre-a no menu Minha Empresa > API/Pos-Controll.');
+            }
+
+            const activeConfig = configs[0];
+
+            const textarea = getById('posControlJsonTextarea');
+            if (!textarea || !textarea.value) {
+                throw new Error('Nenhum JSON de produto gerado.');
+            }
+            const products = JSON.parse(textarea.value);
+            const selectedIds = Array.from(qsa('.product-checkbox:checked') as any).map((cb: any) => String(cb.value));
+
+            const response = await api(`/companies/${companyPublicId}/poscontrol-sync/products`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    configId: activeConfig.id,
+                    products,
+                    productIds: selectedIds
+                })
+            });
+
+            // Reload the local products data dynamically to refresh grid statuses
+            await loadProducts();
+
+            const resData = response.data || {};
+            const sentCount = resData.sentCount || 0;
+            const failedCount = resData.failedCount || 0;
+            const failures = resData.failures || [];
+
+            // Open the new result modal
+            const resultModal = getById('posControlSyncResultModal');
+            const successCountEl = getById('syncResultSuccessCount');
+            const failedCountEl = getById('syncResultFailedCount');
+            const failuresContainer = getById('syncResultFailuresContainer');
+            const failuresList = getById('syncResultFailuresList');
+
+            if (successCountEl) successCountEl.textContent = String(sentCount);
+            if (failedCountEl) failedCountEl.textContent = String(failedCount);
+
+            if (failuresList) {
+                failuresList.innerHTML = '';
+                if (failures.length > 0) {
+                    failures.forEach((f: any) => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'p-3 bg-red-50 dark:bg-red-950/10 text-red-900 dark:text-red-300 flex flex-col gap-1';
+                        
+                        const titleSpan = document.createElement('span');
+                        titleSpan.className = 'font-bold';
+                        titleSpan.textContent = `Produto: ${f.name} (SKU: ${f.sku})`;
+                        
+                        const errorSpan = document.createElement('span');
+                        errorSpan.className = 'text-gray-600 dark:text-gray-400 font-mono text-[10px] break-all';
+                        errorSpan.textContent = `Erro: ${f.error}`;
+                        
+                        itemDiv.appendChild(titleSpan);
+                        itemDiv.appendChild(errorSpan);
+                        failuresList.appendChild(itemDiv);
+                    });
+                    if (failuresContainer) failuresContainer.classList.remove('hidden');
+                } else {
+                    if (failuresContainer) failuresContainer.classList.add('hidden');
+                }
+            }
+
+            if (resultModal) resultModal.classList.remove('hidden');
+            closePosControlModal();
+        } catch (err: any) {
+            showPosControlErrorModal(err.message || 'Erro ao sincronizar produtos.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    let g_importCompanyPublicId: string | null = null;
+    let g_importConfigId: number | null = null;
+
+    getById('btnImportPosControl')?.addEventListener('click', async () => {
+        const btn = getById('btnImportPosControl');
+        const originalText = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Buscando...`;
+
+            const userRes = await api('/auth/me');
+            const companyPublicId = userRes.data?.company?.public_id;
+            if (!companyPublicId) {
+                throw new Error('Empresa do usuário não identificada.');
+            }
+
+            const configRes = await api(`/companies/${companyPublicId}/poscontrol-configs`);
+            const configs = configRes.data || [];
+            if (configs.length === 0) {
+                throw new Error('Nenhuma credencial do Pos-Controll configurada. Cadastre-a no menu Minha Empresa > API/Pos-Controll.');
+            }
+
+            const activeConfig = configs[0];
+            g_importCompanyPublicId = companyPublicId;
+            g_importConfigId = activeConfig.id;
+
+            const res = await api(`/companies/${companyPublicId}/poscontrol-sync/fetch-products`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    configId: activeConfig.id
+                })
+            });
+
+            const importTextarea = getById('posControlImportJsonTextarea') as HTMLTextAreaElement;
+            if (importTextarea) {
+                importTextarea.value = JSON.stringify(res.data, null, 4);
+            }
+
+            const importModal = getById('posControlImportModal');
+            if (importModal) importModal.classList.remove('hidden');
+
+        } catch (err: any) {
+            alert(err.message || 'Erro ao buscar produtos do Pos-Controll.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    const closePosControlImportModal = () => {
+        const modal = getById('posControlImportModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    getById('btnCancelPosControlImportModal')?.addEventListener('click', closePosControlImportModal);
+    getById('btnClosePosControlImportModalX')?.addEventListener('click', closePosControlImportModal);
+    getById('posControlImportModalBackdrop')?.addEventListener('click', closePosControlImportModal);
+
+    getById('btnConfirmPosControlImport')?.addEventListener('click', async () => {
+        const btn = getById('btnConfirmPosControlImport');
+        const originalText = btn.innerHTML;
+
+        try {
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Importando...`;
+
+            if (!g_importCompanyPublicId || !g_importConfigId) {
+                throw new Error('Estado de importação inválido.');
+            }
+
+            const textarea = getById('posControlImportJsonTextarea') as HTMLTextAreaElement;
+            if (!textarea || !textarea.value) {
+                throw new Error('Nenhum JSON de produtos fornecido.');
+            }
+
+            const products = JSON.parse(textarea.value);
+
+            const res = await api(`/companies/${g_importCompanyPublicId}/poscontrol-sync/import-products`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    configId: g_importConfigId,
+                    products
+                })
+            });
+
+            alert(`Importação concluída com sucesso!\n\nProdutos Importados: ${res.data.imported}\nProdutos Atualizados: ${res.data.updated}\nFalhas (ex: SKU duplicado): ${res.data.failed || 0}`);
+            closePosControlImportModal();
+            window.location.reload();
+        } catch (err: any) {
+            alert(err.message || 'Erro ao importar produtos.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    FiltersStorage.restoreStatic();
     loadRelations(); // Load categories, manufacturers, etc
     window.loadProducts();
 });
@@ -719,9 +1415,13 @@ window.openModal = (data: any = null) => {
         getById('productCategory').value = data.category_id || '';
         const stockTypeEl = getById('productStockType');
         if (stockTypeEl) stockTypeEl.value = data.stock_type_id || '';
+        const productTypeEl = getById('productProductType');
+        if (productTypeEl) productTypeEl.value = data.product_type_id || '';
         getById('productManufacturer').value = data.manufacturer_id || '';
         getById('productTaxRule').value = data.tax_rule_id || '';
         getById('productMeasure').value = data.measure_id || '';
+        getById('productIdprodutopos').value = data.idprodutopos || '';
+        getById('productActive').checked = Boolean(data.active ?? true);
         const applyPriceTableEl = getById('applyPriceTable');
         if (applyPriceTableEl) applyPriceTableEl.value = '';
         form.dataset.id = data.public_id;
@@ -760,6 +1460,8 @@ window.openModal = (data: any = null) => {
         getById('initialStock').value = '0';
         getById('minStock').value = '0';
         getById('maxStock').value = '0';
+        getById('productIdprodutopos').value = '';
+        getById('productActive').checked = true;
         const applyPriceTableEl = getById('applyPriceTable');
         if (applyPriceTableEl) applyPriceTableEl.value = '';
         delete form.dataset.id;
@@ -818,12 +1520,12 @@ getById('productForm').addEventListener('submit', async (e) => {
 
     const payload = {
         name: getById('productName').value,
-        sku: getById('productSku').value || undefined,
-        ean: getById('productEan').value || undefined,
-        external_code: getById('productExternalCode').value || undefined,
-        ncm: getById('productNcm').value || undefined,
-        cest: getById('productCest').value || undefined,
-        description: getById('productDesc').value || undefined,
+        sku: getById('productSku').value || null,
+        ean: getById('productEan').value || null,
+        external_code: getById('productExternalCode').value || null,
+        ncm: getById('productNcm').value || '00000000',
+        cest: getById('productCest').value || null,
+        description: getById('productDesc').value || null,
         cost_price: parseNumber(getById('costPrice').value),
         selling_price: parseNumber(getById('sellingPrice').value),
         is_promotional: getById('promotionalActive').checked,
@@ -834,9 +1536,12 @@ getById('productForm').addEventListener('submit', async (e) => {
         max_stock: parseInt(getById('maxStock').value) || 0,
         category_id: parseInt(getById('productCategory').value) || null,
         stock_type_id: parseInt(getById('productStockType')?.value) || null,
+        product_type_id: parseInt(getById('productProductType')?.value) || null,
         manufacturer_id: parseInt(getById('productManufacturer').value) || null,
         tax_rule_id: parseInt(getById('productTaxRule').value) || null,
         measure_id: parseInt(getById('productMeasure').value) || null,
+        idprodutopos: getById('productIdprodutopos').value || null,
+        active: getById('productActive').checked,
         ...imagePayload
     };
 
@@ -886,11 +1591,14 @@ async function loadProducts() {
 window.loadProducts = loadProducts;
 
 function applyFilters() {
+    FiltersStorage.save();
     const search = normalizeFilterText(getById('filterSearch')?.value);
     const categoryId = getById('filterCategory')?.value || '';
     const manufacturerId = getById('filterManufacturer')?.value || '';
     const stockFilter = getById('filterStock')?.value || '';
     const imageFilter = getById('filterImage')?.value || '';
+    const statusFilter = getById('filterStatus')?.value || '';
+    const posControlFilter = getById('filterPosControl')?.value || '';
 
     const filteredProducts = productsData.filter((product) => {
         if (search) {
@@ -936,6 +1644,29 @@ function applyFilters() {
             return false;
         }
 
+        if (statusFilter === 'active' && !product.active) {
+            return false;
+        }
+
+        if (statusFilter === 'inactive' && product.active) {
+            return false;
+        }
+
+        if (posControlFilter === 'synced') {
+            const isSynced = Boolean(product.poscontrol_synced) && Boolean(product.idprodutopos);
+            if (!isSynced) return false;
+        }
+
+        if (posControlFilter === 'pending') {
+            const isPending = !product.poscontrol_synced && Boolean(product.idprodutopos);
+            if (!isPending) return false;
+        }
+
+        if (posControlFilter === 'not_registered') {
+            const isNotRegistered = !product.idprodutopos;
+            if (!isNotRegistered) return false;
+        }
+
         return true;
     });
 
@@ -952,6 +1683,25 @@ function applyFilters() {
         anchorId: 'productsGridSection',
         count: filteredProducts.length,
         label: 'produto(s) exibido(s)',
+        extraHtml: `
+            <div class="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-gray-400 dark:text-gray-500 font-medium">Estoque:</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Baixo</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-gray-400 dark:text-gray-500 font-medium">Origem:</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Importado</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-300">Manual</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-gray-400 dark:text-gray-500 font-medium">Pos-Controll:</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Sincronizado</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Pendente</span>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Não Cadastrado</span>
+                </div>
+            </div>
+        `
     });
     bindActionEvents();
 }
@@ -960,23 +1710,26 @@ function renderTable(elementId, items) {
     const tbody = getById(elementId);
 
     if (items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="20" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="22" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum registro encontrado.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = items.map(p => `
-        <tr class="${isLowStock(p) ? 'bg-red-50 dark:bg-red-900/20' : ''} hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
+        <tr class="hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
             <td class="px-6 py-4 whitespace-nowrap w-12 text-center text-sm">
                 <input type="checkbox" value="${p.public_id}" class="product-checkbox rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 dark:border-slate-600">
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">#${String(p.id).padStart(4, '0')}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.idprodutopos || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.sku || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.ean || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.ncm || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap">${getProductImageMarkup(p)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">${p.name}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.category_name || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.manufacturer_name || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.stock_type_name || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${p.product_type_name || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">${formatCurrency(p.cost_price || 0)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-center">${p.cost_price > 0 ? (((p.selling_price / p.cost_price) - 1) * 100).toFixed(2) + '%' : '0.00%'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-bold">${formatCurrency(p.selling_price)}</td>
@@ -1012,6 +1765,18 @@ function renderTable(elementId, items) {
                     ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Importado</span>'
                     : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-300">Manual</span>'}
             </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                ${(p.poscontrol_synced && p.idprodutopos)
+                    ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Sincronizado</span>'
+                    : (!p.idprodutopos
+                        ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Não Cadastrado</span>'
+                        : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Pendente</span>')}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                ${p.active
+                    ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Ativo</span>'
+                    : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Inativo</span>'}
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button type="button" title="Editar" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-3 edit-btn" data-item='${JSON.stringify(p).replace(/'/g, "&#39;")}'>
                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -1043,7 +1808,7 @@ function renderGrid(elementId, items) {
         const productJson = JSON.stringify(product).replace(/'/g, "&#39;");
 
         return `
-        <div data-product-card class="bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden flex flex-col relative border ${isLowStock(product) ? 'border-red-300 dark:border-red-800/50 bg-red-50/50 dark:bg-red-900/10' : 'border-gray-200 dark:border-slate-700'} hover:border-brand-200 dark:hover:border-brand-700 transition-colors group min-w-0 h-full">
+        <div data-product-card class="bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden flex flex-col relative border border-gray-200 dark:border-slate-700 hover:border-brand-200 dark:hover:border-brand-700 transition-colors group min-w-0 h-full">
             <div class="w-full h-36 bg-gray-50 dark:bg-slate-900/60 border-b border-gray-100 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                 ${imageSrc
                     ? `<img src="${imageSrc}" alt="${product.name}" class="w-full h-full object-contain p-2" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-gray-300 dark:text-slate-600\'><svg class=\'w-12 h-12\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\'></path></svg></div>'">`
@@ -1077,10 +1842,20 @@ function renderGrid(elementId, items) {
                     <div class="mt-2 flex flex-wrap gap-1.5">
                         <span class="max-w-full truncate text-xs text-brand-600 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 px-2 py-0.5 rounded font-medium">${product.category_name || 'Sem Categoria'}</span>
                         <span class="max-w-full truncate text-xs font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">${product.stock_type_name || 'Sem Tipo de Estoque'}</span>
+                        <span class="max-w-full truncate text-xs font-mono text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">${product.product_type_name || 'Sem Tipo de Produto'}</span>
                         <span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">SKU: ${product.sku || 'N/A'}</span>
                         ${product.ean ? `<span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">EAN: ${product.ean}</span>` : ''}
                         ${product.external_code ? `<span class="max-w-full truncate text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">Ext: ${product.external_code}</span>` : ''}
+                        <span class="max-w-full truncate text-xs font-medium ${product.active ? 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30' : 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30'} px-2 py-0.5 rounded">${product.active ? 'Ativo' : 'Inativo'}</span>
                         <span class="max-w-full truncate text-xs font-medium ${product.is_imported ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-700'} px-2 py-0.5 rounded">${product.is_imported ? 'Importado' : 'Manual'}</span>
+                        ${(product.poscontrol_synced && product.idprodutopos)
+                            ? `<span class="max-w-full truncate text-xs font-semibold text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded">POS: Sincronizado</span>`
+                            : (!product.idprodutopos
+                                ? `<span class="max-w-full truncate text-xs font-semibold text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded">POS: Não Cadastrado</span>`
+                                : `<span class="max-w-full truncate text-xs font-semibold text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/30 px-2 py-0.5 rounded">POS: Pendente</span>`
+                            )
+                        }
+                        <span class="max-w-full truncate text-xs font-mono text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded">ID POS: ${product.idprodutopos || 'N/A'}</span>
                     </div>
 
                     <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
@@ -1116,13 +1891,12 @@ function renderGrid(elementId, items) {
                     </div>
                 </div>
 
-                <div class="mt-auto pt-4 border-t ${isLowStock(product) ? 'border-red-200 dark:border-red-800/30' : 'border-gray-100 dark:border-slate-700'} flex justify-between items-center gap-3">
+                <div class="mt-auto pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center gap-3">
                     <div class="text-xs text-gray-500 dark:text-gray-400">
                         Min ${product.min_stock || 0} / Max ${product.max_stock || 0}
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-lg font-bold ${isLowStock(product) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">${product.current_stock || 0} <span class="text-xs font-normal text-gray-400 ml-0.5">${product.measure_abbreviation || 'UN'}</span></span>
-                        ${isLowStock(product) ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Baixo</span>' : ''}
+                        <span class="text-lg font-bold text-green-600 dark:text-green-400">${product.current_stock || 0} <span class="text-xs font-normal text-gray-400 ml-0.5">${product.measure_abbreviation || 'UN'}</span></span>
                     </div>
                 </div>
             </div>
@@ -1164,71 +1938,13 @@ function bindActionEvents() {
         });
     });
 
-    // Função auxiliar para pintar o fundo quando selecionado
-    const toggleRowSelection = (cb) => {
-        let parentRow = cb.closest('tr');
-        if (!parentRow) parentRow = cb.closest('[data-product-card]');
-        if (parentRow) {
-            if (cb.checked) {
-                parentRow.classList.add('bg-orange-50', 'dark:bg-orange-900/20', 'border-orange-200');
-                parentRow.classList.remove('bg-white', 'dark:bg-slate-800', 'border-gray-100');
-            } else {
-                parentRow.classList.remove('bg-orange-50', 'dark:bg-orange-900/20', 'border-orange-200');
-                parentRow.classList.add('bg-white', 'dark:bg-slate-800', 'border-gray-100');
-            }
-        }
-    };
-
-    // Refresh Master Checkbox and Bulk Actions Button
-    const updateBulkActionsButton = () => {
-        const checkedCount = qsa('.product-checkbox:checked').length;
-        const btnBulk = getById('btnBulkUpdate');
-        const countSpan = getById('bulkCount');
-        const btnBulkDelete = getById('btnBulkDelete');
-        const bulkDeleteCountSpan = getById('bulkDeleteCount');
-
-        if (btnBulk) {
-            if (checkedCount > 0) {
-                btnBulk.classList.remove('hidden');
-                btnBulk.classList.add('inline-flex', 'items-center', 'justify-center');
-                if (countSpan) countSpan.textContent = checkedCount;
-            } else {
-                btnBulk.classList.add('hidden');
-                btnBulk.classList.remove('inline-flex', 'items-center', 'justify-center');
-            }
-        }
-
-        if (btnBulkDelete) {
-            if (checkedCount > 0) {
-                btnBulkDelete.classList.remove('hidden');
-                btnBulkDelete.classList.add('inline-flex', 'items-center', 'justify-center');
-                if (bulkDeleteCountSpan) bulkDeleteCountSpan.textContent = checkedCount;
-            } else {
-                btnBulkDelete.classList.add('hidden');
-                btnBulkDelete.classList.remove('inline-flex', 'items-center', 'justify-center');
-            }
-        }
-    };
-
-    // Sub-rotina Checkbox
-    const selectAllCheckbox = getById('selectAllCheckbox');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.checked = false;
-        selectAllCheckbox.addEventListener('change', (e) => {
-            qsa('.product-checkbox').forEach(cb => {
-                cb.checked = e.target.checked;
-                toggleRowSelection(cb);
-            });
-            updateBulkActionsButton();
-        });
-    }
-
     // Monitorar Checkboxes individuais para ajustar o master checkbox
     qsa('.product-checkbox').forEach(cb => {
         cb.addEventListener('change', () => {
             toggleRowSelection(cb);
             const allBoxes = qsa('.product-checkbox');
             const allChecked = Array.from(allBoxes as any).every((c: any) => c.checked);
+            const selectAllCheckbox = getById('selectAllCheckbox') as HTMLInputElement | null;
             if (selectAllCheckbox) selectAllCheckbox.checked = allBoxes.length > 0 && allChecked;
 
             updateBulkActionsButton();
@@ -1241,13 +1957,14 @@ function bindActionEvents() {
 // Loads Categories, Manufacturers, and TaxRules into the selects
 async function loadRelations() {
     try {
-        const [catsRes, manufsRes, taxesRes, measuresRes, stockTypesRes, pricesRes] = await Promise.all([
+        const [catsRes, manufsRes, taxesRes, measuresRes, stockTypesRes, pricesRes, productTypesRes] = await Promise.all([
             api('/estoque/categories'),
             api('/estoque/manufacturers'),
             api('/estoque/taxes'),
             api('/estoque/measures'),
             api('/estoque/stock-types'),
-            api('/estoque/prices')
+            api('/estoque/prices'),
+            api('/products/product-types')
         ]);
         const categories = catsRes.data || [];
         const manufacturers = manufsRes.data || [];
@@ -1255,6 +1972,7 @@ async function loadRelations() {
 
         populateSelect('productCategory', categories, 'Nenhuma');
         populateSelect('productStockType', stockTypesRes.data, 'Nenhum');
+        populateSelect('productProductType', productTypesRes.data, 'Nenhum');
         populateSelect('productManufacturer', manufacturers, 'Nenhum');
         populateSelect('productTaxRule', taxesRes.data, 'Nenhuma');
         populateSelect('productMeasure', measuresRes.data, 'Nenhuma');
@@ -1262,9 +1980,13 @@ async function loadRelations() {
         populateSelect('filterCategory', categories, 'Todas as Categorias');
         populateSelect('filterManufacturer', manufacturers, 'Todos os Fabricantes');
 
+        FiltersStorage.restoreDynamic();
+        g_filtersRestored = true;
+
         // Also populate bulk update modal dropdowns
         populateSelect('bulkCategory', categories, '-- Não alterar --');
         populateSelect('bulkStockType', stockTypesRes.data, '-- Não alterar --');
+        populateSelect('bulkProductType', productTypesRes.data, '-- Não alterar --');
         populateSelect('bulkManufacturer', manufacturers, '-- Não alterar --');
         populateSelect('bulkTaxRule', taxesRes.data, '-- Não alterar --');
         populateSelect('bulkMeasure', measuresRes.data, '-- Não alterar --');

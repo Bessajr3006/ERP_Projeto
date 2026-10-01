@@ -98,12 +98,29 @@ export function toBrazilIsoDateTime(value: DateInput = new Date()): string {
 }
 
 const DB_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const NAIVE_DATETIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?$/;
 
 export function toBrazilDbDateTime(value: DateInput = new Date()): string {
-    if (typeof value === 'string' && DB_DATETIME_PATTERN.test(value.trim())) {
-        return value.trim();
+    if (!value) {
+        const parts = getBrazilDateTimeParts(new Date());
+        return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (DB_DATETIME_PATTERN.test(trimmed)) {
+            return trimmed;
+        }
+        if (DATE_ONLY_PATTERN.test(trimmed)) {
+            return `${trimmed} 00:00:00`;
+        }
+        const naiveMatch = trimmed.match(NAIVE_DATETIME_PATTERN);
+        if (naiveMatch) {
+            const [, y, m, d, hh, mm, ss = '00'] = naiveMatch;
+            return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+        }
     }
     const parts = getBrazilDateTimeParts(value);
     return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
 }
+
 

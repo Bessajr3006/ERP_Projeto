@@ -5,12 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Ajuste</title>
-    <link href="/css/style.css?v=20260609211500" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <!-- PWA: manifesto e ícone para instalação como app -->
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-800 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -36,7 +36,7 @@
                     </div>
                 </div>
 
-                <div class="p-4 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div class="p-4 sm:p-5 grid grid-cols-1 xl:grid-cols-3 gap-6">
 
                     <!-- Modo do Tema: define se o sistema usa modo Claro, Escuro ou segue o SO -->
                     <div>
@@ -75,6 +75,22 @@
                             </label>
                             <label data-choice-card="themebtn" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
                                 <input type="radio" name="themeToggleVisibility" value="hide" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">🚫 Ocultar</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Botão do WhatsApp Flutuante: controla se o botão de ajuda do WhatsApp aparece -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Botão do WhatsApp Flutuante</h3>
+                        <p class="text-xs text-gray-400 dark:text-gray-400 mb-3">Controla se o botão flutuante do WhatsApp é exibido no canto inferior das páginas.</p>
+                        <div class="grid grid-cols-2 gap-2 auto-rows-fr" id="waFloatingBtnVisibilityGroup">
+                            <label data-choice-card="wabtn" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="waFloatingBtnVisibility" value="show" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
+                                <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">👁️ Exibir</span>
+                            </label>
+                            <label data-choice-card="wabtn" data-animate="card" class="h-full flex items-center justify-center sm:justify-start gap-2 sm:gap-3 rounded-lg px-2.5 sm:px-3 py-2 min-h-10 sm:min-h-11 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 opacity-0 translate-y-2 transition-all duration-500">
+                                <input type="radio" name="waFloatingBtnVisibility" value="hide" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300" data-bwignore="true" data-lpignore="true" placeholder="">
                                 <span class="flex-1 text-xs xl:text-sm leading-tight text-gray-700 dark:text-gray-200">🚫 Ocultar</span>
                             </label>
                         </div>
@@ -403,13 +419,13 @@
     </main>
 
     <!-- Scripts: api.js deve ser carregado antes dos demais para disponibilizar window.api -->
-    <script src="/js/api.js?v=20260609211500"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
     <!-- ajuste.js: lógica de persistência, hidratação do servidor e listeners de preferência -->
-    <script src="/js/ajuste.js?v=20260609211500"></script>
+    <script src="/js/ajuste.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

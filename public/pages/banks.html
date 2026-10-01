@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Contas Bancárias</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -86,7 +86,7 @@
             <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
                 id="modalBackdrop"></div>
             <div
-                class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
                 <form id="bankForm">
                     <input type="hidden" id="bankId" name="bankId">
                     <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -105,15 +105,19 @@
                                         </svg>
                                     </button>
                                 </div>
-                                <div class="mt-4 border-b border-gray-200 dark:border-slate-700">
-                                    <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                                <div class="mt-4 border-b border-gray-200 dark:border-slate-700 overflow-x-auto">
+                                    <nav class="-mb-px flex gap-2 sm:gap-4" aria-label="Tabs">
                                         <button type="button" id="tabBtnGeral"
-                                            class="border-brand-500 text-brand-600 border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap">
+                                            class="border-brand-500 text-brand-600 border-b-2 py-3 px-2 text-xs sm:text-sm font-medium whitespace-nowrap">
                                             Geral
                                         </button>
                                         <button type="button" id="tabBtnApi"
-                                            class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500 border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap ml-4">
-                                            Integração API & Webhook
+                                            class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500 border-b-2 py-3 px-2 text-xs sm:text-sm font-medium whitespace-nowrap">
+                                            Integração API & Webhook (Inter)
+                                        </button>
+                                        <button type="button" id="tabBtnAsaas"
+                                            class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500 border-b-2 py-3 px-2 text-xs sm:text-sm font-medium whitespace-nowrap">
+                                            Integração API & Webhook (ASAAS)
                                         </button>
                                     </nav>
                                 </div>
@@ -122,7 +126,7 @@
                                     <!-- TAB GERAL -->
                                     <div id="tabContentGeral" class="block">
                                         <div class="grid grid-cols-2 gap-4">
-                                            <div class="col-span-2">
+                                            <div class="col-span-2 sm:col-span-1">
                                                 <label for="bankName"
                                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Identificação
                                                     /
@@ -131,7 +135,7 @@
                                                     placeholder="Ex: Conta Corrente Itaú" autocomplete="off"
                                                     class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
                                             </div>
-                                            <div class="col-span-2">
+                                            <div class="col-span-2 sm:col-span-1">
                                                 <label for="institution"
                                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Instituição
                                                     (Banco)</label>
@@ -176,250 +180,513 @@
                                                 <input type="text" id="initialBalance" name="initialBalance" value="R$ 0,00" maxlength="24"
                                                     class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
                                             </div>
+                                            <div class="col-span-2">
+                                                <label for="solidconBankId"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">ID do Banco na Solidcon (Opcional)</label>
+                                                <input type="text" id="solidconBankId" name="solidconBankId" placeholder="Ex: 3" autocomplete="new-password"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
                                         </div>
                                     </div>
 
                                     <!-- TAB API/INTER -->
                                     <div id="tabContentApi" class="hidden">
                                         <div class="space-y-4">
-                                            <div>
-                                                <label for="apiClientId"
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client
-                                                    ID</label>
-                                                <input type="text" id="apiClientId" name="apiClientId" placeholder="ID do Cliente do Inter" autocomplete="off"
-                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
-                                            </div>
-                                            <div>
-                                                <label for="apiClientSecret"
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client
-                                                    Secret</label>
-                                                <input type="password" id="apiClientSecret" name="apiClientSecret"
-                                                    placeholder="Client Secret do Inter" autocomplete="current-password"
-                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certificado
-                                                    (.crt)</label>
-                                                <label id="dropzoneCert" for="fileCertificado"
-                                                    class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
-                                                    <span class="flex flex-col items-center space-y-1 text-center">
-                                                        <svg xmlns="http://www.w3.org/2000/svg"
-                                                            class="w-6 h-6 text-gray-400" fill="none"
-                                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                        </svg>
-                                                        <span
-                                                            class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                            Solte o arquivo ou <span
-                                                                class="text-brand-600 dark:text-brand-400 underline">selecione</span>
-                                                        </span>
-                                                        <span class="text-xs text-gray-500">Apenas arquivos .crt</span>
-                                                    </span>
-                                                    <input type="file" id="fileCertificado" name="fileCertificado"
-                                                        class="hidden" accept=".crt,.pem,.txt">
-                                                </label>
-                                                <div id="filenameCert" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                                        viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    <span id="filenameCertText" class="truncate"></span>
-                                                    <button type="button" id="clearCertBtn" title="Remover certificado"
-                                                        class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label for="apiClientId"
+                                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client
+                                                        ID</label>
+                                                    <input type="text" id="apiClientId" name="apiClientId" placeholder="ID do Cliente do Inter" autocomplete="off"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
                                                 </div>
-                                                <textarea id="apiCertificado" name="apiCertificado" class="hidden" aria-hidden="true" title="Conteúdo do certificado da API"></textarea>
-                                            </div>
-                                            <div>
-                                                <label
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chave
-                                                    Privada (.key)</label>
-                                                <label id="dropzoneKey" for="fileKey"
-                                                    class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
-                                                    <span class="flex flex-col items-center space-y-1 text-center">
-                                                        <svg xmlns="http://www.w3.org/2000/svg"
-                                                            class="w-6 h-6 text-gray-400" fill="none"
-                                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                                        </svg>
-                                                        <span
-                                                            class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                            Solte o arquivo ou <span
-                                                                class="text-brand-600 dark:text-brand-400 underline">selecione</span>
-                                                        </span>
-                                                        <span class="text-xs text-gray-500">Apenas arquivos .key</span>
-                                                    </span>
-                                                    <input type="file" id="fileKey" name="fileKey" class="hidden"
-                                                        accept=".key,.pem,.txt">
-                                                </label>
-                                                <div id="filenameKey" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                                        viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    <span id="filenameKeyText" class="truncate"></span>
-                                                    <button type="button" id="clearKeyBtn" title="Remover chave"
-                                                        class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
+                                                <div>
+                                                    <label for="apiClientSecret"
+                                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client
+                                                        Secret</label>
+                                                    <input type="password" id="apiClientSecret" name="apiClientSecret"
+                                                        placeholder="Client Secret do Inter" autocomplete="new-password"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
                                                 </div>
-                                                <textarea id="apiKey" name="apiKey" class="hidden" aria-hidden="true" title="Conteúdo da chave privada da API"></textarea>
+                                            </div>
+
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label
+                                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certificado
+                                                        (.crt)</label>
+                                                    <label id="dropzoneCert" for="fileCertificado"
+                                                        class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
+                                                        <span class="flex flex-col items-center space-y-1 text-center">
+                                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                                class="w-6 h-6 text-gray-400" fill="none"
+                                                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                            </svg>
+                                                            <span
+                                                                class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                                Solte o arquivo ou <span
+                                                                    class="text-brand-600 dark:text-brand-400 underline">selecione</span>
+                                                            </span>
+                                                            <span class="text-xs text-gray-500">Apenas arquivos .crt</span>
+                                                        </span>
+                                                        <input type="file" id="fileCertificado" name="fileCertificado"
+                                                            class="hidden" accept=".crt,.pem,.txt">
+                                                    </label>
+                                                    <div id="filenameCert" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                            viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span id="filenameCertText" class="truncate"></span>
+                                                        <button type="button" id="clearCertBtn" title="Remover certificado"
+                                                            class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                    <textarea id="apiCertificado" name="apiCertificado" class="hidden" aria-hidden="true" title="Conteúdo do certificado da API"></textarea>
+                                                </div>
+                                                <div>
+                                                    <label
+                                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chave
+                                                        Privada (.key)</label>
+                                                    <label id="dropzoneKey" for="fileKey"
+                                                        class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
+                                                        <span class="flex flex-col items-center space-y-1 text-center">
+                                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                                class="w-6 h-6 text-gray-400" fill="none"
+                                                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                            </svg>
+                                                            <span
+                                                                class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                                Solte o arquivo ou <span
+                                                                    class="text-brand-600 dark:text-brand-400 underline">selecione</span>
+                                                            </span>
+                                                            <span class="text-xs text-gray-500">Apenas arquivos .key</span>
+                                                        </span>
+                                                        <input type="file" id="fileKey" name="fileKey" class="hidden"
+                                                            accept=".key,.pem,.txt">
+                                                    </label>
+                                                    <div id="filenameKey" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                            viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span id="filenameKeyText" class="truncate"></span>
+                                                        <button type="button" id="clearKeyBtn" title="Remover chave"
+                                                            class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                    <textarea id="apiKey" name="apiKey" class="hidden" aria-hidden="true" title="Conteúdo da chave privada da API"></textarea>
+                                                </div>
+                                            </div>
+
+                                            <!-- Seção de Configuração de Boletos -->
+                                            <div class="border-t border-gray-200 dark:border-slate-700 pt-4 mt-6">
+                                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Padrões de Cobrança (Boleto)</h4>
+                                                <div class="grid grid-cols-3 gap-4">
+                                                    <div>
+                                                        <label for="billetFine" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                                            Multa após venc. (%)
+                                                        </label>
+                                                        <input type="number" id="billetFine" name="billetFine" min="0" max="100" step="0.01" placeholder="Ex: 2.00"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                    <div>
+                                                        <label for="billetInterest" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                                            Juros ao mês (%)
+                                                        </label>
+                                                        <input type="number" id="billetInterest" name="billetInterest" min="0" max="100" step="0.01" placeholder="Ex: 1.00"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                    <div>
+                                                        <label for="billetValidity" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                                            Validade (dias)
+                                                        </label>
+                                                        <input type="number" id="billetValidity" name="billetValidity" min="0" placeholder="Ex: 29"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Seção de Configuração de Pix -->
+                                            <div class="border-t border-gray-200 dark:border-slate-700 pt-4 mt-6">
+                                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Padrões de Cobrança (PIX)</h4>
+                                                <div class="grid grid-cols-3 gap-4">
+                                                    <div>
+                                                        <label for="pixFine" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                                            Multa após venc. (%)
+                                                        </label>
+                                                        <input type="number" id="pixFine" name="pixFine" min="0" max="100" step="0.01" placeholder="Ex: 2.00"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                    <div>
+                                                        <label for="pixInterest" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                                            Juros ao mês (%)
+                                                        </label>
+                                                        <input type="number" id="pixInterest" name="pixInterest" min="0" max="100" step="0.01" placeholder="Ex: 1.00"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                    <div>
+                                                        <label for="pixValidity" class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                                                            Validade (dias)
+                                                        </label>
+                                                        <input type="number" id="pixValidity" name="pixValidity" min="0" placeholder="Ex: 30"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <!-- Seção de Webhook -->
                                             <div class="border-t border-gray-200 dark:border-slate-700 pt-4 mt-6">
                                                 <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Configuração do Webhook</h4>
+                                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div class="sm:col-span-2">
+                                                    <label for="webhookUrl"
+                                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Webhook</label>
+                                                    <input type="url" id="webhookUrl" name="webhookUrl" placeholder="Ex: https://api.seu-sistema.com/webhooks/banking" autocomplete="off"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Endpoint para o qual as notificações de eventos serão enviadas.</p>
+                                                </div>
+                                                <div class="hidden">
+                                                    <div>
+                                                        <label for="webhookSecret"
+                                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chave de Assinatura (Secret)</label>
+                                                        <input type="password" id="webhookSecret" name="webhookSecret" placeholder="Chave para assinar/validar payloads do webhook" autocomplete="new-password"
+                                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Usado para assinar os payloads e garantir que as requisições vêm da Keystone.</p>
+                                                    </div>
+                                                </div>
+                                                <!-- Webhook Certificate Field (Visible) -->
+                                                <div>
+                                                    <label
+                                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certificado do Webhook (.crt)</label>
+                                                    <label id="dropzoneWebhookCert" for="fileWebhookCertificado"
+                                                        class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
+                                                        <span class="flex flex-col items-center space-y-1 text-center">
+                                                             <svg xmlns="http://www.w3.org/2000/svg"
+                                                                 class="w-6 h-6 text-gray-400" fill="none"
+                                                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                 <path stroke-linecap="round" stroke-linejoin="round"
+                                                                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                             </svg>
+                                                             <span
+                                                                 class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                                 Solte o arquivo ou <span
+                                                                     class="text-brand-600 dark:text-brand-400 underline">selecione</span>
+                                                             </span>
+                                                             <span class="text-xs text-gray-500">Apenas arquivos .crt</span>
+                                                        </span>
+                                                        <input type="file" id="fileWebhookCertificado" name="fileWebhookCertificado"
+                                                             class="hidden" accept=".crt,.pem,.txt">
+                                                    </label>
+                                                    <div id="filenameWebhookCert" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50">
+                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                             viewBox="0 0 24 24" stroke="currentColor">
+                                                             <path stroke-linecap="round" stroke-linejoin="round"
+                                                                 stroke-width="2" d="M5 13l4 4L19 7" />
+                                                         </svg>
+                                                         <span id="filenameWebhookCertText" class="truncate"></span>
+                                                         <button type="button" id="clearWebhookCertBtn" title="Remover certificado"
+                                                             class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
+                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                 <path stroke-linecap="round" stroke-linejoin="round"
+                                                                     stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                             </svg>
+                                                         </button>
+                                                    </div>
+                                                    <textarea id="webhookCertificado" name="webhookCertificado" class="hidden" aria-hidden="true" title="Conteúdo do certificado do Webhook"></textarea>
+                                                </div>
+
+                                                <!-- Hidden redundant key field (as Banco Inter does not provide a separate .key for webhooks) -->
+                                                <div class="hidden">
+                                                    <div>
+                                                        <label
+                                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chave Privada do Webhook (.key)</label>
+                                                        <label id="dropzoneWebhookKey" for="fileWebhookKey"
+                                                            class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
+                                                            <span class="flex flex-col items-center space-y-1 text-center">
+                                                                 <svg xmlns="http://www.w3.org/2000/svg"
+                                                                     class="w-6 h-6 text-gray-400" fill="none"
+                                                                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                     <path stroke-linecap="round" stroke-linejoin="round"
+                                                                         d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                                 </svg>
+                                                                 <span
+                                                                     class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                                     Solte o arquivo ou <span
+                                                                         class="text-brand-600 dark:text-brand-400 underline">selecione</span>
+                                                                 </span>
+                                                                 <span class="text-xs text-gray-500">Apenas arquivos .key</span>
+                                                            </span>
+                                                            <input type="file" id="fileWebhookKey" name="fileWebhookKey" class="hidden"
+                                                                 accept=".key,.pem,.txt">
+                                                        </label>
+                                                        <div id="filenameWebhookKey" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50">
+                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                                 viewBox="0 0 24 24" stroke="currentColor">
+                                                                 <path stroke-linecap="round" stroke-linejoin="round"
+                                                                     stroke-width="2" d="M5 13l4 4L19 7" />
+                                                             </svg>
+                                                             <span id="filenameWebhookKeyText" class="truncate"></span>
+                                                             <button type="button" id="clearWebhookKeyBtn" title="Remover chave"
+                                                                 class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
+                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                     <path stroke-linecap="round" stroke-linejoin="round"
+                                                                         stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                                 </svg>
+                                                             </button>
+                                                        </div>
+                                                        <textarea id="webhookKey" name="webhookKey" class="hidden" aria-hidden="true" title="Conteúdo do chave privada do Webhook"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Eventos a Enviar</span>
+                                                    <div class="space-y-3 bg-gray-50 dark:bg-slate-900/30 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50">
+                                                        <div class="flex items-start">
+                                                            <div class="flex items-center h-5">
+                                                                <input id="webhookEventTransaction" name="webhookEventTransaction" type="checkbox"
+                                                                    class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                            </div>
+                                                            <div class="ml-3 text-sm">
+                                                                <label for="webhookEventTransaction" class="font-medium text-gray-700 dark:text-gray-300">Transações</label>
+                                                                <p class="text-xs text-gray-500 dark:text-gray-400">Dispara ao criar, atualizar ou conciliar transações financeiras (entradas/saídas).</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
+                                                            <div class="flex items-center h-5">
+                                                                <input id="webhookEventAccount" name="webhookEventAccount" type="checkbox"
+                                                                    class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                            </div>
+                                                            <div class="ml-3 text-sm">
+                                                                <label for="webhookEventAccount" class="font-medium text-gray-700 dark:text-gray-300">Alterações de Conta</label>
+                                                                <p class="text-xs text-gray-500 dark:text-gray-400">Dispara quando dados básicos, saldo inicial ou status da conta mudarem.</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
+                                                            <div class="flex items-center h-5">
+                                                                <input id="webhookEventStatusSync" name="webhookEventStatusSync" type="checkbox"
+                                                                    class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                            </div>
+                                                            <div class="ml-3 text-sm">
+                                                                <label for="webhookEventStatusSync" class="font-medium text-gray-700 dark:text-gray-300">Sincronização de Status</label>
+                                                                <p class="text-xs text-gray-500 dark:text-gray-400">Dispara em alterações de conexão da API ou status de integração com bancos parceiros.</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
+                                                            <div class="flex items-center h-5">
+                                                                <input id="webhookEventBoleto" name="webhookEventBoleto" type="checkbox"
+                                                                    class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                            </div>
+                                                            <div class="ml-3 text-sm">
+                                                                <label for="webhookEventBoleto" class="font-medium text-gray-700 dark:text-gray-300">Boletos Recebidos</label>
+                                                                <p class="text-xs text-gray-500 dark:text-gray-400">Sincroniza automaticamente quando boletos/cobranças forem pagos no banco.</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB API/ASAAS -->
+                                    <div id="tabContentAsaas" class="hidden">
+                                        <div class="space-y-4">
+                                            <!-- Credenciais Asaas -->
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label for="asaasEnvironment" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ambiente (Asaas)</label>
+                                                    <select id="asaasEnvironment" name="asaasEnvironment"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                        <option value="production">Produção (api.asaas.com)</option>
+                                                        <option value="sandbox">Sandbox / Homologação (sandbox.asaas.com)</option>
+                                                    </select>
+                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Selecione o ambiente para comunicação com a API Asaas.</p>
+                                                </div>
+                                                <div>
+                                                    <label for="asaasWalletId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Wallet ID / Subconta (Opcional)</label>
+                                                    <input type="text" id="asaasWalletId" name="asaasWalletId" placeholder="Ex: wal_123456789" autocomplete="off"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Identificador da subconta/carteira se aplicável.</p>
+                                                </div>
+                                                <div class="sm:col-span-2">
+                                                    <label for="asaasApiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300">API Key / Chave de Acesso (Token)</label>
+                                                    <div class="relative mt-1">
+                                                        <input type="password" id="asaasApiKey" name="asaasApiKey" placeholder="$aact_YTU5YTE0M2M6N2Z..." autocomplete="new-password"
+                                                            class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm font-mono text-xs">
+                                                        <button type="button" id="toggleAsaasApiKeyVisibility" title="Mostrar/Ocultar API Key"
+                                                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                                            <svg id="eyeOpenAsaasKey" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            <svg id="eyeClosedAsaasKey" class="h-4 w-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Gerada no painel Asaas em Integrações &gt; Chaves de API (criptografada com AES-256 no banco).</p>
+                                                </div>
                                             </div>
 
-                                            <div>
-                                                <label for="webhookUrl"
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Webhook</label>
-                                                <input type="url" id="webhookUrl" name="webhookUrl" placeholder="Ex: https://api.seu-sistema.com/webhooks/banking" autocomplete="off"
-                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
-                                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Endpoint para o qual as notificações de eventos serão enviadas.</p>
-                                            </div>
-                                            <div>
-                                                <label for="webhookSecret"
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chave de Assinatura (Secret)</label>
-                                                <input type="password" id="webhookSecret" name="webhookSecret" placeholder="Chave para assinar/validar payloads do webhook" autocomplete="new-password"
-                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
-                                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Usado para assinar os payloads e garantir que as requisições vêm da Keystone.</p>
-                                            </div>
-                                            <div>
-                                                <label
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certificado do Webhook (.crt)</label>
-                                                <label id="dropzoneWebhookCert" for="fileWebhookCertificado"
-                                                    class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
-                                                    <span class="flex flex-col items-center space-y-1 text-center">
-                                                         <svg xmlns="http://www.w3.org/2000/svg"
-                                                             class="w-6 h-6 text-gray-400" fill="none"
-                                                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                         </svg>
-                                                         <span
-                                                             class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                             Solte o arquivo ou <span
-                                                                 class="text-brand-600 dark:text-brand-400 underline">selecione</span>
-                                                         </span>
-                                                         <span class="text-xs text-gray-500">Apenas arquivos .crt</span>
-                                                    </span>
-                                                    <input type="file" id="fileWebhookCertificado" name="fileWebhookCertificado"
-                                                         class="hidden" accept=".crt,.pem,.txt">
-                                                </label>
-                                                <div id="filenameWebhookCert" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50" style="display: none;">
-                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                                         viewBox="0 0 24 24" stroke="currentColor">
-                                                         <path stroke-linecap="round" stroke-linejoin="round"
-                                                             stroke-width="2" d="M5 13l4 4L19 7" />
-                                                     </svg>
-                                                     <span id="filenameWebhookCertText" class="truncate"></span>
-                                                     <button type="button" id="clearWebhookCertBtn" title="Remover certificado"
-                                                         class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
-                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                                 stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                         </svg>
-                                                     </button>
+                                            <!-- Seção de Padrões de Cobrança (Asaas) -->
+                                            <div class="border-t border-gray-200 dark:border-slate-700 pt-4 mt-6">
+                                                <h4 class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 whitespace-nowrap">Padrões de Cobrança (Asaas)</h4>
+                                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                                                    <div>
+                                                        <label for="asaasFine" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 whitespace-nowrap truncate" title="Multa após venc. (%)">
+                                                            Multa após venc. (%)
+                                                        </label>
+                                                        <input type="number" id="asaasFine" name="asaasFine" min="0" max="100" step="0.01" placeholder="Ex: 2.00"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2 px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                    <div>
+                                                        <label for="asaasInterest" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 whitespace-nowrap truncate" title="Juros ao mês (%)">
+                                                            Juros ao mês (%)
+                                                        </label>
+                                                        <input type="number" id="asaasInterest" name="asaasInterest" min="0" max="100" step="0.01" placeholder="Ex: 1.00"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2 px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                    <div>
+                                                        <label for="asaasDiscountValue" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 whitespace-nowrap truncate" title="Desconto Pontualidade (%)">
+                                                            Desconto Pontualidade (%)
+                                                        </label>
+                                                        <input type="number" id="asaasDiscountValue" name="asaasDiscountValue" min="0" max="100" step="0.01" placeholder="Ex: 5.00"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2 px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
+                                                    <div>
+                                                        <label for="asaasDiscountDays" class="block text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 whitespace-nowrap truncate" title="Dias Antecipação Desconto">
+                                                            Dias Antecipação Desconto
+                                                        </label>
+                                                        <input type="number" id="asaasDiscountDays" name="asaasDiscountDays" min="0" placeholder="Ex: 5"
+                                                            class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2 px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                                    </div>
                                                 </div>
-                                                <textarea id="webhookCertificado" name="webhookCertificado" class="hidden" aria-hidden="true" title="Conteúdo do certificado do Webhook"></textarea>
                                             </div>
-                                            <div>
-                                                <label
-                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chave Privada do Webhook (.key)</label>
-                                                <label id="dropzoneWebhookKey" for="fileWebhookKey"
-                                                    class="flex flex-col items-center justify-center w-full py-4 px-4 transition bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 border-dashed rounded-md appearance-none cursor-pointer hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-slate-700/50 focus:outline-none relative">
-                                                    <span class="flex flex-col items-center space-y-1 text-center">
-                                                         <svg xmlns="http://www.w3.org/2000/svg"
-                                                             class="w-6 h-6 text-gray-400" fill="none"
-                                                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                                 d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                                         </svg>
-                                                         <span
-                                                             class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                             Solte o arquivo ou <span
-                                                                 class="text-brand-600 dark:text-brand-400 underline">selecione</span>
-                                                         </span>
-                                                         <span class="text-xs text-gray-500">Apenas arquivos .key</span>
-                                                    </span>
-                                                    <input type="file" id="fileWebhookKey" name="fileWebhookKey" class="hidden"
-                                                         accept=".key,.pem,.txt">
-                                                </label>
-                                                <div id="filenameWebhookKey" class="mt-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-md border border-emerald-200 dark:border-emerald-800/50" style="display: none;">
-                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                                         viewBox="0 0 24 24" stroke="currentColor">
-                                                         <path stroke-linecap="round" stroke-linejoin="round"
-                                                             stroke-width="2" d="M5 13l4 4L19 7" />
-                                                     </svg>
-                                                     <span id="filenameWebhookKeyText" class="truncate"></span>
-                                                     <button type="button" id="clearWebhookKeyBtn" title="Remover chave"
-                                                         class="ml-auto text-emerald-700 dark:text-emerald-500 hover:text-emerald-900 dark:hover:text-emerald-300">
-                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                                 stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                         </svg>
-                                                     </button>
-                                                </div>
-                                                <textarea id="webhookKey" name="webhookKey" class="hidden" aria-hidden="true" title="Conteúdo da chave privada do Webhook"></textarea>
-                                            </div>
-                                            <div>
-                                                <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Eventos a Enviar</span>
-                                                <div class="space-y-3 bg-gray-50 dark:bg-slate-900/30 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50">
-                                                    <div class="flex items-start">
-                                                        <div class="flex items-center h-5">
-                                                            <input id="webhookEventTransaction" name="webhookEventTransaction" type="checkbox"
-                                                                class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
-                                                        </div>
-                                                        <div class="ml-3 text-sm">
-                                                            <label for="webhookEventTransaction" class="font-medium text-gray-700 dark:text-gray-300">Transações</label>
-                                                            <p class="text-xs text-gray-500 dark:text-gray-400">Dispara ao criar, atualizar ou conciliar transações financeiras (entradas/saídas).</p>
-                                                        </div>
+
+                                            <!-- Seção de Webhook Asaas -->
+                                            <div class="border-t border-gray-200 dark:border-slate-700 pt-4 mt-6">
+                                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Configuração do Webhook (Asaas)</h4>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div class="sm:col-span-2">
+                                                        <label for="asaasWebhookUrl" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Webhook</label>
+                                                        <input type="url" id="asaasWebhookUrl" name="asaasWebhookUrl" placeholder="https://seu-dominio.com/api/v1/public/webhooks/asaas/billing" autocomplete="off"
+                                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Endpoint público que receberá os callbacks e atualizações de pagamento do Asaas.</p>
                                                     </div>
-                                                    <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
-                                                        <div class="flex items-center h-5">
-                                                            <input id="webhookEventAccount" name="webhookEventAccount" type="checkbox"
-                                                                class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
-                                                        </div>
-                                                        <div class="ml-3 text-sm">
-                                                            <label for="webhookEventAccount" class="font-medium text-gray-700 dark:text-gray-300">Alterações de Conta</label>
-                                                            <p class="text-xs text-gray-500 dark:text-gray-400">Dispara quando dados básicos, saldo inicial ou status da conta mudarem.</p>
-                                                        </div>
+                                                    <div>
+                                                        <label for="asaasWebhookEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail de Notificação de Falha</label>
+                                                        <input type="email" id="asaasWebhookEmail" name="asaasWebhookEmail" placeholder="financeiro@suaempresa.com.br" autocomplete="off"
+                                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">E-mail avisado pelo Asaas caso o webhook falhe consecutivamente.</p>
                                                     </div>
-                                                    <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
-                                                        <div class="flex items-center h-5">
-                                                            <input id="webhookEventStatusSync" name="webhookEventStatusSync" type="checkbox"
-                                                                class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
-                                                        </div>
-                                                        <div class="ml-3 text-sm">
-                                                            <label for="webhookEventStatusSync" class="font-medium text-gray-700 dark:text-gray-300">Sincronização de Status</label>
-                                                            <p class="text-xs text-gray-500 dark:text-gray-400">Dispara em alterações de conexão da API ou status de integração com bancos parceiros.</p>
-                                                        </div>
+                                                    <div>
+                                                        <label for="asaasWebhookToken" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Token de Autenticação (Header)</label>
+                                                        <input type="password" id="asaasWebhookToken" name="asaasWebhookToken" placeholder="Token secreto do webhook (asaas-access-token)" autocomplete="new-password"
+                                                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Token enviado pelo Asaas no cabeçalho <code class="text-brand-600 dark:text-brand-400">asaas-access-token</code> para validação.</p>
                                                     </div>
-                                                    <div class="flex items-start border-t border-gray-200/50 dark:border-slate-800 pt-2.5">
-                                                        <div class="flex items-center h-5">
-                                                            <input id="webhookEventBoleto" name="webhookEventBoleto" type="checkbox"
-                                                                class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
-                                                        </div>
-                                                        <div class="ml-3 text-sm">
-                                                            <label for="webhookEventBoleto" class="font-medium text-gray-700 dark:text-gray-300">Boletos Recebidos</label>
-                                                            <p class="text-xs text-gray-500 dark:text-gray-400">Sincroniza automaticamente quando boletos/cobranças forem pagos no banco.</p>
+
+                                                    <div class="sm:col-span-2">
+                                                        <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Eventos a Escutar (Asaas)</span>
+                                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 dark:bg-slate-900/30 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50">
+                                                            <div class="flex items-start">
+                                                                <div class="flex items-center h-5">
+                                                                    <input id="asaasEventPaymentCreated" name="asaasEventPaymentCreated" type="checkbox"
+                                                                        class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                                </div>
+                                                                <div class="ml-3 text-sm">
+                                                                    <label for="asaasEventPaymentCreated" class="font-medium text-gray-700 dark:text-gray-300">Cobrança Criada</label>
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400">PAYMENT_CREATED</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-start">
+                                                                <div class="flex items-center h-5">
+                                                                    <input id="asaasEventPaymentReceived" name="asaasEventPaymentReceived" type="checkbox" checked
+                                                                        class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                                </div>
+                                                                <div class="ml-3 text-sm">
+                                                                    <label for="asaasEventPaymentReceived" class="font-medium text-gray-700 dark:text-gray-300">Cobrança Recebida / Confirmada</label>
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400">PAYMENT_RECEIVED / CONFIRMED</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-start">
+                                                                <div class="flex items-center h-5">
+                                                                    <input id="asaasEventPaymentOverdue" name="asaasEventPaymentOverdue" type="checkbox"
+                                                                        class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                                </div>
+                                                                <div class="ml-3 text-sm">
+                                                                    <label for="asaasEventPaymentOverdue" class="font-medium text-gray-700 dark:text-gray-300">Cobrança Vencida</label>
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400">PAYMENT_OVERDUE</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-start">
+                                                                <div class="flex items-center h-5">
+                                                                    <input id="asaasEventPaymentDeleted" name="asaasEventPaymentDeleted" type="checkbox"
+                                                                        class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                                </div>
+                                                                <div class="ml-3 text-sm">
+                                                                    <label for="asaasEventPaymentDeleted" class="font-medium text-gray-700 dark:text-gray-300">Cobrança Removida / Cancelada</label>
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400">PAYMENT_DELETED</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-start">
+                                                                <div class="flex items-center h-5">
+                                                                    <input id="asaasEventPaymentRefunded" name="asaasEventPaymentRefunded" type="checkbox"
+                                                                        class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                                </div>
+                                                                <div class="ml-3 text-sm">
+                                                                    <label for="asaasEventPaymentRefunded" class="font-medium text-gray-700 dark:text-gray-300">Cobrança Estornada</label>
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400">PAYMENT_REFUNDED</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-start">
+                                                                <div class="flex items-center h-5">
+                                                                    <input id="asaasEventPaymentChargeback" name="asaasEventPaymentChargeback" type="checkbox"
+                                                                        class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                                </div>
+                                                                <div class="ml-3 text-sm">
+                                                                    <label for="asaasEventPaymentChargeback" class="font-medium text-gray-700 dark:text-gray-300">Chargeback / Contestação</label>
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400">PAYMENT_CHARGEBACK_REQUESTED</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-start">
+                                                                <div class="flex items-center h-5">
+                                                                    <input id="asaasEventTransferCreated" name="asaasEventTransferCreated" type="checkbox"
+                                                                        class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                                </div>
+                                                                <div class="ml-3 text-sm">
+                                                                    <label for="asaasEventTransferCreated" class="font-medium text-gray-700 dark:text-gray-300">Transferência Solicitada</label>
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400">TRANSFER_CREATED</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-start">
+                                                                <div class="flex items-center h-5">
+                                                                    <input id="asaasEventTransferDone" name="asaasEventTransferDone" type="checkbox"
+                                                                        class="h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                                                                </div>
+                                                                <div class="ml-3 text-sm">
+                                                                    <label for="asaasEventTransferDone" class="font-medium text-gray-700 dark:text-gray-300">Transferência Concluída</label>
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400">TRANSFER_DONE</p>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -446,13 +713,13 @@
         </div>
     </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/filter-panel.js"></script>
-    <script src="/js/banks.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/filter-panel.js?v=20261001145619"></script>
+    <script src="/js/banks.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

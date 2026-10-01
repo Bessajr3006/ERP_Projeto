@@ -11,15 +11,25 @@ export async function runMigration99AddAdminBasicRole() {
 
         await conn.beginTransaction();
 
-        // 1. Alter table users to expand role ENUM to include 'admin_basic'
-        await conn.query(`
-            ALTER TABLE users
-            MODIFY COLUMN role ENUM(
-                'admin', 'user', 'operator', 'financial', 'manager', 
-                'seller', 'accountant', 'buyer', 'service_provider', 
-                'super_admin', 'admin_basic'
-            ) NOT NULL DEFAULT 'user'
-        `);
+        // 1. Alter table users to expand role ENUM to include 'admin_basic' if not varchar
+        const [metaRows]: any = await conn.query(
+            `SELECT COLUMN_TYPE, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role'`
+        );
+        const colType = String(metaRows?.[0]?.COLUMN_TYPE || metaRows?.[0]?.DATA_TYPE || '').toLowerCase();
+        if (!colType.startsWith('varchar')) {
+            try {
+                await conn.query(`
+                    ALTER TABLE users
+                    MODIFY COLUMN role ENUM(
+                        'admin', 'user', 'operator', 'financial', 'manager', 
+                        'seller', 'accountant', 'buyer', 'service_provider', 
+                        'super_admin', 'admin_basic'
+                    ) NOT NULL DEFAULT 'user'
+                `);
+            } catch (alterErr: any) {
+                logger.warn({ err: alterErr?.message || alterErr }, 'Could not alter users.role enum in migration 99');
+            }
+        }
 
         // 2. Insert default 'admin_basic' role for all companies if not exists
         await conn.query(`

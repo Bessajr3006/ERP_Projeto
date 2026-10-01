@@ -1,11 +1,74 @@
 import { randomUUID } from 'crypto';
 import forge from 'node-forge';
+import pool from '../config/db';
 import { Company, CreateCompanyData, UpdateCompanyData, IbgeState } from '../types/Company';
 import { DatabaseCompanySchema } from '../schemas/companySchemas';
 import { CacheService } from './cacheService';
 import { StorageService } from '../utils/storageService';
 import { CompanyRepository } from '../repositories/companyRepository';
 import { RoleService } from './roleService';
+
+function processCompanyCnpjDocuments(data: any, currentCnpjDocumentUrl?: string | null): string | null {
+    const parseCnpjDocuments = (val: any): { name: string; url: string; attachedAt?: string }[] => {
+        if (!val) return [];
+        let list: any[] = [];
+        if (Array.isArray(val)) {
+            list = val;
+        } else {
+            try {
+                if (typeof val === 'string' && val.trim().startsWith('[')) {
+                    list = JSON.parse(val);
+                } else if (typeof val === 'string' && val.trim() !== '') {
+                    list = [val];
+                }
+            } catch (e) {}
+        }
+        return list.map(item => {
+            if (typeof item === 'string') {
+                const fileName = item.substring(item.lastIndexOf('/') + 1);
+                return { name: fileName, url: item, attachedAt: new Date(2026, 0, 1).toISOString() };
+            }
+            if (item && typeof item === 'object' && item.url) {
+                return {
+                    name: item.name || item.url.substring(item.url.lastIndexOf('/') + 1),
+                    url: item.url,
+                    attachedAt: item.attachedAt || new Date().toISOString()
+                };
+            }
+            return null;
+        }).filter(Boolean) as { name: string; url: string; attachedAt: string }[];
+    };
+
+    const targetDocs = data.cnpj_document_url !== undefined ? parseCnpjDocuments(data.cnpj_document_url) : parseCnpjDocuments(currentCnpjDocumentUrl);
+
+    if (currentCnpjDocumentUrl && data.cnpj_document_url !== undefined) {
+        const currentDocs = parseCnpjDocuments(currentCnpjDocumentUrl);
+        const targetUrls = new Set(targetDocs.map(d => d.url));
+        for (const doc of currentDocs) {
+            if (!targetUrls.has(doc.url)) {
+                StorageService.delete(doc.url);
+            }
+        }
+    }
+
+    if (data.cnpj_document_uploads && Array.isArray(data.cnpj_document_uploads)) {
+        for (const upload of data.cnpj_document_uploads) {
+            if (upload && upload.base64) {
+                const saved = StorageService.saveBase64('documents', upload.base64, upload.filename);
+                if (saved) {
+                    const displayName = upload.name || saved.filename || saved.url.substring(saved.url.lastIndexOf('/') + 1);
+                    targetDocs.push({
+                        name: displayName,
+                        url: saved.url,
+                        attachedAt: upload.attachedAt || new Date().toISOString()
+                    });
+                }
+            }
+        }
+    }
+
+    return targetDocs.length > 0 ? JSON.stringify(targetDocs) : null;
+}
 
 export class CompanyService {
     static async getIbgeStates(): Promise<IbgeState[]> {
@@ -21,6 +84,11 @@ export class CompanyService {
 
     static async getAllVisible(): Promise<Company[]> {
         const rows = await CompanyRepository.getAllVisible();
+        return rows.map((r) => DatabaseCompanySchema.parse(r)) as Company[];
+    }
+
+    static async getAllInGroup(groupId: number): Promise<Company[]> {
+        const rows = await CompanyRepository.getAllInGroup(groupId);
         return rows.map((r) => DatabaseCompanySchema.parse(r)) as Company[];
     }
 
@@ -44,12 +112,39 @@ export class CompanyService {
         const placeholders = ['?', '?', '?', '?', 'true'];
         const values: any[] = [publicId, trade_name, company_name || null, cnpj || null];
 
-        const extraFields = ['tax_regime', 'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state'];
+        if (data.is_general_admin) {
+            await pool.query('UPDATE companies SET is_general_admin = 0');
+        }
+
+        let groupId: number | null = null;
+        if ((data as any).company_group_public_id !== undefined) {
+            if ((data as any).company_group_public_id) {
+                const [groups] = await pool.query<any[]>(
+                    'SELECT id FROM company_groups WHERE public_id = ? LIMIT 1',
+                    [(data as any).company_group_public_id]
+                );
+                groupId = groups[0]?.id || null;
+            }
+            (data as any).company_group_id = groupId;
+        } else if ((data as any).company_group_id !== undefined) {
+            groupId = (data as any).company_group_id;
+        }
+
+        if (data.is_group_master) {
+            if (groupId) {
+                await pool.query('UPDATE companies SET is_group_master = 0 WHERE company_group_id = ?', [groupId]);
+            } else {
+                (data as any).is_group_master = false;
+            }
+        }
+
+        const extraFields = ['tax_regime', 'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'is_general_admin', 'is_group_master', 'company_group_id'];
         for (const field of extraFields) {
             if ((data as any)[field] !== undefined) {
                 columns.push(field);
                 placeholders.push('?');
-                values.push((data as any)[field] || null);
+                const val = (data as any)[field];
+                values.push(typeof val === 'boolean' ? val : (val || null));
             }
         }
 
@@ -183,12 +278,94 @@ export class CompanyService {
             }
         }
 
-        const extraFields = ['tax_regime', 'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'certificate_password', 'certificate_expiration', 'certificate_name', 'api_token', 'swagger_api_token', 'whatsapp_chat_provider', 'whatsapp_business_scope', 'solidcon_api_token', 'solidcon_url_1', 'solidcon_url_2', 'solidcon_url_3', 'solidcon_url_4', 'solidcon_url_5', 'serv_solidcon', 'bd_solidcon', 'login_solidcon', 'senha_solidcon', 'serv_dorsal', 'bd_dorsal', 'login_dorsal', 'senha_dorsal', 'cdfilial', 'allow_print_without_confirmation', 'ie', 'im', 'cnae_principal', 'crt', 'nfe_environment', 'nfe_series', 'nfe_number', 'nfce_series', 'nfce_number', 'csc_id', 'csc_token'];
+        const typedData = data as Record<string, unknown>;
+        if (typedData.cnpj_document_url !== undefined || typedData.cnpj_document_uploads !== undefined) {
+            const newCnpjDocUrl = processCompanyCnpjDocuments(typedData, current.cnpj_document_url);
+            typedData.cnpj_document_url = newCnpjDocUrl;
+        }
+
+        if (data.is_general_admin) {
+            await pool.query('UPDATE companies SET is_general_admin = 0');
+        }
+
+        let effectiveGroupId = current.company_group_id;
+        if ((data as any).company_group_public_id !== undefined) {
+            let groupId = null;
+            if ((data as any).company_group_public_id) {
+                const [groups] = await pool.query<any[]>(
+                    'SELECT id FROM company_groups WHERE public_id = ? LIMIT 1',
+                    [(data as any).company_group_public_id]
+                );
+                groupId = groups[0]?.id || null;
+            }
+            (data as any).company_group_id = groupId;
+            effectiveGroupId = groupId;
+        } else if ((data as any).company_group_id !== undefined) {
+            effectiveGroupId = (data as any).company_group_id;
+        }
+
+        if (data.is_group_master !== undefined) {
+            if (data.is_group_master && effectiveGroupId) {
+                await pool.query('UPDATE companies SET is_group_master = 0 WHERE company_group_id = ? AND id != ?', [effectiveGroupId, current.id]);
+            } else if (!effectiveGroupId) {
+                (data as any).is_group_master = 0;
+            }
+        }
+
+        if ((data as any).default_customer_group_public_id !== undefined) {
+            const EntityRepository = (await import('../repositories/entityRepository')).EntityRepository;
+            const groupId = await EntityRepository.resolveCustomerGroupId(current.id, (data as any).default_customer_group_public_id);
+            (data as any).default_customer_group_id = groupId;
+        }
+
+        if ((data as any).default_bank_account_public_id !== undefined) {
+            let bankId = null;
+            if ((data as any).default_bank_account_public_id) {
+                const [banks] = await pool.query<any[]>(
+                    'SELECT id FROM bank_accounts WHERE public_id = ? AND company_id = ? LIMIT 1',
+                    [(data as any).default_bank_account_public_id, current.id]
+                );
+                bankId = banks[0]?.id || null;
+            }
+            (data as any).default_bank_account_id = bankId;
+        }
+
+        if ((data as any).default_receivable_type_public_id !== undefined) {
+            let receivableId = null;
+            if ((data as any).default_receivable_type_public_id) {
+                const [receivables] = await pool.query<any[]>(
+                    'SELECT id FROM receivable_types WHERE public_id = ? AND company_id = ? LIMIT 1',
+                    [(data as any).default_receivable_type_public_id, current.id]
+                );
+                receivableId = receivables[0]?.id || null;
+            }
+            (data as any).default_receivable_type_id = receivableId;
+        }
+
+        if ((data as any).auto_generate_billets !== undefined) {
+            const val = (data as any).auto_generate_billets;
+            (data as any).auto_generate_billets = (val === true || val === 1 || val === 'true' || val === '1') ? 1 : 0;
+        }
+
+        if ((data as any).auto_send_boleto_whatsapp !== undefined) {
+            const val = (data as any).auto_send_boleto_whatsapp;
+            (data as any).auto_send_boleto_whatsapp = (val === true || val === 1 || val === 'true' || val === '1') ? 1 : 0;
+        }
+
+        if ((data as any).whatsapp_allow_all_users_active_sender !== undefined) {
+            const val = (data as any).whatsapp_allow_all_users_active_sender;
+            (data as any).whatsapp_allow_all_users_active_sender = (val === true || val === 1 || val === 'true' || val === '1') ? 1 : 0;
+        }
+
+        const extraFields = ['tax_regime', 'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'certificate_password', 'certificate_expiration', 'certificate_name', 'api_token', 'swagger_api_token', 'whatsapp_chat_provider', 'whatsapp_business_scope', 'solidcon_api_token', 'solidcon_url_1', 'solidcon_url_2', 'solidcon_url_3', 'solidcon_url_4', 'solidcon_url_5', 'solidcon_customer_cpf', 'solidcon_customer_name', 'serv_solidcon', 'bd_solidcon', 'login_solidcon', 'senha_solidcon', 'serv_dorsal', 'bd_dorsal', 'login_dorsal', 'senha_dorsal', 'show_solidcon', 'serv_alterdata', 'bd_alterdata', 'login_alterdata', 'senha_alterdata', 'porta_alterdata', 'cdempresa_alterdata', 'show_alterdata', 'cdfilial', 'cdpdv', 'allow_print_without_confirmation', 'show_new_measure_button', 'ie', 'im', 'cnae_principal', 'crt', 'nfe_environment', 'nfe_series', 'nfe_number', 'nfce_series', 'nfce_number', 'csc_id', 'csc_token', 'is_general_admin', 'is_group_master', 'cnpj_document_url', 'default_customer_group_id', 'default_bank_account_id', 'default_receivable_type_id', 'auto_generate_billets', 'auto_generate_billets_time', 'auto_send_boleto_whatsapp', 'boleto_send_time', 'boleto_send_whatsapp_number', 'boleto_send_whatsapp_name', 'whatsapp_allow_all_users_active_sender', 'company_group_id'];
         for (const field of extraFields) {
             if ((data as any)[field] !== undefined) {
                 updates.push(`${field} = ?`);
-                const fieldValue = (data as any)[field];
-                values.push(typeof fieldValue === 'boolean' ? fieldValue : (fieldValue || null));
+                let fieldValue = (data as any)[field];
+                if (fieldValue === '') {
+                    fieldValue = null;
+                }
+                values.push(fieldValue ?? null);
             }
         }
 

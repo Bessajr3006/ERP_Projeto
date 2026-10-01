@@ -137,6 +137,19 @@ export class EstoqueRepository {
         };
     }
 
+    private static async getProductInternalByPublicId(publicId: string, companyId: number): Promise<{ id: number; name: string }> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT id, name FROM products WHERE public_id = ? AND company_id = ? LIMIT 1',
+            [publicId, companyId]
+        );
+        const row = rows?.[0];
+        if (!row) throw new Error('Product not found');
+        return {
+            id: Number(row.id),
+            name: String(row.name || 'Produto'),
+        };
+    }
+
     // ================== CATEGORIES ==================
     static async listCategories(companyId: number): Promise<ProductCategory[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
@@ -164,11 +177,25 @@ export class EstoqueRepository {
         return rows[0] as ProductCategory;
     }
 
+    static async getCategoryByNameOrPosId(companyId: number, name: string, idgrupopos: string | null): Promise<ProductCategory | null> {
+        let query = 'SELECT * FROM product_categories WHERE company_id = ? AND (name = ?';
+        const params: any[] = [companyId, name];
+        if (idgrupopos) {
+            query += ' OR idgrupopos = ?';
+            params.push(idgrupopos);
+        }
+        query += ') LIMIT 1';
+        const [rows] = await pool.query<RowDataPacket[]>(query, params);
+        if (!rows || rows.length === 0) return null;
+        return rows[0] as ProductCategory;
+    }
+
     static async createCategory(companyId: number, data: CreateProductCategoryData): Promise<ProductCategory> {
         const publicId = randomUUID();
+        const activeToSave = data.active !== undefined ? (data.active ? 1 : 0) : 1;
         const [result] = await pool.query<ResultSetHeader>(
-            `INSERT INTO product_categories (public_id, company_id, name, description, image_base64) VALUES (?, ?, ?, ?, ?)`,
-            [publicId, companyId, data.name, data.description || null, data.image_base64 || null]
+            `INSERT INTO product_categories (public_id, company_id, name, description, image_base64, idgrupopos, active) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [publicId, companyId, data.name, data.description || null, data.image_base64 || null, data.idgrupopos || null, activeToSave]
         );
         if (result.affectedRows !== 1) throw new Error('Failed to create category');
         return this.getCategoryByPublicId(publicId, companyId);
@@ -179,12 +206,23 @@ export class EstoqueRepository {
         const nameToSave = data.name || existing.name;
         const descToSave = data.description !== undefined ? data.description : existing.description;
         const imageToSave = data.image_base64 !== undefined ? data.image_base64 : existing.image_base64;
+        const idgrupoposToSave = data.idgrupopos !== undefined ? data.idgrupopos : existing.idgrupopos;
+        const poscontrolSyncedToSave = data.poscontrol_synced !== undefined ? (data.poscontrol_synced ? 1 : 0) : 0;
+        const activeToSave = data.active !== undefined ? (data.active ? 1 : 0) : existing.active;
 
         await pool.query(
-            `UPDATE product_categories SET name = ?, description = ?, image_base64 = ? WHERE public_id = ? AND company_id = ?`,
-            [nameToSave, descToSave, imageToSave, publicId, companyId]
+            `UPDATE product_categories SET name = ?, description = ?, image_base64 = ?, idgrupopos = ?, poscontrol_synced = ?, active = ? WHERE public_id = ? AND company_id = ?`,
+            [nameToSave, descToSave, imageToSave, idgrupoposToSave, poscontrolSyncedToSave, activeToSave, publicId, companyId]
         );
         return this.getCategoryByPublicId(publicId, companyId);
+    }
+
+    static async bulkInactivateCategories(companyId: number, categoryIds: string[]): Promise<void> {
+        if (categoryIds.length === 0) return;
+        await pool.query(
+            `UPDATE product_categories SET active = 0, poscontrol_synced = 0 WHERE company_id = ? AND public_id IN (?)`,
+            [companyId, categoryIds]
+        );
     }
 
     static async deleteCategory(publicId: string, companyId: number): Promise<void> {
@@ -466,8 +504,8 @@ export class EstoqueRepository {
     static async createMeasure(companyId: number, data: CreateMeasureData): Promise<Measure> {
         const publicId = randomUUID();
         const [result] = await pool.query<ResultSetHeader>(
-            `INSERT INTO measures (public_id, company_id, name, abbreviation) VALUES (?, ?, ?, ?)`,
-            [publicId, companyId, data.name, data.abbreviation]
+            `INSERT INTO measures (public_id, company_id, name, abbreviation, idmedidapos) VALUES (?, ?, ?, ?, ?)`,
+            [publicId, companyId, data.name, data.abbreviation, data.idmedidapos || null]
         );
         if (result.affectedRows !== 1) throw new Error('Failed to create measure');
         return this.getMeasureByPublicId(publicId, companyId);
@@ -477,10 +515,11 @@ export class EstoqueRepository {
         const existing = await this.getMeasureByPublicId(publicId, companyId);
         const nameToSave = data.name || existing.name;
         const abbrevToSave = data.abbreviation || existing.abbreviation;
+        const idmedidaposToSave = data.idmedidapos !== undefined ? data.idmedidapos : existing.idmedidapos;
 
         await pool.query(
-            `UPDATE measures SET name = ?, abbreviation = ? WHERE public_id = ? AND company_id = ?`,
-            [nameToSave, abbrevToSave, publicId, companyId]
+            `UPDATE measures SET name = ?, abbreviation = ?, idmedidapos = ? WHERE public_id = ? AND company_id = ?`,
+            [nameToSave, abbrevToSave, idmedidaposToSave, publicId, companyId]
         );
         return this.getMeasureByPublicId(publicId, companyId);
     }
@@ -577,6 +616,11 @@ export class EstoqueRepository {
                 public_id,
                 company_id,
                 name,
+                cost,
+                tax_percent,
+                tax_amount,
+                total_cost,
+                markup,
                 price,
                 description,
                 service_type_id,
@@ -587,11 +631,16 @@ export class EstoqueRepository {
                 national_tax_code,
                 municipal_tax_code,
                 nbs_item
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 publicId,
                 companyId,
                 data.name,
+                data.cost || 0,
+                data.tax_percent || 0,
+                data.tax_amount || 0,
+                data.total_cost || 0,
+                data.markup || 0,
                 data.price,
                 data.description || null,
                 serviceTypeId,
@@ -611,6 +660,11 @@ export class EstoqueRepository {
     static async updateService(publicId: string, companyId: number, data: UpdateServiceData): Promise<Service> {
         const existing = await this.getServiceByPublicId(publicId, companyId);
         const nameToSave = data.name || existing.name;
+        const costToSave = data.cost !== undefined ? data.cost : existing.cost;
+        const taxPercentToSave = data.tax_percent !== undefined ? data.tax_percent : existing.tax_percent;
+        const taxAmountToSave = data.tax_amount !== undefined ? data.tax_amount : existing.tax_amount;
+        const totalCostToSave = data.total_cost !== undefined ? data.total_cost : existing.total_cost;
+        const markupToSave = data.markup !== undefined ? data.markup : existing.markup;
         const priceToSave = data.price !== undefined ? data.price : existing.price;
         const descriptionToSave = data.description !== undefined ? data.description : existing.description;
         const serviceTypeIdToSave = data.service_type_public_id === undefined
@@ -637,6 +691,11 @@ export class EstoqueRepository {
         await pool.query(
             `UPDATE services
              SET name = ?,
+                 cost = ?,
+                 tax_percent = ?,
+                 tax_amount = ?,
+                 total_cost = ?,
+                 markup = ?,
                  price = ?,
                  description = ?,
                  service_type_id = ?,
@@ -650,6 +709,11 @@ export class EstoqueRepository {
              WHERE public_id = ? AND company_id = ?`,
             [
                 nameToSave,
+                costToSave,
+                taxPercentToSave,
+                taxAmountToSave,
+                totalCostToSave,
+                markupToSave,
                 priceToSave,
                 descriptionToSave,
                 serviceTypeIdToSave,
@@ -677,66 +741,69 @@ export class EstoqueRepository {
     static async listServiceLaunches(companyId: number): Promise<ServiceLaunch[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT sl.*, c.public_id AS customer_public_id, c.name AS customer_name,
-                                        s.public_id AS service_public_id, s.name AS service_name,
-                                        (
-                                                SELECT t.public_id
-                                                FROM transactions t
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_public_id,
-                                        (
-                                                SELECT c2.public_id
-                                                FROM transactions t
-                                                INNER JOIN categories c2 ON c2.id = t.category_id
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_category_public_id,
-                                        (
-                                                SELECT b2.public_id
-                                                FROM transactions t
-                                                INNER JOIN bank_accounts b2 ON b2.id = t.bank_account_id
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_bank_account_public_id,
-                                        (
-                                                SELECT t.date
-                                                FROM transactions t
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_date,
-                                        (
-                                                SELECT t.payment_method
-                                                FROM transactions t
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_payment_method,
-                                        (
-                                                SELECT t.status
-                                                FROM transactions t
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_status
+                                         s.public_id AS service_public_id, s.name AS service_name,
+                                         p.public_id AS product_public_id, p.name AS product_name,
+                                         IF(sl.product_id IS NOT NULL, 'product', 'service') AS type,
+                                         (
+                                                 SELECT t.public_id
+                                                 FROM transactions t
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_public_id,
+                                         (
+                                                 SELECT c2.public_id
+                                                 FROM transactions t
+                                                 INNER JOIN categories c2 ON c2.id = t.category_id
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_category_public_id,
+                                         (
+                                                 SELECT b2.public_id
+                                                 FROM transactions t
+                                                 INNER JOIN bank_accounts b2 ON b2.id = t.bank_account_id
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_bank_account_public_id,
+                                         (
+                                                 SELECT t.date
+                                                 FROM transactions t
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_date,
+                                         (
+                                                 SELECT t.payment_method
+                                                 FROM transactions t
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_payment_method,
+                                         (
+                                                 SELECT t.status
+                                                 FROM transactions t
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_status
              FROM service_launches sl
              INNER JOIN customers c ON c.id = sl.customer_id AND c.company_id = sl.company_id
-             INNER JOIN services s ON s.id = sl.service_id AND s.company_id = sl.company_id
+             LEFT JOIN services s ON s.id = sl.service_id AND s.company_id = sl.company_id
+             LEFT JOIN products p ON p.id = sl.product_id AND p.company_id = sl.company_id
              WHERE sl.company_id = ?
              ORDER BY sl.created_at DESC`,
             [companyId]
@@ -746,8 +813,11 @@ export class EstoqueRepository {
             ...(row as any),
             customer_public_id: String(row.customer_public_id),
             customer_name: String(row.customer_name || 'Cliente'),
-            service_public_id: String(row.service_public_id),
-            service_name: String(row.service_name || 'Serviço'),
+            service_public_id: row.service_public_id ? String(row.service_public_id) : null,
+            service_name: row.service_name ? String(row.service_name) : null,
+            product_public_id: row.product_public_id ? String(row.product_public_id) : null,
+            product_name: row.product_name ? String(row.product_name) : null,
+            type: String(row.type || 'service'),
             quantity: Number(row.quantity || 0),
             unit_price: Number(row.unit_price || 0),
             total_price: Number(row.total_price || 0),
@@ -763,66 +833,69 @@ export class EstoqueRepository {
     static async getServiceLaunchByPublicId(publicId: string, companyId: number): Promise<ServiceLaunch> {
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT sl.*, c.public_id AS customer_public_id, c.name AS customer_name,
-                                        s.public_id AS service_public_id, s.name AS service_name,
-                                        (
-                                                SELECT t.public_id
-                                                FROM transactions t
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_public_id,
-                                        (
-                                                SELECT c2.public_id
-                                                FROM transactions t
-                                                INNER JOIN categories c2 ON c2.id = t.category_id
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_category_public_id,
-                                        (
-                                                SELECT b2.public_id
-                                                FROM transactions t
-                                                INNER JOIN bank_accounts b2 ON b2.id = t.bank_account_id
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_bank_account_public_id,
-                                        (
-                                                SELECT t.date
-                                                FROM transactions t
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_date,
-                                        (
-                                                SELECT t.payment_method
-                                                FROM transactions t
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_payment_method,
-                                        (
-                                                SELECT t.status
-                                                FROM transactions t
-                                                WHERE t.company_id = sl.company_id
-                                                    AND t.type = 'income'
-                                                    AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
-                                                ORDER BY t.created_at DESC
-                                                LIMIT 1
-                                        ) AS revenue_status
+                                         s.public_id AS service_public_id, s.name AS service_name,
+                                         p.public_id AS product_public_id, p.name AS product_name,
+                                         IF(sl.product_id IS NOT NULL, 'product', 'service') AS type,
+                                         (
+                                                 SELECT t.public_id
+                                                 FROM transactions t
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_public_id,
+                                         (
+                                                 SELECT c2.public_id
+                                                 FROM transactions t
+                                                 INNER JOIN categories c2 ON c2.id = t.category_id
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_category_public_id,
+                                         (
+                                                 SELECT b2.public_id
+                                                 FROM transactions t
+                                                 INNER JOIN bank_accounts b2 ON b2.id = t.bank_account_id
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_bank_account_public_id,
+                                         (
+                                                 SELECT t.date
+                                                 FROM transactions t
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_date,
+                                         (
+                                                 SELECT t.payment_method
+                                                 FROM transactions t
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_payment_method,
+                                         (
+                                                 SELECT t.status
+                                                 FROM transactions t
+                                                 WHERE t.company_id = sl.company_id
+                                                     AND t.type = 'income'
+                                                     AND t.description LIKE CONCAT('%[SL:', sl.public_id, ']%')
+                                                 ORDER BY t.created_at DESC
+                                                 LIMIT 1
+                                         ) AS revenue_status
              FROM service_launches sl
              INNER JOIN customers c ON c.id = sl.customer_id AND c.company_id = sl.company_id
-             INNER JOIN services s ON s.id = sl.service_id AND s.company_id = sl.company_id
+             LEFT JOIN services s ON s.id = sl.service_id AND s.company_id = sl.company_id
+             LEFT JOIN products p ON p.id = sl.product_id AND p.company_id = sl.company_id
              WHERE sl.public_id = ? AND sl.company_id = ?
              LIMIT 1`,
             [publicId, companyId]
@@ -835,8 +908,11 @@ export class EstoqueRepository {
             ...(row as any),
             customer_public_id: String(row.customer_public_id),
             customer_name: String(row.customer_name || 'Cliente'),
-            service_public_id: String(row.service_public_id),
-            service_name: String(row.service_name || 'Serviço'),
+            service_public_id: row.service_public_id ? String(row.service_public_id) : null,
+            service_name: row.service_name ? String(row.service_name) : null,
+            product_public_id: row.product_public_id ? String(row.product_public_id) : null,
+            product_name: row.product_name ? String(row.product_name) : null,
+            type: String(row.type || 'service'),
             quantity: Number(row.quantity || 0),
             unit_price: Number(row.unit_price || 0),
             total_price: Number(row.total_price || 0),
@@ -852,7 +928,19 @@ export class EstoqueRepository {
     static async createServiceLaunch(companyId: number, data: CreateServiceLaunchData): Promise<ServiceLaunch> {
         const publicId = randomUUID();
         const customer = await this.getCustomerInternalByPublicId(data.customer_public_id, companyId);
-        const service = await this.getServiceInternalByPublicId(data.service_public_id, companyId);
+        
+        let serviceId: number | null = null;
+        if (data.service_public_id) {
+            const service = await this.getServiceInternalByPublicId(data.service_public_id, companyId);
+            serviceId = service.id;
+        }
+
+        let productId: number | null = null;
+        if (data.product_public_id) {
+            const product = await this.getProductInternalByPublicId(data.product_public_id, companyId);
+            productId = product.id;
+        }
+
         const quantity = Number(data.quantity || 0);
         const unitPrice = Number(data.unit_price || 0);
         const totalPrice = quantity * unitPrice;
@@ -863,17 +951,19 @@ export class EstoqueRepository {
                 company_id,
                 customer_id,
                 service_id,
+                product_id,
                 quantity,
                 unit_price,
                 total_price,
                 observation,
                 checklist
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 publicId,
                 companyId,
                 customer.id,
-                service.id,
+                serviceId,
+                productId,
                 quantity,
                 unitPrice,
                 totalPrice,
@@ -890,10 +980,27 @@ export class EstoqueRepository {
         const existing = await this.getServiceLaunchByPublicId(publicId, companyId);
 
         const customerPublicIdToSave = data.customer_public_id !== undefined ? data.customer_public_id : existing.customer_public_id;
-        const servicePublicIdToSave = data.service_public_id !== undefined ? data.service_public_id : existing.service_public_id;
-
         const customer = await this.getCustomerInternalByPublicId(customerPublicIdToSave, companyId);
-        const service = await this.getServiceInternalByPublicId(servicePublicIdToSave, companyId);
+
+        let serviceId: number | null = existing.service_id || null;
+        if (data.service_public_id !== undefined) {
+            if (data.service_public_id) {
+                const service = await this.getServiceInternalByPublicId(data.service_public_id, companyId);
+                serviceId = service.id;
+            } else {
+                serviceId = null;
+            }
+        }
+
+        let productId: number | null = existing.product_id || null;
+        if (data.product_public_id !== undefined) {
+            if (data.product_public_id) {
+                const product = await this.getProductInternalByPublicId(data.product_public_id, companyId);
+                productId = product.id;
+            } else {
+                productId = null;
+            }
+        }
 
         const quantityToSave = data.quantity !== undefined ? Number(data.quantity) : Number(existing.quantity);
         const unitPriceToSave = data.unit_price !== undefined ? Number(data.unit_price) : Number(existing.unit_price);
@@ -905,6 +1012,7 @@ export class EstoqueRepository {
             `UPDATE service_launches
              SET customer_id = ?,
                  service_id = ?,
+                 product_id = ?,
                  quantity = ?,
                  unit_price = ?,
                  total_price = ?,
@@ -913,7 +1021,8 @@ export class EstoqueRepository {
              WHERE public_id = ? AND company_id = ?`,
             [
                 customer.id,
-                service.id,
+                serviceId,
+                productId,
                 quantityToSave,
                 unitPriceToSave,
                 totalPriceToSave,
@@ -950,7 +1059,7 @@ export class EstoqueRepository {
                 `%[SL:${publicId}]%`,
                 Number((launch as any).customer_id || 0),
                 Number((launch as any).total_price || 0),
-                `Lançamento de serviço - ${String((launch as any).service_name || 'Serviço')} - ${String((launch as any).customer_name || 'Cliente')}`,
+                `Lançamento de item - ${String((launch as any).service_name || (launch as any).product_name || 'Item')} - ${String((launch as any).customer_name || 'Cliente')}`,
             ]
         );
 

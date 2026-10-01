@@ -1,10 +1,28 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs';
+import path from 'node:path';
 import { execSync } from 'node:child_process';
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
+}
+
+function updateHtmlVersions(dir: string, version: string): void {
+  if (!fs.existsSync(dir)) return;
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      updateHtmlVersions(filePath, version);
+    } else if (file.endsWith('.html')) {
+      let content = fs.readFileSync(filePath, 'utf8');
+      content = content.replace(/\?v=[a-zA-Z0-9_]+/g, `?v=${version}`);
+      content = content.replace(/(src|href)="(\/(js|css)\/[^"?#]+)(?:\?v=[a-zA-Z0-9_]+)?"/g, `$1="$2?v=${version}"`);
+      fs.writeFileSync(filePath, content, 'utf8');
+    }
+  }
 }
 
 function makeBuildVersion(now: Date = new Date()): string {
@@ -44,6 +62,8 @@ if (git) {
 }
 
 fs.writeFileSync('public/build.json', JSON.stringify(buildInfo, null, 2) + '\n');
+
+updateHtmlVersions('public', version);
 
 const swTsPath = 'src/public/sw.ts';
 let swTs = fs.readFileSync(swTsPath, 'utf8');

@@ -89,10 +89,25 @@ export class CompanyRepository {
 
     static async getAllVisible(): Promise<RowDataPacket[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT *
-             FROM companies
-             WHERE is_system = FALSE
-             ORDER BY trade_name ASC, id ASC`
+            `SELECT c.*,
+                    cgp.public_id AS company_group_public_id, cgp.name AS company_group_name
+             FROM companies c
+             LEFT JOIN company_groups cgp ON cgp.id = c.company_group_id
+             WHERE c.is_system = FALSE
+             ORDER BY c.trade_name ASC, c.id ASC`
+        );
+        return rows;
+    }
+
+    static async getAllInGroup(groupId: number): Promise<RowDataPacket[]> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT c.*,
+                    cgp.public_id AS company_group_public_id, cgp.name AS company_group_name
+             FROM companies c
+             LEFT JOIN company_groups cgp ON cgp.id = c.company_group_id
+             WHERE c.is_system = FALSE AND c.company_group_id = ?
+             ORDER BY c.trade_name ASC, c.id ASC`,
+            [groupId]
         );
         return rows;
     }
@@ -115,7 +130,17 @@ export class CompanyRepository {
 
     static async getById(id: number): Promise<RowDataPacket[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            'SELECT * FROM companies WHERE id = ? LIMIT 1',
+            `SELECT c.*, 
+                    cg.public_id AS default_customer_group_public_id, cg.name AS default_customer_group_name,
+                    ba.public_id AS default_bank_account_public_id, ba.name AS default_bank_account_name,
+                    rt.public_id AS default_receivable_type_public_id, rt.name AS default_receivable_type_name,
+                    cgp.public_id AS company_group_public_id, cgp.name AS company_group_name
+             FROM companies c 
+             LEFT JOIN customer_groups cg ON cg.id = c.default_customer_group_id 
+             LEFT JOIN bank_accounts ba ON ba.id = c.default_bank_account_id
+             LEFT JOIN receivable_types rt ON rt.id = c.default_receivable_type_id
+             LEFT JOIN company_groups cgp ON cgp.id = c.company_group_id
+             WHERE c.id = ? LIMIT 1`,
             [id]
         );
         return rows;
@@ -123,7 +148,17 @@ export class CompanyRepository {
 
     static async getByPublicId(publicId: string): Promise<RowDataPacket[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            'SELECT * FROM companies WHERE public_id = ? LIMIT 1',
+            `SELECT c.*, 
+                    cg.public_id AS default_customer_group_public_id, cg.name AS default_customer_group_name,
+                    ba.public_id AS default_bank_account_public_id, ba.name AS default_bank_account_name,
+                    rt.public_id AS default_receivable_type_public_id, rt.name AS default_receivable_type_name,
+                    cgp.public_id AS company_group_public_id, cgp.name AS company_group_name
+             FROM companies c 
+             LEFT JOIN customer_groups cg ON cg.id = c.default_customer_group_id 
+             LEFT JOIN bank_accounts ba ON ba.id = c.default_bank_account_id
+             LEFT JOIN receivable_types rt ON rt.id = c.default_receivable_type_id
+             LEFT JOIN company_groups cgp ON cgp.id = c.company_group_id
+             WHERE c.public_id = ? LIMIT 1`,
             [publicId]
         );
         return rows;

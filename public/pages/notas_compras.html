@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Notas de Compras</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 <body data-required-module="notas_compras" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
     <div id="app-navbar"></div>
@@ -17,15 +17,42 @@
 
         <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
             <!-- Header Row -->
-            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
-                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Notas de Compras / Entrada</h3>
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Notas de Compras / Entrada</h3>
+                    
+                    <!-- Month Navigation Toolbar -->
+                    <div class="inline-flex items-center gap-1 bg-gray-50 dark:bg-slate-900/80 p-1 rounded-lg border border-gray-200 dark:border-slate-700 shadow-2xs">
+                        <button type="button" id="btnPrevMonth" title="Mês Anterior" class="p-1 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <input type="month" id="filterMonthNav" class="bg-transparent text-xs font-bold text-gray-800 dark:text-gray-100 border-0 py-0.5 px-1 focus:ring-0 cursor-pointer" title="Selecionar Mês">
+                        <button type="button" id="btnNextMonth" title="Próximo Mês" class="p-1 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                        <button type="button" id="btnCurrentMonth" title="Mês Atual" class="px-2 py-0.5 text-[11px] font-semibold rounded bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 border border-gray-200 dark:border-slate-700 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors shadow-2xs">
+                            Mês Atual
+                        </button>
+                        <button type="button" id="btnAllMonths" title="Ver Todas as Notas" class="px-2 py-0.5 text-[11px] font-semibold rounded text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+                            Todas
+                        </button>
+                    </div>
+                </div>
+
                 <div class="flex items-center gap-2">
+                    <button type="button" id="btnImportPurchasesXml" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-slate-800" title="Importar compras por XML" aria-label="Importar compras por XML">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0-4 4m4-4 4 4M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1" />
+                        </svg>
+                        Importar XML
+                    </button>
                     <button type="button" id="btnRefresh" title="Atualizar" class="inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm p-2 bg-brand-600 text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors disabled:opacity-50">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
                     <span class="hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
                         Compra / NFe
                     </span>
+                    <input type="file" id="inputImportPurchasesXml" class="hidden" accept=".xml,text/xml,application/xml" multiple title="Selecionar XML de compra" aria-label="Selecionar XML de compra" />
                 </div>
             </div>
 
@@ -37,7 +64,7 @@
                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path>
                         </svg>
-                        <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                        <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtros Avançados</h3>
                     </div>
                     <svg id="filterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -45,7 +72,7 @@
                 </button>
 
                 <div id="filterBody" class="hidden border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                         <div>
                             <label for="filterSearch" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Buscar</label>
                             <input
@@ -56,13 +83,40 @@
                             />
                         </div>
                         <div>
-                            <label for="filterNfeKey" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Chave NF</label>
-                            <input
-                                type="text"
-                                id="filterNfeKey"
-                                placeholder="Chave da NF"
+                            <label for="filterPeriod" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Período</label>
+                            <select
+                                id="filterPeriod"
                                 class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                            >
+                                <option value="">Todos os períodos</option>
+                                <option value="today">Hoje</option>
+                                <option value="yesterday">Ontem</option>
+                                <option value="this_month">Este Mês</option>
+                                <option value="last_month">Mês Passado</option>
+                                <option value="last_3_months">Últimos 3 Meses</option>
+                                <option value="this_year">Este Ano</option>
+                                <option value="custom">Personalizado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filterMonth" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Mês (Competência)</label>
+                            <input
+                                type="month"
+                                id="filterMonth"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                                title="Filtrar por Mês"
                             />
+                        </div>
+                        <div>
+                            <label for="filterOrigin" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Origem</label>
+                            <select
+                                id="filterOrigin"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                            >
+                                <option value="">Todas as origens</option>
+                                <option value="sped">SPED Fiscal</option>
+                                <option value="erp">ERP / Importação XML</option>
+                            </select>
                         </div>
                         <div>
                             <label for="filterStatus" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Status</label>
@@ -77,30 +131,21 @@
                             </select>
                         </div>
                         <div>
-                            <label for="filterNfeStartDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Entrada Inicio</label>
+                            <label for="filterNfeKey" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Chave NF</label>
+                            <input
+                                type="text"
+                                id="filterNfeKey"
+                                placeholder="Chave da NF"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                            />
+                        </div>
+                        <div>
+                            <label for="filterNfeStartDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Entrada Início</label>
                             <input
                                 type="date"
                                 id="filterNfeStartDate"
                                 class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
                                 title="Data inicial da NF"
-                            />
-                        </div>
-                        <div>
-                            <label for="filterStartDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Compra Início</label>
-                            <input
-                                type="date"
-                                id="filterStartDate"
-                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-                                title="Data inicial"
-                            />
-                        </div>
-                        <div>
-                            <label for="filterEndDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Compra Fim</label>
-                            <input
-                                type="date"
-                                id="filterEndDate"
-                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-                                title="Data final"
                             />
                         </div>
                         <div>
@@ -112,9 +157,27 @@
                                 title="Data final da NF"
                             />
                         </div>
-                        <div class="flex items-end">
-                            <button type="button" id="btnClearFilters" class="w-full py-1.5 px-3 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition-colors">
-                                Limpar Filtros
+                        <div>
+                            <label for="filterStartDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Compra/Emissão Início</label>
+                            <input
+                                type="date"
+                                id="filterStartDate"
+                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                                title="Data inicial da compra"
+                            />
+                        </div>
+                        <div class="flex gap-2 items-end">
+                            <div class="flex-1">
+                                <label for="filterEndDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Data Compra/Emissão Fim</label>
+                                <input
+                                    type="date"
+                                    id="filterEndDate"
+                                    class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                                    title="Data final da compra"
+                                />
+                            </div>
+                            <button type="button" id="btnClearFilters" class="py-1.5 px-3 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition-colors shrink-0">
+                                Limpar
                             </button>
                         </div>
                     </div>
@@ -145,9 +208,10 @@
                                         class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
                                 </th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Número</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Origem</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Data Entrada</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Chave NF</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cabecalho</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cabeçalho</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Fornecedor</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Data Compra</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor</th>
@@ -236,6 +300,43 @@
             </div>
         </div>
 
+        <!-- XML Import Config Modal -->
+        <div id="importPurchasesXmlModal" class="hidden fixed inset-0 z-10000 items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <div class="w-full max-w-md rounded-xl bg-white dark:bg-slate-800 shadow-2xl border border-gray-200 dark:border-slate-700">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                    <h4 class="text-base font-semibold text-gray-900 dark:text-gray-100">Configurar Importação XML</h4>
+                    <button type="button" id="btnCloseImportPurchasesXmlModal" class="rounded-lg p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-slate-700" aria-label="Fechar modal de importação">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="px-4 py-4 space-y-3">
+                    <p id="importPurchasesXmlModalFileName" class="text-xs text-gray-500 dark:text-gray-400">Arquivo: -</p>
+
+                    <div>
+                        <label for="importPurchasesXmlBankAccount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Conta Bancária</label>
+                        <select id="importPurchasesXmlBankAccount" class="w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Automático (primeira conta)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="importPurchasesXmlCategory" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoria de Despesa</label>
+                        <select id="importPurchasesXmlCategory" class="w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Automático (categoria de compras)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="px-4 py-3 border-t border-gray-200 dark:border-slate-700 flex items-center justify-end gap-2">
+                    <button type="button" id="btnCancelImportPurchasesXml" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600">Cancelar</button>
+                    <button type="button" id="btnConfirmImportPurchasesXml" class="rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600">Importar Agora</button>
+                </div>
+            </div>
+        </div>
+
         <!-- XML/DANFE View Modal (Fullscreen-ish) -->
         <div id="xmlModal" class="fixed inset-0 z-10000 hidden items-start justify-center overflow-hidden bg-slate-900/70 backdrop-blur-sm p-2 sm:items-center sm:p-4">
             <div class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-full h-[calc(100dvh-1rem)] sm:h-auto sm:max-h-[90vh] sm:w-[95%] sm:max-w-5xl shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700 flex flex-col relative z-20">
@@ -268,10 +369,10 @@
         </div>
     </main>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/notas_compras.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/notas_compras.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 </html>

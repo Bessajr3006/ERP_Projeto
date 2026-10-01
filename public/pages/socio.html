@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Sócios</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+</head>
+
+<body data-required-module="socio" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Sócios / Donos da Empresa</h3>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="btnOpenModal" title="Novo Sócio"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="sociosSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th class="px-3 py-2.5 text-left w-12">
+                                    <input type="checkbox" id="selectAllCheckbox" name="selectAllCheckbox" title="Selecionar todos" data-bwignore="true"
+                                        class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer transition-colors">
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
+                                    ID</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Nome</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Documento</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Contato</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Cidade / UF</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Status</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sociosTable"
+                            class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="sociosResultsFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4" role="status" aria-live="polite">
+                <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+                    </svg>
+                    <span data-grid-footer-count="" class="font-semibold text-gray-700 dark:text-gray-200">0</span>
+                    <span data-grid-footer-label="">sócio(s) exibido(s)</span>
+                </span>
+            </div>
+        </div>
+    </main>
+
+    <div id="entityModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true"
+                id="modalBackdrop"></div>
+            <div
+                class="modal-panel relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="entityForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="lg:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
+                                    id="modalTitle">Novo Sócio</h3>
+                                <input type="hidden" id="socioId" name="socioId" value="" class="hidden" autocomplete="off" data-bwignore="true" data-lpignore="true">
+
+                                <div class="mt-4 space-y-4">
+                                    <div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900/40 dark:bg-sky-900/20 dark:text-sky-200">
+                                        O perfil deste cadastro é fixo como <span class="font-semibold">Sócio / Dono da Empresa</span>. Os dados de acesso continuam vinculados ao módulo de usuários.
+                                    </div>
+
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div class="sm:col-span-2">
+                                            <label for="socioName"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome <span class="text-red-500">*</span></label>
+                                            <input type="text" id="socioName" name="socioName" required placeholder="Nome completo do sócio" data-bwignore="true"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label for="socioEmail"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email <span class="text-red-500">*</span></label>
+                                            <input type="email" id="socioEmail" name="socioEmail" required autocomplete="off" placeholder="seu@email.com" data-bwignore="true"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label for="socioPassword"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
+                                            <input type="password" id="socioPassword" name="socioPassword" autocomplete="new-password" placeholder="Senha segura" data-bwignore="true" data-lpignore="true"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 hidden" id="passwordHint">Deixe em branco para manter a senha atual.</p>
+                                        </div>
+                                        <div>
+                                            <label for="socioStatus"
+                                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                                            <select id="socioStatus" name="socioStatus" data-bwignore="true"
+                                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <option value="active">Ativo</option>
+                                                <option value="inactive">Inativo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
+                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Dados Pessoais / Comerciais</h4>
+                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="socioDocument"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF / CNPJ</label>
+                                                <input type="text" id="socioDocument" name="socioDocument" placeholder="000.000.000-00" data-bwignore="true"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="socioPhone"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone / WhatsApp</label>
+                                                <input type="text" id="socioPhone" name="socioPhone" placeholder="(00) 00000-0000" data-bwignore="true"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-200 pt-4 dark:border-slate-700">
+                                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Endereço</h4>
+                                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="socioZipcode"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">CEP</label>
+                                                <div class="relative flex">
+                                                    <input type="text" id="socioZipcode" name="socioZipcode" placeholder="00000-000" data-bwignore="true"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <button type="button" id="btnSearchSocioCep" class="mt-1 px-3 py-2 bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 text-white border border-brand-600 dark:border-brand-500 rounded-r-md font-medium text-sm transition-colors">Buscar</button>
+                                                    <div id="socioCepLoading"
+                                                        class="hidden absolute top-1/2 -translate-y-1/2 right-20 pointer-events-none">
+                                                        <svg class="animate-spin h-5 w-5 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label for="socioStreet"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Logradouro</label>
+                                                <input type="text" id="socioStreet" name="socioStreet" placeholder="Rua, Avenida..." data-bwignore="true"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="socioNumber"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número</label>
+                                                <input type="text" id="socioNumber" name="socioNumber" placeholder="S/N" data-bwignore="true"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="socioComplement"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complemento</label>
+                                                <input type="text" id="socioComplement" name="socioComplement" placeholder="Apto, Sala..." data-bwignore="true"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="socioNeighborhood"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bairro</label>
+                                                <input type="text" id="socioNeighborhood" name="socioNeighborhood" placeholder="Centro" data-bwignore="true"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="socioCity"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cidade</label>
+                                                <input type="text" id="socioCity" name="socioCity" placeholder="São Paulo" data-bwignore="true"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                            </div>
+                                            <div class="sm:col-span-2">
+                                                <label for="socioState"
+                                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado (UF)</label>
+                                                <select id="socioState" name="socioState" data-bwignore="true"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                    <option value="">Selecione...</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                        <button type="button" id="btnCancelModal"
+                            class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="saveBtn"
+                            class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL: Detalhes do Sócio ───────────────────────── -->
+    <div id="viewSocioDetailsModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="view-details-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen p-4 sm:p-6 sm:pt-8">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="viewDetailsModalBackdrop"></div>
+            <div class="relative z-10 w-full max-w-6xl h-[90vh] bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all flex flex-col">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 flex-1 overflow-y-auto">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                            <h3 id="view-details-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Detalhes do Sócio: <span id="viewDetailsSocioName" class="font-semibold text-brand-600 dark:text-brand-400"></span></h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Histórico de lançamentos financeiros vinculados, tarefas, documentos e localização.</p>
+                        </div>
+                        <button type="button" id="btnCloseViewDetailsModal" title="Fechar"
+                            class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                            <span class="sr-only">Fechar</span>
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Resumo Pessoal/Comercial -->
+                    <div class="mb-6 grid grid-cols-1 sm:grid-cols-4 gap-4 p-4 rounded-lg bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-700 font-sans">
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">CPF / CNPJ</span>
+                            <span id="viewDetailsDocument" class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Email</span>
+                            <span id="viewDetailsEmail" class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Telefone</span>
+                            <span id="viewDetailsPhone" class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Cidade / Estado</span>
+                            <span id="viewDetailsLocation" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Abas -->
+                    <div class="border-b border-gray-200 dark:border-slate-700">
+                        <nav class="-mb-px flex gap-4" role="tablist" aria-label="Abas de detalhes">
+                            <button type="button" id="tabButtonFinanceiro"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-brand-500 px-1 pb-2 text-sm font-medium text-brand-600 dark:text-brand-300"
+                                role="tab"
+                                data-details-tab-target="tabPanelFinanceiro" aria-controls="tabPanelFinanceiro" aria-selected="true">
+                                Financeiro
+                            </button>
+                            <button type="button" id="tabButtonDocumento"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelDocumento" aria-controls="tabPanelDocumento" aria-selected="false">
+                                Documentos
+                            </button>
+                            <button type="button" id="tabButtonTarefas"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelTarefas" aria-controls="tabPanelTarefas" aria-selected="false">
+                                Tarefas
+                            </button>
+                            <button type="button" id="tabButtonMapa"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelMapa" aria-controls="tabPanelMapa" aria-selected="false">
+                                Mapa
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Conteúdo das Abas -->
+                    <div class="mt-4">
+                        <!-- Aba Financeiro -->
+                        <div id="tabPanelFinanceiro" class="details-modal-tab-panel space-y-4" role="tabpanel" aria-labelledby="tabButtonFinanceiro">
+                            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                    <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descrição</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vencimento</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="viewDetailsFinancialsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                        <tr>
+                                            <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhum lançamento financeiro encontrado.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Aba Documento -->
+                        <div id="tabPanelDocumento" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonDocumento">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-gray-200 dark:border-slate-700">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Documentos</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Gerencie e anexe novos arquivos organizados por data.</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm cursor-pointer transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        Anexar Documento
+                                        <input type="file" id="detailCnpjFile" class="hidden" multiple />
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="viewDetailsDocumentContainer" class="p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/30 min-h-125 max-h-150 overflow-y-auto pr-2">
+                                <div class="flex items-center justify-center h-112.5">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 animate-pulse">Carregando documentos...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba Tarefas -->
+                        <div id="tabPanelTarefas" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonTarefas">
+                            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                    <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tarefa</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vencimento</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="viewDetailsTasksTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                        <tr>
+                                            <td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhuma tarefa encontrada.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Aba Mapa -->
+                        <div id="tabPanelMapa" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonMapa">
+                            <div class="p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/30 min-h-125 font-sans">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Localização do Sócio</h4>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Rota do endereço da empresa até o endereço do sócio.</p>
+                                
+                                <div id="mapAddressInfo" class="mb-4 text-sm text-gray-700 dark:text-gray-300">
+                                    <strong>Endereço do Sócio:</strong> <span id="mapSocioAddress">Carregando...</span>
+                                </div>
+                                
+                                <div class="flex gap-3 mb-4">
+                                    <a id="btnOpenWaze" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-lg shadow-sm transition-colors">
+                                        Abrir no Waze
+                                    </a>
+                                    <a id="btnOpenGoogleMaps" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors">
+                                        Abrir no Google Maps
+                                    </a>
+                                </div>
+
+                                <div class="w-full h-100 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center">
+                                    <iframe id="googleMapsIframe" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex justify-end dark:border-t dark:border-slate-700">
+                    <button type="button" id="btnCancelViewDetailsModal" class="w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:w-auto sm:text-sm">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/filter-panel.js?v=20261001145619"></script>
+    <script src="/js/components/crud-manager.js?v=20261001145619"></script>
+    <script src="/js/socio.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+</body>
+
+</html>

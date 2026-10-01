@@ -6,6 +6,8 @@ export const UserPayloadSchema = z.object({
     id: z.string(),
     role: UserRoleSchema,
     company_id: z.number().int().positive(),
+    group_master_company_id: z.number().int().positive().optional(),
+    general_admin_company_id: z.number().int().positive().optional(),
     iat: z.number().optional(),
     exp: z.number().optional()
 }).passthrough(); // Permite outras propriedades do JwtPayload (como iss, aud, etc)

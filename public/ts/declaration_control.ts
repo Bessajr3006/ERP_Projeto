@@ -1,10 +1,9 @@
-/// <reference path="./api.ts" />
-
 (() => {
     // UI Elements
     const filterForm = document.getElementById('filterForm') as HTMLFormElement;
     const filterMonth = document.getElementById('filterMonth') as HTMLSelectElement;
     const filterYear = document.getElementById('filterYear') as HTMLSelectElement;
+    const filterTaxRegime = document.getElementById('filterTaxRegime') as HTMLSelectElement;
     const filterType = document.getElementById('filterType') as HTMLInputElement;
     const filterCustomer = document.getElementById('filterCustomer') as HTMLInputElement;
     const clearFiltersBtn = document.getElementById('clearFiltersBtn') as HTMLButtonElement;
@@ -78,11 +77,11 @@
             if (datalist) {
                 datalist.innerHTML = '';
                 customers.forEach((c: any) => {
-                    if (c.active !== 0) { // Opcional: mostrar apenas ativos
+                    if (c.tax_regime && String(c.tax_regime).trim() !== '') {
                         const option = document.createElement('option');
                         option.value = c.name;
                         if (c.cnpj_cpf) {
-                            option.textContent = c.cnpj_cpf;
+                            option.textContent = `${c.cnpj_cpf} - ${c.tax_regime}`;
                         }
                         datalist.appendChild(option);
                     }
@@ -116,21 +115,24 @@
         const month = filterMonth.value;
         const year = filterYear.value;
         const type = filterType.value.trim().toUpperCase();
-
-        if (!type) {
-            // @ts-ignore
-            if (typeof Swal !== 'undefined') Swal.fire('Aviso', 'Informe o tipo de declaração antes de buscar.', 'warning');
-            return;
-        }
+        const taxRegime = filterTaxRegime ? filterTaxRegime.value : '';
+        const customer = filterCustomer ? filterCustomer.value.trim() : '';
 
         showLoading();
         try {
-            const data = await api(`/accounting/declarations?month=${month}&year=${year}&type=${encodeURIComponent(type)}`);
+            const params = new URLSearchParams();
+            params.append('month', month);
+            params.append('year', year);
+            if (type && type !== 'TODOS') params.append('type', type);
+            if (taxRegime && taxRegime !== 'todos') params.append('tax_regime', taxRegime);
+            if (customer) params.append('customer', customer);
+
+            const data = await api(`/accounting/declarations?${params.toString()}`);
             currentDeclarations = data?.data || [];
             renderTable();
         } catch (e: any) {
             console.error('Failed to load declarations', e);
-            declarationsTable.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500">Erro ao carregar clientes: ${e.message}</td></tr>`;
+            declarationsTable.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-red-500">Erro ao carregar clientes: ${e.message}</td></tr>`;
         } finally {
             hideLoading();
         }
@@ -149,7 +151,7 @@
         }
 
         if (filtered.length === 0) {
-            declarationsTable.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-gray-500 dark:text-gray-400">Nenhum cliente encontrado para os filtros selecionados.</td></tr>`;
+            declarationsTable.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-gray-500 dark:text-gray-400">Nenhum cliente/declaração encontrado para os filtros selecionados.</td></tr>`;
             return;
         }
 
@@ -162,11 +164,11 @@
 
         const getStatusBadge = (status: string) => {
             switch (status) {
-                case 'ENTREGUE': return '<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Entregue</span>';
-                case 'SEM_MOVIMENTO': return '<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Sem Movimento</span>';
-                case 'NAO_SE_APLICA': return '<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-gray-300">Não se Aplica</span>';
+                case 'ENTREGUE': return '<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 whitespace-nowrap">Entregue</span>';
+                case 'SEM_MOVIMENTO': return '<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 whitespace-nowrap">Sem Movimento</span>';
+                case 'NAO_SE_APLICA': return '<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-gray-300 whitespace-nowrap">Não se Aplica</span>';
                 case 'PENDENTE':
-                default: return '<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Pendente</span>';
+                default: return '<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 whitespace-nowrap">Pendente</span>';
             }
         };
 
@@ -175,17 +177,24 @@
         declarationsTable.innerHTML = filtered.map(c => `
             <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
                 <td class="px-4 py-3 text-center">
-                    <input type="checkbox" class="row-checkbox rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-700 dark:border-slate-600" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}">
+                    <input type="checkbox" class="row-checkbox rounded border-gray-300 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-700 dark:border-slate-600" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-type="${c.declaration_type || ''}">
                 </td>
                 <td class="px-4 py-3">
                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         ${c.customer_name} 
-                        ${isTodos && c.competence_month ? `<span class="text-[10px] font-bold text-brand-700 bg-brand-100 dark:text-brand-300 dark:bg-brand-900/50 px-1.5 py-0.5 rounded-full">Mês ${c.competence_month}</span>` : ''}
+                        ${isTodos && c.competence_month ? `<span class="text-[10px] font-bold text-brand-700 bg-brand-100 dark:text-brand-300 dark:bg-brand-900/50 px-1.5 py-0.5 rounded-full whitespace-nowrap">Mês ${c.competence_month}</span>` : ''}
                     </div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">${c.cnpj_cpf || 'Sem doc'}</div>
                 </td>
-                <td class="px-4 py-3 text-center text-sm text-gray-700 dark:text-gray-300 hidden xl:table-cell">
-                    ${c.tax_regime || '-'}
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300 border border-brand-200 dark:border-brand-800/40">
+                        ${c.declaration_type || '-'}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-center text-sm text-gray-700 dark:text-gray-300 hidden xl:table-cell whitespace-nowrap">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
+                        ${c.tax_regime || '-'}
+                    </span>
                 </td>
                 <td class="px-4 py-3 text-center">
                     ${getStatusBadge(c.status)}
@@ -212,26 +221,26 @@
                             </button>
                             <label class="cursor-pointer text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 text-xs font-medium px-2 py-1 border border-gray-200 dark:border-gray-600 rounded transition-colors" title="Substituir Comprovante">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                <input type="file" class="hidden file-upload-btn" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" accept=".pdf,image/*">
+                                <input type="file" class="hidden file-upload-btn" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-type="${c.declaration_type || ''}" accept=".pdf,image/*">
                             </label>
                         ` : `
                             <label class="cursor-pointer text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 text-xs font-medium px-2 py-1 border border-brand-200 dark:border-brand-800 rounded transition-colors flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                 Anexar
-                                <input type="file" class="hidden file-upload-btn" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" accept=".pdf,image/*">
+                                <input type="file" class="hidden file-upload-btn" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-type="${c.declaration_type || ''}" accept=".pdf,image/*">
                             </label>
                         `}
                     </div>
                 </td>
                 <td class="px-4 py-3 text-center">
                     <div class="flex flex-wrap items-center justify-center gap-2">
-                        ${c.status !== 'ENTREGUE' ? `<button type="button" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 text-xs font-medium px-2 py-1 border border-green-200 dark:border-green-800 rounded transition-colors btn-status" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-status="ENTREGUE">Entregue</button>` : ''}
-                        ${c.status !== 'SEM_MOVIMENTO' ? `<button type="button" class="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300 text-xs font-medium px-2 py-1 border border-yellow-200 dark:border-yellow-800 rounded transition-colors btn-status" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-status="SEM_MOVIMENTO">Sem Mov.</button>` : ''}
-                        ${c.status !== 'NAO_SE_APLICA' ? `<button type="button" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 text-xs font-medium px-2 py-1 border border-gray-200 dark:border-gray-600 rounded transition-colors btn-status" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-status="NAO_SE_APLICA">N/A</button>` : ''}
-                        <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-2 py-1 border border-red-200 dark:border-red-800 rounded transition-colors btn-delete" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" title="Excluir">
+                        ${c.status !== 'ENTREGUE' ? `<button type="button" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 text-xs font-medium px-2 py-1 border border-green-200 dark:border-green-800 rounded transition-colors btn-status" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-type="${c.declaration_type || ''}" data-status="ENTREGUE">Entregue</button>` : ''}
+                        ${c.status !== 'SEM_MOVIMENTO' ? `<button type="button" class="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300 text-xs font-medium px-2 py-1 border border-yellow-200 dark:border-yellow-800 rounded transition-colors btn-status" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-type="${c.declaration_type || ''}" data-status="SEM_MOVIMENTO">Sem Mov.</button>` : ''}
+                        ${c.status !== 'NAO_SE_APLICA' ? `<button type="button" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 text-xs font-medium px-2 py-1 border border-gray-200 dark:border-gray-600 rounded transition-colors btn-status" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-type="${c.declaration_type || ''}" data-status="NAO_SE_APLICA">N/A</button>` : ''}
+                        <button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-2 py-1 border border-red-200 dark:border-red-800 rounded transition-colors btn-delete" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-type="${c.declaration_type || ''}" title="Excluir">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
-                        ${c.status !== 'PENDENTE' ? `<button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-2 py-1 border border-red-200 dark:border-red-800 rounded transition-colors btn-status" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-status="PENDENTE">Pendente</button>` : ''}
+                        ${c.status !== 'PENDENTE' ? `<button type="button" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-2 py-1 border border-red-200 dark:border-red-800 rounded transition-colors btn-status" data-id="${c.customer_public_id}" data-month="${c.competence_month || ''}" data-type="${c.declaration_type || ''}" data-status="PENDENTE">Pendente</button>` : ''}
                     </div>
                 </td>
             </tr>
@@ -243,8 +252,9 @@
                 const customerId = target.getAttribute('data-id');
                 const newStatus = target.getAttribute('data-status');
                 const monthOverride = target.getAttribute('data-month');
+                const typeOverride = target.getAttribute('data-type');
                 if (customerId && newStatus) {
-                    await updateStatus(customerId, newStatus, false, monthOverride || undefined);
+                    await updateStatus(customerId, newStatus, false, monthOverride || undefined, false, typeOverride || undefined);
                 }
             });
         });
@@ -255,8 +265,9 @@
                 const target = e.currentTarget as HTMLButtonElement;
                 const customerId = target.getAttribute('data-id');
                 const monthOverride = target.getAttribute('data-month');
+                const typeOverride = target.getAttribute('data-type');
                 if (customerId) {
-                    await deleteDeclaration(customerId, monthOverride || undefined);
+                    await deleteDeclaration(customerId, monthOverride || undefined, false, typeOverride || undefined);
                 }
             });
         });
@@ -266,12 +277,13 @@
                 const target = e.currentTarget as HTMLInputElement;
                 const customerId = target.getAttribute('data-id');
                 const monthOverride = target.getAttribute('data-month');
+                const typeOverride = target.getAttribute('data-type');
                 const file = target.files?.[0];
                 if (customerId && file) {
                     try {
                         showLoading();
                         const base64 = await getBase64(file);
-                        await uploadReceipt(customerId, base64, monthOverride || undefined);
+                        await uploadReceipt(customerId, base64, monthOverride || undefined, typeOverride || undefined);
                     } catch (error: any) {
                         console.error('File upload failed', error);
                         // @ts-ignore
@@ -303,15 +315,16 @@
         updateBatchActionsVisibility();
     }
 
-    async function uploadReceipt(customerId: string, base64: string, monthOverride?: string) {
+    async function uploadReceipt(customerId: string, base64: string, monthOverride?: string, typeOverride?: string) {
         const month = monthOverride || filterMonth.value;
         const year = filterYear.value;
-        const type = filterType.value.trim().toUpperCase();
+        const type = (typeOverride || filterType.value || '').trim().toUpperCase();
 
         const payload: any = { receipt_base64: base64 };
-        // Vamos usar a mesma rota PUT /accounting/declarations/:id
-        // preservando o status existente.
-        const currentDeclaration = currentDeclarations.find(c => c.customer_public_id === customerId);
+        const currentDeclaration = currentDeclarations.find(c => 
+            c.customer_public_id === customerId && 
+            (!typeOverride || (c.declaration_type || '').toUpperCase() === typeOverride.toUpperCase())
+        );
         payload.status = currentDeclaration?.status || 'PENDENTE';
         if (payload.status === 'ENTREGUE' && currentDeclaration?.delivery_date) {
             payload.delivery_date = currentDeclaration.delivery_date.split('T')[0];
@@ -331,10 +344,17 @@
         }
     }
 
-    async function updateStatus(customerId: string, status: string, promptForDate: boolean = false, monthOverride?: string, skipReload: boolean = false) {
+    async function updateStatus(
+        customerId: string, 
+        status: string, 
+        promptForDate: boolean = false, 
+        monthOverride?: string, 
+        skipReload: boolean = false,
+        typeOverride?: string
+    ) {
         const month = monthOverride || filterMonth.value;
         const year = filterYear.value;
-        const type = filterType.value.trim().toUpperCase();
+        const type = (typeOverride || filterType.value || '').trim().toUpperCase();
 
         const payload: any = { status };
         if (status === 'ENTREGUE') {
@@ -359,10 +379,15 @@
         }
     }
 
-    async function deleteDeclaration(customerId: string, monthOverride?: string, skipReload: boolean = false) {
+    async function deleteDeclaration(
+        customerId: string, 
+        monthOverride?: string, 
+        skipReload: boolean = false,
+        typeOverride?: string
+    ) {
         const month = monthOverride || filterMonth.value;
         const year = filterYear.value;
-        const type = filterType.value.trim().toUpperCase();
+        const type = (typeOverride || filterType.value || '').trim().toUpperCase();
 
         showLoading();
         try {
@@ -415,6 +440,12 @@
         });
     }
 
+    if (filterTaxRegime) {
+        filterTaxRegime.addEventListener('change', () => {
+            loadDeclarations();
+        });
+    }
+
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
             filterForm.reset();
@@ -422,9 +453,11 @@
             const now = new Date();
             filterMonth.value = (now.getMonth() + 1).toString();
             filterYear.value = now.getFullYear().toString();
-            filterType.value = 'PGDAS';
+            if (filterTaxRegime) filterTaxRegime.value = '';
+            filterType.value = '';
+            if (filterCustomer) filterCustomer.value = '';
             
-            declarationsTable.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-gray-500 dark:text-gray-400">Selecione os filtros e clique em Buscar Clientes.</td></tr>`;
+            declarationsTable.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-gray-500 dark:text-gray-400">Selecione os filtros e clique em Buscar Clientes.</td></tr>`;
             currentDeclarations = [];
             
             // Clear batch actions selection
@@ -482,12 +515,13 @@
                 for (const cb of Array.from(selectedCheckboxes)) {
                     const customerId = cb.getAttribute('data-id');
                     const monthOverride = cb.getAttribute('data-month');
+                    const typeOverride = cb.getAttribute('data-type');
                     if (customerId) {
                         try {
                             if (action === 'DELETE') {
-                                await deleteDeclaration(customerId, monthOverride || undefined, true);
+                                await deleteDeclaration(customerId, monthOverride || undefined, true, typeOverride || undefined);
                             } else if (newStatus) {
-                                await updateStatus(customerId, newStatus, false, monthOverride || undefined, true);
+                                await updateStatus(customerId, newStatus, false, monthOverride || undefined, true, typeOverride || undefined);
                             }
                         } catch (err) {
                             hasErrors = true;
@@ -508,10 +542,8 @@
             });
         });
 
-        // Carrega automático apenas se o tipo já tiver valor (ex: PGDAS)
-        if (filterType.value) {
-            renderTable();
-        }
+        // Carrega automaticamente na abertura da tela com o mês atual
+        loadDeclarations();
     });
 
 })();

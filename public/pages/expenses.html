@@ -5,16 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Financeiro (Despesas)</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
     <div id="app-navbar"></div>
 
-    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+    <main class="pt-4 pb-4 mx-auto sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden max-w-none" style="margin-left: auto; margin-right: auto; width: 100%;">
 
         <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
 
@@ -22,6 +22,10 @@
             <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Despesas</h3>
                 <div class="flex items-center gap-3">
+                    <button type="button" id="btnOpenSolidconModal" title="Importar Solidcon"
+                        class="hidden items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        Solidcon
+                    </button>
                     <button type="button" id="btnOpenModal" title="Nova Despesa"
                         class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -43,7 +47,20 @@
                 </button>
                 <div id="filterBody" class="overflow-hidden">
                     <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3 items-end">
+                            <div>
+                                <label for="filterPeriod" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Período</label>
+                                <select id="filterPeriod" name="filterPeriod"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todos</option>
+                                    <option value="today">Hoje</option>
+                                    <option value="yesterday">Ontem</option>
+                                    <option value="this_month">Este Mês</option>
+                                    <option value="last_month">Mês Passado</option>
+                                    <option value="this_year">Este Ano</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                            </div>
                             <div>
                                 <label for="filterStartDate" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1 flex items-center gap-1">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -89,6 +106,29 @@
                                     <option value="">Todas as Contas</option>
                                 </select>
                             </div>
+                            <div>
+                                <label for="filterCategory" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Categoria</label>
+                                <select id="filterCategory" name="filterCategory"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="filterCategoryType" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Tipo Categoria</label>
+                                <select id="filterCategoryType" name="filterCategoryType"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex justify-end mt-3 border-t border-gray-100 dark:border-slate-700/60 pt-3">
+                            <button type="button" id="btnClearFilters" 
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Limpar Filtro
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -105,17 +145,18 @@
                                 <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider w-14 hidden sm:table-cell">ID</th>
                                 <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Descrição</th>
                                 <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">Categoria</th>
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">Tipo de Categoria</th>
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">Cadastro</th>
                                 <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">Vencimento</th>
-                                <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden md:table-cell">Conta</th>
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">Conta / Forma</th>
                                 <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
-                                <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">Forma Pgto.</th>
                                 <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor</th>
                                 <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="expensesTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
-                            <tr>
-                                <td colspan="10" class="px-6 py-12 text-center">
+                             <tr>
+                                <td colspan="11" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center gap-2">
                                         <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -130,13 +171,13 @@
                 <div id="expensesPaginationContainer" class="shrink-0 px-4 py-1 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"></div>
             </div>
 
-            <div id="expensesGridSection" class="hidden flex-col flex-1 min-h-0">
+            <div id="expensesGridSection" class="hidden bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex-col flex-1 min-h-0">
                 <div class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 content-start" id="expensesGridContainer"></div>
+                <div id="expensesGridPaginationContainer" class="hidden shrink-0 px-4 py-1 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"></div>
             </div>
-            <div id="expensesGridPaginationContainer" class="hidden px-4 py-1 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"></div>
 
             <div id="expensesFooter"
-                class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4">
+                class="shrink-0 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4">
                 <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
@@ -153,10 +194,10 @@
     </main>
 
     <!-- ── MODAL: Nova / Editar Despesa ────────────────────────────── -->
-    <div id="expenseModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="expenseModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modalTitle" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true" id="modalBackdrop"></div>
-            <div class="modal-panel relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200 dark:border-slate-700">
+            <div class="modal-panel relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200 dark:border-slate-700">
                 <form id="expenseForm">
                     <!-- Modal Header -->
                     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
@@ -169,108 +210,238 @@
                     </div>
 
                     <!-- Modal Body -->
-                    <div class="px-5 py-4 space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="entityType" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Tipo de Pessoa
-                                </label>
-                                <select id="entityType" name="entityType"
-                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
-                                    <option value="" selected>Nenhum/Não Informar</option>
-                                    <option value="customer">Cliente</option>
-                                    <option value="supplier">Fornecedor</option>
-                                    <option value="contact">Contato</option>
-                                    <option value="seller">Vendedor</option>
-                                    <option value="buyer">Comprador</option>
-                                    <option value="service_provider">Prestador de Serviço</option>
-                                    <option value="accountant">Contador</option>
-                                </select>
+                    <div class="px-5 py-4">
+                        <!-- Navigation Tabs -->
+                        <div class="border-b border-gray-100 dark:border-slate-700 mb-4">
+                            <nav class="-mb-px flex gap-4" role="tablist" aria-label="Abas do modal de despesa">
+                                <button type="button" id="tabButtonDados"
+                                    class="expense-modal-tab whitespace-nowrap border-b-2 border-brand-500 px-1 pb-2 text-sm font-medium text-brand-600 dark:text-brand-300"
+                                    role="tab"
+                                    data-expense-tab-target="tabPanelDados" aria-controls="tabPanelDados" aria-selected="true">
+                                    Dados Básicos
+                                </button>
+                                <button type="button" id="tabButtonPagamento"
+                                    class="expense-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                                    role="tab"
+                                    data-expense-tab-target="tabPanelPagamento" aria-controls="tabPanelPagamento" aria-selected="false">
+                                    Pagamento (API do Banco)
+                                </button>
+                            </nav>
+                        </div>
+
+                        <!-- Tab Panel: Dados -->
+                        <div id="tabPanelDados" class="expense-modal-tab-panel space-y-4" role="tabpanel" aria-labelledby="tabButtonDados">
+                            <div id="entityGrid" class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="entityType" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Tipo de Pessoa
+                                    </label>
+                                    <select id="entityType" name="entityType"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="" selected>Nenhum/Não Informar</option>
+                                        <option value="customer">Cliente</option>
+                                        <option value="supplier">Fornecedor</option>
+                                        <option value="contact">Contato</option>
+                                        <option value="seller">Vendedor</option>
+                                        <option value="buyer">Comprador</option>
+                                        <option value="service_provider">Prestador de Serviço</option>
+                                        <option value="accountant">Contador</option>
+                                    </select>
+                                </div>
+                                <div id="customerGroupContainer" class="hidden">
+                                    <label for="customerGroupSelect" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Grupo de Cliente
+                                    </label>
+                                    <select id="customerGroupSelect" name="customerGroupSelect"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="">Selecione o grupo...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="entitySelect" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Pessoa
+                                    </label>
+                                    <select id="entitySelect" name="entitySelect" disabled
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="">Selecione o tipo primeiro...</option>
+                                    </select>
+                                </div>
                             </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="bankSelect" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Conta p/ Saída <span class="text-red-500">*</span>
+                                    </label>
+                                    <select id="bankSelect" name="bankSelect" required
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="">Carregando...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="category" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Categoria <span class="text-red-500">*</span>
+                                    </label>
+                                    <select id="category" name="category" required
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="">Carregando...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="paymentMethod" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Forma de Pagamento</label>
+                                    <select id="paymentMethod" name="paymentMethod" disabled
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="">Selecione a conta de saída primeiro...</option>
+                                        <option value="pix">PIX</option>
+                                        <option value="cash">Dinheiro</option>
+                                        <option value="debit">Cartão de Débito</option>
+                                        <option value="credit">Cartão de Crédito</option>
+                                        <option value="transfer">Transferência Bancária</option>
+                                        <option value="boleto">Boleto Bancário</option>
+                                    </select>
+                                    <div id="bankPaymentMethodsInfo" class="mt-1.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                        Selecione a Conta de Saída acima para ver as formas disponíveis.
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="dueDate" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Vencimento <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="date" id="dueDate" name="dueDate" required
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
+                                </div>
+                                <div>
+                                    <label for="costCenter" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Centro de Custo</label>
+                                    <select id="costCenter" name="costCenter"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="">Nenhum/Não Informado</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="value" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Valor (R$) <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="value" name="value" value="R$ 0,00" required
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-mono" />
+                                </div>
+                                <div>
+                                    <label for="status" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Status <span class="text-red-500">*</span>
+                                    </label>
+                                    <select id="status" name="status" required
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="paid">Pago</option>
+                                        <option value="pending" selected>Pendente</option>
+                                        <option value="scheduled">Agendado</option>
+                                    </select>
+                                </div>
+                                <div id="installmentsContainer">
+                                    <label for="installments" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Parcelas
+                                    </label>
+                                    <input type="number" id="installments" name="installments" min="1" max="120" value="1"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-mono" />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4" id="metadataFieldsContainer">
+                                <div id="createdAtContainer" class="hidden">
+                                    <label for="createdAt" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Data do Cadastro
+                                    </label>
+                                    <input type="text" id="createdAt" name="createdAt" disabled
+                                        class="block w-full bg-gray-100 dark:bg-slate-800/80 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700 rounded-xl py-2.5 px-3.5 text-sm cursor-not-allowed font-mono" />
+                                </div>
+                                <div id="scheduledAtContainer" class="hidden">
+                                    <label for="scheduledAt" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Data do Agendamento
+                                    </label>
+                                    <input type="text" id="scheduledAt" name="scheduledAt" disabled
+                                        class="block w-full bg-gray-100 dark:bg-slate-800/80 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700 rounded-xl py-2.5 px-3.5 text-sm cursor-not-allowed font-mono" />
+                                </div>
+                            </div>
+
                             <div>
-                                <label for="entitySelect" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Pessoa
+                                <label for="description" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Descrição <span class="text-red-500">*</span>
                                 </label>
-                                <select id="entitySelect" name="entitySelect" disabled
-                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
-                                    <option value="">Selecione o tipo primeiro...</option>
-                                </select>
+                                <textarea id="description" name="description" required rows="3"
+                                    placeholder="Ex: Detalhamento da Conta de Luz..."
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all resize-none"></textarea>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="bankSelect" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Conta p/ Saída <span class="text-red-500">*</span>
-                                </label>
-                                <select id="bankSelect" name="bankSelect" required
-                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
-                                    <option value="">Carregando...</option>
-                                </select>
+                        <!-- Tab Panel: Pagamento -->
+                        <div id="tabPanelPagamento" class="expense-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonPagamento">
+                            <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 flex items-start gap-3">
+                                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div class="text-xs text-blue-700 dark:text-blue-300">
+                                    <p class="font-semibold mb-0.5">Integração Bancária Ativa</p>
+                                    <p class="leading-relaxed">Preencha um dos campos abaixo para habilitar o pagamento automático através da API do Banco. Certifique-se de que a conta de saída selecionada possua credenciais de API cadastradas no módulo de Contas Bancárias.</p>
+                                </div>
                             </div>
-                            <div>
-                                <label for="category" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Categoria <span class="text-red-500">*</span>
-                                </label>
-                                <select id="category" name="category" required
-                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
-                                    <option value="">Carregando...</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="paymentMethod" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Forma de Pagamento</label>
-                                <select id="paymentMethod" name="paymentMethod"
-                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
-                                    <option value="">Nenhum/Não Informado</option>
-                                    <option value="pix">PIX</option>
-                                    <option value="cash">Dinheiro</option>
-                                    <option value="debit">Cartão de Débito</option>
-                                    <option value="credit">Cartão de Crédito</option>
-                                    <option value="transfer">Transferência Bancária</option>
-                                    <option value="boleto">Boleto Bancário</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="dueDate" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Vencimento <span class="text-red-500">*</span>
-                                </label>
-                                <input type="date" id="dueDate" name="dueDate" required
-                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all" />
-                            </div>
-                            <div>
-                                <label for="value" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Valor (R$) <span class="text-red-500">*</span>
-                                </label>
-                                <input type="text" id="value" name="value" value="R$ 0,00" required
-                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-mono" />
-                            </div>
-                            <div>
-                                <label for="status" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Status <span class="text-red-500">*</span>
-                                </label>
-                                <select id="status" name="status" required
-                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
-                                    <option value="paid">Pago</option>
-                                    <option value="pending" selected>Pendente</option>
-                                </select>
-                            </div>
-                        </div>
 
-                        <div>
-                            <label for="description" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                                Descrição <span class="text-red-500">*</span>
-                            </label>
-                            <textarea id="description" name="description" required rows="3"
-                                placeholder="Ex: Detalhamento da Conta de Luz..."
-                                class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all resize-none"></textarea>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="barcode" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Código de Barras (Boleto)
+                                    </label>
+                                    <input type="text" id="barcode" name="barcode" placeholder="Código de barras..."
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-mono" />
+                                </div>
+                                <div>
+                                    <label for="pix_code" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Pix Copia e Cola
+                                    </label>
+                                    <input type="text" id="pix_code" name="pix_code" placeholder="Código Pix..."
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-mono" />
+                                </div>
+                                <div>
+                                    <label for="pix_key_type" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Tipo de Chave Pix
+                                    </label>
+                                    <select id="pix_key_type" name="pix_key_type"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all">
+                                        <option value="aleatoria" selected>Chave Aleatória / EVP</option>
+                                        <option value="cpf">CPF</option>
+                                        <option value="cnpj">CNPJ</option>
+                                        <option value="phone">Celular</option>
+                                        <option value="email">E-mail</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="pix_key" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Chave Pix
+                                    </label>
+                                    <input type="text" id="pix_key" name="pix_key" placeholder="Digite a chave pix..."
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-mono" />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Modal Footer -->
                     <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                        <button type="button" id="btnViewReceiptModal" style="display: none;"
+                            class="open-receipt-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 mr-auto cursor-pointer">
+                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Visualizar Recibo
+                        </button>
                         <button type="button" id="btnCancelModal2"
                             class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
                             Cancelar
+                        </button>
+                        <button type="button" id="btnPayModal" style="display: none;"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                            </svg>
+                            Pagar no Banco
                         </button>
                         <button type="submit" id="saveBtn"
                             class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500">
@@ -286,7 +457,7 @@
     </div>
 
     <!-- ── MODAL: Confirmar Exclusão ──────────────────────────────── -->
-    <div id="deleteModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="deleteModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="delete-modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true" id="closeDeleteModalBackdrop"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -299,9 +470,9 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100" id="modal-title">Excluir Despesa</h3>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100" id="delete-modal-title">Excluir Despesa</h3>
                             <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-                                Tem certeza de que deseja excluir o lançamento de despesa selecionado? O valor será devolvido ao saldo da conta bancária da empresa se estiver como Pago. <strong class="text-gray-700 dark:text-gray-300">Esta ação não pode ser desfeita.</strong>
+                                Tem certeza de que deseja excluir o lançamento de despesa selecionado? <strong class="text-gray-700 dark:text-gray-300">Esta ação não pode ser desfeita.</strong>
                             </p>
                         </div>
                     </div>
@@ -323,6 +494,345 @@
         </div>
     </div>
 
+    <!-- ── MODAL: Visualizar Recibo PDF ───────────────────────────── -->
+    <div id="pdfModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="pdfModalTitle" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity"
+                aria-hidden="true" id="closePdfModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle md:max-w-4xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between px-5 py-4 border-b dark:border-slate-700">
+                    <h3 id="pdfModalTitle" class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        <span id="pdfModalTitleText">Visualizar Recibo</span>
+                    </h3>
+                    <button type="button" id="closePdfModalCross" title="Fechar visualização do PDF" aria-label="Fechar visualização do PDF"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-0 h-[70vh]">
+                    <iframe id="pdfIframe" src="" title="Visualização do PDF" class="w-full h-full border-0"></iframe>
+                </div>
+                <div class="flex items-center justify-end gap-2 px-5 py-4 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                    <button type="button" id="closePdfModalBtn"
+                        class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                        Fechar
+                    </button>
+                    <button type="button" id="printPdfBtn"
+                        class="hidden min-w-32 items-center justify-center px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 whitespace-nowrap">
+                        Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL: Confirmar Pagamento Pix/API ──────────────────────── -->
+    <div id="confirmPaymentModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="confirm-payment-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity"
+                aria-hidden="true" id="closeConfirmPaymentModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="px-5 pt-5 pb-3">
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0 flex items-center justify-center h-11 w-11 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
+                            <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100" id="confirm-payment-modal-title">Confirmar Pagamento Bancário</h3>
+                            <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
+                                Você está prestes a transferir o valor usando a integração bancária. Revise os dados abaixo com atenção:
+                            </p>
+                            
+                            <div class="mt-4 space-y-3 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-150 dark:border-slate-700">
+                                <div>
+                                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Favorecido</div>
+                                    <div id="confirmPayRecipient" class="text-sm font-semibold text-gray-800 dark:text-gray-200">-</div>
+                                </div>
+                                <div id="confirmPayPixKeyContainer">
+                                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Chave Pix</div>
+                                    <div id="confirmPayPixKey" class="text-sm font-mono font-medium text-gray-800 dark:text-gray-200">-</div>
+                                </div>
+                                <div id="confirmPayPixCodeContainer">
+                                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pix Copia e Cola</div>
+                                    <div id="confirmPayPixCode" class="text-xs font-mono font-medium text-gray-800 dark:text-gray-200 break-all">-</div>
+                                </div>
+                                <div id="confirmPayBarcodeContainer">
+                                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Linha Digitável / Código de Barras</div>
+                                    <div id="confirmPayBarcode" class="text-xs font-mono font-medium text-gray-800 dark:text-gray-200 break-all">-</div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Conta de Saída</div>
+                                        <div id="confirmPayBank" class="text-xs font-semibold text-gray-800 dark:text-gray-200">-</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Valor</div>
+                                        <div id="confirmPayAmount" class="text-sm font-bold text-emerald-600 dark:text-emerald-400">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                    <button type="button" id="btnCancelConfirmPaymentModal"
+                        class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                        Cancelar
+                    </button>
+                    <button type="button" id="btnExecutePayment"
+                        class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap">
+                        Confirmar e Pagar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Solidcon Modal -->
+    <div id="solidconModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="solidcon-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen pt-10 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="solidconModalBackdrop" class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-top bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-[94vw] mx-auto sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="solidconImportForm" class="space-y-0">
+                    <div class="bg-white dark:bg-slate-800 px-5 pt-5 pb-4 sm:p-6 max-h-[68vh] overflow-y-auto">
+                        <div class="flex items-start justify-between gap-4 mb-4">
+                            <div>
+                                <h3 id="solidcon-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Importar Solidcon</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Busque pela API usando o período ou consulte o banco de dados Solidcon para importar despesas (Contas a Pagar).</p>
+                            </div>
+                            <button type="button" id="btnCloseSolidconModal" title="Fechar"
+                                class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                                <span class="sr-only">Fechar</span>
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Configurações da Importação -->
+                        <div class="mb-4">
+                            <label for="solidconConnectionType" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                Tipo de Conexão
+                            </label>
+                            <select id="solidconConnectionType" name="solidconConnectionType"
+                                class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all font-sans">
+                                <option value="api">API (Solidcon URL)</option>
+                                <option value="solidcon_db">Banco de Dados Solidcon (SQL Server)</option>
+                                <option value="dorsal_db">Banco de Dados Dorsal (SQL Server)</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="solidconStartDate" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Data Inicial
+                                </label>
+                                <input type="date" id="solidconStartDate" name="solidconStartDate" required
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all font-sans">
+                            </div>
+                            <div>
+                                <label for="solidconEndDate" class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Data Final
+                                </label>
+                                <input type="date" id="solidconEndDate" name="solidconEndDate" required
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-600 rounded-xl py-2.5 px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all font-sans">
+                            </div>
+                        </div>
+
+                        <!-- Ação de buscar da API / Banco -->
+                        <div class="flex justify-end mb-4">
+                            <button type="button" id="btnFetchSolidconJson" 
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-all">
+                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                Consulta
+                            </button>
+                        </div>
+
+                        <div id="solidconImportStatus" class="hidden mt-3 text-sm rounded-md px-3 py-2"></div>
+                        <div id="solidconImportDetails" class="hidden mt-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/50 dark:bg-yellow-900/20 dark:text-yellow-100"></div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                        <button type="button" id="btnCancelSolidconModal"
+                            class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnExecuteSolidconImport"
+                            class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            Importar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL: Detalhes e Auditoria Solidcon (Despesas) ──────────── -->
+    <div id="solidconExpenseDetailsModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="solidcon-expense-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen pt-6 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="solidconExpenseDetailsModalBackdrop" class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-top bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-[96vw] max-w-4xl mx-auto sm:my-8 sm:align-middle border border-gray-200 dark:border-slate-700">
+                
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/80">
+                    <div class="flex items-center gap-3">
+                        <div class="shrink-0 flex items-center justify-center h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2" id="solidcon-expense-modal-title">
+                                Auditoria de Despesas Solidcon
+                                <span id="solidconExpenseModalBadge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">Carregando...</span>
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                IDs de cada tabela do Contas a Pagar/Banco do Solidcon e gerenciamento de duplicidades.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" id="btnCloseSolidconExpenseDetailsModal"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="px-6 py-5 max-h-[75vh] overflow-y-auto space-y-5">
+                    
+                    <!-- Alerta de Duplicidade / Consistência -->
+                    <div id="solidconExpenseAlertBox" class="hidden p-4 rounded-xl border">
+                        <div class="flex items-start gap-3">
+                            <div id="solidconExpenseAlertIcon" class="shrink-0 mt-0.5"></div>
+                            <div class="flex-1">
+                                <h4 id="solidconExpenseAlertTitle" class="text-sm font-semibold"></h4>
+                                <p id="solidconExpenseAlertDesc" class="text-xs mt-0.5"></p>
+                            </div>
+                            <button id="btnFixSolidconExpenseDuplicates" type="button" style="display: none;" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Corrigir e Remover Duplicados
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cards de IDs por Tabela -->
+                    <div>
+                        <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">IDs das Tabelas Solidcon (Contas a Pagar)</h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="solidconExpenseIdCardsContainer">
+                            <!-- Card tbConta -->
+                            <div class="p-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl">
+                                <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400">tbConta</div>
+                                <div id="scExpIdConta" class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono mt-0.5">-</div>
+                                <div id="scExpContaStatus" class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">-</div>
+                            </div>
+                            <!-- Card tbContaParcela -->
+                            <div class="p-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl">
+                                <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400">tbContaParcela</div>
+                                <div id="scExpParcelaIds" class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono mt-0.5">-</div>
+                                <div id="scExpParcelaValores" class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">-</div>
+                            </div>
+                            <!-- Card tbContaBaixa -->
+                            <div class="p-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl">
+                                <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400">tbContaBaixa</div>
+                                <div id="scExpBaixaIds" class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono mt-0.5">-</div>
+                                <div id="scExpBaixaValores" class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">-</div>
+                            </div>
+                            <!-- Card tbBancoContaMovimento -->
+                            <div class="p-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl">
+                                <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400">tbBancoContaMovimento</div>
+                                <div id="scExpMovimentoIds" class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono mt-0.5">-</div>
+                                <div id="scExpMovimentoConta" class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">-</div>
+                            </div>
+                            <!-- Card Identificação Documento -->
+                            <div class="p-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl col-span-2">
+                                <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Identificação do Documento / Título</div>
+                                <div id="scExpDocInfo" class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono mt-0.5">-</div>
+                                <div id="scExpFilialInfo" class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">-</div>
+                            </div>
+                            <!-- Card Favorecido / Fornecedor -->
+                            <div class="p-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl col-span-2">
+                                <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Fornecedor / Favorecido</div>
+                                <div id="scExpFornecedorInfo" class="text-sm font-bold text-gray-900 dark:text-gray-100 font-mono mt-0.5 truncate">-</div>
+                                <div id="scExpFornecedorDoc" class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela Detalhada de Baixas e Parcelas -->
+                    <div>
+                        <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Lançamentos de Pagamento / Baixas Encontradas</h4>
+                        <div class="border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <div class="overflow-x-auto max-h-48">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700 text-xs">
+                                    <thead class="bg-gray-50 dark:bg-slate-900/60 sticky top-0">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400"># Baixa</th>
+                                            <th class="px-3 py-2 text-right font-semibold text-gray-600 dark:text-gray-400">Valor Baixa</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">Data Baixa</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">Conta Bancária</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">Cód. Movimento Banco</th>
+                                            <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">Histórico / Obs</th>
+                                            <th class="px-3 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Classificação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scExpensePaymentsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700 font-mono">
+                                        <tr>
+                                            <td colspan="7" class="px-3 py-4 text-center text-gray-400">Nenhum registro carregado</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caixa de Texto / Log de Auditoria -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Relatório e Log de Execução</h4>
+                            <button type="button" id="btnCopySolidconExpenseLog" class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                Copiar Log
+                            </button>
+                        </div>
+                        <textarea id="solidconExpenseLogDetails" readonly rows="7"
+                            class="block w-full font-mono text-xs bg-gray-900 text-emerald-400 p-3.5 rounded-xl border border-gray-700 focus:outline-none resize-y selection:bg-emerald-800 selection:text-white"
+                            placeholder="Aguardando consulta..."></textarea>
+                    </div>
+
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                    <button type="button" id="btnFecharSolidconExpenseDetailsModal"
+                        class="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-800 dark:text-gray-200 text-sm font-semibold transition-all">
+                        Fechar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const btn2 = document.getElementById('btnCancelModal2');
@@ -331,13 +841,13 @@
         });
     </script>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/pagination.js"></script>
-    <script src="/js/expenses.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/pagination.js?v=20261001145619"></script>
+    <script src="/js/expenses.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 
-    <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <div id="app-footer" class="shrink-0 mt-auto"></div>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

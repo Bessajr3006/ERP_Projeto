@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { PurchaseOrder, CreatePurchaseData, SalesOrder, CreateSalesData } from '../types/Order';
 import { OrderRepository } from '../repositories/orderRepository';
 import { DOMParser } from '@xmldom/xmldom';
@@ -55,7 +56,7 @@ interface ParsedNfeHeader {
 export class OrderService {
     private static readonly MAX_MONEY_VALUE = 99999999.99; // DECIMAL(10,2)
 
-    private static normalizeTextKey(value: string | null | undefined): string {
+    public static normalizeTextKey(value: string | null | undefined): string {
         return String(value || '')
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
@@ -65,11 +66,11 @@ export class OrderService {
             .trim();
     }
 
-    private static onlyDigits(value: string | null | undefined): string {
-        return String(value || '').replace(/\D/g, '');
+    public static onlyDigits(value: string | null | undefined): string {
+        return String(value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     }
 
-    private static async resolveCompanyCnpj(companyId: number): Promise<string | null> {
+    public static async resolveCompanyCnpj(companyId: number): Promise<string | null> {
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT cnpj
              FROM companies
@@ -120,7 +121,7 @@ export class OrderService {
         }
     }
 
-    private static resolveProductByNameFallback(
+    public static resolveProductByNameFallback(
         productList: Array<{ public_id: string; name: string; selling_price?: number | null }>,
         nfeName: string
     ): { public_id: string; name: string; selling_price?: number | null } | null {
@@ -144,7 +145,7 @@ export class OrderService {
         return null;
     }
 
-    private static parseDecimal(value: string | null | undefined): number {
+    public static parseDecimal(value: string | null | undefined): number {
         if (!value) return 0;
 
         const raw = String(value).trim();
@@ -182,13 +183,13 @@ export class OrderService {
         return parsed;
     }
 
-    private static getTagText(parent: Element | null | undefined, tagName: string): string {
+    public static getTagText(parent: Element | null | undefined, tagName: string): string {
         if (!parent) return '';
         const node = parent.getElementsByTagName(tagName)[0];
         return String(node?.textContent || '').trim();
     }
 
-    private static parseNfeItems(xmlContent: string): ParsedNfeItem[] {
+    public static parseNfeItems(xmlContent: string): ParsedNfeItem[] {
         const doc = new DOMParser().parseFromString(xmlContent, 'text/xml');
         if (doc.getElementsByTagName('parsererror').length > 0) {
             throw new Error('XML invalido para importacao de notas.');
@@ -235,7 +236,7 @@ export class OrderService {
         return parsed;
     }
 
-    private static parseNfeHeader(xmlContent: string): ParsedNfeHeader {
+    public static parseNfeHeader(xmlContent: string): ParsedNfeHeader {
         const doc = new DOMParser().parseFromString(xmlContent, 'text/xml');
 
         const infNFeNode = doc.getElementsByTagName('infNFe')[0];
@@ -275,7 +276,7 @@ export class OrderService {
         };
     }
 
-    private static async resolveOrCreateProductForNfeItem(
+    public static async resolveOrCreateProductForNfeItem(
         companyId: number,
         item: ParsedNfeItem,
         allProducts: Product[]
@@ -307,7 +308,7 @@ export class OrderService {
         return created;
     }
 
-    private static async resolveDefaultBankAccountPublicId(companyId: number): Promise<string | null> {
+    public static async resolveDefaultBankAccountPublicId(companyId: number): Promise<string | null> {
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT public_id
              FROM bank_accounts
@@ -317,7 +318,17 @@ export class OrderService {
             [companyId]
         );
 
-        return rows.length > 0 ? String(rows[0]!.public_id || '').trim() || null : null;
+        if (rows.length > 0) {
+            return String(rows[0]!.public_id || '').trim() || null;
+        }
+
+        const publicId = randomUUID();
+        await pool.query(
+            `INSERT INTO bank_accounts (public_id, name, type, initial_balance, current_balance, company_id)
+             VALUES (?, 'Caixa Geral', 'cash', 0.00, 0.00, ?)`,
+            [publicId, companyId]
+        );
+        return publicId;
     }
 
     private static async resolveDefaultIncomeCategoryPublicId(companyId: number): Promise<string | null> {
@@ -331,13 +342,23 @@ export class OrderService {
             [companyId]
         );
 
-        return rows.length > 0 ? String(rows[0]!.public_id || '').trim() || null : null;
+        if (rows.length > 0) {
+            return String(rows[0]!.public_id || '').trim() || null;
+        }
+
+        const publicId = randomUUID();
+        await pool.query(
+            `INSERT INTO categories (public_id, company_id, name, type)
+             VALUES (?, ?, 'Vendas', 'income')`,
+            [publicId, companyId]
+        );
+        return publicId;
     }
 
     private static async resolveCustomerPublicIdByDocument(companyId: number, xmlContent: string): Promise<string | null> {
         const doc = new DOMParser().parseFromString(xmlContent, 'text/xml');
         const destNode = doc.getElementsByTagName('dest')[0];
-        const cnpj = this.getTagText(destNode, 'CNPJ').replace(/\D/g, '');
+        const cnpj = this.getTagText(destNode, 'CNPJ').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         const cpf = this.getTagText(destNode, 'CPF').replace(/\D/g, '');
         const documentDigits = cnpj || cpf;
 
@@ -544,9 +565,9 @@ export class OrderService {
         };
 
         const formatBrazilDocument = (value: unknown): string => {
-            const digits = String(value || '').replace(/\D/g, '');
-            if (digits.length === 14) return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-            if (digits.length === 11) return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            const clean = String(value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (clean.length === 14) return clean.replace(/([a-zA-Z0-9]{2})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{4})([a-zA-Z0-9]{2})/, '$1.$2.$3/$4-$5');
+            if (clean.length === 11) return clean.replace(/([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{2})/, '$1.$2.$3-$4');
             return String(value || '-');
         };
 

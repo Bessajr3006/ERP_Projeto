@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Fechamento Contábil & Tributário</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+</head>
+<body data-required-module="accounting_closing" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto">
+        
+        <!-- ── HEADER ────────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-4 flex flex-wrap justify-between items-center gap-3 shrink-0">
+            <div>
+                <div class="flex items-center gap-2 text-xs font-semibold text-brand-600 dark:text-brand-400 mb-1">
+                    <span>Contabilidade</span>
+                    <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <span>Contábil</span>
+                    <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <span class="text-gray-500 dark:text-gray-400">Fechamento</span>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight flex items-center gap-2">
+                    <svg class="w-7 h-7 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    Fechamento Contábil & Tributário
+                </h1>
+            </div>
+
+            <!-- Controls (Year Selector, Filter, Actions) -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg p-1 shadow-sm">
+                    <button type="button" id="btnPrevYear" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Ano Anterior">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <select id="selectYear" class="bg-transparent text-gray-900 dark:text-gray-100 font-bold text-sm px-2 py-1 border-none focus:ring-0 cursor-pointer">
+                        <!-- Gerado via Javascript (ex: 2024, 2025, 2026, 2027) -->
+                    </select>
+                    <button type="button" id="btnNextYear" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Próximo Ano">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+
+                <button id="btnRefresh" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-slate-600 px-3.5 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors" title="Atualizar Dados">
+                    <svg id="refreshIcon" class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Atualizar
+                </button>
+
+                <button id="btnPrint" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-slate-600 px-3.5 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors" title="Imprimir Relatório Executivo">
+                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    Imprimir
+                </button>
+            </div>
+        </div>
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm border font-medium"></div>
+
+        <!-- ── KPI SUMMARY CARDS ──────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+            
+            <!-- Card 1: Meses Importados -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm flex items-center justify-between">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Meses Importados</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpiImportedMonths" class="text-2xl font-black text-gray-900 dark:text-white">0 / 12</span>
+                        <span id="kpiImportStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">Apurando...</span>
+                    </div>
+                    <span id="kpiImportedEntries" class="text-xs text-gray-500 dark:text-gray-400 block">0 Lançamentos Contábeis</span>
+                </div>
+                <div class="p-3 bg-cyan-50 dark:bg-cyan-900/30 rounded-xl text-cyan-600 dark:text-cyan-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+            </div>
+
+            <!-- Card 2: Faturamento Anual -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm flex items-center justify-between">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Faturamento Anual</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpiAnnualRevenue" class="text-2xl font-black text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 block">Receita Bruta Acumulada</span>
+                </div>
+                <div class="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            </div>
+
+            <!-- Card 3: Total Impostos (com detalhe de ICMS, PIS, COFINS) -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm flex items-center justify-between">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Impostos Totais</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpiAnnualTaxes" class="text-2xl font-black text-amber-600 dark:text-amber-400">R$ 0,00</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                        <span id="kpiEffectiveTaxRate" class="text-xs">Alíq: 0.00%</span>
+                        <span class="text-gray-300 dark:text-gray-600">|</span>
+                        <span id="kpiTaxMiniBreakdown" class="truncate text-gray-600 dark:text-gray-300">PIS/COFINS/ICMS</span>
+                    </div>
+                </div>
+                <div class="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+                </div>
+            </div>
+
+            <!-- Card 4: Fechamentos Concluídos -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm flex items-center justify-between">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Fechamentos Concluídos</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpiClosedMonths" class="text-2xl font-black text-purple-600 dark:text-purple-400">0 Fechados</span>
+                    </div>
+                    <span id="kpiAnnualStatus" class="text-xs font-semibold text-gray-500 dark:text-gray-400 block">Exercício Aberto</span>
+                </div>
+                <div class="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── TAB BAR ────────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-3 shrink-0">
+            <div class="border-b border-gray-200 dark:border-slate-700 flex flex-wrap gap-2 sm:gap-6" role="tablist">
+                
+                <button type="button" id="tabBtnImportedMonths" class="tab-button inline-flex items-center gap-2 py-3 px-1 border-b-2 font-bold text-sm text-brand-600 dark:text-brand-400 border-brand-600 dark:border-brand-400 transition-colors" role="tab" aria-selected="true" data-target="tabContentImportedMonths">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    1. Meses Importados & Contábil
+                </button>
+
+                <button type="button" id="tabBtnMonthlyTaxes" class="tab-button inline-flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-transparent transition-colors" role="tab" aria-selected="false" data-target="tabContentMonthlyTaxes">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m3 6V7m3 10v-3m4 6H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z"/></svg>
+                    2. Fechamento Mensal de Impostos (PIS, COFINS, ICMS)
+                </button>
+
+                <button type="button" id="tabBtnQuarterlyTaxes" class="tab-button inline-flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-transparent transition-colors" role="tab" aria-selected="false" data-target="tabContentQuarterlyTaxes">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                    3. Fechamento Trimestral (IRPJ, CSLL & Tributos)
+                </button>
+
+                <button type="button" id="tabBtnAnnualClosing" class="tab-button inline-flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-transparent transition-colors" role="tab" aria-selected="false" data-target="tabContentAnnualClosing">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    4. Fechamento Semestral & Anual
+                </button>
+
+            </div>
+        </div>
+
+        <!-- ── TAB CONTENT CONTAINERS ─────────────────────────────── -->
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0 relative">
+
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="absolute inset-0 bg-slate-900/10 dark:bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-2xl flex flex-col items-center">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600 dark:border-brand-400"></div>
+                    <p class="mt-3 text-sm font-medium text-gray-900 dark:text-white">Carregando Fechamentos...</p>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- TAB 1: MESES IMPORTADOS & CONTÁBIL                     -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div id="tabContentImportedMonths" class="tab-content flex-col flex-1 min-h-0">
+                
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-4 mb-4 shrink-0 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-cyan-100 dark:bg-cyan-900/40 rounded-lg text-cyan-600 dark:text-cyan-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100">Painel dos 12 Meses do Exercício</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Acompanhe lançamentos contábeis, apuração de PIS, COFINS, ICMS e conciliação de débito/crédito mês a mês.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="/pages/accounting_entries.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-white bg-cyan-600 hover:bg-cyan-700 transition-colors shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Novo Lançamento / Importar
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 12 Months Cards Grid -->
+                <div id="monthsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto flex-1 min-h-0 pb-4">
+                    <!-- Cards renderizados dinamicamente via JS -->
+                </div>
+
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- TAB 2: FECHAMENTO MENSAL DE IMPOSTOS                   -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div id="tabContentMonthlyTaxes" class="tab-content flex-col flex-1 min-h-0 hidden">
+                
+                <!-- Quick Tax Summary Mini Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3 shrink-0">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-3 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total ICMS Apurado</span>
+                            <span id="sumIcmsCard" class="text-lg font-black text-blue-600 dark:text-blue-400">R$ 0,00</span>
+                        </div>
+                        <div class="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold">ICMS</div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-3 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total PIS Apurado</span>
+                            <span id="sumPisCard" class="text-lg font-black text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                        </div>
+                        <div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-bold">PIS</div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-3 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total COFINS Apurado</span>
+                            <span id="sumCofinsCard" class="text-lg font-black text-amber-600 dark:text-amber-400">R$ 0,00</span>
+                        </div>
+                        <div class="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold">COFINS</div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-3 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total Tributos s/ Faturamento</span>
+                            <span id="sumTotalTaxesCard" class="text-lg font-black text-brand-600 dark:text-brand-400">R$ 0,00</span>
+                        </div>
+                        <div class="p-2 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 rounded-lg text-xs font-bold">TOTAL</div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden">
+                    
+                    <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 flex flex-wrap justify-between items-center gap-2 shrink-0">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
+                            <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200">Demonstrativo Mensal de Impostos (PIS, COFINS, ICMS, FECP, ISS & Simples)</h3>
+                        </div>
+                        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Origens: SPED Fiscal / Lançamentos Contábeis / Alíquota Presumida</span>
+                    </div>
+
+                    <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700/60 text-xs">
+                            <thead class="bg-gray-100 dark:bg-slate-900 sticky top-0 z-20">
+                                <tr>
+                                    <th class="px-3 py-2.5 text-left font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Mês / Comp.</th>
+                                    <th class="px-3 py-2.5 text-right font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Faturamento</th>
+                                    <th class="px-3 py-2.5 text-right font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">PIS (0,65%)</th>
+                                    <th class="px-3 py-2.5 text-right font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">COFINS (3,00%)</th>
+                                    <th class="px-3 py-2.5 text-right font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">ICMS</th>
+                                    <th class="px-3 py-2.5 text-right font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">FECP</th>
+                                    <th class="px-3 py-2.5 text-right font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">ISS / Simples</th>
+                                    <th class="px-3 py-2.5 text-right font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider bg-brand-50/50 dark:bg-brand-900/10">Total Impostos</th>
+                                    <th class="px-3 py-2.5 text-center font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Alíq. Efetiva</th>
+                                    <th class="px-3 py-2.5 text-center font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status / Origem</th>
+                                    <th class="px-3 py-2.5 text-center font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthlyTaxesTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/40 bg-white dark:bg-slate-800">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                            <tfoot id="monthlyTaxesTableFoot" class="bg-gray-100 dark:bg-slate-900 font-bold border-t-2 border-gray-300 dark:border-slate-600 sticky bottom-0 z-20">
+                                <!-- Totais Preenchidos via JS -->
+                            </tfoot>
+                        </table>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- TAB 3: FECHAMENTO TRIMESTRAL (IRPJ, CSLL & TRIBUTOS)    -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div id="tabContentQuarterlyTaxes" class="tab-content flex-col flex-1 min-h-0 hidden">
+                
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-4 mb-4 shrink-0 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg text-indigo-600 dark:text-indigo-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100">Fechamentos Trimestrais — IRPJ, CSLL, PIS, COFINS & ICMS</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Consolidação dos impostos mensais com apuração de IRPJ (8%/15% + 10% adic.) e CSLL (12%/9%) com simulação em 3 quotas.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4 Quarters Cards Grid -->
+                <div id="quartersGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-y-auto flex-1 min-h-0 pb-4">
+                    <!-- Cards renderizados via JS -->
+                </div>
+
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- TAB 4: FECHAMENTO SEMESTRAL & ANUAL                    -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div id="tabContentAnnualClosing" class="tab-content flex-col flex-1 min-h-0 hidden overflow-y-auto pb-6 space-y-4">
+                
+                <!-- 1º e 2º Semestre Section -->
+                <div>
+                    <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                        Fechamento Semestral Comparativo
+                    </h3>
+                    <div id="semestersGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Semesters Cards renderizados via JS -->
+                    </div>
+                </div>
+
+                <!-- Encerramento do Exercício Anual -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-5">
+                    <div class="flex flex-wrap justify-between items-start gap-4 border-b border-gray-100 dark:border-slate-700 pb-4 mb-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-brand-100 text-brand-800 dark:bg-brand-900/40 dark:text-brand-300">Exercício Fiscal</span>
+                                <h3 id="annualHeaderTitle" class="text-lg font-bold text-gray-900 dark:text-white">Fechamento do Exercício Anual</h3>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Consolidação Contábil, Balanço Patrimonial e Demonstrações Financeiras do Ano.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="btnToggleAnnualStatus" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Encerrar / Alterar Exercício
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Demonstrativo Resumido DRE -->
+                        <div class="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700/60 space-y-2.5">
+                            <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-slate-700 pb-1.5">Demonstrativo de Resultado (DRE)</h4>
+                            <div class="flex justify-between text-xs py-1">
+                                <span class="text-gray-600 dark:text-gray-400">(+) Receita Operacional Bruta:</span>
+                                <span id="annualDRE_Revenue" class="font-bold text-gray-900 dark:text-white">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-1">
+                                <span class="text-gray-600 dark:text-gray-400">(-) Deduções e Impostos:</span>
+                                <span id="annualDRE_Taxes" class="font-bold text-red-600 dark:text-red-400">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-1">
+                                <span class="text-gray-600 dark:text-gray-400">(-) Custos de Mercadorias (CMV):</span>
+                                <span id="annualDRE_Purchases" class="font-bold text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-1">
+                                <span class="text-gray-600 dark:text-gray-400">(-) Despesas Operacionais:</span>
+                                <span id="annualDRE_Expenses" class="font-bold text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs pt-2 border-t border-gray-200 dark:border-slate-700 font-black">
+                                <span class="text-gray-800 dark:text-gray-200">(=) Resultado Líquido:</span>
+                                <span id="annualDRE_NetResult" class="text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                            </div>
+                        </div>
+
+                        <!-- Consolidação de Tributos do Exercício -->
+                        <div class="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700/60 space-y-2">
+                            <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-slate-700 pb-1.5">Tributos Consolidados</h4>
+                            <div class="flex justify-between text-xs py-0.5">
+                                <span class="text-gray-600 dark:text-gray-400">ICMS Apurado:</span>
+                                <span id="annualTax_Icms" class="font-bold text-blue-600 dark:text-blue-400">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-0.5">
+                                <span class="text-gray-600 dark:text-gray-400">PIS Apurado:</span>
+                                <span id="annualTax_Pis" class="font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-0.5">
+                                <span class="text-gray-600 dark:text-gray-400">COFINS Apurado:</span>
+                                <span id="annualTax_Cofins" class="font-bold text-amber-600 dark:text-amber-400">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-0.5">
+                                <span class="text-gray-600 dark:text-gray-400">IRPJ + CSLL:</span>
+                                <span id="annualTax_IrpjCsll" class="font-bold text-indigo-600 dark:text-indigo-400">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs pt-2 border-t border-gray-200 dark:border-slate-700 font-bold">
+                                <span class="text-gray-800 dark:text-gray-200">Total Tributos:</span>
+                                <span id="annualTax_Total" class="text-brand-600 dark:text-brand-400">R$ 0,00</span>
+                            </div>
+                            <div class="text-[10px] text-gray-400 dark:text-gray-500 pt-0.5">
+                                <span id="annualTax_Credits">Créditos s/ compras: R$ 0,00</span>
+                            </div>
+                        </div>
+
+                        <!-- Balanço Patrimonial & Equilíbrio -->
+                        <div class="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700/60 space-y-2.5">
+                            <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-slate-700 pb-1.5">Auditoria Contábil Anual</h4>
+                            <div class="flex justify-between text-xs py-1">
+                                <span class="text-gray-600 dark:text-gray-400">Total de Débitos:</span>
+                                <span id="annualAudit_Debit" class="font-bold text-blue-600 dark:text-blue-400">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-1">
+                                <span class="text-gray-600 dark:text-gray-400">Total de Créditos:</span>
+                                <span id="annualAudit_Credit" class="font-bold text-blue-600 dark:text-blue-400">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-1">
+                                <span class="text-gray-600 dark:text-gray-400">Diferença (D - C):</span>
+                                <span id="annualAudit_Diff" class="font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-xs py-1">
+                                <span class="text-gray-600 dark:text-gray-400">Lançamentos:</span>
+                                <span id="annualAudit_Count" class="font-bold text-gray-900 dark:text-white">0</span>
+                            </div>
+                            <div class="pt-2 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300">Balanço:</span>
+                                <span id="annualAudit_StatusBadge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Equilibrado</span>
+                            </div>
+                        </div>
+
+                        <!-- Obrigações Acessórias Anuais -->
+                        <div class="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700/60 space-y-2.5">
+                            <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-slate-700 pb-1.5">Checklist de Obrigações</h4>
+                            <ul id="annualObligationsList" class="space-y-2 text-xs">
+                                <!-- Lista gerada dinamicamente via JS -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ── MODAL: STATUS / FECHAMENTO ───────────────────────────── -->
+    <div id="modalStatus" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 max-w-md w-full p-6 space-y-4">
+            
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-slate-700 pb-3">
+                <h3 id="modalStatusTitle" class="text-base font-bold text-gray-900 dark:text-white">Alterar Status do Período</h3>
+                <button type="button" id="btnCloseModalStatus" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="formModalStatus" class="space-y-4">
+                <input type="hidden" id="modalPeriodType" value="monthly">
+                <input type="hidden" id="modalPeriodNumber" value="1">
+                <input type="hidden" id="modalYear" value="2026">
+
+                <div>
+                    <label for="modalAccountingStatus" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Status Contábil</label>
+                    <select id="modalAccountingStatus" class="w-full bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg p-2 text-sm focus:ring-brand-500 focus:border-brand-500">
+                        <option value="open">Em Aberto</option>
+                        <option value="in_progress">Em Andamento / Conciliação</option>
+                        <option value="closed">Fechado</option>
+                        <option value="audited">Auditado & Aprovado</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="modalTaxStatus" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Status Fiscal / Tributário</label>
+                    <select id="modalTaxStatus" class="w-full bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg p-2 text-sm focus:ring-brand-500 focus:border-brand-500">
+                        <option value="open">Em Aberto</option>
+                        <option value="calculated">Apurado / Em Análise</option>
+                        <option value="closed">Fechado</option>
+                        <option value="paid">Tributos Pagos / Guias Geradas</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="modalNotes" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Observações / Anotações</label>
+                    <textarea id="modalNotes" rows="3" class="w-full bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg p-2 text-sm focus:ring-brand-500 focus:border-brand-500" placeholder="Insira observações relevantes sobre o fechamento..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-700">
+                    <button type="button" id="btnCancelModalStatus" class="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600">Cancelar</button>
+                    <button type="submit" id="btnSaveModalStatus" class="px-4 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm">Salvar Alterações</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/accounting_closing.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+    <div id="app-footer" class="shrink-0 mt-auto"></div>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+</body>
+</html>

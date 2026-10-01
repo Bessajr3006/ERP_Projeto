@@ -29,7 +29,19 @@
       filterConfig: {
         storageKey: 'accounts_filter_panel',
         footerId: 'accountsResultsFooter',
-        fields: [{ id: 'filterSearch', type: 'text', label: 'Busca', placeholder: 'Código ou Nome' }],
+        fields: [{ id: 'filterSearch', type: 'text', label: 'Busca', placeholder: 'Código, Nome ou Cód. Fácil' }],
+      },
+
+      applyFilters: (accounts: AnyRecord[]) => {
+        const searchInput = getEl<HTMLInputElement>('filterSearch');
+        const rawSearch = (searchInput?.value || '').trim().toLowerCase();
+        if (!rawSearch) return accounts;
+        return accounts.filter((acc: AnyRecord) => {
+          const code = String(acc.code || '').toLowerCase();
+          const easyCode = String(acc.easy_code || '').toLowerCase();
+          const name = String(acc.name || '').toLowerCase();
+          return code.includes(rawSearch) || easyCode.includes(rawSearch) || name.includes(rawSearch);
+        });
       },
 
       renderTable: (accounts: AnyRecord[]) => {
@@ -38,7 +50,7 @@
 
         if (!accounts || accounts.length === 0) {
           tableBody.innerHTML =
-            '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma conta contábil cadastrada.</td></tr>';
+            '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma conta contábil cadastrada.</td></tr>';
           return;
         }
 
@@ -519,7 +531,450 @@
       if (accountsManager) accountsManager.loadData();
     });
 
-    // Batch Delete Logic
+    // ==========================================
+    // SOLIDCON INTEGRATION LOGIC
+    // ==========================================
+    const btnSolidconModal = getEl<HTMLButtonElement>('btnSolidconModal');
+    const solidconModal = getEl('solidconModal');
+    const solidconModalBackdrop = getEl('solidconModalBackdrop');
+    const btnCloseSolidconModalIcon = getEl<HTMLButtonElement>('btnCloseSolidconModalIcon');
+    const btnCloseSolidconModal = getEl<HTMLButtonElement>('btnCloseSolidconModal');
+    const solidconConnectionSelect = getEl<HTMLSelectElement>('solidconConnectionSelect');
+    const solidconHostDisplay = getEl('solidconHostDisplay');
+    const solidconDbDisplay = getEl('solidconDbDisplay');
+    const solidconStatusBadge = getEl('solidconStatusBadge');
+    const btnReloadSolidcon = getEl<HTMLButtonElement>('btnReloadSolidcon');
+    const solidconReloadIcon = getEl('solidconReloadIcon');
+    const solidconAlertBox = getEl('solidconAlertBox');
+    const solidconSearchInput = getEl<HTMLInputElement>('solidconSearchInput');
+    const solidconTypeFilter = getEl<HTMLSelectElement>('solidconTypeFilter');
+    const solidconSyncFilter = getEl<HTMLSelectElement>('solidconSyncFilter');
+    const solidconSelectAll = getEl<HTMLInputElement>('solidconSelectAll');
+    const solidconAccountsTable = getEl('solidconAccountsTable');
+    const solidconSelectionCount = getEl('solidconSelectionCount');
+    const solidconTotalCountBadge = getEl('solidconTotalCountBadge');
+    const solidconNewCountBadge = getEl('solidconNewCountBadge');
+    const btnImportSelectedSolidcon = getEl<HTMLButtonElement>('btnImportSelectedSolidcon');
+    const btnImportSelectedSolidconText = getEl('btnImportSelectedSolidconText');
+    const btnImportAllSolidcon = getEl<HTMLButtonElement>('btnImportAllSolidcon');
+
+    let solidconRawAccounts: AnyRecord[] = [];
+    let filteredSolidconAccounts: AnyRecord[] = [];
+    const selectedSolidconCodes: Set<string> = new Set();
+    let existingKeystoneCodes: Set<string> = new Set();
+    let isSolidconLoading = false;
+
+    const showSolidconAlert = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+      if (!solidconAlertBox) return;
+      solidconAlertBox.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'dark:bg-green-950/40', 'dark:text-green-300', 'border-green-200', 'dark:border-green-800',
+        'bg-red-50', 'text-red-800', 'dark:bg-red-950/40', 'dark:text-red-300', 'border-red-200', 'dark:border-red-800',
+        'bg-blue-50', 'text-blue-800', 'dark:bg-blue-950/40', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-800');
+
+      if (type === 'success') {
+        solidconAlertBox.classList.add('bg-green-50', 'text-green-800', 'dark:bg-green-950/40', 'dark:text-green-300', 'border', 'border-green-200', 'dark:border-green-800');
+      } else if (type === 'error') {
+        solidconAlertBox.classList.add('bg-red-50', 'text-red-800', 'dark:bg-red-950/40', 'dark:text-red-300', 'border', 'border-red-200', 'dark:border-red-800');
+      } else {
+        solidconAlertBox.classList.add('bg-blue-50', 'text-blue-800', 'dark:bg-blue-950/40', 'dark:text-blue-300', 'border', 'border-blue-200', 'dark:border-blue-800');
+      }
+
+      solidconAlertBox.innerHTML = message;
+    };
+
+    const hideSolidconAlert = () => {
+      if (solidconAlertBox) solidconAlertBox.classList.add('hidden');
+    };
+
+    const updateSolidconStatusBadge = (status: 'loading' | 'connected' | 'error' | 'idle', text?: string) => {
+      if (!solidconStatusBadge) return;
+      if (status === 'loading') {
+        solidconStatusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+        solidconStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span> ' + (text || 'Conectando...');
+      } else if (status === 'connected') {
+        solidconStatusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+        solidconStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ' + (text || 'Conectado');
+      } else if (status === 'error') {
+        solidconStatusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800';
+        solidconStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500"></span> ' + (text || 'Falha de Conexão');
+      } else {
+        solidconStatusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700';
+        solidconStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-400"></span> ' + (text || 'Aguardando');
+      }
+    };
+
+    const updateExistingKeystoneCodes = () => {
+      existingKeystoneCodes.clear();
+      const currentAccounts = accountsManager?.data || [];
+      currentAccounts.forEach((acc: AnyRecord) => {
+        if (acc.code) existingKeystoneCodes.add(String(acc.code).trim().toLowerCase());
+        if (acc.easy_code) existingKeystoneCodes.add(String(acc.easy_code).trim().toLowerCase());
+      });
+    };
+
+    const loadSolidconConnections = async () => {
+      if (!solidconConnectionSelect) return;
+      try {
+        const response = await api('/accounting/solidcon-connections');
+        const connections = response?.data || [];
+        solidconConnectionSelect.innerHTML = '';
+
+        if (connections.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'Padrão da Empresa (solidcon)';
+          solidconConnectionSelect.appendChild(opt);
+        } else {
+          connections.forEach((conn: AnyRecord) => {
+            const opt = document.createElement('option');
+            opt.value = String(conn.id);
+            opt.textContent = `${conn.name || 'Conexão'} (${conn.serv_solidcon || ''}/${conn.bd_solidcon || 'solidcon'})`;
+            solidconConnectionSelect.appendChild(opt);
+          });
+        }
+      } catch (err: any) {
+        console.warn('Erro ao listar conexões Solidcon:', err);
+        solidconConnectionSelect.innerHTML = '<option value="">Padrão da Empresa (solidcon)</option>';
+      }
+    };
+
+    const renderSolidconTable = () => {
+      if (!solidconAccountsTable) return;
+
+      if (isSolidconLoading) {
+        solidconAccountsTable.innerHTML = `
+          <tr>
+            <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+              <div class="inline-flex items-center gap-2">
+                <svg class="animate-spin h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>Carregando dados do banco Solidcon...</span>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      if (filteredSolidconAccounts.length === 0) {
+        const emptyMsg = solidconRawAccounts.length === 0
+          ? 'Nenhuma conta encontrada no banco Solidcon ou a conexão ainda não retornou registros.'
+          : 'Nenhuma conta encontrada com os filtros selecionados.';
+        solidconAccountsTable.innerHTML = `
+          <tr>
+            <td colspan="8" class="px-4 py-12 text-center text-gray-400 dark:text-gray-500">
+              ${emptyMsg}
+            </td>
+          </tr>
+        `;
+        updateSolidconSelectionSummary();
+        return;
+      }
+
+      solidconAccountsTable.innerHTML = filteredSolidconAccounts
+        .map((account: AnyRecord) => {
+          const code = String(account.Codigo || account.code || '').trim();
+          const easyCode = account.CodigoRapido !== undefined && account.CodigoRapido !== null ? String(account.CodigoRapido).trim() : (account.easy_code || '');
+          const isSelected = selectedSolidconCodes.has(code);
+          const isExisting = existingKeystoneCodes.has(code.toLowerCase()) || (easyCode && existingKeystoneCodes.has(easyCode.toLowerCase()));
+          const isSynthetic = account.type === 'synthetic' || account.inAnalitica === false || account.inAnalitica === 0;
+          const isCredit = account.nature === 'credit' || account.cdNaturezaDaConta === '02';
+
+          const dotsCount = (code.match(/[-.]/g) || []).length;
+          const paddingLeft = Math.max(0.5, 0.5 + dotsCount * 0.75) + 'rem';
+
+          return `
+            <tr class="hover:bg-emerald-50/40 dark:hover:bg-slate-700/50 transition-colors ${isSelected ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : ''}">
+              <td class="px-4 py-2.5 whitespace-nowrap">
+                <input type="checkbox" class="solidcon-item-checkbox h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer"
+                  data-code="${code}" ${isSelected ? 'checked' : ''}>
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-gray-500 dark:text-gray-400">
+                ${easyCode || '-'}
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono font-medium ${isSynthetic ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-gray-900 dark:text-gray-200'}">
+                ${code}
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap ${isSynthetic ? 'font-bold text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'}" style="padding-left: ${paddingLeft}">
+                ${account.Nome || account.name || '-'}
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-center">
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded text-[11px] font-bold ${
+                  isSynthetic
+                    ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
+                }" title="${isSynthetic ? 'Sintética' : 'Analítica'}">
+                  ${isSynthetic ? 'S' : 'A'}
+                </span>
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-center font-bold text-xs">
+                ${isCredit ? '<span class="text-orange-600 dark:text-orange-400" title="Credora">C</span>' : '<span class="text-blue-600 dark:text-blue-400" title="Devedora">D</span>'}
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap font-mono text-gray-500 dark:text-gray-400">
+                ${account.CodigoSPED || '-'}
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap text-center">
+                ${
+                  isExisting
+                    ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600">Cadastrada</span>'
+                    : '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">Nova</span>'
+                }
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      updateSolidconSelectionSummary();
+    };
+
+    const applySolidconFilters = () => {
+      const searchTerm = (solidconSearchInput?.value || '').trim().toLowerCase();
+      const typeFilter = solidconTypeFilter?.value || 'all';
+      const syncFilter = solidconSyncFilter?.value || 'all';
+
+      updateExistingKeystoneCodes();
+
+      filteredSolidconAccounts = solidconRawAccounts.filter((account) => {
+        const code = String(account.Codigo || account.code || '').trim().toLowerCase();
+        const easyCode = String(account.CodigoRapido || account.easy_code || '').trim().toLowerCase();
+        const name = String(account.Nome || account.name || '').trim().toLowerCase();
+        const sped = String(account.CodigoSPED || '').trim().toLowerCase();
+
+        // Search match
+        if (searchTerm) {
+          const matches = code.includes(searchTerm) || easyCode.includes(searchTerm) || name.includes(searchTerm) || sped.includes(searchTerm);
+          if (!matches) return false;
+        }
+
+        // Type match
+        const isSynthetic = account.type === 'synthetic' || account.inAnalitica === false || account.inAnalitica === 0;
+        if (typeFilter === 'synthetic' && !isSynthetic) return false;
+        if (typeFilter === 'analytic' && isSynthetic) return false;
+
+        // Sync match
+        const isExisting = existingKeystoneCodes.has(code) || (easyCode && existingKeystoneCodes.has(easyCode));
+        if (syncFilter === 'new' && isExisting) return false;
+        if (syncFilter === 'existing' && !isExisting) return false;
+
+        return true;
+      });
+
+      renderSolidconTable();
+    };
+
+    const updateSolidconSelectionSummary = () => {
+      const totalFiltered = filteredSolidconAccounts.length;
+      const count = selectedSolidconCodes.size;
+
+      if (solidconSelectionCount) {
+        solidconSelectionCount.textContent = `${count} de ${totalFiltered} selecionada(s)`;
+      }
+
+      if (btnImportSelectedSolidcon) {
+        btnImportSelectedSolidcon.disabled = count === 0 || isSolidconLoading;
+      }
+      if (btnImportSelectedSolidconText) {
+        btnImportSelectedSolidconText.textContent = count > 0 ? `Importar Selecionadas (${count})` : 'Importar Selecionadas';
+      }
+      if (btnImportAllSolidcon) {
+        btnImportAllSolidcon.disabled = filteredSolidconAccounts.length === 0 || isSolidconLoading;
+      }
+
+      // Check if all filtered are selected
+      if (solidconSelectAll) {
+        const allVisibleSelected = totalFiltered > 0 && filteredSolidconAccounts.every((acc) => selectedSolidconCodes.has(String(acc.Codigo || acc.code || '').trim()));
+        solidconSelectAll.checked = allVisibleSelected;
+      }
+    };
+
+    const loadSolidconAccounts = async () => {
+      isSolidconLoading = true;
+      hideSolidconAlert();
+      updateSolidconStatusBadge('loading', 'Conectando...');
+      if (solidconReloadIcon) solidconReloadIcon.classList.add('animate-spin');
+      if (btnReloadSolidcon) btnReloadSolidcon.disabled = true;
+
+      renderSolidconTable();
+
+      try {
+        const connId = solidconConnectionSelect?.value || '';
+        const url = connId ? `/accounting/solidcon-chart-of-accounts?connectionId=${encodeURIComponent(connId)}` : '/accounting/solidcon-chart-of-accounts';
+
+        const response = await api(url);
+        solidconRawAccounts = response?.data || [];
+
+        // Update connection info badges
+        if (response?.connection) {
+          if (solidconHostDisplay) solidconHostDisplay.textContent = response.connection.host || '--';
+          if (solidconDbDisplay) solidconDbDisplay.textContent = response.connection.database || 'solidcon';
+        }
+
+        updateExistingKeystoneCodes();
+
+        // Calculate stats
+        let newCount = 0;
+        solidconRawAccounts.forEach((acc) => {
+          const code = String(acc.Codigo || acc.code || '').trim().toLowerCase();
+          const easyCode = String(acc.CodigoRapido || acc.easy_code || '').trim().toLowerCase();
+          const isExisting = existingKeystoneCodes.has(code) || (easyCode && existingKeystoneCodes.has(easyCode));
+          if (!isExisting) newCount++;
+        });
+
+        if (solidconTotalCountBadge) solidconTotalCountBadge.textContent = String(solidconRawAccounts.length);
+        if (solidconNewCountBadge) solidconNewCountBadge.textContent = `${newCount} novas`;
+
+        updateSolidconStatusBadge('connected', `Conectado (${solidconRawAccounts.length} contas)`);
+        showSolidconAlert(`Conexão estabelecida com sucesso! ${solidconRawAccounts.length} contas carregadas do Solidcon (${newCount} novas).`, 'success');
+
+        // Pre-select new accounts by default if any
+        selectedSolidconCodes.clear();
+        isSolidconLoading = false;
+        applySolidconFilters();
+      } catch (error: any) {
+        isSolidconLoading = false;
+        const msg = error?.message || String(error);
+        updateSolidconStatusBadge('error', 'Falha ao Conectar');
+        showSolidconAlert(`Erro ao consultar Solidcon: ${msg}`, 'error');
+        solidconRawAccounts = [];
+        filteredSolidconAccounts = [];
+        renderSolidconTable();
+      } finally {
+        isSolidconLoading = false;
+        if (solidconReloadIcon) solidconReloadIcon.classList.remove('animate-spin');
+        if (btnReloadSolidcon) btnReloadSolidcon.disabled = false;
+        updateSolidconSelectionSummary();
+      }
+    };
+
+    const openSolidconModal = async () => {
+      if (!solidconModal) return;
+      solidconModal.classList.remove('hidden');
+      await loadSolidconConnections();
+      await loadSolidconAccounts();
+    };
+
+    const closeSolidconModal = () => {
+      if (!solidconModal) return;
+      solidconModal.classList.add('hidden');
+      hideSolidconAlert();
+    };
+
+    // Modal triggers
+    btnSolidconModal?.addEventListener('click', openSolidconModal);
+    btnCloseSolidconModal?.addEventListener('click', closeSolidconModal);
+    btnCloseSolidconModalIcon?.addEventListener('click', closeSolidconModal);
+    solidconModalBackdrop?.addEventListener('click', closeSolidconModal);
+
+    btnReloadSolidcon?.addEventListener('click', () => {
+      loadSolidconAccounts();
+    });
+
+    solidconConnectionSelect?.addEventListener('change', () => {
+      loadSolidconAccounts();
+    });
+
+    // Filters & Search
+    solidconSearchInput?.addEventListener('input', applySolidconFilters);
+    solidconTypeFilter?.addEventListener('change', applySolidconFilters);
+    solidconSyncFilter?.addEventListener('change', applySolidconFilters);
+
+    // Checkbox selection
+    solidconSelectAll?.addEventListener('change', () => {
+      const isChecked = !!solidconSelectAll.checked;
+      filteredSolidconAccounts.forEach((acc) => {
+        const code = String(acc.Codigo || acc.code || '').trim();
+        if (isChecked) selectedSolidconCodes.add(code);
+        else selectedSolidconCodes.delete(code);
+      });
+      renderSolidconTable();
+    });
+
+    solidconAccountsTable?.addEventListener('change', (e: Event) => {
+      const target = e.target as HTMLInputElement | null;
+      if (!target || !target.classList.contains('solidcon-item-checkbox')) return;
+      const code = target.getAttribute('data-code');
+      if (!code) return;
+
+      if (target.checked) selectedSolidconCodes.add(code);
+      else selectedSolidconCodes.delete(code);
+
+      updateSolidconSelectionSummary();
+
+      // Highlight row
+      const tr = target.closest('tr');
+      if (tr) {
+        if (target.checked) tr.classList.add('bg-emerald-50/60', 'dark:bg-emerald-950/20');
+        else tr.classList.remove('bg-emerald-50/60', 'dark:bg-emerald-950/20');
+      }
+    });
+
+    // Import Actions
+    const executeSolidconImport = async (accountsToImport: AnyRecord[]) => {
+      if (accountsToImport.length === 0) {
+        alert('Nenhuma conta selecionada para importação.');
+        return;
+      }
+
+      if (!confirm(`Deseja importar/atualizar ${accountsToImport.length} conta(s) do Solidcon no Keystone?`)) {
+        return;
+      }
+
+      if (btnImportSelectedSolidcon) btnImportSelectedSolidcon.disabled = true;
+      if (btnImportAllSolidcon) btnImportAllSolidcon.disabled = true;
+      if (btnReloadSolidcon) btnReloadSolidcon.disabled = true;
+
+      showSolidconAlert(`Importando ${accountsToImport.length} conta(s)... Aguarde.`, 'info');
+
+      try {
+        const response = await api('/accounting/solidcon-import', {
+          method: 'POST',
+          body: JSON.stringify({ accounts: accountsToImport }),
+        });
+
+        const successCount = response?.data?.success ?? accountsToImport.length;
+        const errors = response?.data?.errors || [];
+
+        let msg = `Importação concluída com sucesso! <strong>${successCount}</strong> conta(s) processada(s).`;
+        if (errors.length > 0) {
+          msg += `<br><span class="text-xs text-red-600 dark:text-red-400 font-normal">Erros: ${errors.join(', ')}</span>`;
+        }
+
+        showSolidconAlert(msg, errors.length > 0 ? 'info' : 'success');
+
+        if (UI?.showAlert) {
+          UI.showAlert('alertMessage', `${successCount} contas importadas do Solidcon com sucesso!`, 'success');
+        }
+
+        // Reload Keystone data in background
+        if (accountsManager) {
+          await accountsManager.loadData();
+        }
+
+        // Refresh existing codes and table
+        updateExistingKeystoneCodes();
+        applySolidconFilters();
+      } catch (error: any) {
+        showSolidconAlert(`Erro na importação: ${error?.message || String(error)}`, 'error');
+      } finally {
+        if (btnReloadSolidcon) btnReloadSolidcon.disabled = false;
+        updateSolidconSelectionSummary();
+      }
+    };
+
+    btnImportSelectedSolidcon?.addEventListener('click', () => {
+      const selected = solidconRawAccounts.filter((acc) => selectedSolidconCodes.has(String(acc.Codigo || acc.code || '').trim()));
+      executeSolidconImport(selected);
+    });
+
+    btnImportAllSolidcon?.addEventListener('click', () => {
+      executeSolidconImport(filteredSolidconAccounts);
+    });
+
+    // ==========================================
+    // BATCH DELETE LOGIC
+    // ==========================================
     const batchActions = getEl('batchActions');
     const btnBatchDelete = getEl<HTMLButtonElement>('btnBatchDelete');
 
@@ -575,3 +1030,5 @@
     });
   });
 })();
+
+

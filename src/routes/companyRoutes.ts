@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { CompanyController } from '../controllers/companyController';
-import { protectRoute, requireSuperAdmin } from '../middlewares/authMiddleware';
+import { protectRoute, requireSuperAdmin, requireSuperAdminOrGroupMaster } from '../middlewares/authMiddleware';
 
 import { SuperAdminController } from '../controllers/superAdminController';
 
@@ -37,21 +37,21 @@ router.get('/states', protectRoute, (req, res, next) => CompanyController.getSta
  * /companies:
  *   get:
  *     tags: [Companies]
- *     summary: Listar empresas (super admin)
+ *     summary: Listar empresas (super admin / empresa master)
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200: { description: Lista de empresas }
  */
-router.get('/', protectRoute, requireSuperAdmin, (req, res, next) => CompanyController.getAll(req, res).catch(next));
+router.get('/', protectRoute, requireSuperAdminOrGroupMaster, (req, res, next) => CompanyController.getAll(req, res).catch(next));
 
-// Rota exclusiva para Super Admin trocar seu contexto para outra empresa
+// Rota para Super Admin / Empresa Master trocar seu contexto para outra empresa
 /**
  * @openapi
  * /companies/{id}/switch-context:
  *   post:
  *     tags: [Companies]
- *     summary: Trocar contexto da empresa (super admin)
+ *     summary: Trocar contexto da empresa (super admin / empresa master)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -62,7 +62,7 @@ router.get('/', protectRoute, requireSuperAdmin, (req, res, next) => CompanyCont
  *     responses:
  *       200: { description: Contexto alterado }
  */
-router.post('/:id/switch-context', protectRoute, requireSuperAdmin, (req, res, next) => SuperAdminController.switchContext(req, res).catch(next));
+router.post('/:id/switch-context', protectRoute, requireSuperAdminOrGroupMaster, (req, res, next) => SuperAdminController.switchContext(req, res).catch(next));
 
 /**
  * @openapi
@@ -325,5 +325,53 @@ router.put('/:id', protectRoute, (req, res, next) => CompanyController.update(re
  *       204: { description: Empresa removida }
  */
 router.delete('/:id', protectRoute, requireSuperAdmin, (req, res, next) => CompanyController.delete(req, res).catch(next));
+
+// PosControl configuration routes
+router.get('/:companyId/poscontrol-configs', protectRoute, (req, res, next) => CompanyController.listPosControlConfigs(req, res).catch(next));
+router.post('/:companyId/poscontrol-configs', protectRoute, (req, res, next) => CompanyController.createPosControlConfig(req, res).catch(next));
+router.put('/:companyId/poscontrol-configs/:id', protectRoute, (req, res, next) => CompanyController.updatePosControlConfig(req, res).catch(next));
+router.delete('/:companyId/poscontrol-configs/:id', protectRoute, (req, res, next) => CompanyController.deletePosControlConfig(req, res).catch(next));
+
+// Solidcon database configuration routes
+router.get('/:companyId/solidcon-configs', protectRoute, (req, res, next) => CompanyController.listSolidconConfigs(req, res).catch(next));
+router.post('/:companyId/solidcon-configs', protectRoute, (req, res, next) => CompanyController.createSolidconConfig(req, res).catch(next));
+router.put('/:companyId/solidcon-configs/:id', protectRoute, (req, res, next) => CompanyController.updateSolidconConfig(req, res).catch(next));
+router.delete('/:companyId/solidcon-configs/:id', protectRoute, (req, res, next) => CompanyController.deleteSolidconConfig(req, res).catch(next));
+router.post('/:companyId/solidcon-configs/test', protectRoute, (req, res, next) => CompanyController.testSolidconConfig(req, res).catch(next));
+router.post('/:companyId/solidcon-configs/:id/test', protectRoute, (req, res, next) => CompanyController.testSolidconConfig(req, res).catch(next));
+
+// Dorsal database configuration routes
+router.get('/:companyId/dorsal-configs', protectRoute, (req, res, next) => CompanyController.listDorsalConfigs(req, res).catch(next));
+router.post('/:companyId/dorsal-configs', protectRoute, (req, res, next) => CompanyController.createDorsalConfig(req, res).catch(next));
+router.put('/:companyId/dorsal-configs/:id', protectRoute, (req, res, next) => CompanyController.updateDorsalConfig(req, res).catch(next));
+router.delete('/:companyId/dorsal-configs/:id', protectRoute, (req, res, next) => CompanyController.deleteDorsalConfig(req, res).catch(next));
+router.post('/:companyId/dorsal-configs/test', protectRoute, (req, res, next) => CompanyController.testDorsalConfig(req, res).catch(next));
+router.post('/:companyId/dorsal-configs/:id/test', protectRoute, (req, res, next) => CompanyController.testDorsalConfig(req, res).catch(next));
+
+// Alterdata database configuration routes
+router.get('/:companyId/alterdata-configs', protectRoute, (req, res, next) => CompanyController.listAlterdataConfigs(req, res).catch(next));
+router.post('/:companyId/alterdata-configs', protectRoute, (req, res, next) => CompanyController.createAlterdataConfig(req, res).catch(next));
+router.put('/:companyId/alterdata-configs/:id', protectRoute, (req, res, next) => CompanyController.updateAlterdataConfig(req, res).catch(next));
+router.delete('/:companyId/alterdata-configs/:id', protectRoute, (req, res, next) => CompanyController.deleteAlterdataConfig(req, res).catch(next));
+router.post('/:companyId/alterdata-configs/test', protectRoute, (req, res, next) => CompanyController.testAlterdataConfig(req, res).catch(next));
+router.post('/:companyId/alterdata-configs/:id/test', protectRoute, (req, res, next) => CompanyController.testAlterdataConfig(req, res).catch(next));
+
+
+// PosControl sync routes
+router.post('/:companyId/poscontrol-sync/categories', protectRoute, (req, res, next) => CompanyController.syncPosControlCategories(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/products', protectRoute, (req, res, next) => CompanyController.syncPosControlProducts(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/import-unittypes', protectRoute, (req, res, next) => CompanyController.importPosControlUnitTypes(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/import-producttypes', protectRoute, (req, res, next) => CompanyController.importPosControlProductTypes(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/import-products', protectRoute, (req, res, next) => CompanyController.importPosControlProducts(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/fetch-products', protectRoute, (req, res, next) => CompanyController.fetchPosControlProducts(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/import-categories', protectRoute, (req, res, next) => CompanyController.importPosControlCategories(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/fetch-categories', protectRoute, (req, res, next) => CompanyController.fetchPosControlCategories(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/inactivate-categories', protectRoute, (req, res, next) => CompanyController.inactivatePosControlCategories(req, res).catch(next));
+router.get('/:companyId/poscontrol-sync/debug-info', protectRoute, (req, res, next) => CompanyController.getPosControlDebugInfo(req, res).catch(next));
+router.get('/:companyId/poscontrol-sync/sales', protectRoute, (req, res, next) => CompanyController.fetchPosControlSales(req, res).catch(next));
+router.post('/:companyId/poscontrol-sync/sales/sync', protectRoute, (req, res, next) => CompanyController.syncPosControlSales(req, res).catch(next));
+
+// Alterdata database connection test route
+router.post('/:id/test-alterdata-connection', protectRoute, (req, res, next) => CompanyController.testAlterdataConnection(req, res).catch(next));
 
 export default router;

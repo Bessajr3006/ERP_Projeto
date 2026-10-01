@@ -121,12 +121,32 @@
 
   async function fetchPurchases(): Promise<void> {
     try {
-      const res = await (api as any)('/purchases');
-      g_purchases = res.data || [];
+      const res = await (api as any)('/purchases?include_sped=false');
+      g_purchases = (res.data || []).filter(
+        (p: any) => !p.is_sped && p.source !== 'sped' && !String(p.public_id).startsWith('sped-')
+      );
+      updateKpis(g_purchases);
       applyFilters();
     } catch (e) {
       console.error(e);
     }
+  }
+
+  function updateKpis(purchases: AnyRecord[]): void {
+    const total = purchases.length;
+    const completed = purchases.filter((p: any) => p.status === 'completed').length;
+    const pending = purchases.filter((p: any) => p.status !== 'completed' && p.status !== 'cancelled').length;
+    const totalVal = purchases.reduce((acc: number, p: any) => acc + (Number(p.total_amount) || 0), 0);
+
+    const kpiTotal = getEl('kpiTotal');
+    const kpiPending = getEl('kpiPending');
+    const kpiCompleted = getEl('kpiCompleted');
+    const kpiValue = getEl('kpiValue');
+
+    if (kpiTotal) kpiTotal.textContent = String(total);
+    if (kpiPending) kpiPending.textContent = String(pending);
+    if (kpiCompleted) kpiCompleted.textContent = String(completed);
+    if (kpiValue) kpiValue.textContent = formatCurrency(totalVal);
   }
 
   function applyFilters(): void {

@@ -2,10 +2,16 @@
     const api = window.api;
     const params = new URLSearchParams(window.location.search);
     const companyPublicId = params.get('company');
+    const sellerPublicId = params.get('seller');
+    const customerPublicId = params.get('customer');
+    const stockTypePublicId = params.get('stock_type');
     document.addEventListener('DOMContentLoaded', async () => {
         // --- State ---
         const state = {
             loading: true,
+            activeSellerPublicId: '',
+            sellerName: '',
+            sellerCustomers: [],
             company: null,
             products: [],
             categories: [],
@@ -14,9 +20,55 @@
             isCartOpen: false,
             cart: [],
             cardQty: {},
+            selectedPaymentMethod: 'pix',
+            payments: { cash: 0, pix: 0, credit: 0, debit: 0, boleto: 0 },
+            paymentMethodsList: [
+                { id: 'pix', name: 'PIX' },
+                { id: 'credit', name: 'Cartão de Crédito' },
+                { id: 'debit', name: 'Cartão de Débito' },
+                { id: 'cash', name: 'Dinheiro' },
+                { id: 'boleto', name: 'Boleto' },
+            ],
+            cardBrands: [
+                { id: 'visa', name: 'Visa' },
+                { id: 'mastercard', name: 'Mastercard' },
+                { id: 'elo', name: 'Elo' },
+                { id: 'amex', name: 'American Express' },
+                { id: 'hipercard', name: 'Hipercard' }
+            ],
+            selectedCardBrand: 'visa',
+            savingOrder: false,
+            customerName: '',
+            deliveryAddress: ''
         };
         // --- Helpers ---
         const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+        function generatePixCopyPaste(key, name, city, amount) {
+            const cleanKey = String(key || '').trim();
+            const cleanName = String(name || 'KEYSTONE ERP').trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            const cleanCity = String(city || 'SAO PAULO').trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            const pad = (id, value) => id + String(value.length).padStart(2, '0') + value;
+            const merchantAccountInfo = pad('00', 'br.gov.bcb.pix') +
+                pad('01', cleanKey);
+            const payload = pad('00', '01') +
+                pad('26', merchantAccountInfo) +
+                pad('52', '0000') +
+                pad('53', '986') +
+                pad('54', amount.toFixed(2)) +
+                pad('58', 'BR') +
+                pad('59', cleanName.substring(0, 25)) +
+                pad('60', cleanCity.substring(0, 15)) +
+                pad('62', pad('05', '***'));
+            let crc = 0xFFFF;
+            const dataToCrc = payload + '6304';
+            for (let i = 0; i < dataToCrc.length; i++) {
+                let x = ((crc >> 8) ^ dataToCrc.charCodeAt(i)) & 0xFF;
+                x ^= x >> 4;
+                crc = ((crc << 8) ^ (x << 12) ^ (x << 5) ^ x) & 0xFFFF;
+            }
+            const crcString = crc.toString(16).toUpperCase().padStart(4, '0');
+            return dataToCrc + crcString;
+        }
         const getProductPrice = (product) => {
             if (product?.is_promotional && Number(product.promotional_price) > 0) {
                 return Number(product.promotional_price);
@@ -63,12 +115,41 @@
                 <!-- Catalog Section -->
                 <section class="flex flex-col flex-1 min-h-0 overflow-hidden md:order-first bg-white dark:bg-slate-900 md:border-r border-gray-200 dark:border-slate-700">
                     <div class="shrink-0 px-4 md:px-8 pt-6 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700/60 pb-4">
-                        <div class="flex items-center gap-4 mb-4">
-                            ${logoSrc ? `<img src="${logoSrc}" class="w-12 h-12 object-contain rounded-xl border border-gray-200 dark:border-slate-700 bg-white p-1">` : ''}
-                            <div>
-                                <h1 class="text-xl font-bold dark:text-white leading-tight">${comp.trade_name || comp.company_name}</h1>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">Catálogo de Produtos Digital</p>
+                        <div class="flex items-center justify-between gap-4 mb-4">
+                            <div class="flex items-center gap-4">
+                                ${logoSrc ? `<img src="${logoSrc}" class="w-12 h-12 object-contain rounded-xl border border-gray-200 dark:border-slate-700 bg-white p-1">` : ''}
+                                <div>
+                                    <h1 class="text-xl font-bold dark:text-white leading-tight">${comp.trade_name || comp.company_name}</h1>
+                                    ${state.customerName ? `
+                                      <p class="text-xs text-brand-600 dark:text-brand-400 font-bold flex items-center gap-1 mt-0.5">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        Cliente: ${state.customerName}
+                                      </p>
+                                    ` : '<p class="text-xs text-gray-500 dark:text-gray-400">Catálogo de Produtos Digital</p>'}
+                                </div>
                             </div>
+                            ${state.activeSellerPublicId ? `
+                              <div class="flex flex-col gap-1.5 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200/50 dark:border-slate-700/50 min-w-[240px]">
+                                  <div class="flex items-center gap-1.5 text-xs text-brand-800 dark:text-brand-300 font-semibold mb-0.5">
+                                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                      <span>Vendedor: <strong>${state.sellerName || 'Identificado'}</strong></span>
+                                  </div>
+                                  <div>
+                                      <label class="block text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">Selecione o Cliente</label>
+                                      <select id="headerCustomerSelect" class="w-full text-xs border dark:border-slate-700 p-2 rounded bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 font-semibold shadow-sm">
+                                          <option value="">Sem desconto (Preço Padrão)</option>
+                                          ${state.sellerCustomers.map(c => `
+                                            <option value="${c.public_id}" ${customerPublicId === c.public_id ? 'selected' : ''}>${c.name}</option>
+                                          `).join('')}
+                                      </select>
+                                  </div>
+                              </div>
+                            ` : `
+                              <button type="button" id="btnOpenSellerLogin" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 border border-slate-200/50 dark:border-slate-600/30">
+                                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                  Vendedor
+                              </button>
+                            `}
                         </div>
                         <div class="flex flex-row items-center justify-between gap-4 w-full">
                             <div class="flex-1 w-full max-w-md">
@@ -124,36 +205,84 @@
                 </section>
 
                 ${state.isCartOpen
-                ? `<button type="button" id="cartBackdrop" class="absolute inset-0 z-30 bg-slate-900/45 backdrop-blur-[2px] transition-opacity duration-300 ease-out md:hidden" aria-label="Fechar sacola"></button>`
+                ? `<button type="button" id="cartBackdrop" class="absolute inset-0 z-30 bg-slate-900/45 backdrop-blur-[2px] transition-opacity duration-300 ease-out" aria-label="Fechar sacola"></button>`
                 : ''}
 
                 <!-- Cart Section (Shopping list drawer) -->
-                <section id="cartSidebar" class="${(state.isCartOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none md:translate-x-0 md:opacity-100 md:pointer-events-auto') + ' absolute md:static inset-y-0 right-0 h-full w-[90%] sm:w-112.5 z-40 md:z-10 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] md:shadow-none border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform md:shrink-0 md:w-96 lg:w-104'}">
+                <section id="cartSidebar" class="${(state.isCartOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none') + ' absolute inset-y-0 right-0 h-full w-[90%] sm:w-112.5 z-40 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] transition-all duration-300 ease-out will-change-transform md:w-96 lg:w-104'}">
                     <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700">
                         <div class="flex justify-between items-center">
                             <h1 class="text-[20px] font-bold text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
                                 <svg class="w-6 h-6 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                                 Sacola de Pedido
                             </h1>
-                            <button type="button" id="btnCloseCartMobile" class="text-gray-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 md:hidden" title="Fechar sacola" aria-label="Fechar sacola"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                            <button type="button" id="btnCloseCartMobile" class="text-gray-400 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700" title="Fechar sacola" aria-label="Fechar sacola"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                         </div>
                     </div>
                     <div id="cartItems" class="flex-1 overflow-y-auto px-4 py-4 bg-gray-50/50 dark:bg-slate-900/50 space-y-3">
                         ${renderCartItems()}
                     </div>
                     <div class="px-6 pt-5 pb-6 bg-white dark:bg-slate-800 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] border-t border-gray-100 dark:border-slate-700">
+
+
                         <div class="flex justify-between items-end mb-6">
                             <span class="text-[20px] font-black text-gray-900 dark:text-white tracking-tight">TOTAL</span>
                             <span class="text-[28px] font-black text-gray-900 dark:text-white tracking-tight">${formatCurrency(getCartSubtotal())}</span>
                         </div>
                         <div class="flex gap-3 h-16 mt-2">
-                            <button type="button" id="btnSendOrderWhatsApp" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98] text-[16px] flex justify-center items-center gap-2">
-                                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.739-1.45L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.858.002-2.634-1.02-5.11-2.881-6.974C16.592 1.89 14.117 1.06 11.487 1.06 6.05 1.06 1.625 5.48 1.62 10.921c-.001 1.701.453 3.361 1.314 4.816L1.97 21.65l6.01-1.577zM17.65 14.4c-.3-.15-1.785-.88-2.06-.98-.28-.1-.48-.15-.68.15-.2.3-.77.98-.95 1.18-.18.2-.35.23-.65.08-1.02-.51-1.72-.88-2.4-2.05-.18-.3-.18-.5-.03-.65.13-.13.3-.35.45-.53.15-.18.2-.3.3-.5.1-.2.05-.38-.03-.53-.08-.15-.68-1.65-.93-2.25-.24-.58-.49-.5-.68-.51h-.58c-.2 0-.53.08-.8.38-.28.3-1.05 1.03-1.05 2.5 0 1.48 1.08 2.9 1.23 3.1.15.2 2.13 3.25 5.16 4.56.72.31 1.28.5 1.72.64.73.23 1.39.2 1.92.12.59-.09 1.79-.73 2.04-1.44.25-.7.25-1.3.18-1.43-.07-.13-.26-.2-.56-.35z"/></svg>
-                                ENVIAR PEDIDO VIA WHATSAPP
+                            <button type="button" id="btnSubmitOrderSystem" ${state.savingOrder ? 'disabled' : ''} class="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-slate-400 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98] text-[16px] flex justify-center items-center gap-2">
+                                <svg class="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                ${state.savingOrder ? 'ENVIANDO PEDIDO...' : 'FINALIZAR PEDIDO'}
                             </button>
                         </div>
                     </div>
                 </section>
+            </div>
+
+            <!-- Modal de Login do Vendedor -->
+            <div id="sellerLoginModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+                <div class="relative bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 w-full max-w-sm p-6 transform transition-all flex flex-col gap-4">
+                    <button type="button" id="btnCloseSellerModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                    
+                    <div class="text-center">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Área do Vendedor</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Identifique-se para carregar os seus clientes</p>
+                    </div>
+
+                    <!-- Step 1: Login Form -->
+                    <form id="sellerLoginForm" class="flex flex-col gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">E-mail</label>
+                            <input type="email" id="sellerEmail" required placeholder="vendedor@empresa.com" class="w-full text-xs border dark:border-slate-700 p-2.5 rounded-xl bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">Senha</label>
+                            <input type="password" id="sellerPassword" required placeholder="••••••••" class="w-full text-xs border dark:border-slate-700 p-2.5 rounded-xl bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div id="sellerLoginError" class="text-red-500 text-xs font-semibold hidden text-center mt-1"></div>
+                        <button type="submit" id="btnSubmitSellerLogin" class="w-full h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all active:scale-[0.98] mt-2">
+                            ACESSAR
+                        </button>
+                    </form>
+
+                    <!-- Step 2: Customer Selection -->
+                    <div id="sellerCustomerSection" class="hidden flex-col gap-4">
+                        <div class="p-3 bg-brand-50 dark:bg-brand-950/20 border border-brand-100 dark:border-brand-900/30 rounded-2xl flex items-center gap-2">
+                            <span class="text-xs text-brand-800 dark:text-brand-300">Olá, <strong id="lblSellerName"></strong>! Selecione o cliente para aplicar o desconto no catálogo:</span>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">Selecione o Cliente</label>
+                            <select id="sellerCustomerSelect" class="w-full text-xs border dark:border-slate-700 p-2.5 rounded-xl bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="">Sem desconto (Preço Padrão)</option>
+                            </select>
+                        </div>
+                        <button type="button" id="btnApplySellerCustomer" class="w-full h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all active:scale-[0.98]">
+                            CARREGAR PREÇOS
+                        </button>
+                    </div>
+                </div>
             </div>
       `;
             attachEventListeners();
@@ -161,7 +290,7 @@
         function renderProductGrid() {
             let filtered = state.products;
             if (state.activeCategory !== 'all') {
-                filtered = filtered.filter((p) => p.stock_type_name === state.activeCategory || p.category_name === state.activeCategory);
+                filtered = filtered.filter((p) => p.category_name === state.activeCategory);
             }
             if (state.searchQuery) {
                 const term = state.searchQuery.toLowerCase();
@@ -177,6 +306,12 @@
                 .map((p) => {
                 const isPromo = p.is_promotional && Number(p.promotional_price) > 0;
                 const price = getProductPrice(p);
+                // Check original prices vs current discounted prices
+                const originalPrice = p.original_selling_price ? ((p.is_promotional && Number(p.original_promotional_price) > 0)
+                    ? Number(p.original_promotional_price)
+                    : Number(p.original_selling_price)) : price;
+                const hasCustomerDiscount = originalPrice > price;
+                const discountPercent = originalPrice > 0 ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
                 const promoBadgeHtml = isPromo
                     ? `<span class="absolute top-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded-lg shadow-sm">Promo</span>`
                     : '';
@@ -192,12 +327,21 @@
                                      <svg style="display:none" class="w-10 h-10 text-gray-300 group-hover:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`
                     : `<svg class="w-10 h-10 text-gray-300 group-hover:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`}
                           </div>
+                          ${p.category_name
+                    ? `<span class="inline-block text-[9px] font-bold tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded-md mb-1 w-fit uppercase">${p.category_name}</span>`
+                    : ''}
                           <h4 class="font-bold text-[14px] sm:text-[15px] text-gray-800 dark:text-gray-200 leading-tight mb-1 line-clamp-2 mt-auto">${p.name}</h4>
                           <p class="text-[11px] text-gray-400 dark:text-gray-500 line-clamp-2 mb-2 min-h-6 leading-tight">${p.description || ''}</p>
                           <div class="flex flex-col justify-end mt-1">
-                              <div class="flex items-baseline gap-1">
-                                  ${isPromo ? `<span class="text-xs text-gray-400 line-through">${formatCurrency(p.selling_price)}</span>` : ''}
-                                  <span class="text-[16px] sm:text-[18px] font-bold text-gray-900 dark:text-white ${isPromo ? 'text-emerald-500 dark:text-emerald-400' : ''}">${formatCurrency(price)}</span>
+                              <div class="flex items-baseline gap-1 flex-wrap">
+                                  ${hasCustomerDiscount ? `
+                                    <span class="text-xs text-gray-400 line-through">${formatCurrency(originalPrice)}</span>
+                                    <span class="text-[16px] sm:text-[18px] font-black text-brand-600 dark:text-brand-400">${formatCurrency(price)}</span>
+                                    <span class="text-[9px] bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-bold px-1.5 py-0.5 rounded border border-red-200/50 dark:border-red-900/30 ml-1">-${discountPercent}%</span>
+                                  ` : `
+                                    ${isPromo ? `<span class="text-xs text-gray-400 line-through">${formatCurrency(p.selling_price)}</span>` : ''}
+                                    <span class="text-[16px] sm:text-[18px] font-bold text-gray-900 dark:text-white ${isPromo ? 'text-emerald-500 dark:text-emerald-400' : ''}">${formatCurrency(price)}</span>
+                                  `}
                               </div>
                           </div>
                           <div class="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2">
@@ -261,7 +405,6 @@
         function attachEventListeners() {
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {
-                searchInput.focus();
                 searchInput.addEventListener('input', (e) => {
                     state.searchQuery = e.target.value;
                     const grid = document.getElementById('productGrid');
@@ -300,9 +443,30 @@
                 categoryScroller.scrollBy({ left: e.deltaY, behavior: 'smooth' });
             }, { passive: false });
             scrollActiveCategoryIntoView();
-            document.getElementById('btnSendOrderWhatsApp')?.addEventListener('click', sendOrderWhatsApp);
+            const headerCustomerSelect = document.getElementById('headerCustomerSelect');
+            if (headerCustomerSelect) {
+                headerCustomerSelect.addEventListener('change', () => {
+                    const selectedCustomerPublicId = headerCustomerSelect.value;
+                    const newUrl = new URL(window.location.href);
+                    if (state.activeSellerPublicId) {
+                        newUrl.searchParams.set('seller', state.activeSellerPublicId);
+                    }
+                    else {
+                        newUrl.searchParams.delete('seller');
+                    }
+                    if (selectedCustomerPublicId) {
+                        newUrl.searchParams.set('customer', selectedCustomerPublicId);
+                    }
+                    else {
+                        newUrl.searchParams.delete('customer');
+                    }
+                    window.location.href = newUrl.toString();
+                });
+            }
+            document.getElementById('btnSubmitOrderSystem')?.addEventListener('click', submitOrderSystem);
             attachGridListeners();
             attachCartListeners();
+            attachSellerLoginEvents();
         }
         function scrollCategories(direction) {
             const scroller = document.getElementById('categoryScroller');
@@ -371,6 +535,123 @@
                 });
             });
         }
+        function attachSellerLoginEvents() {
+            const modal = document.getElementById('sellerLoginModal');
+            const btnOpen = document.getElementById('btnOpenSellerLogin');
+            const btnClose = document.getElementById('btnCloseSellerModal');
+            const form = document.getElementById('sellerLoginForm');
+            const emailInput = document.getElementById('sellerEmail');
+            const passInput = document.getElementById('sellerPassword');
+            const errorDiv = document.getElementById('sellerLoginError');
+            const submitBtn = document.getElementById('btnSubmitSellerLogin');
+            const loginSection = document.getElementById('sellerLoginForm');
+            const customerSection = document.getElementById('sellerCustomerSection');
+            const lblName = document.getElementById('lblSellerName');
+            const customerSelect = document.getElementById('sellerCustomerSelect');
+            const btnApply = document.getElementById('btnApplySellerCustomer');
+            if (btnOpen && modal) {
+                btnOpen.addEventListener('click', () => {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    if (emailInput)
+                        emailInput.focus();
+                });
+            }
+            if (btnClose && modal) {
+                btnClose.addEventListener('click', () => {
+                    modal.classList.remove('flex');
+                    modal.classList.add('hidden');
+                    if (form)
+                        form.reset();
+                    if (errorDiv) {
+                        errorDiv.classList.add('hidden');
+                        errorDiv.textContent = '';
+                    }
+                    if (customerSection && loginSection) {
+                        customerSection.classList.remove('flex');
+                        customerSection.classList.add('hidden');
+                        loginSection.classList.remove('hidden');
+                        loginSection.classList.add('flex');
+                    }
+                });
+            }
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (!emailInput || !passInput || !errorDiv || !submitBtn)
+                        return;
+                    errorDiv.classList.add('hidden');
+                    errorDiv.textContent = '';
+                    submitBtn.setAttribute('disabled', 'true');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.textContent = 'AUTENTICANDO...';
+                    try {
+                        const res = await api(`/public/catalog/${companyPublicId}/auth-seller`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                email: emailInput.value.trim(),
+                                password: passInput.value
+                            })
+                        });
+                        if (res && res.status === 'success') {
+                            state.activeSellerPublicId = res.seller_public_id;
+                            if (lblName)
+                                lblName.textContent = res.seller_name;
+                            if (customerSelect) {
+                                customerSelect.innerHTML = '<option value="">Sem desconto (Preço Padrão)</option>';
+                                res.customers.forEach((c) => {
+                                    customerSelect.innerHTML += `<option value="${c.public_id}">${c.name}</option>`;
+                                });
+                                // If there's currently a customerPublicId loaded, preselect it in the dropdown
+                                if (customerPublicId) {
+                                    customerSelect.value = customerPublicId;
+                                }
+                            }
+                            if (loginSection) {
+                                loginSection.classList.remove('flex');
+                                loginSection.classList.add('hidden');
+                            }
+                            if (customerSection) {
+                                customerSection.classList.remove('hidden');
+                                customerSection.classList.add('flex');
+                            }
+                        }
+                        else {
+                            errorDiv.textContent = res?.message || 'Falha ao autenticar. Verifique seus dados.';
+                            errorDiv.classList.remove('hidden');
+                        }
+                    }
+                    catch (err) {
+                        console.error('Auth error:', err);
+                        errorDiv.textContent = err.message || 'Erro de conexão ou credenciais inválidas.';
+                        errorDiv.classList.remove('hidden');
+                    }
+                    finally {
+                        submitBtn.removeAttribute('disabled');
+                        submitBtn.textContent = originalText;
+                    }
+                });
+            }
+            if (btnApply && customerSelect && modal) {
+                btnApply.addEventListener('click', () => {
+                    const selectedCustomerPublicId = customerSelect.value;
+                    const newUrl = new URL(window.location.href);
+                    if (state.activeSellerPublicId) {
+                        newUrl.searchParams.set('seller', state.activeSellerPublicId);
+                    }
+                    else {
+                        newUrl.searchParams.delete('seller');
+                    }
+                    if (selectedCustomerPublicId) {
+                        newUrl.searchParams.set('customer', selectedCustomerPublicId);
+                    }
+                    else {
+                        newUrl.searchParams.delete('customer');
+                    }
+                    window.location.href = newUrl.toString();
+                });
+            }
+        }
         function attachCartListeners() {
             document.querySelectorAll('.btn-qty-minus').forEach((btn) => {
                 btn.addEventListener('click', () => updateQty(parseInt(btn.dataset.idx || '0', 10), -1));
@@ -400,23 +681,49 @@
                 state.cart.splice(idx, 1);
             render();
         }
-        function sendOrderWhatsApp() {
-            if (state.cart.length === 0)
-                return void alert('A sacola está vazia!');
-            const comp = state.company;
-            if (!comp || !comp.phone) {
-                return void alert('Telefone da empresa não cadastrado.');
+        async function submitOrderSystem() {
+            if (state.cart.length === 0) {
+                alert('A sacola está vazia!');
+                return;
             }
-            const itemsText = state.cart
-                .map((item) => {
-                const price = getProductPrice(item.product);
-                return `- *${item.quantity}x* ${item.product.name} (${formatCurrency(price * item.quantity)})`;
-            })
-                .join('\n');
-            const messageText = `Olá! Gostaria de fazer o seguinte pedido do catálogo:\n\n${itemsText}\n\n*Total:* ${formatCurrency(getCartSubtotal())}`;
-            const waPhone = formatPhoneForWa(comp.phone);
-            const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(messageText)}`;
-            window.open(url, '_blank');
+            if (state.savingOrder)
+                return;
+            state.savingOrder = true;
+            render();
+            try {
+                const orderItems = state.cart.map(item => ({
+                    product_public_id: item.product.public_id,
+                    quantity: item.quantity
+                }));
+                const customerNameFinal = state.customerName.trim() || 'Cliente Consumidor';
+                const response = await api(`/public/catalog/${companyPublicId}/order`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        customer_name: customerNameFinal,
+                        seller_public_id: sellerPublicId || null,
+                        customer_public_id: customerPublicId || null,
+                        items: orderItems
+                    })
+                });
+                if (response && response.status === 'success') {
+                    alert('Pedido realizado com sucesso! Agradecemos a preferência.');
+                    state.cart = [];
+                    state.customerName = '';
+                    state.deliveryAddress = '';
+                    state.isCartOpen = false;
+                }
+                else {
+                    alert(response?.message || 'Erro ao realizar o pedido. Tente novamente.');
+                }
+            }
+            catch (err) {
+                console.error('Erro ao submeter pedido:', err);
+                alert(err.message || 'Ocorreu um erro ao enviar o pedido.');
+            }
+            finally {
+                state.savingOrder = false;
+                render();
+            }
         }
         // --- Init ---
         if (!companyPublicId) {
@@ -426,21 +733,81 @@
         }
         try {
             // Fetch public catalog data relative to companyPublicId
-            const response = await api(`/public/catalog/${companyPublicId}`, {
+            let catalogUrl = `/public/catalog/${companyPublicId}`;
+            const queryParams = [];
+            if (customerPublicId) {
+                queryParams.push(`customer=${customerPublicId}`);
+            }
+            if (sellerPublicId) {
+                queryParams.push(`seller=${sellerPublicId}`);
+            }
+            if (stockTypePublicId) {
+                queryParams.push(`stock_type=${stockTypePublicId}`);
+            }
+            if (queryParams.length > 0) {
+                catalogUrl += `?${queryParams.join('&')}`;
+            }
+            const response = await api(catalogUrl, {
                 method: 'GET',
                 cache: 'no-store'
             });
             if (response && response.status === 'success') {
                 state.company = response.data.company;
                 state.products = response.data.products || [];
+                if (response.data.customer) {
+                    const cust = response.data.customer;
+                    state.customerName = cust.name || '';
+                    const addrParts = [
+                        cust.street,
+                        cust.number,
+                        cust.neighborhood,
+                        cust.city,
+                        cust.state
+                    ].filter(Boolean);
+                    if (cust.complement) {
+                        addrParts.splice(2, 0, cust.complement);
+                    }
+                    state.deliveryAddress = addrParts.join(', ');
+                }
+                if (response.data.seller) {
+                    state.sellerName = response.data.seller.full_name || '';
+                }
+                if (response.data.seller_customers) {
+                    state.sellerCustomers = response.data.seller_customers || [];
+                }
                 // Extract unique categories
                 const cats = new Set();
                 state.products.forEach(p => {
-                    const name = p.stock_type_name || p.category_name;
+                    const name = p.category_name;
                     if (name)
                         cats.add(name);
                 });
                 state.categories = Array.from(cats);
+                // Pre-fill cart if parameter exists in the URL
+                const cartParam = params.get('cart');
+                if (cartParam) {
+                    try {
+                        const parsedCart = JSON.parse(decodeURIComponent(cartParam));
+                        if (Array.isArray(parsedCart)) {
+                            state.cart = [];
+                            parsedCart.forEach((item) => {
+                                const product = state.products.find(p => p.public_id === item.id);
+                                if (product) {
+                                    state.cart.push({
+                                        product,
+                                        quantity: Number(item.qty) || 1
+                                    });
+                                }
+                            });
+                            if (state.cart.length > 0) {
+                                state.isCartOpen = true;
+                            }
+                        }
+                    }
+                    catch (err) {
+                        console.error('Erro ao processar carrinho pré-preenchido:', err);
+                    }
+                }
             }
         }
         catch (e) {

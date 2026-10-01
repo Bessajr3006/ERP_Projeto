@@ -19,27 +19,37 @@ export interface Product {
     max_stock: number;
     category_id?: number | null;
     stock_type_id?: number | null;
+    product_type_id?: number | null;
     manufacturer_id?: number | null;
     tax_rule_id?: number | null;
     measure_id?: number | null;
     stock_type_name?: string | null;
+    stock_type_public_id?: string | null;
+    product_type_name?: string | null;
+    product_type_pos_id?: string | null;
     category_name?: string | null;
+    category_pos_id?: string | null;
     image_base64?: string | null;
+    measure_pos_id?: string | null;
 
     image_url?: string | null;
+    idprodutopos?: string | null;
+    status_pos_id?: string | null;
+    poscontrol_synced?: boolean;
+    active: boolean;
     created_at: Date;
     updated_at: Date;
 }
 
 export interface CreateProductData {
     name: string;
-    description?: string | undefined;
-    sku?: string | undefined;
-    ean?: string | undefined;
-    external_code?: string | undefined;
+    description?: string | null | undefined;
+    sku?: string | null | undefined;
+    ean?: string | null | undefined;
+    external_code?: string | null | undefined;
     is_imported?: boolean | undefined;
-    ncm?: string | undefined;
-    cest?: string | undefined;
+    ncm?: string | null | undefined;
+    cest?: string | null | undefined;
     cost_price?: number | undefined;
     selling_price?: number | undefined;
     is_promotional?: boolean | undefined;
@@ -49,22 +59,27 @@ export interface CreateProductData {
     max_stock?: number | undefined;
     category_id?: number | null | undefined;
     stock_type_id?: number | null | undefined;
+    product_type_id?: number | null | undefined;
     manufacturer_id?: number | null | undefined;
     tax_rule_id?: number | null | undefined;
     measure_id?: number | null | undefined;
     image_base64?: string | null | undefined;
     image_url?: string | null | undefined;
+    idprodutopos?: string | null | undefined;
+    status_pos_id?: string | null | undefined;
+    poscontrol_synced?: boolean | undefined;
+    active?: boolean | undefined;
 }
 
 export interface UpdateProductData {
     name?: string;
-    description?: string;
-    sku?: string;
-    ean?: string;
-    external_code?: string;
+    description?: string | null;
+    sku?: string | null;
+    ean?: string | null;
+    external_code?: string | null;
     is_imported?: boolean;
-    ncm?: string;
-    cest?: string;
+    ncm?: string | null;
+    cest?: string | null;
     cost_price?: number;
     selling_price?: number;
     is_promotional?: boolean;
@@ -73,11 +88,16 @@ export interface UpdateProductData {
     max_stock?: number | undefined;
     category_id?: number | null | undefined;
     stock_type_id?: number | null | undefined;
+    product_type_id?: number | null | undefined;
     manufacturer_id?: number | null | undefined;
     tax_rule_id?: number | null | undefined;
     measure_id?: number | null | undefined;
     image_base64?: string | null | undefined;
     image_url?: string | null | undefined;
+    idprodutopos?: string | null | undefined;
+    status_pos_id?: string | null | undefined;
+    poscontrol_synced?: boolean | undefined;
+    active?: boolean | undefined;
 }
 
 export type MovementType = 'in' | 'out';

@@ -4,13 +4,13 @@ import { ProductService } from '../services/productService';
 
 const createProductSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
-    description: z.string().optional(),
-    sku: z.string().optional(),
-    ean: z.string().max(100, 'EAN/Barcode cannot exceed 100 characters').optional(),
-    external_code: z.string().optional(),
+    description: z.string().nullable().optional(),
+    sku: z.string().nullable().optional(),
+    ean: z.string().max(100, 'EAN/Barcode cannot exceed 100 characters').nullable().optional(),
+    external_code: z.string().nullable().optional(),
     is_imported: z.boolean().optional(),
-    ncm: z.string().max(8, 'NCM cannot exceed 8 characters').optional(),
-    cest: z.string().max(7, 'CEST cannot exceed 7 characters').optional(),
+    ncm: z.string().max(8, 'NCM cannot exceed 8 characters').nullable().optional(),
+    cest: z.string().max(7, 'CEST cannot exceed 7 characters').nullable().optional(),
     cost_price: z.number().min(0).optional(),
     selling_price: z.number().min(0).optional(),
     initial_stock: z.number().min(0).optional(),
@@ -18,17 +18,22 @@ const createProductSchema = z.object({
     max_stock: z.number().min(0).optional(),
     category_id: z.number().nullable().optional(),
     stock_type_id: z.number().nullable().optional(),
+    product_type_id: z.number().nullable().optional(),
     manufacturer_id: z.number().nullable().optional(),
     tax_rule_id: z.number().nullable().optional(),
     measure_id: z.number().nullable().optional(),
     image_base64: z.string().nullable().optional(),
     image_url: z.string().nullable().optional(),
+    idprodutopos: z.string().nullable().optional(),
+    status_pos_id: z.string().nullable().optional(),
+    active: z.boolean().optional(),
 });
 
 const bulkUpdateSchema = z.object({
     productIds: z.array(z.string()).min(1, 'At least one product is required'),
     category_id: z.number().nullable().optional(),
     stock_type_id: z.number().nullable().optional(),
+    product_type_id: z.number().nullable().optional(),
     manufacturer_id: z.number().nullable().optional(),
     tax_rule_id: z.number().nullable().optional(),
     measure_id: z.number().nullable().optional(),
@@ -36,6 +41,8 @@ const bulkUpdateSchema = z.object({
     cost_price: z.number().min(0).optional(),
     min_stock: z.number().min(0).optional(),
     max_stock: z.number().min(0).optional(),
+    active: z.boolean().optional(),
+    ncm: z.string().max(8).nullable().optional(),
 });
 
 export class ProductController {
@@ -272,18 +279,20 @@ export class ProductController {
         try {
             const companyId = req.user!.company_id;
             const userId = req.user!.id;
-            const { phone, type, origin } = z.object({
+            const { phone, type, origin, cart } = z.object({
                 phone: z.string().min(8, 'Telefone inválido'),
                 type: z.enum(['pdf', 'link']).optional().default('pdf'),
                 origin: z.string().optional(),
+                cart: z.string().optional().nullable(),
             }).parse(req.body);
 
             const result = await ProductService.sendCatalog(
                 Number(companyId),
-                Number(userId),
+                userId,
                 phone,
                 type,
-                origin || `${req.secure ? 'https' : 'http'}://${req.get('host')}`
+                origin || `${req.secure ? 'https' : 'http'}://${req.get('host')}`,
+                cart
             );
 
             res.status(200).json({

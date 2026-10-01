@@ -1,5 +1,3 @@
-/// <reference path="../globals.d.ts" />
-/// <reference path="../api.ts" />
 
 /**
  * crud-manager.js
@@ -34,11 +32,13 @@ class CrudManager {
         
         // State
         this.data = [];
+        this.defaultView = config.defaultView || 'list';
         this.storageKey = `${this.entityName.toLowerCase()}_view`;
-        this.currentView = localStorage.getItem(this.storageKey) || 'list';
+        this.currentView = ((window as any).CompanyStorage?.getItem(this.storageKey) ?? localStorage.getItem(this.storageKey)) || this.defaultView;
         
         // Filtros
         this.filterConfig = config.filterConfig;
+        this.footerLabel = config.footerLabel || 'registro(s) exibido(s)';
     }
 
     async init() {
@@ -103,14 +103,14 @@ class CrudManager {
         }
         
         if (this.renderTableFn) this.renderTableFn(filtered);
-        if (false && this.renderGridFn) this.renderGridFn(filtered);
+        if (this.renderGridFn) this.renderGridFn(filtered);
         
         if (window.GridSummaryFooter && !this.disableSummaryFooter) {
             window.GridSummaryFooter.update({
                 footerId: this.filterConfig?.footerId || `${this.entityName.toLowerCase()}ResultsFooter`,
                 anchorId: this.gridSectionId,
                 count: filtered.length,
-                label: `registro(s) exibido(s)`
+                label: this.footerLabel
             });
         }
         
@@ -119,7 +119,12 @@ class CrudManager {
     
     _bindActionEvents() {
         document.querySelectorAll('.edit-btn').forEach((btn) => {
+            if ((btn as any).__hasEditListener) return;
+            (btn as any).__hasEditListener = true;
+
             btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const target = e.currentTarget as HTMLElement;
                 const id = target.getAttribute('data-id');
                 const rawItem = target.getAttribute('data-item');
@@ -129,7 +134,12 @@ class CrudManager {
         });
 
         document.querySelectorAll('.duplicate-btn').forEach((btn) => {
+            if ((btn as any).__hasDuplicateListener) return;
+            (btn as any).__hasDuplicateListener = true;
+
             btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const target = e.currentTarget as HTMLElement;
                 const id = target.getAttribute('data-id');
                 const rawItem = target.getAttribute('data-item');
@@ -144,12 +154,25 @@ class CrudManager {
         });
 
         document.querySelectorAll('.delete-btn').forEach((btn) => {
+            if ((btn as any).__hasDeleteListener) return;
+            (btn as any).__hasDeleteListener = true;
+
             btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (btn.classList.contains('pointer-events-none')) return;
+
                 if (confirm('Deseja realmente excluir este registro?')) {
+                    btn.classList.add('pointer-events-none');
                     const target = e.currentTarget as HTMLElement;
                     const id = target.getAttribute('data-id');
                     if (this.onDelete) {
-                        await this.onDelete(id);
+                        try {
+                            await this.onDelete(id);
+                        } finally {
+                            btn.classList.remove('pointer-events-none');
+                        }
                     } else {
                         try {
                             await api(`${this.endpoint}/${id}`, { method: 'DELETE' });
@@ -159,6 +182,7 @@ class CrudManager {
                             await this.loadData();
                         } catch (error: any) {
                             alert('Erro ao excluir: ' + (error?.message || String(error)));
+                            btn.classList.remove('pointer-events-none');
                         }
                     }
                 }
@@ -191,13 +215,17 @@ class CrudManager {
         const btnGrid = document.getElementById('btnGridView');
 
         if (!btnList || !btnGrid) {
-            this.currentView = 'list';
+            this.currentView = this.defaultView;
         }
 
         if (btnList) {
             btnList.addEventListener('click', () => {
                 this.currentView = 'list';
-                localStorage.setItem(this.storageKey, 'list');
+                if ((window as any).CompanyStorage) {
+                    (window as any).CompanyStorage.setItem(this.storageKey, 'list');
+                } else {
+                    localStorage.setItem(this.storageKey, 'list');
+                }
                 this._updateViewToggleUI();
             });
         }
@@ -205,7 +233,11 @@ class CrudManager {
         if (btnGrid) {
             btnGrid.addEventListener('click', () => {
                 this.currentView = 'grid';
-                localStorage.setItem(this.storageKey, 'grid');
+                if ((window as any).CompanyStorage) {
+                    (window as any).CompanyStorage.setItem(this.storageKey, 'grid');
+                } else {
+                    localStorage.setItem(this.storageKey, 'grid');
+                }
                 this._updateViewToggleUI();
             });
         }
@@ -223,11 +255,13 @@ class CrudManager {
                 tableSection.classList.remove('hidden');
                 gridSection.style.display = 'none';
                 gridSection.classList.add('hidden');
+                gridSection.classList.remove('grid');
             } else {
                 tableSection.style.display = 'none';
                 tableSection.classList.add('hidden');
                 gridSection.style.display = '';
                 gridSection.classList.remove('hidden');
+                gridSection.classList.add('grid');
             }
         }
 

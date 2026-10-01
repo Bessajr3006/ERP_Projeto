@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { AuthService } from '../services/authService';
 import logger from '../config/logger';
 import { AuditService } from '../services/auditService';
+import { GeoIpService } from '../services/geoIpService';
+import { SessionConflictError } from '../errors/SessionConflictError';
 
 // Zod Schemas for Validation
 const registerSchema = z.object({
@@ -15,6 +17,13 @@ const registerSchema = z.object({
 const loginSchema = z.object({
     email: z.string().email('Invalid email format'),
     passwordRaw: z.string().min(1, 'Password is required'), // Don't enforce min length on login, just presence
+    force: z.boolean().optional()
+});
+
+const faceLoginSchema = z.object({
+    descriptor: z.array(z.number()).length(128, 'Descriptor facial deve conter 128 números'),
+    email: z.string().optional(),
+    force: z.boolean().optional()
 });
 
 const changePasswordSchema = z.object({
@@ -35,7 +44,7 @@ export class AuthController {
                 entityId: result?.user?.public_id || null,
                 method: req.method,
                 path: req.originalUrl || req.url,
-                ipAddress: req.ip || req.socket.remoteAddress || null,
+                ipAddress: GeoIpService.extractClientIp(req),
                 userAgent: String(req.headers['user-agent'] || ''),
                 metadata: { email: result?.user?.email || null },
             });
@@ -48,9 +57,15 @@ export class AuthController {
         try {
             // Validate request body
             const validatedData = registerSchema.parse(req.body);
+            const ipAddress = GeoIpService.extractClientIp(req);
+            const userAgent = String(req.headers['user-agent'] || '');
 
             // Call Service
-            const result = await AuthService.register(validatedData);
+            const result = await AuthService.register({
+                ...validatedData,
+                ipAddress,
+                userAgent
+            });
             await AuthController.recordAuthActivity(req, result, 'CREATE', 'Criou acesso no sistema');
 
             res.status(201).json({
@@ -80,9 +95,15 @@ export class AuthController {
         try {
             // Validate request body
             const validatedData = loginSchema.parse(req.body);
+            const ipAddress = GeoIpService.extractClientIp(req);
+            const userAgent = String(req.headers['user-agent'] || '');
 
             // Call Service
-            const result = await AuthService.login(validatedData);
+            const result = await AuthService.login({
+                ...validatedData,
+                ipAddress,
+                userAgent
+            });
             await AuthController.recordAuthActivity(req, result, 'LOGIN', 'Entrou no sistema');
 
             res.status(200).json({
@@ -90,6 +111,16 @@ export class AuthController {
                 data: result
             });
         } catch (error: any) {
+            if (error instanceof SessionConflictError) {
+                res.status(409).json({
+                    status: 'error',
+                    code: 'SESSION_CONFLICT',
+                    message: error.message,
+                    data: error.sessionInfo
+                });
+                return;
+            }
+
             if (error instanceof z.ZodError || (error && error.name === 'ZodError')) {
                 // Validation Error
                 res.status(400).json({ status: 'error', errors: error.errors });
@@ -105,6 +136,22 @@ export class AuthController {
             console.error('[AuthController/login] Exception:', error);
             // Propagate to global error handler
             throw error;
+        }
+    }
+
+    static async logout(req: Request, res: Response): Promise<void> {
+        try {
+            const userPublicId = req.user?.id;
+            if (userPublicId && !userPublicId.startsWith('swagger:')) {
+                await AuthService.logout(userPublicId);
+            }
+            res.status(200).json({
+                status: 'success',
+                message: 'Sessão encerrada com sucesso.'
+            });
+        } catch (error: any) {
+            console.error('[AuthController/logout] Exception:', error);
+            res.status(200).json({ status: 'success', message: 'Sessão encerrada.' });
         }
     }
 
@@ -137,6 +184,49 @@ export class AuthController {
             }
             console.error('[AuthController/changePassword] Exception:', error);
             throw error;
+        }
+    }
+
+    static async loginByFace(req: Request, res: Response): Promise<void> {
+        try {
+            const validatedData = faceLoginSchema.parse(req.body);
+            const ipAddress = GeoIpService.extractClientIp(req);
+            const userAgent = String(req.headers['user-agent'] || '');
+            
+            const result = await AuthService.loginByFace(
+                validatedData.descriptor, 
+                validatedData.email,
+                validatedData.force,
+                ipAddress,
+                userAgent
+            );
+            await AuthController.recordAuthActivity(req, result, 'LOGIN', 'Entrou no sistema via reconhecimento facial');
+
+            res.status(200).json({
+                status: 'success',
+                data: result
+            });
+        } catch (error: any) {
+            if (error instanceof SessionConflictError) {
+                res.status(409).json({
+                    status: 'error',
+                    code: 'SESSION_CONFLICT',
+                    message: error.message,
+                    data: error.sessionInfo
+                });
+                return;
+            }
+
+            if (error instanceof z.ZodError || (error && error.name === 'ZodError')) {
+                res.status(400).json({ status: 'error', errors: error.errors });
+                return;
+            }
+            if (error instanceof Error && (error.message.includes('falhou') || error.message.includes('não cadastrada') || error.message.includes('Nenhum usuário'))) {
+                res.status(401).json({ status: 'error', message: error.message });
+                return;
+            }
+            console.error('[AuthController/loginByFace] Exception:', error);
+            res.status(500).json({ status: 'error', message: error.message || 'Erro no reconhecimento facial.' });
         }
     }
 }

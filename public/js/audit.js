@@ -3,7 +3,7 @@
     const DateUtilsRef = window.DateUtils || null;
     let g_activities = [];
     let g_users = [];
-    let g_currentView = localStorage.getItem('audit_view') || 'list';
+    let g_currentView = 'list';
 
     const ACTION_LABELS = {
         CREATE: 'Criou',
@@ -153,43 +153,10 @@
         `).join('');
     }
 
-    function renderGrid(items) {
-        const grid = getEl('auditGridSection');
-        if (!grid) return;
-
-        if (items.length === 0) {
-            grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 gap-2">
-                <svg class="w-10 h-10 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <p class="text-sm text-gray-400 dark:text-gray-500">Nenhuma atividade encontrada.</p>
-            </div>`;
-            return;
-        }
-
-        grid.innerHTML = items.map((item) => `
-            <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700">
-                <div class="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                        <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight">${escapeHtml(formatUser(item))}</h4>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(formatDateTime(item.created_at))}</p>
-                    </div>
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${actionClass(item.action)}">${escapeHtml(formatAction(item.action))}</span>
-                </div>
-                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">${escapeHtml(item.description || '-')}</p>
-                <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <div class="flex justify-between gap-4"><span>Módulo</span><strong class="text-gray-900 dark:text-gray-100">${escapeHtml(item.module || '-')}</strong></div>
-                    <div class="flex justify-between gap-4"><span>Origem</span><span class="font-mono text-xs">${escapeHtml(item.ip_address || '-')}</span></div>
-                    <div class="text-xs font-mono text-gray-500 dark:text-gray-400 break-all">${escapeHtml(item.method || '')} ${escapeHtml(item.path || '')}</div>
-                </div>
-            </div>
-        `).join('');
-    }
-
     function updateFooter(count) {
         window.GridSummaryFooter?.update({
             footerId: 'auditResultsFooter',
-            anchorId: g_currentView === 'grid' ? 'auditGridSection' : 'auditTableSection',
+            anchorId: 'auditTableSection',
             count,
             label: 'atividade(s) exibida(s)',
         });
@@ -197,39 +164,6 @@
 
     function render() {
         renderTable(g_activities);
-        renderGrid(g_activities);
-        updateFooter(g_activities.length);
-    }
-
-    function setView(type) {
-        g_currentView = type;
-        localStorage.setItem('audit_view', type);
-
-        const btnListView = getEl('btnListView');
-        const btnGridView = getEl('btnGridView');
-        const tableSection = getEl('auditTableSection');
-        const gridSection = getEl('auditGridSection');
-        const listIconCheck = btnListView?.querySelector('.check-icon');
-        const gridIconCheck = btnGridView?.querySelector('.check-icon');
-
-        if (!btnListView || !btnGridView) return;
-
-        if (type === 'list') {
-            tableSection?.classList.remove('hidden');
-            gridSection?.classList.add('hidden');
-            btnListView.className = 'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
-            btnGridView.className = 'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
-            listIconCheck?.classList.remove('hidden');
-            gridIconCheck?.classList.add('hidden');
-        } else {
-            tableSection?.classList.add('hidden');
-            gridSection?.classList.remove('hidden');
-            btnGridView.className = 'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
-            btnListView.className = 'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
-            gridIconCheck?.classList.remove('hidden');
-            listIconCheck?.classList.add('hidden');
-        }
-
         updateFooter(g_activities.length);
     }
 
@@ -286,10 +220,7 @@
         }
 
         setupFilters();
-        getEl('btnListView')?.addEventListener('click', () => setView('list'));
-        getEl('btnGridView')?.addEventListener('click', () => setView('grid'));
         getEl('btnRefreshAudit')?.addEventListener('click', () => loadAudit().catch(showError));
-        setView(g_currentView === 'grid' ? 'grid' : 'list');
         await loadAudit();
     });
 })();

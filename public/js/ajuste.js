@@ -12,6 +12,7 @@
     const SALES_CARDS_PER_ROW_KEY = 'sales_cards_per_row';
     const SALES_LAYOUT_KEY = 'sales_layout';
     const SPLIT_CART_SIZE_KEY = 'split_cart_size';
+    const WA_FLOAT_BTN_VISIBLE_KEY = 'wa_float_btn_visible';
 
     const SYSTEM_DEFAULTS = {
         theme: 'dark',
@@ -24,7 +25,8 @@
         footer_color: '#0f172a',
         sales_cards_per_row: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
         sales_layout: 'drawer',
-        split_cart_size: 'medium'
+        split_cart_size: 'medium',
+        wa_float_btn_visible: true
     };
 
     const qsa = (selector) => document.querySelectorAll(selector);
@@ -154,6 +156,17 @@
         }
         if (raw !== 'show') {
             localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, 'show');
+        }
+        return 'show';
+    }
+
+    function getWaFloatBtnVisibilityValue() {
+        const raw = String(localStorage.getItem(WA_FLOAT_BTN_VISIBLE_KEY) || '').trim().toLowerCase();
+        if (raw === 'hide') {
+            return 'hide';
+        }
+        if (raw !== 'show') {
+            localStorage.setItem(WA_FLOAT_BTN_VISIBLE_KEY, 'show');
         }
         return 'show';
     }
@@ -654,37 +667,26 @@
         const apiClient = window.api;
         const authClient = window.Auth;
 
-        // Buscar dados do usuário logado para verificar o cargo/perfil
-        let userRole = '';
-        if (typeof apiClient === 'function' && authClient && typeof authClient.isAuthenticated === 'function' && authClient.isAuthenticated()) {
-            try {
-                const meRes = await apiClient('/auth/me');
-                userRole = meRes?.data?.role || '';
-            } catch (err) {
-                console.error('Erro ao buscar perfil de usuario:', err);
-            }
+        if (!authClient || typeof authClient.isAuthenticated !== 'function' || !authClient.isAuthenticated()) {
+            window.location.href = '/';
+            return;
         }
 
-        // Exibir seção do perfil de destino se for administrador geral
-        const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-        const targetProfileSection = document.getElementById('targetProfileSection');
-        const targetProfileSelect = document.getElementById('targetProfileSelect');
+        // Buscar dados do usuário logado para verificar o cargo/perfil
+        let userRole = '';
+        try {
+            const meRes = await apiClient('/auth/me');
+            userRole = meRes?.data?.user?.role || meRes?.user?.role || meRes?.data?.role || meRes?.role || '';
+        } catch (err) {
+            console.error('Erro ao buscar perfil de usuario:', err);
+        }
 
-        if (isAdmin && targetProfileSection && targetProfileSelect) {
-            targetProfileSection.classList.remove('hidden');
-            // Carregar perfis (cargos) da API
-            try {
-                const rolesRes = await apiClient('/roles');
-                const roles = rolesRes?.data || [];
-                roles.forEach(r => {
-                    const option = document.createElement('option');
-                    option.value = r.slug;
-                    option.textContent = r.name;
-                    targetProfileSelect.appendChild(option);
-                });
-            } catch (err) {
-                console.error('Erro ao carregar perfis de acesso:', err);
-            }
+        // Apenas Administradores podem ter acesso aos ajustes
+        const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+        if (!isAdmin) {
+            alert('Acesso negado. Apenas administradores podem acessar a página de Ajustes.');
+            window.location.href = '/pages/dashboard.html';
+            return;
         }
 
         await hydratePreferencesFromServer();
@@ -698,6 +700,7 @@
         const currentNavColor = getNavColorValue();
         const currentFooterColor = getFooterColorValue();
         const currentThemeToggleVisibility = getThemeToggleVisibilityValue();
+        const currentWaFloatBtnVisibility = getWaFloatBtnVisibilityValue();
         const currentSalesCardsPerRow = getSalesCardsPerRowValue();
         const navColorPicker = document.getElementById('navColorPicker');
         const navColorHexLabel = document.getElementById('navColorHexLabel');
@@ -729,6 +732,7 @@
         const updateUIWithPreferences = (prefs) => {
             setChecked('themeMode', prefs.theme || 'dark');
             setChecked('themeToggleVisibility', (prefs.theme_toggle_visible !== false && prefs.theme_toggle_visible !== 'hide') ? 'show' : 'hide');
+            setChecked('waFloatingBtnVisibility', (prefs.wa_float_btn_visible !== false && prefs.wa_float_btn_visible !== 'hide') ? 'show' : 'hide');
             setChecked('layoutAlign', prefs.layout_align || 'responsive');
             setChecked('navAlign', prefs.nav_align || prefs.layout_align || 'responsive');
             setChecked('layoutWidth', prefs.layout_width || 'system');
@@ -748,6 +752,7 @@
 
         setChecked('themeMode', currentTheme);
         setChecked('themeToggleVisibility', currentThemeToggleVisibility);
+        setChecked('waFloatingBtnVisibility', currentWaFloatBtnVisibility);
         setChecked('layoutAlign', currentAlign);
         setChecked('navAlign', currentNavAlign);
         setChecked('layoutWidth', currentWidth);
@@ -780,43 +785,7 @@
         }
         updateChoiceCards();
 
-        // Monitorar mudança no dropdown de perfil alvo
-        if (targetProfileSelect) {
-            targetProfileSelect.addEventListener('change', async () => {
-                const selectedRole = targetProfileSelect.value;
-                if (!selectedRole) {
-                    // Restaurar as preferências pessoais do admin
-                    const personalPrefs = {
-                        theme: getThemeValue(),
-                        layout_align: getAlignValue(),
-                        nav_align: getNavAlignValue(),
-                        layout_width: getWidthValue(),
-                        nav_width: getNavWidthValue(),
-                        nav_color: getNavColorValue(),
-                        footer_color: getFooterColorValue(),
-                        theme_toggle_visible: getThemeToggleVisibilityValue() === 'show',
-                        sales_cards_per_row: getSalesCardsPerRowValue(),
-                        sales_layout: getSalesLayoutValue(),
-                        split_cart_size: getSplitCartSizeValue(),
-                    };
-                    updateUIWithPreferences(personalPrefs);
-                } else {
-                    // Buscar as preferências configuradas para o perfil selecionado
-                    try {
-                        const res = await apiClient(`/ui-preferences?target_role=${selectedRole}`);
-                        if (res?.data) {
-                            updateUIWithPreferences(res.data);
-                        } else {
-                            // Sem preferências para esse perfil, carrega padrões do sistema
-                            updateUIWithPreferences(SYSTEM_DEFAULTS);
-                        }
-                    } catch (err) {
-                        console.error('Erro ao buscar preferencias do perfil:', err);
-                        showMessage('Erro ao carregar preferências do perfil selecionado.', 'error');
-                    }
-                }
-            });
-        }
+
 
         qsa('input[name="themeMode"]').forEach((input) => {
             input.addEventListener('change', () => {
@@ -833,6 +802,22 @@
                 localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, value === 'hide' ? 'hide' : 'show');
                 if (typeof window.applyGlobalThemeToggleVisibility === 'function') {
                     window.applyGlobalThemeToggleVisibility();
+                }
+                updateChoiceCards();
+            });
+        });
+
+        qsa('input[name="waFloatingBtnVisibility"]').forEach((input) => {
+            input.addEventListener('change', () => {
+                const value = qs('input[name="waFloatingBtnVisibility"]:checked')?.value || 'show';
+                localStorage.setItem(WA_FLOAT_BTN_VISIBLE_KEY, value === 'hide' ? 'hide' : 'show');
+                const waBtn = document.getElementById('waFloatingBtn');
+                if (value === 'hide') {
+                    if (waBtn) waBtn.remove();
+                } else {
+                    if (!waBtn && typeof window.injectWhatsAppButton === 'function') {
+                        window.injectWhatsAppButton();
+                    }
                 }
                 updateChoiceCards();
             });
@@ -952,6 +937,7 @@
             const widthChoice = qs('input[name="layoutWidth"]:checked')?.value || 'system';
             const navWidthChoice = qs('input[name="navWidth"]:checked')?.value || 'system';
             const themeToggleVisibilityChoice = qs('input[name="themeToggleVisibility"]:checked')?.value || 'show';
+            const waFloatingBtnVisibilityChoice = qs('input[name="waFloatingBtnVisibility"]:checked')?.value || 'show';
             const salesCardsPerRowChoice = qs('input[name="salesCardsPerRow"]:checked')?.value || 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
             const navColorChoice = String(navColorPicker?.value || '#0f172a').toLowerCase();
             const footerColorChoice = String(footerColorPicker?.value || '#0f172a').toLowerCase();
@@ -959,22 +945,18 @@
             setSaveButtonState(saveBtn, 'loading');
 
             window.setTimeout(async () => {
-                const selectedRole = targetProfileSelect?.value || '';
-
-                // Se salvando para si mesmo (Pessoal), persiste localmente
-                if (!selectedRole) {
-                    localStorage.setItem(THEME_KEY, themeChoice);
-                    localStorage.setItem(ALIGN_KEY, alignChoice);
-                    localStorage.setItem(NAV_ALIGN_KEY, navAlignChoice);
-                    localStorage.setItem(WIDTH_KEY, widthChoice);
-                    localStorage.setItem(NAV_WIDTH_KEY, navWidthChoice);
-                    localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, themeToggleVisibilityChoice === 'hide' ? 'hide' : 'show');
-                    localStorage.setItem(SALES_CARDS_PER_ROW_KEY, salesCardsPerRowChoice);
-                    localStorage.setItem(SALES_LAYOUT_KEY, qs('input[name="salesLayout"]:checked')?.value || 'drawer');
-                    localStorage.setItem(SPLIT_CART_SIZE_KEY, qs('input[name="splitCartSize"]:checked')?.value || 'medium');
-                    localStorage.setItem(NAV_COLOR_KEY, navColorChoice);
-                    localStorage.setItem(FOOTER_COLOR_KEY, footerColorChoice);
-                }
+                localStorage.setItem(THEME_KEY, themeChoice);
+                localStorage.setItem(ALIGN_KEY, alignChoice);
+                localStorage.setItem(NAV_ALIGN_KEY, navAlignChoice);
+                localStorage.setItem(WIDTH_KEY, widthChoice);
+                localStorage.setItem(NAV_WIDTH_KEY, navWidthChoice);
+                localStorage.setItem(THEME_TOGGLE_VISIBLE_KEY, themeToggleVisibilityChoice === 'hide' ? 'hide' : 'show');
+                localStorage.setItem(WA_FLOAT_BTN_VISIBLE_KEY, waFloatingBtnVisibilityChoice === 'hide' ? 'hide' : 'show');
+                localStorage.setItem(SALES_CARDS_PER_ROW_KEY, salesCardsPerRowChoice);
+                localStorage.setItem(SALES_LAYOUT_KEY, qs('input[name="salesLayout"]:checked')?.value || 'drawer');
+                localStorage.setItem(SPLIT_CART_SIZE_KEY, qs('input[name="splitCartSize"]:checked')?.value || 'medium');
+                localStorage.setItem(NAV_COLOR_KEY, navColorChoice);
+                localStorage.setItem(FOOTER_COLOR_KEY, footerColorChoice);
 
                 let syncError = null;
                 const rawPattern = localStorage.getItem(FORM_PATTERN_KEY);
@@ -1004,6 +986,7 @@
                             nav_color: navColorChoice,
                             footer_color: footerColorChoice,
                             theme_toggle_visible: themeToggleVisibilityChoice !== 'hide',
+                            wa_float_btn_visible: waFloatingBtnVisibilityChoice !== 'hide',
                             form_company_name: formPattern.empresa || null,
                             form_profile: formPattern.perfil,
                             form_accent: formPattern.cor,
@@ -1012,10 +995,6 @@
                             sales_layout: qs('input[name="salesLayout"]:checked')?.value || 'drawer',
                             split_cart_size: qs('input[name="splitCartSize"]:checked')?.value || 'medium',
                         };
-
-                        if (selectedRole) {
-                            payload.target_role = selectedRole;
-                        }
 
                         await apiClient('/ui-preferences', {
                             method: 'POST',
@@ -1027,50 +1006,46 @@
                     }
                 }
 
-                // Se salvando para si mesmo, aplica no layout local imediatamente
-                if (!selectedRole) {
-                    if (typeof window.applyGlobalLayoutAlign === 'function') {
-                        window.applyGlobalLayoutAlign();
-                    }
-                    if (typeof window.applyGlobalLayoutWidth === 'function') {
-                        window.applyGlobalLayoutWidth();
-                    }
-                    if (typeof window.applyGlobalNavWidth === 'function') {
-                        window.applyGlobalNavWidth();
-                    }
-                    if (typeof window.applyGlobalNavAlign === 'function') {
-                        window.applyGlobalNavAlign();
-                    }
-                    if (typeof window.applyGlobalNavColor === 'function') {
-                        window.applyGlobalNavColor();
-                    }
-                    if (typeof window.applyGlobalFooterColor === 'function') {
-                        window.applyGlobalFooterColor();
-                    }
-                    if (typeof window.applyGlobalThemeToggleVisibility === 'function') {
-                        window.applyGlobalThemeToggleVisibility();
-                    }
-
-                    applyTheme(themeChoice);
-                    applyAlignment(alignChoice, true);
-                    updateChoiceCards();
-                    pulseThemeHero();
+                if (typeof window.applyGlobalLayoutAlign === 'function') {
+                    window.applyGlobalLayoutAlign();
                 }
+                if (typeof window.applyGlobalLayoutWidth === 'function') {
+                    window.applyGlobalLayoutWidth();
+                }
+                if (typeof window.applyGlobalNavWidth === 'function') {
+                    window.applyGlobalNavWidth();
+                }
+                if (typeof window.applyGlobalNavAlign === 'function') {
+                    window.applyGlobalNavAlign();
+                }
+                if (typeof window.applyGlobalNavColor === 'function') {
+                    window.applyGlobalNavColor();
+                }
+                if (typeof window.applyGlobalFooterColor === 'function') {
+                    window.applyGlobalFooterColor();
+                }
+                if (typeof window.applyGlobalThemeToggleVisibility === 'function') {
+                    window.applyGlobalThemeToggleVisibility();
+                }
+                const waBtn = document.getElementById('waFloatingBtn');
+                if (waFloatingBtnVisibilityChoice === 'hide') {
+                    if (waBtn) waBtn.remove();
+                } else {
+                    if (!waBtn && typeof window.injectWhatsAppButton === 'function') {
+                        window.injectWhatsAppButton();
+                    }
+                }
+
+                applyTheme(themeChoice);
+                applyAlignment(alignChoice, true);
+                updateChoiceCards();
+                pulseThemeHero();
 
                 setSaveButtonState(saveBtn, 'success');
                 if (syncError) {
-                    if (selectedRole) {
-                        showMessage('Erro ao salvar preferências do perfil no banco de dados.', 'error');
-                    } else {
-                        showMessage('Preferências salvas localmente. Falha ao sincronizar no banco.', 'error');
-                    }
+                    showMessage('Preferências salvas localmente. Falha ao sincronizar no banco.', 'error');
                 } else {
-                    if (selectedRole) {
-                        const roleName = targetProfileSelect.options[targetProfileSelect.selectedIndex]?.text || selectedRole;
-                        showMessage(`Preferências salvas com sucesso para o perfil "${roleName}".`);
-                    } else {
-                        showMessage('Preferências salvas com sucesso.');
-                    }
+                    showMessage('Preferências salvas com sucesso para toda a empresa.');
                 }
 
                 window.setTimeout(() => {

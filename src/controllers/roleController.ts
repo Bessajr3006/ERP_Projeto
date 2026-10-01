@@ -79,7 +79,7 @@ export class RoleController {
             const companyId = req.user!.company_id;
             const slug = req.params.slug || '';
 
-            if (['admin', 'super_admin', 'operator', 'user', 'seller', 'contact', 'financial', 'admin_basic'].includes(slug)) {
+            if (['admin', 'super_admin', 'operator', 'user', 'seller', 'contact', 'financial', 'admin_basic', 'supervisor', 'pix_operator'].includes(slug)) {
                 return res.status(400).json({ status: 'error', message: 'Cannot delete default roles' });
             }
 

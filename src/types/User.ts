@@ -18,8 +18,17 @@ export interface User {
     state?: string | null;
     default_page?: string | null;
     whatsapp_auto_reply_mode?: 'automatic' | 'manual' | null;
+    whatsapp_enable_manual_billing?: boolean | number | null;
+    whatsapp_auto_send_boleto?: boolean | number | null;
     role: UserRole;
     is_active: boolean;
+    is_default_declaration_signer?: boolean | number | null;
+    current_session_token?: string | null;
+    current_session_ip?: string | null;
+    current_session_location?: string | null;
+    current_session_user_agent?: string | null;
+    current_session_at?: Date | null;
+    last_activity_at?: Date | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -40,11 +49,25 @@ export interface UserRegistrationData {
     state?: string | null;
     default_page?: string | null;
     whatsapp_auto_reply_mode?: 'automatic' | 'manual' | null;
+    whatsapp_enable_manual_billing?: boolean | number | null;
+    whatsapp_auto_send_boleto?: boolean | number | null;
+    is_default_declaration_signer?: boolean | number | null;
 }
 
 export interface UserLoginData {
     email: string;
     passwordRaw: string;
+    force?: boolean | undefined;
+    ipAddress?: string | undefined;
+    userAgent?: string | undefined;
+}
+
+export interface ActiveSessionInfo {
+    ip: string | null;
+    location: string | null;
+    user_agent: string | null;
+    logged_at: Date | string | null;
+    formatted_time?: string | undefined;
 }
 
 export interface AuthResult {
@@ -55,6 +78,8 @@ export interface AuthResult {
         full_name: string;
         role: UserRole;
         company_id: number;
-        default_page?: string | null;
+        default_page?: string | null | undefined;
+        group_master_company_id?: number | null | undefined;
+        general_admin_company_id?: number | null | undefined;
     };
 }

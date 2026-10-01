@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ProductController } from '../controllers/productController';
+import { ProductTypeController } from '../controllers/productTypeController';
 import { protectRoute } from '../middlewares/authMiddleware';
 import { requireTenantContext } from '../middlewares/tenantMiddleware';
 
@@ -134,6 +135,13 @@ router.post('/bulk-delete', (req, res, next) => ProductController.bulkDelete(req
  *       400: { description: Erro na solicitação }
  * */
 router.post('/send-catalog', (req, res, next) => ProductController.sendCatalog(req, res).catch(next));
+
+// Product Types CRUD routes
+router.post('/product-types', (req, res, next) => ProductTypeController.create(req, res).catch(next));
+router.get('/product-types', (req, res, next) => ProductTypeController.list(req, res).catch(next));
+router.get('/product-types/:id', (req, res, next) => ProductTypeController.getByPublicId(req, res).catch(next));
+router.put('/product-types/:id', (req, res, next) => ProductTypeController.update(req, res).catch(next));
+router.delete('/product-types/:id', (req, res, next) => ProductTypeController.delete(req, res).catch(next));
 
 /**
  * @openapi

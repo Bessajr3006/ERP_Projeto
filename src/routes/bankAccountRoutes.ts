@@ -34,6 +34,18 @@ router.post('/', (req, res, next) => BankAccountController.create(req, res).catc
 router.get('/', (req, res, next) => BankAccountController.list(req, res).catch(next));
 /**
  * @openapi
+ * /bank-accounts/realtime-balances:
+ *   get:
+ *     tags: [Bank Accounts]
+ *     summary: Obter saldos em tempo real de todas as contas bancárias
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Relatório de saldos em tempo real }
+ */
+router.get('/realtime-balances', (req, res, next) => BankAccountController.getRealtimeBalances(req, res).catch(next));
+/**
+ * @openapi
  * /bank-accounts/{id}:
  *   get:
  *     tags: [Bank Accounts]

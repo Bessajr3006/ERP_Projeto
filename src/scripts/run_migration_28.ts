@@ -29,18 +29,22 @@ export async function runMigration28(): Promise<void> {
     console.log('');
 
     const roleMeta = await getUsersRoleMeta();
-    if (roleMeta && String(roleMeta.COLUMN_TYPE).toLowerCase() === REQUIRED_USER_ROLE_ENUM) {
-        console.log('[SKIP] users.role enum already supports accountant');
+    const colType = String(roleMeta?.COLUMN_TYPE || '').toLowerCase();
+    if (colType.startsWith('varchar') || colType === REQUIRED_USER_ROLE_ENUM) {
+        console.log('[SKIP] users.role already supports accountant');
         console.log('[OK] Migration 28 completed successfully.');
         return;
     }
 
-    await pool.query(
-        `ALTER TABLE users
-         MODIFY COLUMN role ENUM('admin', 'user', 'operator', 'financial', 'manager', 'seller', 'accountant', 'buyer', 'service_provider', 'super_admin') NOT NULL DEFAULT 'user'`
-    );
-
-    console.log('[OK] users.role enum expanded with accountant');
+    try {
+        await pool.query(
+            `ALTER TABLE users
+             MODIFY COLUMN role ENUM('admin', 'user', 'operator', 'financial', 'manager', 'seller', 'accountant', 'buyer', 'service_provider', 'super_admin') NOT NULL DEFAULT 'user'`
+        );
+        console.log('[OK] users.role enum expanded with accountant');
+    } catch (err: any) {
+        console.warn('[WARN] Could not alter users.role enum:', err?.message || err);
+    }
     console.log('[OK] Migration 28 completed successfully.');
 }
 

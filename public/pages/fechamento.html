@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Fechamento</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body data-required-module="fechamento" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -25,10 +25,274 @@
             <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Fechamentos</h3>
                 <div class="flex items-center gap-3">
+                    <div class="relative inline-block text-left" id="colunasDropdownContainer">
+                        <button type="button" id="btnToggleColumns" title="Exibir/Ocultar Colunas"
+                            class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 p-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700/60 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </button>
+                        <!-- Dropdown panel -->
+                        <div id="columnsDropdownMenu" class="hidden origin-top-right absolute right-0 mt-2 w-72 max-h-96 overflow-y-auto rounded-xl shadow-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 p-3 space-y-3">
+                            <span class="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-slate-700 pb-1.5 mb-1">Exibir Colunas</span>
+                            
+                            <!-- Gerais -->
+                            <div class="space-y-1.5">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Identificação</span>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="selecionar" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Selecionar</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="id" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>ID</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="empresa" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Empresa</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="fantasia" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Nome Fantasia</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="cnpj" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>CNPJ</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1.5 rounded-lg transition-colors">
+                                    <input type="checkbox" data-column-target="periodo" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Período</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="origem" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Origem</span>
+                                </label>
+                            </div>
+
+                            <!-- Compras -->
+                            <div class="space-y-1.5 pt-1.5 border-t border-gray-100 dark:border-slate-700">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Compras</span>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="compra" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Total Compra</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="compra_bs_icms" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>BC ICMS Compra</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="compra_isento" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Isento Compra</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="compra_outros" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Outros Compra</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="compra_pis" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>PIS Compra</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="compra_cofins" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>COFINS Compra</span>
+                                </label>
+                            </div>
+
+                            <!-- Vendas -->
+                            <div class="space-y-1.5 pt-1.5 border-t border-gray-100 dark:border-slate-700">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Vendas</span>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="venda" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Total Venda</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="venda_bs_icms" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>BC ICMS Venda</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="venda_isento" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Isento Venda</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="venda_outros" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Outros Venda</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="venda_pis" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>PIS Venda</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="venda_cofins" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>COFINS Venda</span>
+                                </label>
+                            </div>
+
+                            <!-- Apuração -->
+                            <div class="space-y-1.5 pt-1.5 border-t border-gray-100 dark:border-slate-700">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Apuração</span>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="icms" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Apur. ICMS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="apuracao_aj_icms" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Ajuste ICMS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="f_icms" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>F. ICMS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="fecp" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Apur. FECP</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="apuracao_aj_fecp" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Ajuste FECP</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="f_fecp" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>F. FECP</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="pis" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Apur. PIS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="apuracao_aj_pis" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Ajuste PIS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="f_pis" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>F. PIS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="cofins" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Apur. COFINS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="apuracao_aj_cofins" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Ajuste COFINS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="f_cofins" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>F. COFINS</span>
+                                </label>
+                            </div>
+
+                            <!-- Despesas -->
+                            <div class="space-y-1.5 pt-1.5 border-t border-gray-100 dark:border-slate-700">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Despesas</span>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="despesa_adm" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Despesa Adm.</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="despesa_operacional" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Despesa Operac.</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="despesa_folha" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Despesa Folha</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="despesa_cmv" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Despesa CMV</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="despesa_ir_aluguel" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>IR s/ Aluguel</span>
+                                </label>
+                            </div>
+
+                            <!-- Impostos -->
+                            <div class="space-y-1.5 pt-1.5 border-t border-gray-100 dark:border-slate-700">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Impostos Federais (Lucro)</span>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="imposto_irpj" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>IRPJ</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="imposto_csll" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>CSLL</span>
+                                </label>
+                            </div>
+
+                            <!-- Simples Nacional -->
+                            <div class="space-y-1.5 pt-1.5 border-t border-gray-100 dark:border-slate-700">
+                                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Simples Nacional</span>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_faturamento" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Fat. Simples</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_aliquota" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Alíquota Simples</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_das" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Valor DAS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_cpp" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Simples CPP</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_icms" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Simples ICMS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_ipi" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Simples IPI</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_iss" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Simples ISS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_pis" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Simples PIS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_cofins" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Simples COFINS</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_irpj" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Simples IRPJ</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_csll" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Simples CSLL</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_faturamento_acumulado_12m" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>RBT12</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_faturamento_acumulado_ano_anterior" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Fat. Acum. Ano Ant.</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_valor_tributado" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Vlr Tributado</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="simples_valor_nao_tributado" class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Vlr Não Tributado</span>
+                                </label>
+                            </div>
+
+                            <!-- Ações -->
+                            <div class="pt-1.5 border-t border-gray-100 dark:border-slate-700">
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="acoes" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Ações</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     <button type="button" id="btnOpenModal" title="Novo Lançamento"
                         class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        <span class="hidden sm:inline-block ml-2">Novo Lançamento</span>
                     </button>
                 </div>
             </div>
@@ -53,6 +317,12 @@
                                     </select>
                                 </div>
                                 <div>
+                                    <label for="filterCustomerGroup" class="block text-[10px] font-bold text-gray-500 uppercase">Grupo de Cliente</label>
+                                    <select id="filterCustomerGroup" name="filterCustomerGroup" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                        <option value="">Carregando grupos...</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label for="filterCompetencia" class="block text-[10px] font-bold text-gray-500 uppercase">Mês/Ano</label>
                                     <input type="month" id="filterCompetencia" name="filterCompetencia" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
                                 </div>
@@ -71,23 +341,330 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                         <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
                             <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Empresa
+                                <th scope="col" class="col-selecionar px-3 py-3 text-left w-12">
+                                    <input type="checkbox" id="selectAll" name="selectAll" title="Selecionar todos" aria-label="Selecionar todos"
+                                        class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 cursor-pointer">
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Total Compra
+                                <th scope="col" class="col-id sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="id">
+                                    <div class="flex items-center gap-1">
+                                        <span>ID</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Total Venda
+                                <th scope="col" class="col-empresa sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="customer_name">
+                                    <div class="flex items-center gap-1">
+                                        <span>Empresa</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th scope="col" class="col-fantasia sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="customer_trade_name">
+                                    <div class="flex items-center gap-1">
+                                        <span>Nome Fantasia</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-cnpj sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="customer_cnpj_cpf">
+                                    <div class="flex items-center gap-1">
+                                        <span>CNPJ</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-periodo sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="competencia">
+                                    <div class="flex items-center gap-1">
+                                        <span>Período</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-origem sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="origem">
+                                    <div class="flex items-center gap-1">
+                                        <span>Origem</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-compra sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="compra_valor">
+                                    <div class="flex items-center gap-1">
+                                        <span>Total Compra</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-compra_bs_icms sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="compra_bs_icms">
+                                    <div class="flex items-center gap-1">
+                                        <span>BC ICMS Compra</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-compra_isento sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="compra_isento">
+                                    <div class="flex items-center gap-1">
+                                        <span>Isento Compra</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-compra_outros sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="compra_outros">
+                                    <div class="flex items-center gap-1">
+                                        <span>Outros Compra</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-compra_pis sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="compra_pis">
+                                    <div class="flex items-center gap-1">
+                                        <span>PIS Compra</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-compra_cofins sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="compra_cofins">
+                                    <div class="flex items-center gap-1">
+                                        <span>COFINS Compra</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-venda sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="venda_valor">
+                                    <div class="flex items-center gap-1">
+                                        <span>Total Venda</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-venda_bs_icms sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="venda_bs_icms">
+                                    <div class="flex items-center gap-1">
+                                        <span>BC ICMS Venda</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-venda_isento sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="venda_isento">
+                                    <div class="flex items-center gap-1">
+                                        <span>Isento Venda</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-venda_outros sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="venda_outros">
+                                    <div class="flex items-center gap-1">
+                                        <span>Outros Venda</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-venda_pis sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="venda_pis">
+                                    <div class="flex items-center gap-1">
+                                        <span>PIS Venda</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-venda_cofins sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="venda_cofins">
+                                    <div class="flex items-center gap-1">
+                                        <span>COFINS Venda</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-icms sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="apuracao_icms">
+                                    <div class="flex items-center gap-1">
+                                        <span>Apur. ICMS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-apuracao_aj_icms sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="apuracao_aj_icms">
+                                    <div class="flex items-center gap-1">
+                                        <span>Ajuste ICMS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-f_icms sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="f_icms">
+                                    <div class="flex items-center gap-1">
+                                        <span>F. ICMS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-fecp sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="apuracao_fecp">
+                                    <div class="flex items-center gap-1">
+                                        <span>Apur. FECP</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-apuracao_aj_fecp sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="apuracao_aj_fecp">
+                                    <div class="flex items-center gap-1">
+                                        <span>Ajuste FECP</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-f_fecp sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="f_fecp">
+                                    <div class="flex items-center gap-1">
+                                        <span>F. FECP</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-pis sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="apuracao_pis">
+                                    <div class="flex items-center gap-1">
+                                        <span>Apur. PIS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-apuracao_aj_pis sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="apuracao_aj_pis">
+                                    <div class="flex items-center gap-1">
+                                        <span>Ajuste PIS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-f_pis sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="f_pis">
+                                    <div class="flex items-center gap-1">
+                                        <span>F. PIS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-cofins sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="apuracao_cofins">
+                                    <div class="flex items-center gap-1">
+                                        <span>Apur. COFINS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-apuracao_aj_cofins sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="apuracao_aj_cofins">
+                                    <div class="flex items-center gap-1">
+                                        <span>Ajuste COFINS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-f_cofins sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="f_cofins">
+                                    <div class="flex items-center gap-1">
+                                        <span>F. COFINS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-despesa_adm sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="despesa_adm">
+                                    <div class="flex items-center gap-1">
+                                        <span>Despesa Adm.</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-despesa_operacional sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="despesa_operacional">
+                                    <div class="flex items-center gap-1">
+                                        <span>Despesa Operac.</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-despesa_folha sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="despesa_folha">
+                                    <div class="flex items-center gap-1">
+                                        <span>Despesa Folha</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-despesa_cmv sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="despesa_cmv">
+                                    <div class="flex items-center gap-1">
+                                        <span>Despesa CMV</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-despesa_ir_aluguel sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="despesa_ir_aluguel">
+                                    <div class="flex items-center gap-1">
+                                        <span>IR s/ Aluguel</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-imposto_irpj sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="imposto_irpj">
+                                    <div class="flex items-center gap-1">
+                                        <span>IRPJ</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-imposto_csll sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="imposto_csll">
+                                    <div class="flex items-center gap-1">
+                                        <span>CSLL</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_faturamento sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_faturamento">
+                                    <div class="flex items-center gap-1">
+                                        <span>Fat. Simples</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_aliquota sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_aliquota">
+                                    <div class="flex items-center gap-1">
+                                        <span>Alíquota Simples</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_das sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_das">
+                                    <div class="flex items-center gap-1">
+                                        <span>Valor DAS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_cpp sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_cpp">
+                                    <div class="flex items-center gap-1">
+                                        <span>Simples CPP</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_icms sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_icms">
+                                    <div class="flex items-center gap-1">
+                                        <span>Simples ICMS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_ipi sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_ipi">
+                                    <div class="flex items-center gap-1">
+                                        <span>Simples IPI</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_iss sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_iss">
+                                    <div class="flex items-center gap-1">
+                                        <span>Simples ISS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_pis sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_pis">
+                                    <div class="flex items-center gap-1">
+                                        <span>Simples PIS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_cofins sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_cofins">
+                                    <div class="flex items-center gap-1">
+                                        <span>Simples COFINS</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_irpj sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_irpj">
+                                    <div class="flex items-center gap-1">
+                                        <span>Simples IRPJ</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_csll sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_csll">
+                                    <div class="flex items-center gap-1">
+                                        <span>Simples CSLL</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_faturamento_acumulado_12m sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_faturamento_acumulado_12m">
+                                    <div class="flex items-center gap-1">
+                                        <span>RBT12</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_faturamento_acumulado_ano_anterior sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_faturamento_acumulado_ano_anterior">
+                                    <div class="flex items-center gap-1">
+                                        <span>Fat. Acum. Ano Ant.</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_valor_tributado sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_valor_tributado">
+                                    <div class="flex items-center gap-1">
+                                        <span>Vlr Tributado</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-simples_valor_nao_tributado sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="simples_valor_nao_tributado">
+                                    <div class="flex items-center gap-1">
+                                        <span>Vlr Não Tributado</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-acoes px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Ações
                                 </th>
                             </tr>
                         </thead>
                         <tbody id="fechamentosTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                             <tr>
-                                <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <td colspan="50" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                     Nenhum fechamento registrado.
                                 </td>
                             </tr>
@@ -111,25 +688,81 @@
     <div id="fechamentoModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="modalBackdrop"></div>
-            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl sm:w-full">
                 <form id="fechamentoForm" action="#" method="POST" novalidate>
                     <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="lg:flex sm:items-start">
                             <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modalTitle">Lançar Fechamento</h3>
                                 
-                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="companyParam" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente <span class="text-red-500">*</span></label>
-                                        <select id="companyParam" name="customerId" required class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
-                                            <option value="">Carregando clientes...</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label for="competencia" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mês/Ano (Competência) <span class="text-red-500">*</span></label>
-                                        <input type="month" id="competencia" name="competencia" required class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
-                                    </div>
-                                </div>
+                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                     <div>
+                                         <label for="modalCustomerGroup" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grupo de Cliente</label>
+                                         <select id="modalCustomerGroup" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                             <option value="">Todos os grupos</option>
+                                         </select>
+                                     </div>
+                                     <div>
+                                          <div class="flex justify-between items-center">
+                                              <label for="companyParam" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente <span class="text-red-500">*</span></label>
+                                              <span id="companyTypeIndicator" class="items-center hidden">
+                                                  <span id="companyTypeDot" class="h-2.5 w-2.5 rounded-full mr-1.5 transition-colors duration-200"></span>
+                                                  <span id="companyTypeText" class="text-xs font-medium text-gray-500 dark:text-gray-400"></span>
+                                              </span>
+                                          </div>
+                                          <select id="companyParam" name="customerId" required class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                              <option value="">Carregando clientes...</option>
+                                          </select>
+                                      </div>
+                                     <div>
+                                         <label for="competencia" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mês/Ano (Competência) <span class="text-red-500">*</span></label>
+                                         <input type="month" id="competencia" name="competencia" required class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                     </div>
+                                     <div class="flex flex-col justify-end">
+                                          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas de Saída / SPED</label>
+                                          <div class="flex gap-2">
+                                              <label for="xmlFileInput" id="xmlImportLabel" class="flex-1 inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 cursor-pointer transition-colors" title="Importar arquivos XML de Notas de Saída">
+                                                  <svg class="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                  </svg>
+                                                  XML
+                                              </label>
+                                              <label for="spedFileInput" id="spedImportLabel" class="flex-1 items-center justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 cursor-pointer transition-colors hidden" title="Importar arquivo do SPED Fiscal">
+                                                  <svg class="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                  </svg>
+                                                  SPED
+                                              </label>
+                                              <button type="button" id="btnViewXmlSummary" class="inline-flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none transition-colors" title="Visualizar Resumo por CFOP">
+                                                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                  </svg>
+                                              </button>
+                                              <button type="button" id="btnClearImport" class="inline-flex items-center justify-center px-3 py-2 border border-red-300 dark:border-red-600 rounded-md shadow-sm bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 focus:outline-none transition-colors" title="Apagar Movimento Importado">
+                                                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                  </svg>
+                                              </button>
+                                          </div>
+                                          <input type="file" id="xmlFileInput" accept=".xml" multiple class="hidden">
+                                          <input type="file" id="spedFileInput" accept=".txt" class="hidden">
+                                      </div>
+                                  </div>
+                                  
+                                  <!-- Feedback de Importação de Arquivos dentro do Modal -->
+                                  <div id="importFeedbackContainer" class="mt-4 hidden p-3 rounded-lg border text-sm items-start gap-2.5 transition-all">
+                                      <div id="importFeedbackIcon" class="mt-0.5 shrink-0"></div>
+                                      <div class="flex-1">
+                                          <p id="importFeedbackText" class="font-medium"></p>
+                                          <p id="importFeedbackDetails" class="text-xs mt-1 text-gray-500 dark:text-gray-400"></p>
+                                      </div>
+                                      <button type="button" id="btnDismissImportFeedback" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                      </button>
+                                  </div>
 
                                 <div class="mt-6 border-b border-gray-200 dark:border-slate-700">
                                     <nav class="-mb-px flex gap-4" role="tablist" aria-label="Abas de Fechamento">
@@ -158,6 +791,16 @@
                                             role="tab" aria-selected="false" data-tab-target="tabImpostoPanel">
                                             Imposto Federal
                                         </button>
+                                         <button type="button" id="tabSimplesBtn"
+                                             class="fechamento-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                             role="tab" aria-selected="false" data-tab-target="tabSimplesPanel">
+                                             Simples Nacional
+                                         </button>
+                                         <button type="button" id="tabObservacaoBtn"
+                                             class="fechamento-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                             role="tab" aria-selected="false" data-tab-target="tabObservacaoPanel">
+                                             Observação
+                                         </button>
                                     </nav>
                                 </div>
                                 
@@ -223,10 +866,14 @@
 
                                 <!-- Aba Apuração -->
                                 <div id="tabApuracaoPanel" class="fechamento-tab-panel hidden mt-4 space-y-4" role="tabpanel">
-                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
                                         <div>
                                             <label for="apuracao_icms" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apurado ICMS</label>
                                             <input type="text" id="apuracao_icms" name="apuracao_icms" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_fecp" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apurado FECP</label>
+                                            <input type="text" id="apuracao_fecp" name="apuracao_fecp" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
                                         </div>
                                         <div>
                                             <label for="apuracao_pis" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apurado PIS</label>
@@ -235,6 +882,38 @@
                                         <div>
                                             <label for="apuracao_cofins" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apurado COFINS</label>
                                             <input type="text" id="apuracao_cofins" name="apuracao_cofins" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_aj_icms" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Aj. ICMS</label>
+                                            <input type="text" id="apuracao_aj_icms" name="apuracao_aj_icms" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_aj_fecp" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Aj. FECP</label>
+                                            <input type="text" id="apuracao_aj_fecp" name="apuracao_aj_fecp" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_aj_pis" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Aj. PIS</label>
+                                            <input type="text" id="apuracao_aj_pis" name="apuracao_aj_pis" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_aj_cofins" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Aj. COFINS</label>
+                                            <input type="text" id="apuracao_aj_cofins" name="apuracao_aj_cofins" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_f_icms" class="block text-sm font-medium text-gray-700 dark:text-gray-300">F. ICMS</label>
+                                            <input type="text" id="apuracao_f_icms" name="apuracao_f_icms" readonly class="mt-1 block w-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm cursor-not-allowed" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_f_fecp" class="block text-sm font-medium text-gray-700 dark:text-gray-300">F. FECP</label>
+                                            <input type="text" id="apuracao_f_fecp" name="apuracao_f_fecp" readonly class="mt-1 block w-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm cursor-not-allowed" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_f_pis" class="block text-sm font-medium text-gray-700 dark:text-gray-300">F. PIS</label>
+                                            <input type="text" id="apuracao_f_pis" name="apuracao_f_pis" readonly class="mt-1 block w-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm cursor-not-allowed" placeholder="R$ 0,00">
+                                        </div>
+                                        <div>
+                                            <label for="apuracao_f_cofins" class="block text-sm font-medium text-gray-700 dark:text-gray-300">F. COFINS</label>
+                                            <input type="text" id="apuracao_f_cofins" name="apuracao_f_cofins" readonly class="mt-1 block w-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm cursor-not-allowed" placeholder="R$ 0,00">
                                         </div>
                                     </div>
                                 </div>
@@ -278,6 +957,98 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Aba Simples Nacional -->
+                                <div id="tabSimplesPanel" class="fechamento-tab-panel hidden mt-4 space-y-6" role="tabpanel">
+                                    <!-- Informações Gerais e Faturamento Acumulado -->
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 border-b border-gray-100 dark:border-slate-700 pb-2">Informações Gerais e Faturamento Acumulado</h4>
+                                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
+                                            <div>
+                                                <label for="simples_valor_tributado" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor Tributado</label>
+                                                <input type="text" id="simples_valor_tributado" name="simples_valor_tributado" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_valor_nao_tributado" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor Não Tributado</label>
+                                                <input type="text" id="simples_valor_nao_tributado" name="simples_valor_nao_tributado" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_faturamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Faturamento do Mês</label>
+                                                <input type="text" id="simples_faturamento" name="simples_faturamento" readonly class="mt-1 block w-full bg-gray-50 dark:bg-slate-700/50 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm cursor-not-allowed" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_aliquota" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Alíquota (%)</label>
+                                                <input type="text" id="simples_aliquota" name="simples_aliquota" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="0,00 %">
+                                            </div>
+                                            <div>
+                                                <label for="simples_faturamento_acumulado_12m" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Acumulado 12 Meses</label>
+                                                <input type="text" id="simples_faturamento_acumulado_12m" name="simples_faturamento_acumulado_12m" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_faturamento_acumulado_ano_anterior" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ac. Ano Anterior</label>
+                                                <input type="text" id="simples_faturamento_acumulado_ano_anterior" name="simples_faturamento_acumulado_ano_anterior" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Detalhamento de Tributos Separados -->
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 border-b border-gray-100 dark:border-slate-700 pb-2">Distribuição de Tributos</h4>
+                                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+                                            <div>
+                                                <label for="simples_cpp" class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPP</label>
+                                                <input type="text" id="simples_cpp" name="simples_cpp" class="simples-tax-input mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_icms" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ICMS</label>
+                                                <input type="text" id="simples_icms" name="simples_icms" class="simples-tax-input mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_ipi" class="block text-sm font-medium text-gray-700 dark:text-gray-300">IPI</label>
+                                                <input type="text" id="simples_ipi" name="simples_ipi" class="simples-tax-input mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_iss" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ISS</label>
+                                                <input type="text" id="simples_iss" name="simples_iss" class="simples-tax-input mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_pis" class="block text-sm font-medium text-gray-700 dark:text-gray-300">PIS</label>
+                                                <input type="text" id="simples_pis" name="simples_pis" class="simples-tax-input mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_cofins" class="block text-sm font-medium text-gray-700 dark:text-gray-300">COFINS</label>
+                                                <input type="text" id="simples_cofins" name="simples_cofins" class="simples-tax-input mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_irpj" class="block text-sm font-medium text-gray-700 dark:text-gray-300">IRPJ</label>
+                                                <input type="text" id="simples_irpj" name="simples_irpj" class="simples-tax-input mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                            <div>
+                                                <label for="simples_csll" class="block text-sm font-medium text-gray-700 dark:text-gray-300">CSLL</label>
+                                                <input type="text" id="simples_csll" name="simples_csll" class="simples-tax-input mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Resultado Unificado DAS -->
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 border-b border-gray-100 dark:border-slate-700 pb-2">DAS Unificado</h4>
+                                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+                                            <div>
+                                                <label for="simples_das" class="block text-sm font-medium text-gray-700 dark:text-gray-300">DAS Total</label>
+                                                <input type="text" id="simples_das" name="simples_das" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="R$ 0,00">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Aba Observação -->
+                                <div id="tabObservacaoPanel" class="fechamento-tab-panel hidden mt-4 space-y-4" role="tabpanel">
+                                    <div>
+                                        <label for="observacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Observações</label>
+                                        <textarea id="observacao" name="observacao" rows="4" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Digite observações sobre o fechamento..."></textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -295,12 +1066,83 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal: Resumo por CFOP -->
+    <div id="cfopSummaryModal" class="hidden fixed inset-0 z-11000 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true" id="closeCfopModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-middle bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle max-w-lg w-full border border-gray-200 dark:border-slate-700">
+                <div class="px-6 pt-6 pb-4">
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-slate-700">
+                        <h3 class="text-base font-bold text-gray-950 dark:text-gray-50">Resumo da Importação (por CFOP)</h3>
+                        <button type="button" id="btnCloseCfopModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 space-y-4">
+                        <!-- Totais Importação -->
+                        <div>
+                            <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Totais Consolidados</h4>
+                            <div class="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-slate-900/50 rounded-xl p-3 border border-gray-100 dark:border-slate-850">
+                                <div>
+                                    <span class="block text-[11px] text-gray-500 dark:text-gray-400">Valor Bruto Total</span>
+                                    <span id="cfopModalTotalValor" class="text-sm font-bold text-gray-950 dark:text-gray-50">R$ 0,00</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[11px] text-gray-500 dark:text-gray-400">Base de Cálculo ICMS</span>
+                                    <span id="cfopModalTotalBC" class="text-sm font-bold text-gray-950 dark:text-gray-50">R$ 0,00</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[11px] text-gray-500 dark:text-gray-400">Total Isento</span>
+                                    <span id="cfopModalTotalIsento" class="text-sm font-bold text-gray-950 dark:text-gray-50">R$ 0,00</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[11px] text-gray-500 dark:text-gray-400">Outros Valores</span>
+                                    <span id="cfopModalTotalOutros" class="text-sm font-bold text-gray-950 dark:text-gray-50">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
-    <script src="/js/fechamento.js"></script>
+                        <!-- Valores por CFOP -->
+                        <div>
+                            <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Valores de Produtos por CFOP</h4>
+                            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                    <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">CFOP</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">Valor Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cfopTableBody" class="divide-y divide-gray-200 dark:divide-slate-700 text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-slate-800">
+                                        <tr>
+                                            <td colspan="2" class="px-4 py-3 text-center text-xs text-gray-400 italic">Nenhum valor importado ainda.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 dark:bg-slate-800/80 px-6 py-3 border-t border-gray-200 dark:border-slate-700 text-right">
+                    <button type="button" id="btnCloseCfopModalBottom" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+    <script src="/js/fechamento.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 </html>

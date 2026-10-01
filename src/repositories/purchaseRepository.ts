@@ -9,10 +9,13 @@ import { toBrazilDate } from '../utils/dateTime';
 import { AppError } from '../errors/AppError';
 
 export class PurchaseRepository {
-    static async getRecentPurchases(companyId: number, limit: number = 50): Promise<any[]> {
+    static async getRecentPurchases(companyId: number, limit: number = 2000, includeSped: boolean = true): Promise<any[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT p.public_id, p.date, p.total_amount, p.status, e.name as supplier_name,
-             (SELECT COUNT(*) FROM purchase_items pi WHERE pi.purchase_id = p.id) as items_count
+            `SELECT p.public_id, p.date, p.total_amount, p.status, p.nfe_key, p.nfe_issue_date, p.nfe_header_json,
+             e.name as supplier_name, e.cnpj_cpf as supplier_cnpj,
+             (SELECT COUNT(*) FROM purchase_items pi WHERE pi.purchase_id = p.id) as items_count,
+             'order' as source,
+             0 as is_sped
              FROM purchase_orders p
              JOIN suppliers e ON p.supplier_id = e.id
              WHERE p.company_id = ?
@@ -20,7 +23,136 @@ export class PurchaseRepository {
              LIMIT ?`,
             [companyId, limit]
         );
-        return rows;
+
+        if (!includeSped) {
+            return rows;
+        }
+
+        // Fetch SPED Fiscal imported purchase notes from fechamentos
+        let spedPurchases: any[] = [];
+        try {
+            const [fechRows] = await pool.query<RowDataPacket[]>(
+                `SELECT id, public_id, competencia, observacao, sped_data_json, created_at 
+                 FROM fechamentos 
+                 WHERE company_id = ? AND sped_data_json IS NOT NULL AND sped_data_json != ''
+                 ORDER BY id DESC`,
+                [companyId]
+            );
+
+            const seenNfeKeys = new Set<string>();
+            for (const r of rows) {
+                if (r.nfe_key) seenNfeKeys.add(String(r.nfe_key).trim());
+            }
+
+            for (const fech of fechRows) {
+                if (!fech.sped_data_json) continue;
+                let parsedSped: any = null;
+                try {
+                    parsedSped = typeof fech.sped_data_json === 'string' ? JSON.parse(fech.sped_data_json) : fech.sped_data_json;
+                } catch (e) {
+                    continue;
+                }
+
+                if (!parsedSped || !Array.isArray(parsedSped.documents)) continue;
+
+                const participantsMap = new Map<string, any>();
+                if (Array.isArray(parsedSped.participants)) {
+                    for (const part of parsedSped.participants) {
+                        if (part.codPart) participantsMap.set(String(part.codPart).trim(), part);
+                        if (part.name) participantsMap.set(String(part.name).trim().toUpperCase(), part);
+                    }
+                }
+
+                for (let idx = 0; idx < parsedSped.documents.length; idx++) {
+                    const doc = parsedSped.documents[idx];
+                    if (doc.indOper === '0' || doc.type === 'Entrada') {
+                        const nfeKey = (doc.chvDoc || '').trim();
+                        if (nfeKey && seenNfeKeys.has(nfeKey)) {
+                            continue;
+                        }
+                        if (nfeKey) seenNfeKeys.add(nfeKey);
+
+                        const part = participantsMap.get(String(doc.codPart || '').trim()) || 
+                                     participantsMap.get(String(doc.partName || '').trim().toUpperCase());
+
+                        let dateIso = '';
+                        const rawDocDate = doc.dtDoc || doc.dtES || doc.dt_doc || doc.dt_e_s;
+                        if (rawDocDate) {
+                            const clean = String(rawDocDate).trim();
+                            if (clean.includes('/')) {
+                                const p = clean.split('/');
+                                if (p.length === 3) dateIso = `${p[2]}-${p[1]!.padStart(2, '0')}-${p[0]!.padStart(2, '0')}`;
+                            } else if (clean.includes('-')) {
+                                dateIso = clean.slice(0, 10);
+                            } else if (clean.length === 8) {
+                                const d = clean.slice(0, 2);
+                                const m = clean.slice(2, 4);
+                                const y = clean.slice(4, 8);
+                                dateIso = `${y}-${m}-${d}`;
+                            }
+                        }
+                        if (!dateIso && fech.competencia) {
+                            const compClean = String(fech.competencia).trim();
+                            if (compClean.includes('/')) {
+                                const p = compClean.split('/');
+                                if (p.length === 2) dateIso = `${p[1]}-${p[0]!.padStart(2, '0')}-01`;
+                            } else if (compClean.includes('-')) {
+                                dateIso = `${compClean.slice(0, 7)}-01`;
+                            } else if (compClean.length === 6) {
+                                const first4 = parseInt(compClean.slice(0, 4), 10);
+                                if (first4 >= 1990 && first4 <= 2100) {
+                                    dateIso = `${compClean.slice(0, 4)}-${compClean.slice(4, 6)}-01`;
+                                } else {
+                                    dateIso = `${compClean.slice(2, 6)}-${compClean.slice(0, 2)}-01`;
+                                }
+                            }
+                        }
+
+                        const docPublicId = `sped-${fech.id}-${doc.chvDoc || (doc.numDoc + '_' + (doc.serie || '1')) || idx}`;
+
+                        spedPurchases.push({
+                            public_id: docPublicId,
+                            fechamento_id: fech.id,
+                            fechamento_public_id: fech.public_id,
+                            competencia: fech.competencia,
+                            date: dateIso || fech.created_at,
+                            total_amount: Number(doc.vlDoc || 0),
+                            status: doc.codSit === '02' ? 'cancelled' : 'completed',
+                            nfe_key: doc.chvDoc || null,
+                            nfe_issue_date: dateIso || null,
+                            nfe_header_json: {
+                                numero: doc.numDoc,
+                                serie: doc.serie,
+                                modelo: doc.reg?.includes('55') ? '55' : (doc.reg?.includes('CT-e') ? '57' : '55'),
+                                reg: doc.reg,
+                                source: 'SPED Fiscal',
+                                competencia: fech.competencia,
+                                vlIcms: doc.vlIcms || 0,
+                                vlPis: doc.vlPis || 0,
+                                vlCofins: doc.vlCofins || 0,
+                                codSit: doc.codSit,
+                                observacao: fech.observacao
+                            },
+                            supplier_name: doc.partName || part?.name || 'Fornecedor SPED',
+                            supplier_cnpj: part?.cnpj_cpf || '',
+                            items_count: 0,
+                            is_sped: 1,
+                            source: 'sped'
+                        });
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching SPED purchase notes:', err);
+        }
+
+        const combined = [...rows, ...spedPurchases].sort((a, b) => {
+            const dateA = new Date(a.date || a.nfe_issue_date || 0).getTime();
+            const dateB = new Date(b.date || b.nfe_issue_date || 0).getTime();
+            return dateB - dateA;
+        });
+
+        return combined.slice(0, limit);
     }
 
     static async createPurchaseOrder(companyId: number, userPublicId: string, data: CreatePurchaseData): Promise<PurchaseOrder> {
@@ -46,9 +178,19 @@ export class PurchaseRepository {
             const orderDate = toBrazilDate(data.date);
 
             const [orderResult] = await conn.query<ResultSetHeader>(
-                `INSERT INTO purchase_orders (public_id, company_id, supplier_id, total_amount, status, date) 
-                 VALUES (?, ?, ?, ?, 'completed', ?)`,
-                [publicId, companyId, supplier.id, 0, orderDate]
+                `INSERT INTO purchase_orders (public_id, company_id, supplier_id, total_amount, status, date, nfe_key, nfe_issue_date, nfe_header_json, nfe_xml) 
+                 VALUES (?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?)`,
+                [
+                    publicId,
+                    companyId,
+                    supplier.id,
+                    0,
+                    orderDate,
+                    data.nfe_key || null,
+                    data.nfe_issue_date || null,
+                    data.nfe_header_json ? (typeof data.nfe_header_json === 'string' ? data.nfe_header_json : JSON.stringify(data.nfe_header_json)) : null,
+                    data.nfe_xml || null
+                ]
             );
             const purchaseId = orderResult.insertId;
 
@@ -96,6 +238,123 @@ export class PurchaseRepository {
     }
 
     static async getPurchaseById(publicId: string, companyId: number): Promise<any> {
+        if (publicId.startsWith('sped-')) {
+            const parts = publicId.split('-');
+            const fechId = parseInt(parts[1] || '0', 10);
+
+            const [fechRows] = await pool.query<RowDataPacket[]>(
+                `SELECT id, public_id, competencia, observacao, sped_data_json, created_at 
+                 FROM fechamentos 
+                 WHERE id = ? AND company_id = ? LIMIT 1`,
+                [fechId, companyId]
+            );
+
+            if (!fechRows || fechRows.length === 0 || !fechRows[0]) {
+                throw new AppError('Nota Fiscal de Compra SPED não encontrada', 404);
+            }
+
+            const fech = fechRows[0]!;
+            let parsedSped: any = null;
+            try {
+                parsedSped = typeof fech.sped_data_json === 'string' ? JSON.parse(fech.sped_data_json) : fech.sped_data_json;
+            } catch (e) {
+                throw new AppError('Erro ao ler dados SPED da nota fiscal', 500);
+            }
+
+            if (!parsedSped || !Array.isArray(parsedSped.documents)) {
+                throw new AppError('Documentos SPED não encontrados no fechamento', 404);
+            }
+
+            const participantsMap = new Map<string, any>();
+            if (Array.isArray(parsedSped.participants)) {
+                for (const part of parsedSped.participants) {
+                    if (part.codPart) participantsMap.set(String(part.codPart).trim(), part);
+                    if (part.name) participantsMap.set(String(part.name).trim().toUpperCase(), part);
+                }
+            }
+
+            for (let idx = 0; idx < parsedSped.documents.length; idx++) {
+                const doc = parsedSped.documents[idx];
+                const expectedDocId = `sped-${fech.id}-${doc.chvDoc || (doc.numDoc + '_' + (doc.serie || '1')) || idx}`;
+                if (expectedDocId === publicId || (doc.chvDoc && publicId.includes(doc.chvDoc)) || (doc.numDoc && publicId.includes(doc.numDoc))) {
+                    const part = participantsMap.get(String(doc.codPart || '').trim()) || 
+                                 participantsMap.get(String(doc.partName || '').trim().toUpperCase());
+
+                    let dateIso = '';
+                    const rawDocDate = doc.dtDoc || doc.dtES || doc.dt_doc || doc.dt_e_s;
+                    if (rawDocDate) {
+                        const clean = String(rawDocDate).trim();
+                        if (clean.includes('/')) {
+                            const p = clean.split('/');
+                            if (p.length === 3) dateIso = `${p[2]}-${p[1]!.padStart(2, '0')}-${p[0]!.padStart(2, '0')}`;
+                        } else if (clean.includes('-')) {
+                            dateIso = clean.slice(0, 10);
+                        } else if (clean.length === 8) {
+                            const d = clean.slice(0, 2);
+                            const m = clean.slice(2, 4);
+                            const y = clean.slice(4, 8);
+                            dateIso = `${y}-${m}-${d}`;
+                        }
+                    }
+                    if (!dateIso && fech.competencia) {
+                        const compClean = String(fech.competencia).trim();
+                        if (compClean.includes('/')) {
+                            const p = compClean.split('/');
+                            if (p.length === 2) dateIso = `${p[1]}-${p[0]!.padStart(2, '0')}-01`;
+                        } else if (compClean.includes('-')) {
+                            dateIso = `${compClean.slice(0, 7)}-01`;
+                        } else if (compClean.length === 6) {
+                            const first4 = parseInt(compClean.slice(0, 4), 10);
+                            if (first4 >= 1990 && first4 <= 2100) {
+                                dateIso = `${compClean.slice(0, 4)}-${compClean.slice(4, 6)}-01`;
+                            } else {
+                                dateIso = `${compClean.slice(2, 6)}-${compClean.slice(0, 2)}-01`;
+                            }
+                        }
+                    }
+
+                    return {
+                        id: fech.id,
+                        public_id: publicId,
+                        company_id: companyId,
+                        fechamento_id: fech.id,
+                        fechamento_public_id: fech.public_id,
+                        competencia: fech.competencia,
+                        date: dateIso || fech.created_at,
+                        total_amount: Number(doc.vlDoc || 0),
+                        status: doc.codSit === '02' ? 'cancelled' : 'completed',
+                        nfe_key: doc.chvDoc || null,
+                        nfe_issue_date: dateIso || null,
+                        nfe_header_json: {
+                            numero: doc.numDoc,
+                            serie: doc.serie,
+                            modelo: doc.reg?.includes('55') ? '55' : (doc.reg?.includes('CT-e') ? '57' : '55'),
+                            reg: doc.reg,
+                            source: 'SPED Fiscal',
+                            competencia: fech.competencia,
+                            vlIcms: doc.vlIcms || 0,
+                            vlPis: doc.vlPis || 0,
+                            vlCofins: doc.vlCofins || 0,
+                            codSit: doc.codSit,
+                            observacao: fech.observacao
+                        },
+                        supplier_name: doc.partName || part?.name || 'Fornecedor SPED',
+                        supplier_cnpj: part?.cnpj || part?.cpf || part?.cnpj_cpf || '',
+                        supplier_street: part?.end || part?.street || '',
+                        supplier_number: part?.num || part?.number || '',
+                        supplier_neighborhood: part?.bairro || part?.neighborhood || '',
+                        supplier_city: part?.city || part?.codMun || '',
+                        supplier_state: part?.state || part?.uf || '',
+                        items: [],
+                        is_sped: 1,
+                        source: 'sped'
+                    };
+                }
+            }
+
+            throw new AppError('Documento SPED específico não localizado', 404);
+        }
+
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT p.*, e.name as supplier_name, e.cnpj_cpf as supplier_cnpj,
              e.street as supplier_street, e.number as supplier_number,
@@ -119,6 +378,10 @@ export class PurchaseRepository {
     }
 
     static async cancelPurchaseOrder(publicId: string, companyId: number): Promise<void> {
+        if (publicId.startsWith('sped-')) {
+            throw new AppError('Documentos importados via SPED Fiscal devem ser ajustados diretamente no Fechamento ou reimportando o arquivo SPED.', 400);
+        }
+
         const conn = await pool.getConnection();
         try {
             await conn.beginTransaction();

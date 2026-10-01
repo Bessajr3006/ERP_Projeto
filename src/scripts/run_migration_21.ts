@@ -64,6 +64,10 @@ async function addCompanyColumnIfMissing(columnName: string, columnDefinition: s
         await conn.query(`ALTER TABLE companies ADD COLUMN ${columnName} ${columnDefinition}`);
         console.log(`[OK] add companies.${columnName}`);
     } catch (err: any) {
+        if (err.code === 'ER_DUP_FIELDNAME' || err.errno === 1060) {
+            console.log(`[SKIP] companies.${columnName} already exists (caught duplicate)`);
+            return;
+        }
         console.error(`[ERROR] Falha ao adicionar companies.${columnName}:`, err.message);
         throw err;
     } finally {
@@ -82,8 +86,9 @@ async function ensureIsSystemIndex(): Promise<void> {
 
 async function ensureUsersRoleEnum(): Promise<void> {
     const roleMeta = await getColumnMeta('users', 'role');
-    if (roleMeta && String(roleMeta.COLUMN_TYPE).toLowerCase() === REQUIRED_USER_ROLE_ENUM) {
-        console.log('[SKIP] users.role enum already aligned');
+    const colType = String(roleMeta?.COLUMN_TYPE || '').toLowerCase();
+    if (colType.startsWith('varchar') || colType === REQUIRED_USER_ROLE_ENUM) {
+        console.log('[SKIP] users.role already aligned or is varchar');
         return;
     }
 
@@ -106,11 +111,15 @@ async function ensureUsersRoleEnum(): Promise<void> {
         console.warn('Could not sanitize legacy role values:', e);
     }
 
-    await runSql(
-        'expand users.role enum',
-        `ALTER TABLE users
-         MODIFY COLUMN role ENUM('admin', 'user', 'operator', 'financial', 'manager', 'seller', 'accountant', 'buyer', 'service_provider', 'super_admin') NOT NULL DEFAULT 'user'`
-    );
+    try {
+        await runSql(
+            'expand users.role enum',
+            `ALTER TABLE users
+             MODIFY COLUMN role ENUM('admin', 'user', 'operator', 'financial', 'manager', 'seller', 'accountant', 'buyer', 'service_provider', 'super_admin') NOT NULL DEFAULT 'user'`
+        );
+    } catch (e) {
+        console.warn('Could not alter users.role enum:', e);
+    }
 }
 
 export async function runMigration21(): Promise<void> {

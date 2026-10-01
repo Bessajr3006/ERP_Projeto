@@ -1,0 +1,921 @@
+(() => {
+    let sociosManager;
+    let socioDocMask = null;
+    let socioPhoneMask = null;
+    let socioZipMask = null;
+    let socioIbgeStates = [];
+    const api = window.api;
+    const Auth = window.Auth;
+    const UI = window.UI;
+    const getById = (id) => document.getElementById(id);
+    const makeMask = window.createMaskAdapter || ((input, options) => window.IMask(input, options));
+    const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+    const setMaskedValue = (maskInstance, inputId, value) => {
+        if (maskInstance) {
+            if (inputId === 'socioDocument') {
+                maskInstance.unmaskedValue = String(value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            }
+            else {
+                maskInstance.unmaskedValue = onlyDigits(value);
+            }
+            return;
+        }
+        const input = getById(inputId);
+        if (input)
+            input.value = value || '';
+    };
+    const getMaskedValue = (maskInstance, inputId) => {
+        if (maskInstance)
+            return maskInstance.unmaskedValue || '';
+        const val = getById(inputId)?.value || '';
+        if (inputId === 'socioDocument') {
+            return String(val).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        }
+        return onlyDigits(val);
+    };
+    const getTrimmedValue = (inputId) => String(getById(inputId)?.value || '').trim();
+    const formatDoc = (doc) => {
+        if (!doc)
+            return '-';
+        const clean = String(doc).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (clean.length === 11)
+            return clean.replace(/([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{2})/, '$1.$2.$3-$4');
+        if (clean.length === 14)
+            return clean.replace(/([a-zA-Z0-9]{2})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{4})([a-zA-Z0-9]{2})/, '$1.$2.$3/$4-$5');
+        return String(doc);
+    };
+    const formatPhone = (phone) => {
+        if (!phone)
+            return '-';
+        const clean = String(phone).replace(/\D/g, '');
+        if (clean.length === 10)
+            return clean.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        if (clean.length === 11)
+            return clean.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        if (clean.length === 12)
+            return clean.replace(/(\d{2})(\d{2})(\d{4})(\d{4})/, '+$1 ($2) $3-$4');
+        if (clean.length === 13)
+            return clean.replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, '+$1 ($2) $3-$4');
+        return String(phone);
+    };
+    const formatSocioLocation = (item) => {
+        const city = String(item.city || '').trim();
+        const state = String(item.state || '').trim();
+        if (!city && !state)
+            return 'Não informado';
+        return [city, state].filter(Boolean).join(' / ');
+    };
+    const populateSocioStateOptions = (selectedValue = '') => {
+        const stateSelect = getById('socioState');
+        if (!stateSelect || !socioIbgeStates.length)
+            return;
+        const normalizedSelectedValue = String(selectedValue || '').trim().toUpperCase();
+        stateSelect.innerHTML = [
+            '<option value="">Selecione...</option>',
+            ...socioIbgeStates.map((state) => `<option value="${state.uf}">${state.uf} - ${state.name}</option>`),
+        ].join('');
+        stateSelect.value = socioIbgeStates.some((state) => state.uf === normalizedSelectedValue)
+            ? normalizedSelectedValue
+            : '';
+    };
+    const loadSocioStateOptions = async (selectedValue = '') => {
+        try {
+            if (!socioIbgeStates.length) {
+                const response = await api('/companies/states');
+                socioIbgeStates = response.data || [];
+            }
+            populateSocioStateOptions(selectedValue);
+        }
+        catch (error) {
+            console.error('Falha ao carregar UFs do IBGE para sócios', error);
+        }
+    };
+    const lookupAddressByCep = async (cep) => {
+        const normalizedCep = onlyDigits(cep);
+        if (normalizedCep.length !== 8)
+            return null;
+        let data = null;
+        let cepNotFound = false;
+        try {
+            const viaCepResponse = await fetch(`https://viacep.com.br/ws/${normalizedCep}/json/`);
+            if (viaCepResponse.ok) {
+                const viaCepData = await viaCepResponse.json();
+                if (!viaCepData.erro) {
+                    data = {
+                        street: viaCepData.logradouro,
+                        neighborhood: viaCepData.bairro,
+                        city: viaCepData.localidade,
+                        state: viaCepData.uf,
+                        complement: viaCepData.complemento,
+                    };
+                }
+                else {
+                    cepNotFound = true;
+                }
+            }
+        }
+        catch (_error) { }
+        if (!data && !cepNotFound) {
+            try {
+                const brasilApiResponse = await fetch(`https://brasilapi.com.br/api/cep/v1/${normalizedCep}`);
+                if (brasilApiResponse.ok) {
+                    data = await brasilApiResponse.json();
+                }
+            }
+            catch (_error) { }
+        }
+        return data;
+    };
+    const applySocioCepLookupResult = (data) => {
+        if (!data)
+            return;
+        getById('socioStreet').value = data.street || '';
+        getById('socioNeighborhood').value = data.neighborhood || '';
+        getById('socioCity').value = data.city || '';
+        getById('socioComplement').value = data.complement || '';
+        populateSocioStateOptions(data.state || '');
+    };
+    const handleSocioCepLookup = async () => {
+        const loader = getById('socioCepLoading');
+        const cep = getMaskedValue(socioZipMask, 'socioZipcode');
+        if (cep.length !== 8)
+            return;
+        if (loader)
+            loader.classList.remove('hidden');
+        try {
+            const data = await lookupAddressByCep(cep);
+            if (data && (data.street || data.city)) {
+                applySocioCepLookupResult(data);
+            }
+            else {
+                UI.showAlert('alertMessage', 'CEP do sócio não encontrado ou inválido.', 'error');
+            }
+        }
+        catch (error) {
+            console.error('Falha ao consultar CEP', error);
+        }
+        finally {
+            if (loader)
+                loader.classList.add('hidden');
+        }
+    };
+    const handleSocioDocumentLookup = async () => {
+        const documentValue = getMaskedValue(socioDocMask, 'socioDocument');
+        if (documentValue.length !== 14)
+            return;
+        try {
+            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${documentValue}`);
+            const data = await response.json();
+            if (!response.ok || !data?.razao_social) {
+                UI.showAlert('alertMessage', 'CNPJ do sócio não encontrado ou inválido.', 'error');
+                return;
+            }
+            if (!getTrimmedValue('socioName'))
+                getById('socioName').value = data.nome_fantasia || data.razao_social || '';
+            if (!getTrimmedValue('socioEmail'))
+                getById('socioEmail').value = data.email || '';
+            if (!getMaskedValue(socioPhoneMask, 'socioPhone'))
+                setMaskedValue(socioPhoneMask, 'socioPhone', data.ddd_telefone_1 || '');
+            if (!getMaskedValue(socioZipMask, 'socioZipcode'))
+                setMaskedValue(socioZipMask, 'socioZipcode', data.cep || '');
+            if (!getTrimmedValue('socioStreet'))
+                getById('socioStreet').value = data.logradouro || '';
+            if (!getTrimmedValue('socioNumber'))
+                getById('socioNumber').value = data.numero || '';
+            if (!getTrimmedValue('socioComplement'))
+                getById('socioComplement').value = data.complemento || '';
+            if (!getTrimmedValue('socioNeighborhood'))
+                getById('socioNeighborhood').value = data.bairro || '';
+            if (!getTrimmedValue('socioCity'))
+                getById('socioCity').value = data.municipio || '';
+            populateSocioStateOptions(data.uf || '');
+            if (data.cep) {
+                const cepData = await lookupAddressByCep(data.cep);
+                if (cepData) {
+                    applySocioCepLookupResult({
+                        ...cepData,
+                        complement: cepData.complement || getTrimmedValue('socioComplement') || data.complemento || '',
+                    });
+                }
+            }
+        }
+        catch (error) {
+            console.error('Falha ao consultar documento', error);
+        }
+    };
+    const setupSocioFormEnhancements = () => {
+        const documentInput = getById('socioDocument');
+        const phoneInput = getById('socioPhone');
+        const zipcodeInput = getById('socioZipcode');
+        if (documentInput && !socioDocMask) {
+            socioDocMask = makeMask(documentInput, {
+                mask: [
+                    { mask: '000.000.000-00' },
+                    {
+                        mask: 'XX.XXX.XXX/XXXX-XX',
+                        definitions: {
+                            'X': /[a-zA-Z0-9]/
+                        }
+                    }
+                ],
+                prepare: (str) => str.toUpperCase()
+            });
+            documentInput.addEventListener('blur', handleSocioDocumentLookup);
+        }
+        if (phoneInput && !socioPhoneMask) {
+            socioPhoneMask = makeMask(phoneInput, {
+                mask: [{ mask: '(00) 0000-0000' }, { mask: '(00) 00000-0000' }],
+            });
+        }
+        if (zipcodeInput && !socioZipMask) {
+            socioZipMask = makeMask(zipcodeInput, { mask: '00000-000' });
+            socioZipMask.on('complete', handleSocioCepLookup);
+        }
+        const btnSearchSocioCep = document.getElementById('btnSearchSocioCep');
+        if (btnSearchSocioCep) {
+            btnSearchSocioCep.addEventListener('click', () => {
+                void handleSocioCepLookup();
+            });
+        }
+    };
+    const applySocioPrefillFromQuery = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('prefill') !== 'socio')
+            return;
+        const queryName = params.get('name') || '';
+        const queryPhone = params.get('phone') || '';
+        const queryEmail = params.get('email') || '';
+        if (getById('socioName') && queryName)
+            getById('socioName').value = queryName;
+        if (getById('socioEmail') && queryEmail)
+            getById('socioEmail').value = queryEmail;
+        if (queryPhone)
+            setMaskedValue(socioPhoneMask, 'socioPhone', queryPhone);
+        const openBtn = getById('btnOpenModal');
+        if (openBtn)
+            openBtn.click();
+    };
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!Auth.requireAuth())
+            return;
+        setupSocioFormEnhancements();
+        await loadSocioStateOptions();
+        setupDetailsModalTabs();
+        api('/auth/me')
+            .then((res) => {
+            const userGreeting = getById('userGreeting');
+            if (userGreeting && res.data && res.data.user) {
+                userGreeting.textContent = `Olá, ${res.data.user.full_name || 'Usuário'}`;
+            }
+            else if (userGreeting && res.data) {
+                userGreeting.textContent = `Olá, ${res.data.full_name || 'Usuário'}`;
+            }
+        })
+            .catch(console.error);
+        const FilterPanel = window.FilterPanel;
+        sociosManager = new window.CrudManager({
+            entityName: 'Sócio',
+            endpoint: '/users',
+            tableId: 'sociosTable',
+            tableSectionId: 'sociosSection',
+            modalId: 'entityModal',
+            disableSummaryFooter: true,
+            filterConfig: {
+                storageKey: 'socios_filter_panel',
+                fields: [
+                    { id: 'filterSearch', type: 'text', label: 'Busca', placeholder: 'Nome, documento, email...' },
+                    {
+                        id: 'filterStatus',
+                        type: 'select',
+                        label: 'Status',
+                        options: [
+                            { value: '', label: 'Todos' },
+                            { value: 'active', label: 'Ativos' },
+                            { value: 'inactive', label: 'Inativos' },
+                        ],
+                    },
+                ],
+            },
+            applyFilters: (data) => {
+                const search = FilterPanel.normalizeText(getById('filterSearch')?.value);
+                const searchDigits = FilterPanel.onlyDigits(search);
+                const status = getById('filterStatus')?.value || '';
+                const filtered = data.filter((item) => {
+                    if (item.role !== 'socio')
+                        return false;
+                    if (status === 'active' && !item.is_active)
+                        return false;
+                    if (status === 'inactive' && item.is_active)
+                        return false;
+                    if (!search)
+                        return true;
+                    if (FilterPanel.matchesSearch(item, ['full_name', 'email', 'cpf_cnpj', 'phone', 'city', 'state'], search))
+                        return true;
+                    if (!searchDigits)
+                        return false;
+                    return [item.cpf_cnpj, item.phone]
+                        .map((value) => FilterPanel.onlyDigits(value))
+                        .some((value) => String(value).includes(searchDigits));
+                });
+                window.GridSummaryFooter?.update({
+                    footerId: 'sociosResultsFooter',
+                    anchorId: 'sociosSection',
+                    count: filtered.length,
+                    label: 'sócio(s) exibido(s)',
+                });
+                return filtered;
+            },
+            renderTable: (items) => {
+                const tbody = getById('sociosTable');
+                if (items.length === 0) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum sócio encontrado.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items
+                    .map((item, index) => {
+                    return `
+                <tr class="${!item.is_active ? 'opacity-50' : ''}">
+                    <td class="px-3 py-4 whitespace-nowrap text-left w-12">
+                        <input type="checkbox" id="chk_tbl_${item.public_id}" name="socioSelect[]" value="${item.public_id}" placeholder="" data-bwignore="true" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">#${String(index + 1).padStart(4, '0')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <div class="flex items-center gap-2">
+                            <span>${item.full_name}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${formatDoc(item.cpf_cnpj)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <div class="truncate max-w-55" title="${item.email || ''}">${item.email || '-'}</div>
+                        <div>${formatPhone(item.phone)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${formatSocioLocation(item)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        ${item.is_active
+                        ? '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Ativo</span>'
+                        : '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inativo</span>'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button type="button" title="Detalhes" class="text-indigo-600 hover:text-indigo-900 dark:hover:text-indigo-400 mr-2 open-details-btn" data-id="${item.public_id}" data-name="${item.full_name}">
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </button>
+                        <button type="button" title="Editar" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-2 edit-btn" data-item='${JSON.stringify(item).replace(/'/g, '&#39;')}' data-id="${item.public_id}">
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </button>
+                        ${item.is_active
+                        ? `<button type="button" title="Desativar" class="text-red-600 hover:text-red-900 dark:hover:text-red-400 mr-2 toggle-status-btn" data-id="${item.public_id}" data-action="false">
+                                 <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                               </button>`
+                        : `<button type="button" title="Ativar" class="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300 mr-2 toggle-status-btn" data-id="${item.public_id}" data-action="true">
+                                 <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                               </button>`}
+                    </td>
+                </tr>
+            `;
+                })
+                    .join('');
+            },
+            onEdit: (data) => {
+                getById('entityForm')?.reset();
+                const socioIdInput = getById('socioId');
+                const modalTitle = getById('modalTitle');
+                const passwordInput = getById('socioPassword');
+                const passwordHint = getById('passwordHint');
+                const statusSelect = getById('socioStatus');
+                if (data && data.public_id) {
+                    modalTitle.textContent = 'Editar Sócio';
+                    socioIdInput.value = data.public_id || '';
+                    getById('socioName').value = data.full_name || '';
+                    getById('socioEmail').value = data.email || '';
+                    getById('socioStreet').value = data.street || '';
+                    getById('socioNumber').value = data.number || '';
+                    getById('socioComplement').value = data.complement || '';
+                    getById('socioNeighborhood').value = data.neighborhood || '';
+                    getById('socioCity').value = data.city || '';
+                    if (passwordInput)
+                        passwordInput.required = false;
+                    if (passwordHint)
+                        passwordHint.classList.remove('hidden');
+                    if (statusSelect)
+                        statusSelect.value = data.is_active ? 'active' : 'inactive';
+                    setMaskedValue(socioDocMask, 'socioDocument', data.cpf_cnpj || '');
+                    setMaskedValue(socioPhoneMask, 'socioPhone', data.phone || '');
+                    setMaskedValue(socioZipMask, 'socioZipcode', data.zipcode || '');
+                    populateSocioStateOptions(data.state || '');
+                }
+                else {
+                    modalTitle.textContent = 'Novo Sócio';
+                    socioIdInput.value = '';
+                    if (passwordInput)
+                        passwordInput.required = false;
+                    if (passwordHint)
+                        passwordHint.classList.add('hidden');
+                    if (statusSelect)
+                        statusSelect.value = 'active';
+                    setMaskedValue(socioDocMask, 'socioDocument', '');
+                    setMaskedValue(socioPhoneMask, 'socioPhone', '');
+                    setMaskedValue(socioZipMask, 'socioZipcode', '');
+                    populateSocioStateOptions('');
+                }
+            },
+        });
+        await sociosManager.init();
+        applySocioPrefillFromQuery();
+        const tableBody = getById('sociosTable');
+        tableBody?.addEventListener('click', async (e) => {
+            const btn = e.target?.closest?.('.toggle-status-btn');
+            if (btn) {
+                const id = btn.getAttribute('data-id');
+                const action = btn.getAttribute('data-action') === 'true';
+                if (!confirm(`Tem certeza que deseja ${action ? 'ativar' : 'desativar'} este sócio?`))
+                    return;
+                try {
+                    await api(`/users/${id}/status`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ is_active: action }),
+                    });
+                    UI.showAlert('alertMessage', `Sócio ${action ? 'ativado' : 'desativado'} com sucesso!`, 'success');
+                    await sociosManager.loadData();
+                }
+                catch (error) {
+                    UI.showAlert('alertMessage', error.message || 'Erro ao atualizar status do sócio.', 'error');
+                }
+            }
+        });
+        getById('entityForm')?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const saveBtn = getById('saveBtn');
+            const socioId = getTrimmedValue('socioId');
+            const isEditing = Boolean(socioId);
+            const payload = {
+                full_name: getTrimmedValue('socioName'),
+                email: getTrimmedValue('socioEmail'),
+                passwordRaw: getTrimmedValue('socioPassword'),
+                role: 'socio',
+                is_active: (getById('socioStatus')?.value || 'active') !== 'inactive',
+                cpf_cnpj: getMaskedValue(socioDocMask, 'socioDocument') || undefined,
+                phone: getMaskedValue(socioPhoneMask, 'socioPhone') || undefined,
+                zipcode: getMaskedValue(socioZipMask, 'socioZipcode') || undefined,
+                street: getTrimmedValue('socioStreet') || undefined,
+                number: getTrimmedValue('socioNumber') || undefined,
+                complement: getTrimmedValue('socioComplement') || undefined,
+                neighborhood: getTrimmedValue('socioNeighborhood') || undefined,
+                city: getTrimmedValue('socioCity') || undefined,
+                state: getTrimmedValue('socioState') || undefined,
+            };
+            if (isEditing && !payload.passwordRaw) {
+                payload.passwordRaw = '';
+            }
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Salvando...';
+            const endpoint = isEditing ? `/users/${socioId}` : '/users';
+            const method = isEditing ? 'PATCH' : 'POST';
+            try {
+                await api(endpoint, {
+                    method,
+                    body: JSON.stringify(payload),
+                });
+                UI.showAlert('alertMessage', isEditing ? 'Sócio atualizado com sucesso!' : 'Sócio cadastrado com sucesso!', 'success');
+                sociosManager.closeModal();
+                await sociosManager.loadData();
+            }
+            catch (error) {
+                UI.showAlert('alertMessage', error.message || 'Erro ao salvar sócio.', 'error');
+            }
+            finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Salvar';
+            }
+        });
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            const btn = target?.closest('.open-details-btn');
+            if (btn) {
+                const id = btn.getAttribute('data-id');
+                const name = btn.getAttribute('data-name') || '';
+                if (id) {
+                    void openViewDetailsModal(id, name);
+                }
+            }
+        });
+        function setupDetailsModalTabs() {
+            const tabButtons = document.querySelectorAll('#viewSocioDetailsModal .details-modal-tab');
+            tabButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-details-tab-target');
+                    if (!targetId)
+                        return;
+                    tabButtons.forEach((b) => {
+                        const isActive = b === btn;
+                        b.setAttribute('aria-selected', String(isActive));
+                        b.classList.toggle('border-brand-500', isActive);
+                        b.classList.toggle('text-brand-600', isActive);
+                        b.classList.toggle('dark:text-brand-300', isActive);
+                        b.classList.toggle('border-transparent', !isActive);
+                        b.classList.toggle('text-gray-500', !isActive);
+                        b.classList.toggle('dark:text-gray-400', !isActive);
+                    });
+                    document.querySelectorAll('#viewSocioDetailsModal .details-modal-tab-panel').forEach((panel) => {
+                        if (panel.id === targetId) {
+                            panel.classList.remove('hidden');
+                        }
+                        else {
+                            panel.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+        }
+        function resetDetailsModalTabs() {
+            const tabButtons = Array.from(document.querySelectorAll('#viewSocioDetailsModal .details-modal-tab'));
+            const visibleButtons = tabButtons.filter((btn) => !btn.classList.contains('hidden'));
+            tabButtons.forEach((btn) => {
+                const isSelected = visibleButtons.length > 0 && btn === visibleButtons[0];
+                btn.setAttribute('aria-selected', String(isSelected));
+                btn.classList.toggle('border-brand-500', isSelected);
+                btn.classList.toggle('text-brand-600', isSelected);
+                btn.classList.toggle('dark:text-brand-300', isSelected);
+                btn.classList.toggle('border-transparent', !isSelected);
+                btn.classList.toggle('text-gray-500', !isSelected);
+                btn.classList.toggle('dark:text-gray-400', !isSelected);
+            });
+            document.querySelectorAll('#viewSocioDetailsModal .details-modal-tab-panel').forEach((panel) => {
+                const panelId = panel.getAttribute('id');
+                const correspondingBtn = tabButtons.find((btn) => btn.getAttribute('aria-controls') === panelId);
+                const shouldBeVisible = correspondingBtn && visibleButtons.length > 0 && correspondingBtn === visibleButtons[0];
+                if (shouldBeVisible) {
+                    panel.classList.remove('hidden');
+                }
+                else {
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+        async function openViewDetailsModal(socioId, socioName) {
+            const modal = getById('viewSocioDetailsModal');
+            const closeBtn = modal?.querySelector('#btnCloseViewDetailsModal');
+            const cancelBtn = modal?.querySelector('#btnCancelViewDetailsModal');
+            const backdrop = modal?.querySelector('#viewDetailsModalBackdrop');
+            if (!modal)
+                return;
+            const closeModal = () => {
+                modal.classList.add('hidden');
+            };
+            closeBtn?.addEventListener('click', closeModal, { once: true });
+            cancelBtn?.addEventListener('click', closeModal, { once: true });
+            backdrop?.addEventListener('click', closeModal, { once: true });
+            modal.classList.remove('hidden');
+            const socio = sociosManager?.data?.find((c) => c.public_id === socioId);
+            const docEl = modal.querySelector('#viewDetailsDocument');
+            const emailEl = modal.querySelector('#viewDetailsEmail');
+            const phoneEl = modal.querySelector('#viewDetailsPhone');
+            const locEl = modal.querySelector('#viewDetailsLocation');
+            const titleNameEl = modal.querySelector('#viewDetailsSocioName');
+            if (titleNameEl)
+                titleNameEl.textContent = socioName;
+            if (docEl)
+                docEl.textContent = formatDoc(socio?.cpf_cnpj);
+            if (emailEl) {
+                emailEl.textContent = socio?.email || 'Não informado';
+                emailEl.title = socio?.email || '';
+            }
+            if (phoneEl)
+                phoneEl.textContent = formatPhone(socio?.phone);
+            if (locEl)
+                locEl.textContent = formatSocioLocation(socio || {});
+            const mapSocioAddressSpan = modal.querySelector('#mapSocioAddress');
+            const googleMapsIframe = modal.querySelector('#googleMapsIframe');
+            const btnOpenWaze = modal.querySelector('#btnOpenWaze');
+            const btnOpenGoogleMaps = modal.querySelector('#btnOpenGoogleMaps');
+            if (socio) {
+                const addressParts = [
+                    socio.street,
+                    socio.number,
+                    socio.neighborhood,
+                    socio.city,
+                    socio.state,
+                    socio.zipcode
+                ].filter(Boolean);
+                const addressStr = addressParts.join(', ');
+                if (mapSocioAddressSpan) {
+                    mapSocioAddressSpan.textContent = addressStr || 'Endereço não cadastrado';
+                }
+                const authCtx = window.gNavbarAuthContext;
+                const company = authCtx?.company;
+                const companyAddressParts = company ? [
+                    company.street,
+                    company.number,
+                    company.neighborhood,
+                    company.city,
+                    company.state,
+                    company.zipcode
+                ].filter(Boolean) : [];
+                const companyAddressStr = companyAddressParts.join(', ');
+                if (addressStr) {
+                    let embedUrl = '';
+                    let mapsUrl = '';
+                    let wazeUrl = '';
+                    if (companyAddressStr) {
+                        embedUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(companyAddressStr)}&daddr=${encodeURIComponent(addressStr)}&output=embed`;
+                        mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(companyAddressStr)}&destination=${encodeURIComponent(addressStr)}`;
+                        wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(addressStr)}&navigate=yes`;
+                    }
+                    else {
+                        embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(addressStr)}&output=embed`;
+                        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressStr)}`;
+                        wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(addressStr)}&navigate=yes`;
+                    }
+                    if (googleMapsIframe) {
+                        googleMapsIframe.src = embedUrl;
+                    }
+                    if (btnOpenWaze) {
+                        btnOpenWaze.href = wazeUrl;
+                        btnOpenWaze.classList.remove('hidden');
+                    }
+                    if (btnOpenGoogleMaps) {
+                        btnOpenGoogleMaps.href = mapsUrl;
+                        btnOpenGoogleMaps.classList.remove('hidden');
+                    }
+                }
+                else {
+                    if (googleMapsIframe)
+                        googleMapsIframe.removeAttribute('src');
+                    if (btnOpenWaze)
+                        btnOpenWaze.classList.add('hidden');
+                    if (btnOpenGoogleMaps)
+                        btnOpenGoogleMaps.classList.add('hidden');
+                }
+            }
+            else {
+                if (mapSocioAddressSpan)
+                    mapSocioAddressSpan.textContent = 'Não encontrado';
+                if (googleMapsIframe)
+                    googleMapsIframe.removeAttribute('src');
+                if (btnOpenWaze)
+                    btnOpenWaze.classList.add('hidden');
+                if (btnOpenGoogleMaps)
+                    btnOpenGoogleMaps.classList.add('hidden');
+            }
+            resetDetailsModalTabs();
+            const docContainer = modal.querySelector('#viewDetailsDocumentContainer');
+            let docsList = [];
+            const parseCnpjDocuments = (val) => {
+                if (!val)
+                    return [];
+                let list = [];
+                if (Array.isArray(val)) {
+                    list = val;
+                }
+                else {
+                    try {
+                        if (typeof val === 'string' && val.trim().startsWith('[')) {
+                            list = JSON.parse(val);
+                        }
+                        else if (typeof val === 'string' && val.trim() !== '') {
+                            list = [val];
+                        }
+                    }
+                    catch (e) { }
+                }
+                return list.map(item => {
+                    if (typeof item === 'string') {
+                        const fileName = item.substring(item.lastIndexOf('/') + 1);
+                        return { name: fileName, url: item, attachedAt: new Date(2026, 0, 1).toISOString() };
+                    }
+                    if (item && typeof item === 'object' && item.url) {
+                        return {
+                            name: item.name || item.url.substring(item.url.lastIndexOf('/') + 1),
+                            url: item.url,
+                            attachedAt: item.attachedAt || new Date().toISOString()
+                        };
+                    }
+                    return null;
+                }).filter(Boolean);
+            };
+            docsList = parseCnpjDocuments(socio?.cnpj_document_url);
+            const getBase64 = (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            };
+            const renderDetailsDocsList = () => {
+                if (!docContainer)
+                    return;
+                docsList.sort((a, b) => new Date(b.attachedAt || 0).getTime() - new Date(a.attachedAt || 0).getTime());
+                if (docsList.length === 0) {
+                    docContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12 gap-2 text-gray-400 dark:text-gray-500 w-full font-sans">
+                        <svg class="w-12 h-12 text-gray-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-sm font-medium">Nenhum documento anexado.</p>
+                    </div>
+                `;
+                    return;
+                }
+                docContainer.innerHTML = docsList.map((doc, idx) => {
+                    const fileName = doc.url.substring(doc.url.lastIndexOf('/') + 1);
+                    const d = doc.attachedAt ? new Date(doc.attachedAt) : null;
+                    const dateStr = d ? `Anexado em ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '';
+                    return `
+                    <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:border-brand-300 dark:hover:border-brand-700 transition-all font-sans mb-3">
+                        <a href="${doc.url}" target="_blank" class="flex items-center gap-3 flex-1 min-w-0 mr-4 group text-left cursor-pointer decoration-none">
+                            <div class="p-2 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/60 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">${doc.name}</p>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">${fileName}</p>
+                                ${dateStr ? `
+                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 font-mono mt-1 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        ${dateStr}
+                                    </p>
+                                ` : ''}
+                            </div>
+                        </a>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" class="btn-rename-doc p-1.5 rounded text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 transition-colors" data-index="${idx}" title="Renomear documento">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-delete-doc p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors" data-index="${idx}" title="Excluir documento">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+            };
+            renderDetailsDocsList();
+            const detailCnpjFileInput = modal.querySelector('#detailCnpjFile');
+            if (detailCnpjFileInput) {
+                const newFileInput = detailCnpjFileInput.cloneNode(true);
+                detailCnpjFileInput.parentNode?.replaceChild(newFileInput, detailCnpjFileInput);
+                newFileInput.addEventListener('change', async (e) => {
+                    const files = Array.from(newFileInput.files || []);
+                    if (files.length === 0)
+                        return;
+                    const uploads = [];
+                    for (const file of files) {
+                        try {
+                            const b64 = (await getBase64(file));
+                            const defaultName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                            uploads.push({
+                                name: defaultName,
+                                base64: b64,
+                                attachedAt: new Date().toISOString(),
+                                filename: file.name
+                            });
+                        }
+                        catch (err) {
+                            console.error(err);
+                        }
+                    }
+                    if (uploads.length > 0) {
+                        try {
+                            newFileInput.disabled = true;
+                            if (docContainer)
+                                docContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 animate-pulse font-sans">Enviando documentos...</p>';
+                            await api(`/users/${socioId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({
+                                    cnpj_document_uploads: uploads
+                                })
+                            });
+                            window.UI.showAlert('alertMessage', 'Documentos anexados com sucesso!', 'success');
+                            await sociosManager.loadData();
+                            const updatedSocio = sociosManager?.data?.find((c) => c.public_id === socioId);
+                            docsList = parseCnpjDocuments(updatedSocio?.cnpj_document_url);
+                            renderDetailsDocsList();
+                        }
+                        catch (err) {
+                            console.error(err);
+                            window.UI.showAlert('alertMessage', err.message || 'Erro ao enviar documentos.', 'error');
+                            renderDetailsDocsList();
+                        }
+                        finally {
+                            newFileInput.disabled = false;
+                            newFileInput.value = '';
+                        }
+                    }
+                });
+            }
+            if (docContainer) {
+                const newDocContainer = docContainer.cloneNode(true);
+                docContainer.parentNode?.replaceChild(newDocContainer, docContainer);
+                newDocContainer.addEventListener('click', async (e) => {
+                    const target = e.target;
+                    const renameBtn = target?.closest('.btn-rename-doc');
+                    const deleteBtn = target?.closest('.btn-delete-doc');
+                    if (renameBtn) {
+                        const idx = parseInt(renameBtn.getAttribute('data-index') || '0', 10);
+                        const doc = docsList[idx];
+                        if (doc) {
+                            const newName = prompt('Digite o novo nome para o documento:', doc.name);
+                            if (newName && newName.trim()) {
+                                docsList[idx].name = newName.trim();
+                                try {
+                                    await api(`/users/${socioId}`, {
+                                        method: 'PUT',
+                                        body: JSON.stringify({
+                                            cnpj_document_url: JSON.stringify(docsList)
+                                        })
+                                    });
+                                    window.UI.showAlert('alertMessage', 'Documento renomeado com sucesso!', 'success');
+                                    await sociosManager.loadData();
+                                    renderDetailsDocsList();
+                                }
+                                catch (err) {
+                                    console.error(err);
+                                    window.UI.showAlert('alertMessage', 'Erro ao renomear documento.', 'error');
+                                }
+                            }
+                        }
+                    }
+                    if (deleteBtn) {
+                        const idx = parseInt(deleteBtn.getAttribute('data-index') || '0', 10);
+                        if (confirm('Deseja realmente excluir este documento?')) {
+                            docsList.splice(idx, 1);
+                            try {
+                                await api(`/users/${socioId}`, {
+                                    method: 'PUT',
+                                    body: JSON.stringify({
+                                        cnpj_document_url: JSON.stringify(docsList)
+                                    })
+                                });
+                                window.UI.showAlert('alertMessage', 'Documento excluído com sucesso!', 'success');
+                                await sociosManager.loadData();
+                                renderDetailsDocsList();
+                            }
+                            catch (err) {
+                                console.error(err);
+                                window.UI.showAlert('alertMessage', 'Erro ao excluir documento.', 'error');
+                            }
+                        }
+                    }
+                });
+            }
+            const financialsTable = modal.querySelector('#viewDetailsFinancialsTable');
+            const tasksTable = modal.querySelector('#viewDetailsTasksTable');
+            if (financialsTable)
+                financialsTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans animate-pulse">Carregando...</td></tr>';
+            if (tasksTable)
+                tasksTable.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans animate-pulse">Carregando...</td></tr>';
+            try {
+                const [revenuesRes, expensesRes, tasksRes] = await Promise.all([
+                    api('/finance/revenues').catch(() => ({ data: [] })),
+                    api('/finance/expenses').catch(() => ({ data: [] })),
+                    api('/tasks').catch(() => ({ data: [] }))
+                ]);
+                const revenues = (revenuesRes.data || []).filter((tx) => tx.related_user_public_id === socioId);
+                const expenses = (expensesRes.data || []).filter((tx) => tx.related_user_public_id === socioId);
+                const transactions = [...revenues, ...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                if (financialsTable) {
+                    if (transactions.length === 0) {
+                        financialsTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhum lançamento financeiro encontrado.</td></tr>';
+                    }
+                    else {
+                        financialsTable.innerHTML = transactions.map((t) => `
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-sans">${t.description}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.status === 'paid' ? 'Pago' : 'Pendente'}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-mono ${t.type === 'revenue' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                                ${t.type === 'revenue' ? '+' : '-'}${Number(t.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                        </tr>
+                    `).join('');
+                    }
+                }
+                const tasks = (tasksRes.data || []).filter((t) => t.personType === 'socio' && t.personId === socioId);
+                if (tasksTable) {
+                    if (tasks.length === 0) {
+                        tasksTable.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhuma tarefa encontrada.</td></tr>';
+                    }
+                    else {
+                        tasksTable.innerHTML = tasks.map((t) => `
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-sans">${t.title}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : '-'}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.status}</td>
+                        </tr>
+                    `).join('');
+                    }
+                }
+            }
+            catch (error) {
+                console.error('Erro ao buscar dados do sócio:', error);
+            }
+        }
+    });
+})();

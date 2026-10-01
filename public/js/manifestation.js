@@ -1,7 +1,7 @@
 (() => {
     const state = {
         docs: [],
-        lastNSU: localStorage.getItem('last_nsu_manifestation') || '0',
+        lastNSU: window.CompanyStorage?.getItem('last_nsu_manifestation') || localStorage.getItem('last_nsu_manifestation') || '0',
         loading: false,
     };
     const DfeTable = {
@@ -81,7 +81,12 @@
                         if (result.cStat === '137' || result.cStat === '138') {
                             state.docs = result.docs || [];
                             state.lastNSU = result.ultNSU || state.lastNSU;
-                            localStorage.setItem('last_nsu_manifestation', state.lastNSU);
+                            if (window.CompanyStorage) {
+                                window.CompanyStorage.setItem('last_nsu_manifestation', state.lastNSU);
+                            }
+                            else {
+                                localStorage.setItem('last_nsu_manifestation', state.lastNSU);
+                            }
                             DfeTable.render();
                             window.dispatchEvent(new CustomEvent('add-notification', {
                                 detail: {
@@ -181,7 +186,12 @@
                 if (consultData.cStat === '137' || consultData.cStat === '138') {
                     state.docs = consultData.docs || [];
                     state.lastNSU = consultData.ultNSU || state.lastNSU;
-                    localStorage.setItem('last_nsu_manifestation', state.lastNSU);
+                    if (window.CompanyStorage) {
+                        window.CompanyStorage.setItem('last_nsu_manifestation', state.lastNSU);
+                    }
+                    else {
+                        localStorage.setItem('last_nsu_manifestation', state.lastNSU);
+                    }
                     DfeTable.render();
                     window.dispatchEvent(new CustomEvent('add-notification', {
                         detail: {
@@ -307,7 +317,12 @@
                 if (!confirm('Deseja reiniciar a consulta do zero? Isso re-enviará notas antigas (dentro de 90 dias).'))
                     return;
                 state.lastNSU = '0';
-                localStorage.setItem('last_nsu_manifestation', '0');
+                if (window.CompanyStorage) {
+                    window.CompanyStorage.setItem('last_nsu_manifestation', '0');
+                }
+                else {
+                    localStorage.setItem('last_nsu_manifestation', '0');
+                }
                 state.docs = [];
                 DfeTable.render();
                 await syncSefaz();

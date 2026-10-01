@@ -5,6 +5,9 @@ export interface ProductCategory {
     name: string;
     description?: string;
     image_base64?: string | null;
+    idgrupopos?: string | null;
+    poscontrol_synced?: boolean;
+    active?: boolean;
     created_at: Date;
     updated_at: Date;
 }
@@ -13,12 +16,18 @@ export interface CreateProductCategoryData {
     name: string;
     description?: string;
     image_base64?: string | null;
+    idgrupopos?: string | null;
+    poscontrol_synced?: boolean;
+    active?: boolean;
 }
 
 export interface UpdateProductCategoryData {
     name?: string;
     description?: string;
     image_base64?: string | null;
+    idgrupopos?: string | null;
+    poscontrol_synced?: boolean;
+    active?: boolean;
 }
 
 export interface StockType {
@@ -176,6 +185,7 @@ export interface Measure {
     company_id: number;
     name: string;
     abbreviation: string;
+    idmedidapos?: string | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -183,11 +193,13 @@ export interface Measure {
 export interface CreateMeasureData {
     name: string;
     abbreviation: string;
+    idmedidapos?: string | null;
 }
 
 export interface UpdateMeasureData {
     name?: string;
     abbreviation?: string;
+    idmedidapos?: string | null;
 }
 
 export interface ServiceType {
@@ -215,6 +227,11 @@ export interface Service {
     public_id: string; // UUID
     company_id: number;
     name: string;
+    cost: number;
+    tax_percent: number;
+    tax_amount: number;
+    total_cost: number;
+    markup: number;
     price: number;
     description?: string | null;
     service_type_id?: number | null;
@@ -233,6 +250,11 @@ export interface Service {
 
 export interface CreateServiceData {
     name: string;
+    cost: number;
+    tax_percent: number;
+    tax_amount: number;
+    total_cost: number;
+    markup: number;
     price: number;
     description?: string | null;
     service_type_public_id?: string | null;
@@ -247,6 +269,11 @@ export interface CreateServiceData {
 
 export interface UpdateServiceData {
     name?: string;
+    cost?: number;
+    tax_percent?: number;
+    tax_amount?: number;
+    total_cost?: number;
+    markup?: number;
     price?: number;
     description?: string | null;
     service_type_public_id?: string | null;
@@ -264,11 +291,15 @@ export interface ServiceLaunch {
     public_id: string;
     company_id: number;
     customer_id: number;
-    service_id: number;
+    service_id?: number | null;
     customer_public_id: string;
     customer_name: string;
-    service_public_id: string;
-    service_name: string;
+    service_public_id?: string | null;
+    service_name?: string | null;
+    product_id?: number | null;
+    product_public_id?: string | null;
+    product_name?: string | null;
+    type?: 'service' | 'product';
     quantity: number;
     unit_price: number;
     total_price: number;
@@ -290,7 +321,8 @@ export interface ServiceLaunch {
 
 export interface CreateServiceLaunchData {
     customer_public_id: string;
-    service_public_id: string;
+    service_public_id?: string | null;
+    product_public_id?: string | null;
     quantity: number;
     unit_price: number;
     observation?: string | null;
@@ -299,7 +331,8 @@ export interface CreateServiceLaunchData {
 
 export interface UpdateServiceLaunchData {
     customer_public_id?: string;
-    service_public_id?: string;
+    service_public_id?: string | null;
+    product_public_id?: string | null;
     quantity?: number;
     unit_price?: number;
     observation?: string | null;

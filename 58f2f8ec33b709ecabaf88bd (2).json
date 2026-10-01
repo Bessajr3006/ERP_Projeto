@@ -1,0 +1,2921 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "API - POS CONTROLE",
+        "description": "Autenticação e troca de informações",
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "https://api.poscontrole.com.br/v2"
+        }
+    ],
+    "paths": {
+        "/auth/token": {
+            "post": {
+                "summary": "/auth/token - POST",
+                "description": "O Endpoint de Autenticação é utilizado para validar o usuário e senha da API e recuperar o Token para acesso.\n",
+                "operationId": "58f2fdb7b315c10e98185c65",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {}
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Autenticado com Sucesso.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenArray"
+                                },
+                                "example": [
+                                    {
+                                        "jwt": "string"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/sales": {
+            "get": {
+                "summary": "/sales?datetimeini={datetimeini}&datetimeend={datetimeend} - GET",
+                "description": "O endpoint de Vendas retorna a(s) venda(s) de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "58f2fdb7b315c10e98185c66",
+                "parameters": [
+                    {
+                        "name": "datetimeini",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do início do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "datetimeend",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do final do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products": {
+            "post": {
+                "summary": "/products - POST",
+                "description": "O endpoint de Produtos cadastra o(s) produtos(s) em determinada loja do cliente (limite de 20 produtos por requisição).\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "58f2fdb7b315c10e98185c68",
+                "requestBody": {
+                    "description": "Informações do produto.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProductsArray"
+                            },
+                            "example": [
+                                {
+                                    "Product": {
+                                        "ProductID": "string",
+                                        "StatusID": "string",
+                                        "ProductGroupID": "string",
+                                        "ProductTypeID": "string",
+                                        "UnitTypeID": "string",
+                                        "Name": "string",
+                                        "NameEng": "string",
+                                        "InternalCode": "string",
+                                        "BarCode": "string",
+                                        "ImageBase64": "string",
+                                        "NFCeNCM": "string",
+                                        "NFCeCFOP": "string",
+                                        "NFCeCST": "string",
+                                        "NFCeCEST": "string",
+                                        "NFCeAliqICMS": "string",
+                                        "SalePrice": "string",
+                                        "NFCeCSTPIS": "string",
+                                        "NFCeAliqPIS": "string",
+                                        "NFCeCSTCOFINS": "string",
+                                        "NFCeAliqCOFINS": "string"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductsArray"
+                                },
+                                "example": [
+                                    {
+                                        "Product": {
+                                            "ProductID": "string",
+                                            "StatusID": "string",
+                                            "ProductGroupID": "string",
+                                            "ProductTypeID": "string",
+                                            "UnitTypeID": "string",
+                                            "Name": "string",
+                                            "NameEng": "string",
+                                            "InternalCode": "string",
+                                            "BarCode": "string",
+                                            "ImageBase64": "string",
+                                            "NFCeNCM": "string",
+                                            "NFCeCFOP": "string",
+                                            "NFCeCST": "string",
+                                            "NFCeCEST": "string",
+                                            "NFCeAliqICMS": "string",
+                                            "SalePrice": "string",
+                                            "NFCeCSTPIS": "string",
+                                            "NFCeAliqPIS": "string",
+                                            "NFCeCSTCOFINS": "string",
+                                            "NFCeAliqCOFINS": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "/products - GET",
+                "description": "O endpoint de Produtos retorna o(s) produtos(s) de determinada loja do cliente.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "59301980b315c10d6c82fd20",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductsArray"
+                                },
+                                "example": [
+                                    {
+                                        "Product": {
+                                            "ProductID": "string",
+                                            "StatusID": "string",
+                                            "ProductGroupID": "string",
+                                            "ProductTypeID": "string",
+                                            "UnitTypeID": "string",
+                                            "Name": "string",
+                                            "NameEng": "string",
+                                            "InternalCode": "string",
+                                            "BarCode": "string",
+                                            "ImageBase64": "string",
+                                            "NFCeNCM": "string",
+                                            "NFCeCFOP": "string",
+                                            "NFCeCST": "string",
+                                            "NFCeCEST": "string",
+                                            "NFCeAliqICMS": "string",
+                                            "SalePrice": "string",
+                                            "NFCeCSTPIS": "string",
+                                            "NFCeAliqPIS": "string",
+                                            "NFCeCSTCOFINS": "string",
+                                            "NFCeAliqCOFINS": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/productgroups": {
+            "get": {
+                "summary": "/productgroups - GET",
+                "description": "Retorna a Lista de Grupos de Produtos.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                "operationId": "58f2fdb7b315c10e98185c6a",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Grupos de Produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductGroupsArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductGroup": {
+                                            "ProductGroupID": "string",
+                                            "StatusID": "string",
+                                            "Name": "string",
+                                            "ImageGroupBase64": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "/productgroups - POST",
+                "description": "Adiciona/Atualiza Grupos de Produtos.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                "operationId": "productgroups-post",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Grupos de Produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductGroupsArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductGroup": {
+                                            "ProductGroupID": "string",
+                                            "StatusID": "string",
+                                            "Name": "string",
+                                            "ImageGroupBase64": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/producttypes": {
+            "get": {
+                "summary": "/producttypes - GET",
+                "description": "Retorna a Lista de Tipos de Produtos.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "58f2fdb7b315c10e98185c6b",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Tipos de Produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductTypesArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductType": {
+                                            "ProductTypeID": "string",
+                                            "Name": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/unittypes": {
+            "get": {
+                "summary": "/unittypes",
+                "description": "Retorna a Lista de Unidades de Produtos.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "58f2fdb7b315c10e98185c6c",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Unidades de Produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnitTypesArray"
+                                },
+                                "example": [
+                                    {
+                                        "UnitType": {
+                                            "UnitTypeID": "string",
+                                            "Name": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/statustypes": {
+            "get": {
+                "summary": "/statustypes - GET",
+                "description": "Retorna a Lista de de Status do Sistema.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "592dd5a2b315c10d6c82fd00",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatusArray"
+                                },
+                                "example": [
+                                    {
+                                        "Product": {
+                                            "StatusID": "string",
+                                            "Name": "string",
+                                            "ShortName": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "summary": "/users - GET",
+                "description": "Retorna a Lista dos Usuários da Empresa.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "59553cf3b315c11658258c6f",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Tipos de Produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UsersArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductType": {
+                                            "UsersID": "string",
+                                            "Name": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "/users - POST",
+                "description": "Retorna a Lista dos Usuários da Empresa.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "users-POST",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Tipos de Produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UsersArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductType": {
+                                            "UsersID": "string",
+                                            "Name": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/closedDraw": {
+            "get": {
+                "summary": "/closedDraw?datetimeini={datetimeini}&datetimeend={datetimeend} - GET",
+                "description": "O endpoint retorna o(s) fechamento(s) de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "closedDraw-get",
+                "parameters": [
+                    {
+                        "name": "datetimeini",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do início do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "datetimeend",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do final do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/closedDrawArray"
+                                },
+                                "example": [
+                                    {
+                                        "closedDraw": {
+                                            "closedDrawID": "string",
+                                            "DatetimeClosedDraw": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/canceledSales": {
+            "get": {
+                "summary": "/canceledSales?datetimeini={datetimeini}&datetimeend={datetimeend} - GET",
+                "description": "O endpoint de Vendas retorna a(s) venda(s) cancelada(s) de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "get-canceledSales",
+                "parameters": [
+                    {
+                        "name": "datetimeini",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do início do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "datetimeend",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do final do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/paymenttypes": {
+            "get": {
+                "summary": "/paymenttypes - GET",
+                "description": "Retorna a Lista de Tipos de Pagamentos.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "paymenttypes-get",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Tipos de Formas de Pagamento.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentTypesArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductType": {
+                                            "PaymentTypesID": "string",
+                                            "StatusID": "string",
+                                            "Name": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/personalCardsfull": {
+            "post": {
+                "summary": "/personalCardsfull - POST",
+                "description": "Para acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "post-personalcardsfull",
+                "requestBody": {
+                    "description": "Informações do produto.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/personalCardsArray"
+                            },
+                            "example": [
+                                {
+                                    "personalCards": {
+                                        "cardNumber": "string"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista com o retorno de cada item processado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/personalCardsArray"
+                                },
+                                "example": [
+                                    {
+                                        "personalCards": {
+                                            "cardNumber": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "/personalCardsfull - GET",
+                "description": "Para acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "get-personalcardsfull",
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista com o retorno de cada item processado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/personalCardsArray"
+                                },
+                                "example": [
+                                    {
+                                        "personalCards": {
+                                            "cardNumber": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/salesGroupProduct": {
+            "get": {
+                "summary": "/salesGroupProduct?dateini={dateini}&dateend={dateend} - GET",
+                "description": "O endpoint de Vendas retorna o valor das vendas totalizado por dia, de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "v2-salesGroupProduct",
+                "parameters": [
+                    {
+                        "name": "dateini",
+                        "in": "query",
+                        "description": "Format - date (Exemplo: 2012-03-31). Data do início do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dateend",
+                        "in": "query",
+                        "description": "Format - date (Exemplo: 2012-03-31). Data do final do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/salesDay": {
+            "get": {
+                "summary": "/salesDay?dateini={dateini}&dateend={dateend} - GET",
+                "description": "O endpoint retorna o valor das vendas no período por Grupo e Produto, de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "v2-salesDay",
+                "parameters": [
+                    {
+                        "name": "dateini",
+                        "in": "query",
+                        "description": "Format - date (Exemplo: 2012-03-31). Data do início do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dateend",
+                        "in": "query",
+                        "description": "Format - date (Exemplo: 2012-03-31). Data do final do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/salesSpool": {
+            "get": {
+                "summary": "/salesSpool?datetimeini={datetimeini}&datetimeend={datetimeend} - GET",
+                "description": "O endpoint de Vendas retorna a(s) venda(s) não integradas de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "v2-salesSpool",
+                "parameters": [
+                    {
+                        "name": "datetimeini",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do início do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "datetimeend",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do final do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    },
+                    {
+                        "name": "SaleIDs",
+                        "in": "header",
+                        "description": "[SaleID, SaleID]",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "[]"
+                            ],
+                            "type": "string",
+                            "default": "[]"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/salebySaleID": {
+            "get": {
+                "summary": "/salebySaleID?SalePosCodeID={SalePosCodeID} - GET",
+                "description": "O endpoint de Vendas retorna a(s) venda(s) de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "v2-salebySaleID",
+                "parameters": [
+                    {
+                        "name": "SalePosCodeID",
+                        "in": "query",
+                        "description": "ID da venda.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/productbyProductID": {
+            "get": {
+                "summary": "/productbyProductID - GET",
+                "description": "O endpoint de Produtos retorna o(s) produtos(s) de determinada loja do cliente.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "productbyProductID-get",
+                "parameters": [
+                    {
+                        "name": "ProductID",
+                        "in": "query",
+                        "description": "ID do Produto",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductsArray"
+                                },
+                                "example": [
+                                    {
+                                        "Product": {
+                                            "ProductID": "string",
+                                            "StatusID": "string",
+                                            "ProductGroupID": "string",
+                                            "ProductTypeID": "string",
+                                            "UnitTypeID": "string",
+                                            "Name": "string",
+                                            "NameEng": "string",
+                                            "InternalCode": "string",
+                                            "BarCode": "string",
+                                            "ImageBase64": "string",
+                                            "NFCeNCM": "string",
+                                            "NFCeCFOP": "string",
+                                            "NFCeCST": "string",
+                                            "NFCeCEST": "string",
+                                            "NFCeAliqICMS": "string",
+                                            "SalePrice": "string",
+                                            "NFCeCSTPIS": "string",
+                                            "NFCeAliqPIS": "string",
+                                            "NFCeCSTCOFINS": "string",
+                                            "NFCeAliqCOFINS": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/vrfTicket": {
+            "get": {
+                "summary": "/vrfTicket?tktID={tktID} - GET",
+                "description": "O endpoint de Vendas retorna a(s) venda(s) de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "v2-vrfTicket",
+                "parameters": [
+                    {
+                        "name": "tktID",
+                        "in": "query",
+                        "description": "ID do Ticket.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com o ID da Venda e do Item.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/vrfTicketUpd": {
+            "get": {
+                "summary": "/vrfTicketUpdt?SaleItemsID={SaleItemsID} - GET",
+                "description": "O endpoint de Vendas retorna a(s) venda(s) de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "v2-vrfTicketUpd",
+                "parameters": [
+                    {
+                        "name": "SaleItemsID",
+                        "in": "query",
+                        "description": "ID do Item. Deve ser utilizado o ID recebido na Consulta do ticket.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com o ID da Venda e do Item.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/suprimentosSangrias": {
+            "get": {
+                "summary": "/suprimentosSangrias?datetimeini={datetimeini}&datetimeend={datetimeend} - GET",
+                "description": "O endpoint retorna o(s) suprimeto(s) e sangria(s) de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "suprimentosSangrias-get",
+                "parameters": [
+                    {
+                        "name": "datetimeini",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do início do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "datetimeend",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do final do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OpenDrawArray"
+                                },
+                                "example": [
+                                    {
+                                        "OpenDraw": {
+                                            "OpenDrawID": "string",
+                                            "DatetimeOpenDraw": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/salesXMLjson": {
+            "get": {
+                "summary": "/salesXMLjson?datetimeini={datetimeini}&datetimeend={datetimeend} - GET (clone)",
+                "description": "O endpoint de Vendas retorna a(s) venda(s) de determinada loja do cliente dentro do período solicitado.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "66acd193f5e7ab99d2bc5274",
+                "parameters": [
+                    {
+                        "name": "datetimeini",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do início do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "datetimeend",
+                        "in": "query",
+                        "description": "Format - date-time (Exemplo: 2012-03-31T10:00:00). Data e hora do final do período.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array com as vendas.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SalesArray"
+                                },
+                                "example": [
+                                    {
+                                        "Sale": {
+                                            "SaleID": "string",
+                                            "USersID": "string",
+                                            "DatetimeSale": "string",
+                                            "SaleStatus": "string",
+                                            "SalePosCodeID": "string",
+                                            "CpfCnpj": "string",
+                                            "numnf": "string",
+                                            "serienf": "string",
+                                            "accesskey": "string",
+                                            "digval": "string",
+                                            "nprot": "string",
+                                            "dhrecbto": "string",
+                                            "qrCode": "string",
+                                            "urlSefazConsumer": "string",
+                                            "tributo": "string",
+                                            "NFCeID": "string",
+                                            "Identificador": "string",
+                                            "PropertyNumber": "string",
+                                            "CRSapore": "string",
+                                            "CXSapore": "string",
+                                            "idMotivoDesc": "string",
+                                            "txtMotivoDesc": "string",
+                                            "idMotivoNFCe": "string",
+                                            "txtMotivoNFCe": "string",
+                                            "EnvType": "string",
+                                            "retXML": "string",
+                                            "SaleItems": {
+                                                "ProductID": "string",
+                                                "InternalCode": "string",
+                                                "Quantity": "string",
+                                                "PriceAmount": "string",
+                                                "NFCeNCM": "string",
+                                                "NFCeCFOP": "string",
+                                                "NFCeCST": "string",
+                                                "NFCeAliqICMS": "string",
+                                                "NFCeCEST": "string",
+                                                "NFCeCSTPIS": "string",
+                                                "NFCeAliqPIS": "string",
+                                                "NFCeCSTCOFINS": "string",
+                                                "NFCeAliqCOFINS": "string",
+                                                "NFCeCodANP": "string"
+                                            },
+                                            "SalePaymentType": {
+                                                "PaymentTypeID": "string",
+                                                "Name": "string",
+                                                "PaidAmount": "string",
+                                                "TEFType": "string",
+                                                "TEFAutorizacao": "string",
+                                                "TEFDataHora": "string",
+                                                "TEFRede": "string",
+                                                "TEFCartao": "string",
+                                                "TEFNSUSitef": "string",
+                                                "TEFNSUHost": "string",
+                                                "TEFParcelas": "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/getPDVlist": {
+            "get": {
+                "summary": "/getPDVlist - GET",
+                "description": "Retorna a Lista de Tipos de Pagamentos.\n\nPara acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "66b123f28d6ff6e86f2f13c9",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Tipos de Formas de Pagamento.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentTypesArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductType": {
+                                            "PaymentTypesID": "string",
+                                            "StatusID": "string",
+                                            "Name": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pos_upd": {
+            "get": {
+                "summary": "/pos_upd",
+                "description": "Para acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "678697c23324a3a00735d2ea",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Tipos de Produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UsersArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductType": {
+                                            "UsersID": "string",
+                                            "Name": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "/pos_upd",
+                "description": "Para acessar a API é necessário enviar um token JWT válido no cabeçalho 'Authorization' em todas as solicitações.\nPara gerar um token JWT válido é necessário requisitar o endpoint /auth/token utilizando um nome de usuário e senha.\nA sintaxe abaixo deve ser utilizada no cabeçalho 'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz\n",
+                "operationId": "678697e63532b61781dd6272",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "'Authorization': Bearer xxxxxx.yyyyyyy.zzzzzz",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                            ],
+                            "type": "string",
+                            "default": "Bearer xxxxxx.yyyyyyy.zzzzzz"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Um array contendo a lista de Tipos de Produtos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UsersArray"
+                                },
+                                "example": [
+                                    {
+                                        "ProductType": {
+                                            "UsersID": "string",
+                                            "Name": "string"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                },
+                                "example": {
+                                    "code": 0,
+                                    "message": "string",
+                                    "fields": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Token": {
+                "type": "object",
+                "properties": {
+                    "jwt": {
+                        "type": "string",
+                        "description": "Um objeto JWT que deverá ser utilizado em todas as outras requisições."
+                    }
+                }
+            },
+            "Sales": {
+                "type": "object",
+                "properties": {
+                    "Sale": {
+                        "type": "object",
+                        "properties": {
+                            "SaleID": {
+                                "type": "string",
+                                "description": "string(36) Uniqueidentifier da Venda - Chave Primária da Tabela"
+                            },
+                            "USersID": {
+                                "type": "string",
+                                "description": "string(36) Uniqueidentifier do Usuário"
+                            },
+                            "DatetimeSale": {
+                                "type": "string",
+                                "description": "string(19) Data/Hora da Venda."
+                            },
+                            "SaleStatus": {
+                                "type": "string",
+                                "description": "string(1) Status da venda 1 - Venda; 2 - ; 3 - Venda Cancelada; 4 - ;"
+                            },
+                            "SalePosCodeID": {
+                                "type": "string",
+                                "description": "string(50) Chave Única da venda gerada pelo terminal."
+                            },
+                            "CpfCnpj": {
+                                "type": "string",
+                                "description": "string(18) CPF/CNPJ do cliente"
+                            },
+                            "numnf": {
+                                "type": "string",
+                                "description": "string(10) Número da NFC-e"
+                            },
+                            "serienf": {
+                                "type": "string",
+                                "description": "string(3) Série da NFC-e"
+                            },
+                            "accesskey": {
+                                "type": "string",
+                                "description": "string(50) AccessKey da NFC-e"
+                            },
+                            "digval": {
+                                "type": "string",
+                                "description": "string(50) Digval da NFC-e"
+                            },
+                            "nprot": {
+                                "type": "string",
+                                "description": "string(50) NProt da NFC-e"
+                            },
+                            "dhrecbto": {
+                                "type": "string",
+                                "description": "string(50) Data de Recebimento da NFC-e"
+                            },
+                            "qrCode": {
+                                "type": "string",
+                                "description": "string(500) qrCode da NFC-e"
+                            },
+                            "urlSefazConsumer": {
+                                "type": "string",
+                                "description": "string(500) URL de consulta da NFC-e na Sefaz"
+                            },
+                            "tributo": {
+                                "type": "string",
+                                "description": "string(12) Valor total dos tributos aproximados da NFC-e"
+                            },
+                            "NFCeID": {
+                                "type": "string",
+                                "description": "string(50) NFCeID da NFC-e"
+                            },
+                            "Identificador": {
+                                "type": "string",
+                                "description": "string(30) Campo livre para identificacao, quando utilizada impressao de fichas"
+                            },
+                            "PropertyNumber": {
+                                "type": "string",
+                                "description": "string(5) Número de propriedade do Terminal."
+                            },
+                            "CRSapore": {
+                                "type": "string",
+                                "description": "string(5) Número de Unidade da Sapore."
+                            },
+                            "CXSapore": {
+                                "type": "string",
+                                "description": "string(3) Número do caixa na unidade da Sapore."
+                            },
+                            "idMotivoDesc": {
+                                "type": "string",
+                                "description": "string(3) Nao utilizado."
+                            },
+                            "txtMotivoDesc": {
+                                "type": "string",
+                                "description": "string(3) Nao utilizado."
+                            },
+                            "idMotivoNFCe": {
+                                "type": "string",
+                                "description": "string(3) Nao utilizado."
+                            },
+                            "txtMotivoNFCe": {
+                                "type": "string",
+                                "description": "string(3) Nao utilizado."
+                            },
+                            "EnvType": {
+                                "type": "string",
+                                "description": "string(1) Ambiente de emissao NFC-e 1-Producao; 2-Homologacao"
+                            },
+                            "retXML": {
+                                "type": "string",
+                                "description": "string(3) Nao utilizado"
+                            },
+                            "SaleItems": {
+                                "type": "object",
+                                "properties": {
+                                    "ProductID": {
+                                        "type": "string",
+                                        "description": "string(36) Uniqueidentifier do Produto"
+                                    },
+                                    "InternalCode": {
+                                        "type": "string",
+                                        "description": "string(15) Código Interno do Produto"
+                                    },
+                                    "Quantity": {
+                                        "type": "string",
+                                        "description": "decimal(5,2) Quantidade"
+                                    },
+                                    "PriceAmount": {
+                                        "type": "string",
+                                        "description": "decimal(7,2) Preço"
+                                    },
+                                    "NFCeNCM": {
+                                        "type": "string",
+                                        "description": "string(8) NCM utilizado na venda"
+                                    },
+                                    "NFCeCFOP": {
+                                        "type": "string",
+                                        "description": "string(4) CFOP utilizado na venda"
+                                    },
+                                    "NFCeCST": {
+                                        "type": "string",
+                                        "description": "string(4) CST utilizado na venda"
+                                    },
+                                    "NFCeAliqICMS": {
+                                        "type": "string",
+                                        "description": "decimal(4,2) Alíquota de ICMS utilizada na venda."
+                                    },
+                                    "NFCeCEST": {
+                                        "type": "string",
+                                        "description": "string(7) CEST utilizado na venda"
+                                    },
+                                    "NFCeCSTPIS": {
+                                        "type": "string",
+                                        "description": "string(4) CST PIS utilizado na venda"
+                                    },
+                                    "NFCeAliqPIS": {
+                                        "type": "string",
+                                        "description": "decimal(4,2) Alíquota de PIS utilizada na venda."
+                                    },
+                                    "NFCeCSTCOFINS": {
+                                        "type": "string",
+                                        "description": "string(4) CST COFINS utilizado na venda"
+                                    },
+                                    "NFCeAliqCOFINS": {
+                                        "type": "string",
+                                        "description": "decimal(4,2) Alíquota de COFINS utilizada na venda."
+                                    },
+                                    "NFCeCodANP": {
+                                        "type": "string",
+                                        "description": "decimal(4,2) Cod ANP utilizado na venda."
+                                    }
+                                }
+                            },
+                            "SalePaymentType": {
+                                "type": "object",
+                                "properties": {
+                                    "PaymentTypeID": {
+                                        "type": "string",
+                                        "description": "string(36) Uniqueidentifier da Forma de Pagamento"
+                                    },
+                                    "Name": {
+                                        "type": "string",
+                                        "description": "string(50) Descricao da forma de pagamento"
+                                    },
+                                    "PaidAmount": {
+                                        "type": "string",
+                                        "description": "decimal(8,2) Valor Pago"
+                                    },
+                                    "TEFType": {
+                                        "type": "string",
+                                        "description": "string(2) Tipo de operação TEF -- Vide tabela."
+                                    },
+                                    "TEFAutorizacao": {
+                                        "type": "string",
+                                        "description": "string(30) Código de autorização TEF."
+                                    },
+                                    "TEFDataHora": {
+                                        "type": "string",
+                                        "description": "string(25) Data hora da autorização. YYYYMMDDHHMMSS"
+                                    },
+                                    "TEFRede": {
+                                        "type": "string",
+                                        "description": "string(8) Rede de autorização do Cartão. -- Vide tabela."
+                                    },
+                                    "TEFCartao": {
+                                        "type": "string",
+                                        "description": "string(8) Bandeira do cartão. -- Vide tabela."
+                                    },
+                                    "TEFNSUSitef": {
+                                        "type": "string",
+                                        "description": "string NSU do Sitef. -- Vide tabela."
+                                    },
+                                    "TEFNSUHost": {
+                                        "type": "string",
+                                        "description": "string NSU do HOST. -- Vide tabela."
+                                    },
+                                    "TEFParcelas": {
+                                        "type": "string",
+                                        "description": "string(4) Quantidade de parcelas. -- Vide tabela."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "closedDraw": {
+                "type": "object",
+                "properties": {
+                    "closedDraw": {
+                        "type": "object",
+                        "properties": {
+                            "closedDrawID": {
+                                "type": "string",
+                                "description": "string(36) Uniqueidentifier da Venda - Chave Primária da Tabela"
+                            },
+                            "DatetimeClosedDraw": {
+                                "type": "string",
+                                "description": "string(19) Data/Hora da Venda."
+                            }
+                        }
+                    }
+                }
+            },
+            "Products": {
+                "type": "object",
+                "properties": {
+                    "Product": {
+                        "type": "object",
+                        "properties": {
+                            "ProductID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Produto - Chave Primária da Tabela. Na inclusão deve estar vazio."
+                            },
+                            "StatusID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Status do Produto - Chave Estrangeira da Tabela Status"
+                            },
+                            "ProductGroupID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Grupo do Produto - Chave Estrangeira da Tabela ProductGroup"
+                            },
+                            "ProductTypeID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Tipo de Produto - Chave Estrangeira da Tabela ProductType"
+                            },
+                            "UnitTypeID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier da Unidade do Produto - Chave Estrangeira da Tabela UnitType"
+                            },
+                            "Name": {
+                                "type": "string",
+                                "description": "(Tamanho 50) Nome do Produto."
+                            },
+                            "NameEng": {
+                                "type": "string",
+                                "description": "(Tamanho 50) Segundo campo de Nome do Produto."
+                            },
+                            "InternalCode": {
+                                "type": "string",
+                                "description": "(Tamanho 20) Código Interno do Produto (pode ser utilizado pelo ERP). Obrigatório"
+                            },
+                            "BarCode": {
+                                "type": "string",
+                                "description": "(Tamanho 20) Código de Barras do Produto"
+                            },
+                            "ImageBase64": {
+                                "type": "string",
+                                "description": "Imagem PNG do produto em Base64 70 x 70 pixels"
+                            },
+                            "NFCeNCM": {
+                                "type": "string",
+                                "description": "(Tamanho 10) NCM do produto."
+                            },
+                            "NFCeCFOP": {
+                                "type": "string",
+                                "description": "(Tamanho 6) CFOP do produto."
+                            },
+                            "NFCeCST": {
+                                "type": "string",
+                                "description": "(Tamanho 3) CST ICMS do produto."
+                            },
+                            "NFCeCEST": {
+                                "type": "string",
+                                "description": "(Tamanho 7) CEST do produto."
+                            },
+                            "NFCeAliqICMS": {
+                                "type": "string",
+                                "description": "decimal(5,2) Aliquota de ICMS do Produto."
+                            },
+                            "SalePrice": {
+                                "type": "string",
+                                "description": "decimal(12,4) Preço de Venda do Produto."
+                            },
+                            "NFCeCSTPIS": {
+                                "type": "string",
+                                "description": "(Tamanho 2) CST PIS do Produto."
+                            },
+                            "NFCeAliqPIS": {
+                                "type": "string",
+                                "description": "decimal(5,2) Aliquota de PIS do Produto."
+                            },
+                            "NFCeCSTCOFINS": {
+                                "type": "string",
+                                "description": "(Tamanho 2) CST COFINS do Produto."
+                            },
+                            "NFCeAliqCOFINS": {
+                                "type": "string",
+                                "description": "decimal(5,2) Aliquota de COFINS do Produto."
+                            }
+                        }
+                    }
+                }
+            },
+            "Status": {
+                "type": "object",
+                "properties": {
+                    "Product": {
+                        "type": "object",
+                        "properties": {
+                            "StatusID": {
+                                "type": "string",
+                                "description": "Chave Primária da Tabela"
+                            },
+                            "Name": {
+                                "type": "string",
+                                "description": "(Tamanho 50) Descrição do Status."
+                            },
+                            "ShortName": {
+                                "type": "string",
+                                "description": "(Tamanho 3) Descrição compacta do Status."
+                            }
+                        }
+                    }
+                }
+            },
+            "ProductTypes": {
+                "type": "object",
+                "properties": {
+                    "ProductType": {
+                        "type": "object",
+                        "properties": {
+                            "ProductTypeID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Tipo de Produto - Chave Primária da Tabela"
+                            },
+                            "Name": {
+                                "type": "string",
+                                "description": "(Tamanho 50) Descrição do Tipo de Produto."
+                            }
+                        }
+                    }
+                }
+            },
+            "PaymentTypes": {
+                "type": "object",
+                "properties": {
+                    "ProductType": {
+                        "type": "object",
+                        "properties": {
+                            "PaymentTypesID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Tipo de Produto - Chave Primária da Tabela"
+                            },
+                            "StatusID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier com Status da Forma de Pagamento."
+                            },
+                            "Name": {
+                                "type": "string",
+                                "description": "(Tamanho 50) Descrição do Forma de Pagamento."
+                            }
+                        }
+                    }
+                }
+            },
+            "Users": {
+                "type": "object",
+                "properties": {
+                    "ProductType": {
+                        "type": "object",
+                        "properties": {
+                            "UsersID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Usuario - Chave Primária da Tabela"
+                            },
+                            "Name": {
+                                "type": "string",
+                                "description": "(Tamanho 50) Descrição do Usuário."
+                            }
+                        }
+                    }
+                }
+            },
+            "UnitTypes": {
+                "type": "object",
+                "properties": {
+                    "UnitType": {
+                        "type": "object",
+                        "properties": {
+                            "UnitTypeID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier da Unidade do Produto - Chave Primária da Tabela"
+                            },
+                            "Name": {
+                                "type": "string",
+                                "description": "(Tamanho 50) Descrição da Unidade de Produto."
+                            }
+                        }
+                    }
+                }
+            },
+            "personalCards": {
+                "type": "object",
+                "properties": {
+                    "personalCards": {
+                        "type": "object",
+                        "properties": {
+                            "cardNumber": {
+                                "type": "string",
+                                "description": "Chave Primária da Tabela"
+                            }
+                        }
+                    }
+                }
+            },
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "fields": {
+                        "type": "string"
+                    }
+                }
+            },
+            "TokenArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/Token"
+                }
+            },
+            "SalesArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/Sales"
+                }
+            },
+            "closedDrawArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/closedDraw"
+                }
+            },
+            "OpenDrawArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/OpenDraw"
+                }
+            },
+            "ProductsArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/Products"
+                },
+                "example": "[\r\n  {\r\n    \"Product\": {\r\n      \"ProductID\": \"string\",\r\n      \"StatusID\": \"string\",\r\n      \"ProductGroupID\": \"string\",\r\n      \"ProductTypeID\": \"string\",\r\n      \"UnitTypeID\": \"string\",\r\n      \"Name\": \"string\",\r\n      \"NameEng\": \"string\",\r\n      \"InternalCode\": \"string\",\r\n      \"BarCode\": \"string\",\r\n      \"ImageBase64\": \"string\",\r\n      \"NFCeNCM\": \"string\",\r\n      \"NFCeCFOP\": \"string\",\r\n      \"NFCeCST\": \"string\",\r\n      \"NFCeCEST\": \"string\",\r\n      \"NFCeAliqICMS\": \"string\",\r\n      \"SalePrice\": \"string\",\r\n      \"NFCeCSTPIS\": \"string\",\r\n      \"NFCeAliqPIS\": \"string\",\r\n      \"NFCeCSTCOFINS\": \"string\",\r\n      \"NFCeAliqCOFINS\": \"string\"\r\n    }\r\n  }\r\n]"
+            },
+            "StatusArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/Status"
+                }
+            },
+            "ProductGroupsArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ProductGroups"
+                }
+            },
+            "ProductTypesArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/ProductTypes"
+                }
+            },
+            "PaymentTypesArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/PaymentTypes"
+                }
+            },
+            "UsersArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/Users"
+                }
+            },
+            "UnitTypesArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/UnitTypes"
+                }
+            },
+            "personalCardsArray": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/personalCards"
+                },
+                "example": "[\r\n  {\r\n    \"personalCards\": {\r\n      \"cardNumber\": \"string\"\r\n    }\r\n  }\r\n]"
+            },
+            "body": {
+                "example": "username=login&password=senha"
+            },
+            "Body": {},
+            "ProductGroups": {
+                "type": "object",
+                "properties": {
+                    "ProductGroup": {
+                        "type": "object",
+                        "properties": {
+                            "ProductGroupID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Grupo de Produtos - Chave Primária da Tabela"
+                            },
+                            "StatusID": {
+                                "type": "string",
+                                "description": "Uniqueidentifier do Status do Grupo de Produtos - Chave Estrangeira da Tabela Status"
+                            },
+                            "Name": {
+                                "type": "string",
+                                "description": "(Tamanho 50) Nome do Grupo de Produtos."
+                            },
+                            "ImageGroupBase64": {
+                                "type": "string",
+                                "description": "Imagem PNG em Base64 do Grupo de Produtos 70 x 70 pixels"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "Ocp-Apim-Subscription-Key",
+                "in": "header"
+            },
+            "apiKeyQuery": {
+                "type": "apiKey",
+                "name": "subscription-key",
+                "in": "query"
+            }
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        },
+        {
+            "apiKeyQuery": []
+        }
+    ]
+}

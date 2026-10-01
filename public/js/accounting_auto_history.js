@@ -1,5 +1,3 @@
-/// <reference path="./api.ts" />
-/// <reference path="./components/crud-manager.ts" />
 (() => {
     let histories = [];
     let isEditing = false;

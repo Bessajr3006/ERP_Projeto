@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AccountingController } from '../controllers/accountingController';
 import { AccountingEntryController } from '../controllers/accountingEntryController';
 import { AccountingAutoEntryController } from '../controllers/accountingAutoEntryController';
+import { AccountingClosingController } from '../controllers/accountingClosingController';
 import { protectRoute } from '../middlewares/authMiddleware';
 import { requireTenantContext } from '../middlewares/tenantMiddleware';
 
@@ -91,6 +92,84 @@ router.post('/chart-of-accounts/batch-delete', (req, res, next) => AccountingCon
  *       200: { description: Contas importadas }
  */
 router.post('/chart-of-accounts/batch-import', (req, res, next) => AccountingController.batchImportAccounts(req, res).catch(next));
+
+/**
+ * @openapi
+ * /accounting/solidcon-connections:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Listar conexões Solidcon disponíveis
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Lista de conexões retornada }
+ */
+router.get('/solidcon-connections', (req, res, next) => AccountingController.listSolidconConnections(req, res).catch(next));
+
+/**
+ * @openapi
+ * /accounting/solidcon-chart-of-accounts:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Consultar Plano de Contas direto do banco Solidcon
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Plano de contas retornado }
+ */
+router.get('/solidcon-chart-of-accounts', (req, res, next) => AccountingController.getSolidconChartOfAccounts(req, res).catch(next));
+
+/**
+ * @openapi
+ * /accounting/solidcon-import:
+ *   post:
+ *     tags: [Accounting]
+ *     summary: Importar contas do Solidcon para o Keystone
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Contas importadas com sucesso }
+ */
+router.post('/solidcon-import', (req, res, next) => AccountingController.importFromSolidcon(req, res).catch(next));
+
+/**
+ * @openapi
+ * /accounting/solidcon-entries:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Consultar movimentação e lançamentos do Solidcon por período
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Movimentações retornadas com sucesso }
+ */
+router.get('/solidcon-entries', (req, res, next) => AccountingEntryController.getSolidconAccountingEntries(req, res).catch(next));
+
+/**
+ * @openapi
+ * /accounting/solidcon-entries/import:
+ *   post:
+ *     tags: [Accounting]
+ *     summary: Importar lançamentos do Solidcon para o Keystone
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Lançamentos importados com sucesso }
+ */
+router.post('/solidcon-entries/import', (req, res, next) => AccountingEntryController.importFromSolidcon(req, res).catch(next));
+
+/**
+ * @openapi
+ * /accounting/solidcon-entries/verify:
+ *   post:
+ *     tags: [Accounting]
+ *     summary: Verificar duplicidades e inconsistências de contas de lançamentos do Solidcon
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Resultado da verificação retornado }
+ */
+router.post('/solidcon-entries/verify', (req, res, next) => AccountingEntryController.verifySolidconEntries(req, res).catch(next));
 
 /**
  * @openapi
@@ -239,6 +318,32 @@ router.put('/auto-templates/:id', (req, res, next) => AccountingAutoEntryControl
  *       204: { description: Template removido }
  */
 router.delete('/auto-templates/:id', (req, res, next) => AccountingAutoEntryController.deleteTemplate(req, res).catch(next));
+
+/**
+ * @openapi
+ * /accounting/closings/overview:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Visão geral de fechamentos contábeis e fiscais (Mensal, Trimestral, Semestral, Anual)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Visão geral retornada com sucesso }
+ */
+router.get('/closings/overview', (req, res, next) => AccountingClosingController.getClosingOverview(req, res).catch(next));
+
+/**
+ * @openapi
+ * /accounting/closings/toggle-status:
+ *   post:
+ *     tags: [Accounting]
+ *     summary: Alterar status de fechamento de um período
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Status atualizado com sucesso }
+ */
+router.post('/closings/toggle-status', (req, res, next) => AccountingClosingController.togglePeriodStatus(req, res).catch(next));
 
 export default router;
 

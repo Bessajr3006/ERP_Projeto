@@ -2,7 +2,7 @@
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
-const CACHE_NAME = 'keystone-pwa-v20260629010832';
+const CACHE_NAME = 'keystone-pwa-v20261001145619';
 const ASSETS_TO_CACHE: string[] = [
   '/index.html',
   '/register.html',
@@ -13,6 +13,7 @@ const ASSETS_TO_CACHE: string[] = [
   '/img/icon-512x512-v3.png',
   '/img/logo.png',
   '/vendor/forge.min.js',
+  '/vendor/html2canvas.min.js',
   '/components/nav.html',
   '/css/style.css',
   '/js/pwa.js',
@@ -100,7 +101,11 @@ sw.addEventListener('fetch', (event: FetchEvent) => {
     return;
   }
 
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/v1/')) {
+  if (
+    event.request.method !== 'GET' ||
+    event.request.url.includes('/api/v1/') ||
+    url.pathname.startsWith('/api-docs')
+  ) {
     return;
   }
 
@@ -115,6 +120,8 @@ sw.addEventListener('fetch', (event: FetchEvent) => {
     || url.pathname === '/js/components/navbar.js'
     || url.pathname === '/js/api.js'
     || url.pathname === '/components/nav.html'
+    || url.pathname.startsWith('/pages/')
+    || url.pathname.endsWith('.html')
   ) {
     event.respondWith(
       fetch(event.request)

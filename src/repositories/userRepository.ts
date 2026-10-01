@@ -28,6 +28,14 @@ async function ensureUserColumn(column: string): Promise<boolean> {
             await pool.query('ALTER TABLE users ADD COLUMN crc VARCHAR(50) DEFAULT NULL');
             return true;
         }
+        if (column === 'face_descriptor') {
+            await pool.query('ALTER TABLE users ADD COLUMN face_descriptor LONGTEXT DEFAULT NULL');
+            return true;
+        }
+        if (column === 'is_default_declaration_signer') {
+            await pool.query('ALTER TABLE users ADD COLUMN is_default_declaration_signer TINYINT(1) NOT NULL DEFAULT 0');
+            return true;
+        }
     } catch (err: any) {
         if (err.code === 'ER_DUP_FIELDNAME' || err.errno === 1060) {
             return true;
@@ -183,6 +191,31 @@ export class UserRepository {
             }
         }
 
+        // Global fallback for general_admin or switched company context
+        const [globalPublicRows] = await pool.query<RowDataPacket[]>(
+            `SELECT public_id
+             FROM users
+             WHERE public_id = ?
+             LIMIT 1`,
+            [normalized]
+        );
+        if (globalPublicRows.length > 0) {
+            return String(globalPublicRows[0]!.public_id);
+        }
+
+        if (Number.isInteger(numericId) && numericId > 0) {
+            const [globalLegacyRows] = await pool.query<RowDataPacket[]>(
+                `SELECT public_id
+                 FROM users
+                 WHERE id = ?
+                 LIMIT 1`,
+                [numericId]
+            );
+            if (globalLegacyRows.length > 0) {
+                return String(globalLegacyRows[0]!.public_id);
+            }
+        }
+
         return null;
     }
 
@@ -204,10 +237,16 @@ export class UserRepository {
             'state',
             'default_page',
             'whatsapp_auto_reply_mode',
+            'whatsapp_enable_manual_billing',
+            'whatsapp_auto_send_boleto',
+            'default_bank_account_id',
+            '(SELECT public_id FROM bank_accounts WHERE id = users.default_bank_account_id) AS default_bank_account_public_id',
             'role',
             'is_active',
+            'is_default_declaration_signer',
             'photo_base64',
             'photo_filename',
+            'face_descriptor',
             'created_at',
             '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];
@@ -248,6 +287,7 @@ export class UserRepository {
 
     static async getAllByCompany(companyId: number): Promise<RowDataPacket[]> {
         const baseColumns = [
+            'id',
             'public_id',
             'email',
             'raw_password AS passwordRaw',
@@ -264,10 +304,16 @@ export class UserRepository {
             'state',
             'default_page',
             'whatsapp_auto_reply_mode',
+            'whatsapp_enable_manual_billing',
+            'whatsapp_auto_send_boleto',
+            'default_bank_account_id',
+            '(SELECT public_id FROM bank_accounts WHERE id = users.default_bank_account_id) AS default_bank_account_public_id',
             'role',
             'is_active',
+            'is_default_declaration_signer',
             'photo_base64',
             'photo_filename',
+            'face_descriptor',
             'created_at',
             '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];
@@ -324,10 +370,16 @@ export class UserRepository {
             'state',
             'default_page',
             'whatsapp_auto_reply_mode',
+            'whatsapp_enable_manual_billing',
+            'whatsapp_auto_send_boleto',
+            'default_bank_account_id',
+            '(SELECT public_id FROM bank_accounts WHERE id = users.default_bank_account_id) AS default_bank_account_public_id',
             'role',
             'is_active',
+            'is_default_declaration_signer',
             'photo_base64',
             'photo_filename',
+            'face_descriptor',
             'created_at',
             '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
         ];
@@ -335,12 +387,21 @@ export class UserRepository {
 
         while (true) {
             try {
-                const [rows] = await pool.query<RowDataPacket[]>(
+                let [rows] = await pool.query<RowDataPacket[]>(
                     `SELECT ${currentColumns.join(', ')}
                      FROM users
                      WHERE company_id = ? AND public_id = ? LIMIT 1`,
                     [companyId, publicId]
                 );
+                if (rows.length === 0) {
+                    const [globalRows] = await pool.query<RowDataPacket[]>(
+                        `SELECT ${currentColumns.join(', ')}
+                         FROM users
+                         WHERE public_id = ? LIMIT 1`,
+                        [publicId]
+                    );
+                    rows = globalRows;
+                }
                 return rows;
             } catch (error: unknown) {
                 const missingColumn = parseMissingColumnFromError(error);
@@ -366,12 +427,20 @@ export class UserRepository {
     }
 
     static async getScoped(companyId: number, publicId: string): Promise<RowDataPacket[]> {
-        const rows = await queryRowsWithRetry(
+        let rows = await queryRowsWithRetry(
             `SELECT id, public_id, company_id, email, full_name, role, is_active
              FROM users
              WHERE company_id = ? AND public_id = ? LIMIT 1`,
             [companyId, publicId]
         );
+        if (rows.length === 0) {
+            rows = await queryRowsWithRetry(
+                `SELECT id, public_id, company_id, email, full_name, role, is_active
+                 FROM users
+                 WHERE public_id = ? LIMIT 1`,
+                [publicId]
+            );
+        }
         return rows;
     }
 

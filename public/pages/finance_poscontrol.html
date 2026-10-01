@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Financeiro Pos-Controll</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden" data-required-module="finance_poscontrol">
+    <!-- Navbar Dinâmica -->
+    <div id="app-navbar"></div>
+
+    <main class="flex-1 w-full pt-4 pb-8 max-w-7xl mx-auto sm:px-6 lg:px-8 overflow-y-auto px-4">
+        <!-- HEADER -->
+        <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Financeiro Pos-Controll</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gerencie a sincronização de vendas e conciliação financeira do Pos-Controll.</p>
+            </div>
+        </div>
+
+        <div id="alertMessage" class="hidden mb-4 p-4 rounded-xl text-sm"></div>
+        <div class="space-y-6">
+            <!-- Main Panel: Actions & Status -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl p-6 border border-gray-200 dark:border-slate-700">
+                <div class="flex justify-between items-start flex-wrap gap-4 mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center">
+                            <svg class="mr-2 w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5"/></svg>
+                            Sincronização de Vendas
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">Importe as vendas fechadas do Pos-Controll para gerar as receitas financeiras correspondentes no Keystone.</p>
+                    </div>
+                    <div class="flex items-center gap-4 bg-gray-50 dark:bg-slate-700/30 px-4 py-2 rounded-lg border border-gray-100 dark:border-slate-700 text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-gray-500 dark:text-gray-400 font-medium">API:</span>
+                            <span id="apiStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Conectado</span>
+                        </div>
+                        <div class="h-4 w-px bg-gray-200 dark:bg-slate-600"></div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-gray-500 dark:text-gray-400 font-medium">Última Importação:</span>
+                            <span id="lastImportTime" class="text-gray-900 dark:text-gray-100 font-mono">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="syncForm" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="startDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data Inicial</label>
+                            <input type="date" id="startDate" required class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100">
+                        </div>
+                        <div>
+                            <label for="endDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data Final</label>
+                            <input type="date" id="endDate" required class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100">
+                        </div>
+                        <div>
+                            <label for="categorySelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria de Receita</label>
+                            <select id="categorySelect" required class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100">
+                                <option value="">Carregando categorias...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="bankAccountSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Conta Bancária de Destino</label>
+                            <select id="bankAccountSelect" required class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100">
+                                <option value="">Carregando contas...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" id="btnFetchSales" class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-brand-600 hover:bg-brand-700 text-sm font-medium text-white shadow-sm transition-colors">
+                        Buscar Vendas
+                    </button>
+                </form>
+            </div>
+
+            <!-- Sales Grid Section (Full-Width / Size 12) -->
+            <div id="salesContainer" class="hidden bg-white dark:bg-slate-800 shadow-sm rounded-xl p-6 border border-gray-200 dark:border-slate-700 space-y-6">
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Vendas Consultadas</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Vendas recuperadas do Pos-Controll para o período.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" id="btnSyncSelected" disabled class="inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-brand-600 hover:bg-brand-700 text-sm font-medium text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Lançar Receitas Selecionadas (<span id="selectedCount">0</span>)
+                        </button>
+                        <button type="button" id="btnSendSolidconSelected" disabled class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Enviar Pedido Solidcon
+                        </button>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300">
+                            Total do Período: <span id="periodTotalValue" class="font-mono ml-1 font-bold">R$ 0,00</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="bg-gray-50 dark:bg-slate-700/50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 w-12">
+                                    <input type="checkbox" id="selectAllSales" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500 h-4 w-4">
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cód POS</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Meio de Pagamento</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Retorno</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Detalhes da Venda -->
+    <div id="saleDetailsModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" id="closeDetailsModalBg"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100" id="detailsModalTitle">Detalhes da Venda</h3>
+                    <button type="button" id="closeDetailsModalBtn" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="px-6 py-4 space-y-4">
+                    <div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">ID POS:</span>
+                        <div id="detailSaleId" class="text-sm font-mono text-gray-900 dark:text-gray-100 select-all font-bold break-all"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Data/Hora:</span>
+                            <div id="detailSaleDate" class="text-sm text-gray-900 dark:text-gray-100"></div>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Forma de Pagamento:</span>
+                            <div id="detailSalePayment" class="text-sm text-gray-900 dark:text-gray-100"></div>
+                        </div>
+                    </div>
+                    <div id="cardDetailsContainer" class="hidden border-t border-gray-100 dark:border-slate-700 pt-4 space-y-2">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-gray-100">Transação de Cartão</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-gray-50 dark:bg-slate-700/30 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Bandeira:</span>
+                                <div id="detailCardBrand" class="text-sm font-semibold text-gray-900 dark:text-gray-100 wrap-break-word">-</div>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Número do Cartão:</span>
+                                <div id="detailCardNumber" class="text-sm font-mono text-gray-900 dark:text-gray-100 break-all">-</div>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Adquirente/Rede:</span>
+                                <div id="detailCardNetwork" class="text-sm text-gray-900 dark:text-gray-100 wrap-break-word">-</div>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Cód. Autorização:</span>
+                                <div id="detailCardAuth" class="text-sm font-mono text-gray-900 dark:text-gray-100 break-all">-</div>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">NSU:</span>
+                                <div id="detailCardNsu" class="text-sm font-mono text-gray-900 dark:text-gray-100 break-all">-</div>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Parcelas:</span>
+                                <div id="detailCardInstallments" class="text-sm text-gray-900 dark:text-gray-100">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-100 dark:border-slate-700 pt-4">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">Itens da Venda</h4>
+                        <div class="overflow-y-auto max-h-48 rounded-lg border border-gray-200 dark:border-slate-700">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                <thead class="bg-gray-50 dark:bg-slate-700/50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">EAN</th>
+                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Produto</th>
+                                        <th class="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400">Qtd</th>
+                                        <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">Preço</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailItemsBody" class="divide-y divide-gray-100 dark:divide-slate-700 text-sm">
+                                    <!-- Dynamic items -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 dark:bg-slate-700/50 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Total:</span>
+                    <span id="detailSaleTotal" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Envio Solidcon -->
+    <div id="solidconExportModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="solidcon-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" id="closeSolidconModalBg"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100" id="solidcon-modal-title">Enviar Pedido Solidcon</h3>
+                    <button type="button" id="closeSolidconModalBtn" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="px-6 py-4 space-y-4 font-sans">
+                    <div id="solidconModalAlert" class="hidden p-4 rounded-xl text-sm"></div>
+                    <div>
+                        <label for="solidconExportUrl" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Endpoint Solidcon (Pedido POS)</label>
+                        <input type="text" id="solidconExportUrl" class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100 font-mono">
+                    </div>
+                    <div>
+                        <label for="solidconExportJson" class="block text-sm font-medium text-gray-700 dark:text-gray-300">JSON do Pedido</label>
+                        <textarea id="solidconExportJson" rows="14" class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100 font-mono text-xs"></textarea>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 dark:bg-slate-700/50 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <button type="button" id="btnCopySolidconJson" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        Copiar JSON
+                    </button>
+                    <div class="flex gap-3">
+                        <button type="button" id="btnConfirmSendSolidcon" class="inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-brand-600 hover:bg-brand-700 text-sm font-medium text-white shadow-sm transition-colors">
+                            Confirmar Envio
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de Cancelamento Solidcon -->
+    <div id="solidconCancelModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="cancel-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" id="closeCancelModalBg"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100" id="cancel-modal-title">Cancelar Pedido Solidcon</h3>
+                    <button type="button" id="closeCancelModalBtn" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="px-6 py-4 space-y-4 font-sans">
+                    <div id="solidconCancelModalAlert" class="hidden p-4 rounded-xl text-sm"></div>
+                    <div>
+                        <label for="solidconCancelUrl" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Endpoint de Cancelamento</label>
+                        <input type="text" id="solidconCancelUrl" class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100 font-mono">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="solidconCancelCdPedido" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código do Pedido (cdPedido)</label>
+                            <input type="text" id="solidconCancelCdPedido" class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100 font-mono">
+                        </div>
+                        <div>
+                            <label for="solidconCancelCdEcom" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código Ecom (cdEcom)</label>
+                            <input type="text" id="solidconCancelCdEcom" value="1" class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100 font-mono">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="solidconCancelJson" class="block text-sm font-medium text-gray-700 dark:text-gray-300">JSON / Body da Requisição PUT (opcional)</label>
+                        <textarea id="solidconCancelJson" rows="4" placeholder="{}" class="mt-1 block w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm text-gray-900 dark:text-gray-100 font-mono text-xs">{}</textarea>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 dark:bg-slate-700/50 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-3">
+                    <button type="button" id="btnCancelCancelModal" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        Voltar
+                    </button>
+                    <button type="button" id="btnConfirmCancelSolidcon" class="inline-flex items-center justify-center rounded-lg border border-transparent px-4 py-2 bg-red-600 hover:bg-red-700 text-sm font-medium text-white shadow-sm transition-colors">
+                        Confirmar Cancelamento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Dinâmico -->
+    <div id="app-footer"></div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/finance_poscontrol.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+</body>
+
+</html>

@@ -12,7 +12,8 @@ def run_deploy(password):
         os.execvp("./deploy.sh", cmd)
     else:
         output = b""
-        password_sent = False
+        password_attempts = 0
+        max_password_attempts = 5
         
         while True:
             try:
@@ -23,10 +24,10 @@ def run_deploy(password):
                 sys.stdout.flush()
                 output += data
                 
-                if not password_sent and (b"password:" in data.lower() or b"senha:" in data.lower()):
+                if (b"password:" in data.lower() or b"senha:" in data.lower()) and password_attempts < max_password_attempts:
                     time.sleep(0.5)
                     os.write(fd, password.encode() + b"\n")
-                    password_sent = True
+                    password_attempts += 1
             except OSError:
                 break
                 
@@ -34,6 +35,6 @@ def run_deploy(password):
         return status
 
 if __name__ == "__main__":
-    password = "30MariaClara@"
+    password = "30Simoneamor@"
     status = run_deploy(password)
     sys.exit(status)

@@ -486,6 +486,11 @@ export class EstoqueController {
 
             const service = await EstoqueService.createService(companyId, {
                 name: String(data.name).trim(),
+                cost: data.cost !== undefined ? Number(data.cost) : 0,
+                tax_percent: data.tax_percent !== undefined ? Number(data.tax_percent) : 0,
+                tax_amount: data.tax_amount !== undefined ? Number(data.tax_amount) : 0,
+                total_cost: data.total_cost !== undefined ? Number(data.total_cost) : 0,
+                markup: data.markup !== undefined ? Number(data.markup) : 0,
                 price: Number(data.price),
                 description: data.description || null,
                 service_type_public_id: String(data.service_type_public_id).trim(),
@@ -545,6 +550,11 @@ export class EstoqueController {
                 federal_tax_reference_name: data.federal_tax_reference_name === undefined
                     ? undefined
                     : (String(data.federal_tax_reference_name).trim() || null),
+                cost: data.cost !== undefined ? Number(data.cost) : undefined,
+                tax_percent: data.tax_percent !== undefined ? Number(data.tax_percent) : undefined,
+                tax_amount: data.tax_amount !== undefined ? Number(data.tax_amount) : undefined,
+                total_cost: data.total_cost !== undefined ? Number(data.total_cost) : undefined,
+                markup: data.markup !== undefined ? Number(data.markup) : undefined,
                 price: data.price !== undefined ? Number(data.price) : undefined,
             });
             res.status(200).json({ status: 'success', data: service });
@@ -586,8 +596,12 @@ export class EstoqueController {
                 res.status(400).json({ status: 'error', message: 'Customer is required' });
                 return;
             }
-            if (!data.service_public_id || !String(data.service_public_id).trim()) {
-                res.status(400).json({ status: 'error', message: 'Service is required' });
+            
+            const servicePublicId = data.service_public_id ? String(data.service_public_id).trim() : null;
+            const productPublicId = data.product_public_id ? String(data.product_public_id).trim() : null;
+
+            if (!servicePublicId && !productPublicId) {
+                res.status(400).json({ status: 'error', message: 'Service or Product is required' });
                 return;
             }
             if (data.quantity === undefined || Number(data.quantity) <= 0) {
@@ -601,7 +615,8 @@ export class EstoqueController {
 
             const launch = await EstoqueService.createServiceLaunch(companyId, {
                 customer_public_id: String(data.customer_public_id).trim(),
-                service_public_id: String(data.service_public_id).trim(),
+                service_public_id: servicePublicId,
+                product_public_id: productPublicId,
                 quantity: Number(data.quantity),
                 unit_price: Number(data.unit_price),
                 observation: data.observation || null,
@@ -609,7 +624,7 @@ export class EstoqueController {
             });
             res.status(201).json({ status: 'success', data: launch });
         } catch (error: any) {
-            if (error.message === 'Customer not found' || error.message === 'Service not found') {
+            if (error.message === 'Customer not found' || error.message === 'Service not found' || error.message === 'Product not found') {
                 res.status(400).json({ status: 'error', message: error.message });
                 return;
             }
@@ -644,7 +659,8 @@ export class EstoqueController {
 
             const payload: any = {};
             if (data.customer_public_id !== undefined) payload.customer_public_id = String(data.customer_public_id).trim();
-            if (data.service_public_id !== undefined) payload.service_public_id = String(data.service_public_id).trim();
+            if (data.service_public_id !== undefined) payload.service_public_id = data.service_public_id ? String(data.service_public_id).trim() : null;
+            if (data.product_public_id !== undefined) payload.product_public_id = data.product_public_id ? String(data.product_public_id).trim() : null;
             if (data.quantity !== undefined) payload.quantity = Number(data.quantity);
             if (data.unit_price !== undefined) payload.unit_price = Number(data.unit_price);
             if (data.observation !== undefined) payload.observation = data.observation || null;
@@ -657,7 +673,7 @@ export class EstoqueController {
                 res.status(404).json({ status: 'error', message: error.message });
                 return;
             }
-            if (error.message === 'Customer not found' || error.message === 'Service not found') {
+            if (error.message === 'Customer not found' || error.message === 'Service not found' || error.message === 'Product not found') {
                 res.status(400).json({ status: 'error', message: error.message });
                 return;
             }

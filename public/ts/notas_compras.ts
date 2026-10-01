@@ -15,7 +15,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         danfeData: { purchaseId: null, xml: '', html: '' },
         xmlViewMode: 'danfe',
         
-        emitData: { purchaseIds: [], type: '55', emittedAt: '' }
+        emitData: { purchaseIds: [], type: '55', emittedAt: '' },
+        selectedXmlFiles: [],
+        importOptionsLoaded: false
     };
 
     // --- DOM Elements ---
@@ -24,11 +26,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadingOverlay: document.getElementById('loadingOverlay'),
         emptyState: document.getElementById('emptyState'),
         
+        btnPrevMonth: document.getElementById('btnPrevMonth'),
+        filterMonthNav: document.getElementById('filterMonthNav'),
+        btnNextMonth: document.getElementById('btnNextMonth'),
+        btnCurrentMonth: document.getElementById('btnCurrentMonth'),
+        btnAllMonths: document.getElementById('btnAllMonths'),
+        
         filterBody: document.getElementById('filterBody'),
         toggleFilterBtn: document.getElementById('toggleFilterBtn'),
         filterChevron: document.getElementById('filterChevron'),
         filterSearch: document.getElementById('filterSearch'),
+        filterPeriod: document.getElementById('filterPeriod'),
+        filterMonth: document.getElementById('filterMonth'),
         filterNfeKey: document.getElementById('filterNfeKey'),
+        filterOrigin: document.getElementById('filterOrigin'),
         filterStatus: document.getElementById('filterStatus'),
         filterNfeStartDate: document.getElementById('filterNfeStartDate'),
         filterStartDate: document.getElementById('filterStartDate'),
@@ -69,6 +80,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeXmlModalBtns: document.querySelectorAll('.close-xml-modal'),
         btnToggleXmlDanfe: document.getElementById('btnToggleXmlDanfe'),
         btnDownloadXml: document.getElementById('btnDownloadXml'),
+
+        // XML Import
+        btnImportPurchasesXml: document.getElementById('btnImportPurchasesXml'),
+        inputImportPurchasesXml: document.getElementById('inputImportPurchasesXml'),
+        importPurchasesXmlModal: document.getElementById('importPurchasesXmlModal'),
+        btnCloseImportPurchasesXmlModal: document.getElementById('btnCloseImportPurchasesXmlModal'),
+        btnCancelImportPurchasesXml: document.getElementById('btnCancelImportPurchasesXml'),
+        btnConfirmImportPurchasesXml: document.getElementById('btnConfirmImportPurchasesXml'),
+        importPurchasesXmlModalFileName: document.getElementById('importPurchasesXmlModalFileName'),
+        importPurchasesXmlBankAccount: document.getElementById('importPurchasesXmlBankAccount'),
+        importPurchasesXmlCategory: document.getElementById('importPurchasesXmlCategory'),
     };
 
     // --- Helpers ---
@@ -83,6 +105,79 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = new Date(dateStr);
         return d.toLocaleDateString('pt-BR');
     };
+
+    function toDateStr(val: any): string {
+        if (!val) return '';
+        if (typeof val === 'string') {
+            if (val.includes('T')) return val.split('T')[0] || '';
+            return val.slice(0, 10);
+        }
+        if (val instanceof Date) {
+            const y = val.getFullYear();
+            const m = String(val.getMonth() + 1).padStart(2, '0');
+            const d = String(val.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        return String(val).slice(0, 10);
+    }
+
+    function formatLocalDate(d: Date): string {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function getCurrentMonthString() {
+        const d = new Date();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        return `${d.getFullYear()}-${month}`;
+    }
+
+    function shiftMonth(monthStr: string, offset: number): string {
+        let year: number, month: number;
+        if (!monthStr || !monthStr.includes('-')) {
+            const d = new Date();
+            year = d.getFullYear();
+            month = d.getMonth() + 1;
+        } else {
+            const parts = monthStr.split('-');
+            year = parseInt(parts[0] || '2026', 10);
+            month = parseInt(parts[1] || '1', 10);
+        }
+        month += offset;
+        while (month < 1) {
+            month += 12;
+            year -= 1;
+        }
+        while (month > 12) {
+            month -= 12;
+            year += 1;
+        }
+        return `${year}-${String(month).padStart(2, '0')}`;
+    }
+
+    function normalizeCompetencia(compStr: string): string {
+        if (!compStr) return '';
+        const clean = compStr.trim();
+        if (clean.includes('/')) {
+            const parts = clean.split('/');
+            if (parts.length === 2) {
+                const m = parts[0]!.padStart(2, '0');
+                const y = parts[1]!;
+                return `${y}-${m}`;
+            }
+        }
+        if (clean.includes('-')) {
+            return clean.slice(0, 7);
+        }
+        if (clean.length === 6) {
+            const m = clean.slice(0, 2);
+            const y = clean.slice(2);
+            return `${y}-${m}`;
+        }
+        return clean;
+    }
     
     function showAlert(message, type = 'success', timeout = 5000) {
         els.alertMessage.textContent = message;
@@ -124,53 +219,78 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function getBatchEligiblePurchases() {
-        return state.purchases.filter(p => p.status === 'completed' && !localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`));
+        return state.purchases.filter(p => !p.is_sped && p.source !== 'sped' && !String(p.public_id).startsWith('sped-') && p.status === 'completed' && !localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`));
     }
     
     // --- Filtering ---
     function applyFilters() {
         const query = (els.filterSearch?.value || '').toLowerCase().trim();
         const nfeKeyTerm = (els.filterNfeKey?.value || '').toLowerCase().trim();
-        const statusVal = els.filterStatus?.value; // '', 'pending', 'invoiced', 'cancelled'
+        const originVal = els.filterOrigin?.value || ''; // '', 'sped', 'erp'
+        const statusVal = els.filterStatus?.value || ''; // '', 'pending', 'invoiced', 'cancelled'
+        const monthVal = (els.filterMonthNav?.value || els.filterMonth?.value || '').trim();
         const nfeStartDate = els.filterNfeStartDate?.value || '';
         const startDate = els.filterStartDate?.value || '';
         const endDate = els.filterEndDate?.value || '';
         const nfeEndDate = els.filterNfeEndDate?.value || '';
         
         state.filteredPurchases = state.purchases.filter(p => {
+            const isSped = !!p.is_sped || p.source === 'sped' || String(p.public_id).startsWith('sped-');
+            
+            // Origin check
+            if (originVal === 'sped' && !isSped) return false;
+            if (originVal === 'erp' && isSped) return false;
+
+            const headerJson = typeof p.nfe_header_json === 'string' ? (() => { try { return JSON.parse(p.nfe_header_json); } catch(e) { return null; } })() : p.nfe_header_json;
+            const docNum = String(headerJson?.numero || '').toLowerCase();
+            const compRaw = String(p.competencia || '');
+            const compNorm = normalizeCompetencia(compRaw);
+
             const matchesQuery = !query || 
                 String(p.public_id).toLowerCase().includes(query) || 
-                String(p.supplier_name || '').toLowerCase().includes(query);
+                String(p.supplier_name || '').toLowerCase().includes(query) ||
+                String(p.supplier_cnpj || '').toLowerCase().includes(query) ||
+                docNum.includes(query) ||
+                compRaw.toLowerCase().includes(query) ||
+                compNorm.toLowerCase().includes(query);
                 
-            const isInvoiced = !!localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`);
+            const isInvoiced = isSped ? true : (!!p.nfe_key || !!localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`));
             const isCancelled = p.status === 'cancelled';
-            const mockNfeKey = isInvoiced 
+            const mockNfeKey = (!isSped && isInvoiced && !p.nfe_key)
                 ? `352606${p.supplier_cnpj || '12345678000199'}55001000000${p.public_id.slice(0, 5)}1000000001`
-                : '';
+                : (p.nfe_key || '');
                 
-            const matchesNfeKey = !nfeKeyTerm || mockNfeKey.toLowerCase().includes(nfeKeyTerm);
+            const matchesNfeKey = !nfeKeyTerm || mockNfeKey.toLowerCase().includes(nfeKeyTerm) || (p.nfe_key && p.nfe_key.toLowerCase().includes(nfeKeyTerm));
             
             let matchesStatus = true;
             if (statusVal === 'pending') {
-                matchesStatus = !isInvoiced && !isCancelled;
+                matchesStatus = !isSped && !isInvoiced && !isCancelled;
             } else if (statusVal === 'invoiced') {
                 matchesStatus = isInvoiced && !isCancelled;
             } else if (statusVal === 'cancelled') {
                 matchesStatus = isCancelled;
             }
             
-            // Date checking
-            const purchaseDateStr = p.date ? p.date.split('T')[0] : '';
-            const nfeDateStr = isInvoiced 
-                ? (localStorage.getItem(`mock_purchase_nf_date_${p.public_id}`) || p.date).split('T')[0] 
-                : '';
+            // Dates
+            const purchaseDateStr = toDateStr(p.date);
+            const nfeDateStr = toDateStr(p.nfe_issue_date || (isInvoiced ? (localStorage.getItem(`mock_purchase_nf_date_${p.public_id}`) || p.date) : ''));
+
+            // Monthly filtering (if monthVal is set)
+            if (monthVal) {
+                const matchesMonth = (compNorm === monthVal) ||
+                                     (purchaseDateStr && purchaseDateStr.startsWith(monthVal)) ||
+                                     (nfeDateStr && nfeDateStr.startsWith(monthVal));
+                if (!matchesMonth) return false;
+            }
                 
+            const effectiveDate = purchaseDateStr || nfeDateStr;
+            const matchesStartDate = !startDate || (effectiveDate && effectiveDate >= startDate);
+            const matchesEndDate = !endDate || (effectiveDate && effectiveDate <= endDate);
+
             const matchesNfeStartDate = !nfeStartDate || (nfeDateStr && nfeDateStr >= nfeStartDate);
-            const matchesStartDate = !startDate || (purchaseDateStr && purchaseDateStr >= startDate);
-            const matchesEndDate = !endDate || (purchaseDateStr && purchaseDateStr <= endDate);
             const matchesNfeEndDate = !nfeEndDate || (nfeDateStr && nfeDateStr <= nfeEndDate);
             
-            return matchesQuery && matchesNfeKey && matchesStatus && matchesNfeStartDate && matchesStartDate && matchesEndDate && matchesNfeEndDate;
+            return matchesQuery && matchesNfeKey && matchesStatus && matchesStartDate && matchesEndDate && matchesNfeStartDate && matchesNfeEndDate;
         });
         
         renderRows();
@@ -214,35 +334,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         let totalAmount = 0;
         
         els.notesContainer.innerHTML = state.filteredPurchases.map(p => {
-            const isInvoiced = !!localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`);
+            const isSped = !!p.is_sped || p.source === 'sped' || String(p.public_id).startsWith('sped-');
+            const isInvoiced = isSped ? true : (!!p.nfe_key || !!localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`));
             const isCancelled = p.status === 'cancelled';
             totalAmount += Number(p.total_amount || 0);
             
-            const isEligible = p.status === 'completed' && !isInvoiced;
+            let header = p.nfe_header_json;
+            if (typeof header === 'string') {
+                try { header = JSON.parse(header); } catch(e) {}
+            }
+
+            const isEligible = !isSped && p.status === 'completed' && !isInvoiced;
             const checkboxHtml = isEligible 
                 ? `<input type="checkbox" value="${p.public_id}" class="batch-purchase-chk rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" ${state.selectedBatchPurchaseIds.has(p.public_id) ? 'checked' : ''} title="Selecionar compra #${p.public_id.slice(0, 8)}" aria-label="Selecionar compra #${p.public_id.slice(0, 8)}">` 
                 : '';
                 
-            const purchaseNum = `#${p.public_id.slice(0, 8)}`;
-            const nfeDateText = isInvoiced 
-                ? formatDateOnly(localStorage.getItem(`mock_purchase_nf_date_${p.public_id}`) || p.date) 
-                : '-';
+            let purchaseNumHtml = '';
+            if (isSped) {
+                purchaseNumHtml = `
+                    <div class="font-bold text-gray-900 dark:text-gray-100">NF-e #${header?.numero || p.public_id.slice(0, 8)}</div>
+                    <div class="text-[10px] text-gray-500 dark:text-gray-400 font-mono">Série ${header?.serie || '1'}</div>
+                `;
+            } else {
+                purchaseNumHtml = `<span class="font-semibold text-gray-900 dark:text-gray-100">#${p.public_id.slice(0, 8)}</span>`;
+            }
+
+            const originBadge = isSped
+                ? `<span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 shadow-2xs whitespace-nowrap"><svg class="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>SPED Fiscal</span>`
+                : `<span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-2xs whitespace-nowrap"><svg class="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z"></path></svg>ERP / XML</span>`;
+
+            const nfeDateText = p.nfe_issue_date 
+                ? formatDateOnly(p.nfe_issue_date) 
+                : (isInvoiced 
+                    ? formatDateOnly(localStorage.getItem(`mock_purchase_nf_date_${p.public_id}`) || p.date) 
+                    : '-');
                 
-            const nfeKeyText = isInvoiced 
-                ? `352606${p.supplier_cnpj || '12345678000199'}55001000000${p.public_id.slice(0, 5)}1000000001`
-                : '-';
+            let nfeKeyDisplay = '-';
+            if (p.nfe_key) {
+                const k = p.nfe_key;
+                const shortKey = k.length > 20 ? `${k.slice(0, 6)}...${k.slice(-6)}` : k;
+                nfeKeyDisplay = `<span class="font-mono text-xs text-gray-700 dark:text-gray-300 select-all" title="${k}">${shortKey}</span>`;
+            } else if (isInvoiced && !isSped) {
+                const mockK = `352606${p.supplier_cnpj || '12345678000199'}55001000000${p.public_id.slice(0, 5)}1000000001`;
+                nfeKeyDisplay = `<span class="font-mono text-xs text-gray-400 select-all" title="${mockK}">${mockK.slice(0, 6)}...${mockK.slice(-6)}</span>`;
+            }
                 
-            const nfeHeaderSummary = isInvoiced 
-                ? `NF-e mod. 55 | Serie 1 | Entrada` 
-                : '-';
+            let nfeHeaderSummary = '-';
+            if (isSped) {
+                nfeHeaderSummary = `<div class="text-xs text-gray-800 dark:text-gray-200 font-medium">NF-e mod. ${header?.modelo || '55'} | Série ${header?.serie || '1'}</div>`;
+                if (p.competencia) {
+                    nfeHeaderSummary += `<div class="text-[10px] font-semibold text-purple-600 dark:text-purple-400">Comp. ${p.competencia}</div>`;
+                }
+            } else if (p.nfe_key) {
+                const num = header?.numero || '';
+                const serie = header?.serie || '';
+                nfeHeaderSummary = `NF-e mod. 55 | Série ${serie} | Nº ${num}`;
+            } else if (isInvoiced) {
+                nfeHeaderSummary = `NF-e mod. 55 | Série 1 | Entrada`;
+            }
                 
             const supplierName = p.supplier_name || 'Fornecedor Desconhecido';
+            const supplierCnpjText = p.supplier_cnpj ? `<span class="block text-[11px] font-mono text-gray-500 dark:text-gray-400">${p.supplier_cnpj}</span>` : '';
             const purchaseDateText = formatDateOnly(p.date);
             const totalVal = formatCurrency(p.total_amount);
             
             let statusBadge = '';
             if (isCancelled) {
                 statusBadge = '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Cancelada</span>';
+            } else if (isSped) {
+                statusBadge = '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">Importada (SPED)</span>';
             } else if (isInvoiced) {
                 statusBadge = '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Emitida</span>';
             } else {
@@ -259,10 +419,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : `Estornar`;
 
             let actsHtml = '';
-            if (isCancelled) {
-                actsHtml = '';
+            if (isSped) {
+                actsHtml = `
+                    <button type="button" class="btn-items bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs" data-id="${p.public_id}" title="Ver detalhes do documento fiscal SPED">
+                        <svg class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Detalhes SPED
+                    </button>
+                `;
+            } else if (isCancelled) {
+                actsHtml = `
+                    <button type="button" class="btn-items bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}">Ver Itens</button>
+                `;
             } else if (isInvoiced) {
                 actsHtml = `
+                    <button type="button" class="btn-items bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}">Ver Itens</button>
                     <button type="button" class="btn-generate bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${btnGenDisabled}" data-id="${p.public_id}" title="Visualizar DANFE">
                         ${btnGenIcon}
                     </button>
@@ -272,6 +445,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
             } else {
                 actsHtml = `
+                    <button type="button" class="btn-items bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}">Ver Itens</button>
                     <button type="button" class="btn-emit-single bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}" title="Emitir NFe Entrada">
                         Emitir NFe
                     </button>
@@ -280,7 +454,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const actionsCell = `
                 <div class="flex items-center justify-center gap-1.5">
-                    <button type="button" class="btn-items bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}">Ver Itens</button>
                     ${actsHtml}
                 </div>
             `;
@@ -288,11 +461,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40">
                     <td class="px-3 py-2.5 text-left">${checkboxHtml}</td>
-                    <td class="px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100">${purchaseNum}</td>
+                    <td class="px-3 py-2.5 text-sm">${purchaseNumHtml}</td>
+                    <td class="px-3 py-2.5 text-center">${originBadge}</td>
                     <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${nfeDateText}</td>
-                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200 font-mono">${nfeKeyText}</td>
+                    <td class="px-3 py-2.5 text-xs">${nfeKeyDisplay}</td>
                     <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200">${nfeHeaderSummary}</td>
-                    <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 font-semibold">${supplierName}</td>
+                    <td class="px-3 py-2.5 text-sm">
+                        <div class="font-semibold text-gray-900 dark:text-gray-100">${supplierName}</div>
+                        ${supplierCnpjText}
+                    </td>
                     <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${purchaseDateText}</td>
                     <td class="px-3 py-2.5 text-sm text-right text-gray-900 dark:text-gray-100 font-bold">${totalVal}</td>
                     <td class="px-3 py-2.5 text-center">${statusBadge}</td>
@@ -313,29 +490,134 @@ document.addEventListener('DOMContentLoaded', async () => {
             const res = await api('/purchases/' + purchaseId);
             if (res && res.status === 'success') {
                 const purchase = res.data;
-                els.itemsModalTitle.textContent = `Compra #${purchase.public_id.slice(0, 8)} - ${purchase.supplier_name || 'Fornecedor'}`;
-                
-                if (!purchase.items || purchase.items.length === 0) {
-                    els.itemsModalBody.innerHTML = `<div class="text-center py-6 text-gray-500 font-medium">Esta compra não possui itens.</div>`;
-                } else {
+                const isSped = !!purchase.is_sped || purchase.source === 'sped' || String(purchase.public_id).startsWith('sped-');
+
+                if (isSped) {
+                    const header = purchase.nfe_header_json || {};
+                    els.itemsModalTitle.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">SPED Fiscal</span>
+                            <span>Documento Fiscal de Compra / Entrada</span>
+                        </div>
+                    `;
+
+                    const addressParts = [
+                        purchase.supplier_street,
+                        purchase.supplier_number ? `nº ${purchase.supplier_number}` : '',
+                        purchase.supplier_neighborhood,
+                        purchase.supplier_city,
+                        purchase.supplier_state
+                    ].filter(Boolean).join(', ');
+
                     els.itemsModalBody.innerHTML = `
-                        <div class="bg-white dark:bg-slate-800 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700">
-                            ${purchase.items.map(item => `
-                            <div class="flex flex-col gap-3 p-4 border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                                <div class="flex justify-between items-start w-full">
+                        <div class="space-y-4">
+                            <!-- Supplier Header Card -->
+                            <div class="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-4 border border-purple-100 dark:border-purple-900/40 shadow-xs">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 dark:border-purple-900/30 pb-3 mb-3">
                                     <div>
-                                        <p class="font-bold text-[15px] mb-1 leading-tight text-gray-900 dark:text-gray-100">${item.product_name}</p>
-                                        <p class="text-xs text-gray-500 font-mono">${item.sku ? 'SKU: '+item.sku : ''}</p>
+                                        <p class="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400 tracking-wider">Fornecedor / Emitente</p>
+                                        <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">${purchase.supplier_name || 'Fornecedor'}</h4>
+                                        <p class="text-xs font-mono text-gray-600 dark:text-gray-300 mt-0.5">${purchase.supplier_cnpj ? `CNPJ/CPF: ${purchase.supplier_cnpj}` : 'Documento não informado'}</p>
+                                    </div>
+                                    <div class="text-left sm:text-right">
+                                        <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-bold bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
+                                            Competência: ${purchase.competencia || '-'}
+                                        </span>
                                     </div>
                                 </div>
-                                <div class="flex items-center justify-between text-sm bg-gray-50 dark:bg-slate-900 p-2.5 rounded-lg border border-gray-200 dark:border-slate-700">
-                                    <div class="flex flex-col"><span class="text-[10px] text-gray-400 font-bold tracking-wider">UNITÁRIO</span><span class="font-bold font-mono text-gray-700 dark:text-gray-300">${formatCurrency(item.unit_price)}</span></div>
-                                    <div class="flex flex-col items-center"><span class="text-[10px] text-gray-400 font-bold tracking-wider">QTD</span><span class="font-black text-blue-600 dark:text-blue-400 text-base">${item.quantity}</span></div>
-                                    <div class="flex flex-col items-end"><span class="text-[10px] text-gray-400 font-bold tracking-wider">TOTAL</span><span class="font-bold text-green-600 dark:text-green-400 font-mono text-base">${formatCurrency(item.unit_price * item.quantity)}</span></div>
+                                ${addressParts ? `<p class="text-xs text-gray-600 dark:text-gray-400"><strong class="text-gray-700 dark:text-gray-300">Endereço:</strong> ${addressParts}</p>` : ''}
+                            </div>
+
+                            <!-- Document Information Grid -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Número da NF</span>
+                                    <span class="text-sm font-black text-gray-900 dark:text-gray-100 font-mono">${header.numero || '-'}</span>
                                 </div>
-                            </div>`).join('')}
-                        </div>`;
+                                <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Série / Modelo</span>
+                                    <span class="text-sm font-bold text-gray-900 dark:text-gray-100">${header.serie || '1'} / Mod. ${header.modelo || '55'}</span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Data Entrada / Doc</span>
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">${formatDateOnly(purchase.date)}</span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Situação</span>
+                                    <span class="text-sm font-bold ${purchase.status === 'cancelled' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}">
+                                        ${purchase.status === 'cancelled' ? '02 - Cancelada' : '00 - Regular'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- NFe Key -->
+                            ${purchase.nfe_key ? `
+                                <div class="bg-gray-50 dark:bg-slate-900/60 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Chave de Acesso NF-e</span>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="font-mono text-xs text-gray-900 dark:text-gray-100 font-bold select-all break-all">${purchase.nfe_key}</span>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Values & Taxes Breakdown -->
+                            <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-xs">
+                                <div class="px-4 py-2.5 bg-gray-50 dark:bg-slate-900/80 border-b border-gray-200 dark:border-slate-700 font-bold text-xs uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                    Valores e Impostos do Documento (SPED)
+                                </div>
+                                <div class="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                                    <div class="p-2.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
+                                        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Valor Total</span>
+                                        <span class="text-base font-black text-emerald-700 dark:text-emerald-300 font-mono">${formatCurrency(purchase.total_amount)}</span>
+                                    </div>
+                                    <div class="p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
+                                        <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">ICMS Destacado</span>
+                                        <span class="text-sm font-bold text-blue-700 dark:text-blue-300 font-mono">${formatCurrency(header.vlIcms || 0)}</span>
+                                    </div>
+                                    <div class="p-2.5 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
+                                        <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">PIS</span>
+                                        <span class="text-sm font-bold text-indigo-700 dark:text-indigo-300 font-mono">${formatCurrency(header.vlPis || 0)}</span>
+                                    </div>
+                                    <div class="p-2.5 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
+                                        <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">COFINS</span>
+                                        <span class="text-sm font-bold text-indigo-700 dark:text-indigo-300 font-mono">${formatCurrency(header.vlCofins || 0)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer Observation -->
+                            <div class="p-3 rounded-lg bg-gray-50 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>Registro SPED ${header.reg || 'C100 (NF-e/NFC-e)'} importado através da escrituração fiscal digital.</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    els.itemsModalTitle.textContent = `Compra #${purchase.public_id.slice(0, 8)} - ${purchase.supplier_name || 'Fornecedor'}`;
+                    
+                    if (!purchase.items || purchase.items.length === 0) {
+                        els.itemsModalBody.innerHTML = `<div class="text-center py-6 text-gray-500 font-medium">Esta compra não possui itens.</div>`;
+                    } else {
+                        els.itemsModalBody.innerHTML = `
+                            <div class="bg-white dark:bg-slate-800 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700">
+                                ${purchase.items.map(item => `
+                                <div class="flex flex-col gap-3 p-4 border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                                    <div class="flex justify-between items-start w-full">
+                                        <div>
+                                            <p class="font-bold text-[15px] mb-1 leading-tight text-gray-900 dark:text-gray-100">${item.product_name}</p>
+                                            <p class="text-xs text-gray-500 font-mono">${item.sku ? 'SKU: '+item.sku : ''}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm bg-gray-50 dark:bg-slate-900 p-2.5 rounded-lg border border-gray-200 dark:border-slate-700">
+                                        <div class="flex flex-col"><span class="text-[10px] text-gray-400 font-bold tracking-wider">UNITÁRIO</span><span class="font-bold font-mono text-gray-700 dark:text-gray-300">${formatCurrency(item.unit_price)}</span></div>
+                                        <div class="flex flex-col items-center"><span class="text-[10px] text-gray-400 font-bold tracking-wider">QTD</span><span class="font-black text-blue-600 dark:text-blue-400 text-base">${item.quantity}</span></div>
+                                        <div class="flex flex-col items-end"><span class="text-[10px] text-gray-400 font-bold tracking-wider">TOTAL</span><span class="font-bold text-green-600 dark:text-green-400 font-mono text-base">${formatCurrency(item.unit_price * item.quantity)}</span></div>
+                                    </div>
+                                </div>`).join('')}
+                            </div>`;
+                    }
                 }
+
                 els.itemsModal.classList.remove('hidden');
                 els.itemsModal.classList.add('flex');
             } else {
@@ -436,18 +718,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderRows();
         
         try {
-            const nfeResult = await api('/nfe/generate', {
-                method: 'POST',
-                body: JSON.stringify({ purchaseId: id })
-            });
-            
-            if (!nfeResult || !nfeResult.xml) throw new Error("XML não retornado.");
+            const detailRes = await api(`/purchases/${id}`);
+            let xmlContent = detailRes?.data?.nfe_xml;
+
+            if (!xmlContent) {
+                const nfeResult = await api('/nfe/generate', {
+                    method: 'POST',
+                    body: JSON.stringify({ purchaseId: id })
+                });
+                
+                if (!nfeResult || !nfeResult.xml) throw new Error("XML não retornado.");
+                xmlContent = nfeResult.xml;
+            }
             
             const storedMode = localStorage.getItem(`mock_purchase_nf_type_${id}`) || '55';
             
             state.danfeData.purchaseId = id;
-            state.danfeData.xml = nfeResult.xml;
-            state.danfeData.html = parseXmlToDanfe(nfeResult.xml, storedMode);
+            state.danfeData.xml = xmlContent;
+            state.danfeData.html = parseXmlToDanfe(xmlContent, storedMode);
             
             state.xmlViewMode = 'danfe';
             renderXmlModalBody();
@@ -475,6 +763,151 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Listeners ---
     function setupListeners() {
+        // Month navigation toolbar listeners
+        if (els.btnPrevMonth) {
+            els.btnPrevMonth.addEventListener('click', () => {
+                const current = els.filterMonthNav?.value || els.filterMonth?.value || getCurrentMonthString();
+                const prev = shiftMonth(current, -1);
+                if (els.filterMonthNav) els.filterMonthNav.value = prev;
+                if (els.filterMonth) els.filterMonth.value = prev;
+                if (els.filterPeriod) els.filterPeriod.value = 'custom';
+                applyFilters();
+            });
+        }
+
+        if (els.btnNextMonth) {
+            els.btnNextMonth.addEventListener('click', () => {
+                const current = els.filterMonthNav?.value || els.filterMonth?.value || getCurrentMonthString();
+                const next = shiftMonth(current, 1);
+                if (els.filterMonthNav) els.filterMonthNav.value = next;
+                if (els.filterMonth) els.filterMonth.value = next;
+                if (els.filterPeriod) els.filterPeriod.value = 'custom';
+                applyFilters();
+            });
+        }
+
+        if (els.btnCurrentMonth) {
+            els.btnCurrentMonth.addEventListener('click', () => {
+                const cur = getCurrentMonthString();
+                if (els.filterMonthNav) els.filterMonthNav.value = cur;
+                if (els.filterMonth) els.filterMonth.value = cur;
+                if (els.filterPeriod) els.filterPeriod.value = 'this_month';
+                applyFilters();
+            });
+        }
+
+        if (els.btnAllMonths) {
+            els.btnAllMonths.addEventListener('click', () => {
+                if (els.filterMonthNav) els.filterMonthNav.value = '';
+                if (els.filterMonth) els.filterMonth.value = '';
+                if (els.filterPeriod) els.filterPeriod.value = 'all';
+                applyFilters();
+            });
+        }
+
+        if (els.filterMonthNav) {
+            els.filterMonthNav.addEventListener('change', () => {
+                const val = els.filterMonthNav.value;
+                if (els.filterMonth) els.filterMonth.value = val;
+                if (els.filterPeriod) els.filterPeriod.value = val ? 'custom' : 'all';
+                applyFilters();
+            });
+        }
+
+        if (els.filterMonth) {
+            els.filterMonth.addEventListener('change', () => {
+                const val = els.filterMonth.value;
+                if (els.filterMonthNav) els.filterMonthNav.value = val;
+                if (els.filterPeriod) els.filterPeriod.value = val ? 'custom' : 'all';
+                applyFilters();
+            });
+        }
+
+        if (els.filterPeriod) {
+            els.filterPeriod.addEventListener('change', (e: any) => {
+                const period = e.target.value;
+                const now = new Date();
+                const curYear = now.getFullYear();
+                const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+                const curMonthStr = `${curYear}-${curMonth}`;
+
+                if (period === 'today') {
+                    const todayStr = formatLocalDate(now);
+                    if (els.filterMonthNav) els.filterMonthNav.value = '';
+                    if (els.filterMonth) els.filterMonth.value = '';
+                    if (els.filterStartDate) els.filterStartDate.value = todayStr;
+                    if (els.filterEndDate) els.filterEndDate.value = todayStr;
+                    if (els.filterNfeStartDate) els.filterNfeStartDate.value = '';
+                    if (els.filterNfeEndDate) els.filterNfeEndDate.value = '';
+                } else if (period === 'yesterday') {
+                    const yesterday = new Date(now);
+                    yesterday.setDate(now.getDate() - 1);
+                    const yesterdayStr = formatLocalDate(yesterday);
+                    if (els.filterMonthNav) els.filterMonthNav.value = '';
+                    if (els.filterMonth) els.filterMonth.value = '';
+                    if (els.filterStartDate) els.filterStartDate.value = yesterdayStr;
+                    if (els.filterEndDate) els.filterEndDate.value = yesterdayStr;
+                    if (els.filterNfeStartDate) els.filterNfeStartDate.value = '';
+                    if (els.filterNfeEndDate) els.filterNfeEndDate.value = '';
+                } else if (period === 'this_month') {
+                    if (els.filterMonthNav) els.filterMonthNav.value = curMonthStr;
+                    if (els.filterMonth) els.filterMonth.value = curMonthStr;
+                    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    if (els.filterStartDate) els.filterStartDate.value = formatLocalDate(start);
+                    if (els.filterEndDate) els.filterEndDate.value = formatLocalDate(end);
+                    if (els.filterNfeStartDate) els.filterNfeStartDate.value = '';
+                    if (els.filterNfeEndDate) els.filterNfeEndDate.value = '';
+                } else if (period === 'last_month') {
+                    const last = shiftMonth(curMonthStr, -1);
+                    if (els.filterMonthNav) els.filterMonthNav.value = last;
+                    if (els.filterMonth) els.filterMonth.value = last;
+                    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    const end = new Date(now.getFullYear(), now.getMonth(), 0);
+                    if (els.filterStartDate) els.filterStartDate.value = formatLocalDate(start);
+                    if (els.filterEndDate) els.filterEndDate.value = formatLocalDate(end);
+                    if (els.filterNfeStartDate) els.filterNfeStartDate.value = '';
+                    if (els.filterNfeEndDate) els.filterNfeEndDate.value = '';
+                } else if (period === 'last_3_months') {
+                    if (els.filterMonthNav) els.filterMonthNav.value = '';
+                    if (els.filterMonth) els.filterMonth.value = '';
+                    const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+                    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    if (els.filterStartDate) els.filterStartDate.value = formatLocalDate(start);
+                    if (els.filterEndDate) els.filterEndDate.value = formatLocalDate(end);
+                    if (els.filterNfeStartDate) els.filterNfeStartDate.value = '';
+                    if (els.filterNfeEndDate) els.filterNfeEndDate.value = '';
+                } else if (period === 'this_year') {
+                    if (els.filterMonthNav) els.filterMonthNav.value = '';
+                    if (els.filterMonth) els.filterMonth.value = '';
+                    const start = new Date(now.getFullYear(), 0, 1);
+                    const end = new Date(now.getFullYear(), 11, 31);
+                    if (els.filterStartDate) els.filterStartDate.value = formatLocalDate(start);
+                    if (els.filterEndDate) els.filterEndDate.value = formatLocalDate(end);
+                    if (els.filterNfeStartDate) els.filterNfeStartDate.value = '';
+                    if (els.filterNfeEndDate) els.filterNfeEndDate.value = '';
+                } else if (period === 'all' || !period) {
+                    if (els.filterMonthNav) els.filterMonthNav.value = '';
+                    if (els.filterMonth) els.filterMonth.value = '';
+                    if (els.filterStartDate) els.filterStartDate.value = '';
+                    if (els.filterEndDate) els.filterEndDate.value = '';
+                    if (els.filterNfeStartDate) els.filterNfeStartDate.value = '';
+                    if (els.filterNfeEndDate) els.filterNfeEndDate.value = '';
+                }
+                applyFilters();
+            });
+        }
+
+        [els.filterStartDate, els.filterEndDate, els.filterNfeStartDate, els.filterNfeEndDate].forEach(el => {
+            if (el) {
+                el.addEventListener('change', () => {
+                    if (els.filterPeriod && els.filterPeriod.value !== 'custom') {
+                        els.filterPeriod.value = 'custom';
+                    }
+                });
+            }
+        });
+
         // Filters toggle
         els.toggleFilterBtn.addEventListener('click', () => {
             const isHidden = els.filterBody.classList.contains('hidden');
@@ -488,7 +921,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         
         // Filter inputs binding
-        [els.filterSearch, els.filterNfeKey, els.filterStatus, els.filterNfeStartDate, els.filterStartDate, els.filterEndDate, els.filterNfeEndDate].forEach(el => {
+        [els.filterSearch, els.filterNfeKey, els.filterOrigin, els.filterStatus, els.filterNfeStartDate, els.filterStartDate, els.filterEndDate, els.filterNfeEndDate].forEach(el => {
             if (el) {
                 el.addEventListener('input', applyFilters);
                 el.addEventListener('change', applyFilters);
@@ -499,7 +932,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             [els.filterSearch, els.filterNfeKey, els.filterNfeStartDate, els.filterStartDate, els.filterEndDate, els.filterNfeEndDate].forEach(el => {
                 if (el) el.value = '';
             });
+            if (els.filterOrigin) els.filterOrigin.value = '';
             if (els.filterStatus) els.filterStatus.value = '';
+            if (els.filterMonthNav) els.filterMonthNav.value = '';
+            if (els.filterMonth) els.filterMonth.value = '';
+            if (els.filterPeriod) els.filterPeriod.value = 'all';
             applyFilters();
         });
 
@@ -595,6 +1032,169 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         });
+
+        // XML Import listeners
+        els.btnImportPurchasesXml.addEventListener('click', () => {
+            els.inputImportPurchasesXml.click();
+        });
+
+        els.inputImportPurchasesXml.addEventListener('change', async (e: any) => {
+            const files = Array.from(e.target.files || []) as File[];
+            if (files.length === 0) return;
+
+            state.selectedXmlFiles = files;
+            if (files.length === 1) {
+                els.importPurchasesXmlModalFileName.textContent = `Arquivo: ${files[0].name}`;
+            } else {
+                els.importPurchasesXmlModalFileName.textContent = `${files.length} arquivos selecionados`;
+            }
+
+            await loadImportOptions();
+            openImportModal();
+        });
+
+        els.btnCloseImportPurchasesXmlModal.addEventListener('click', closeImportModal);
+        els.btnCancelImportPurchasesXml.addEventListener('click', closeImportModal);
+        els.btnConfirmImportPurchasesXml.addEventListener('click', submitXmlImport);
+    }
+
+    // --- XML Import Operations ---
+    async function loadImportOptions() {
+        if (state.importOptionsLoaded) return;
+
+        try {
+            const [banksResponse, categoriesResponse] = await Promise.all([
+                api('/bank-accounts'),
+                api('/finance/categories?type=expense')
+            ]);
+
+            const banks = Array.isArray(banksResponse?.data) ? banksResponse.data : [];
+            const categories = Array.isArray(categoriesResponse?.data) ? categoriesResponse.data : [];
+
+            els.importPurchasesXmlBankAccount.innerHTML = '<option value="">Automático (primeira conta)</option>' + banks.map((bank: any) => {
+                const label = bank.name || bank.bank_name || `Conta ${bank.id || ''}`;
+                return `<option value="${bank.public_id}">${label}</option>`;
+            }).join('');
+
+            els.importPurchasesXmlCategory.innerHTML = '<option value="">Automático (categoria de compras)</option>' + categories.map((category: any) => {
+                return `<option value="${category.public_id}">${category.name}</option>`;
+            }).join('');
+
+            state.importOptionsLoaded = true;
+        } catch (e: any) {
+            console.error("Erro ao carregar opções de importação:", e);
+        }
+    }
+
+    function openImportModal() {
+        els.importPurchasesXmlModal.classList.remove('hidden');
+        els.importPurchasesXmlModal.classList.add('flex');
+    }
+
+    function closeImportModal() {
+        els.importPurchasesXmlModal.classList.add('hidden');
+        els.importPurchasesXmlModal.classList.remove('flex');
+    }
+
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    function isTooManyRequestsError(error: any) {
+        const status = Number(error?.status || error?.statusCode || error?.response?.status || 0);
+        if (status === 429) return true;
+        const message = String(error?.message || '').toLowerCase();
+        return message.includes('muitas requisi') || message.includes('too many requests');
+    }
+
+    async function importXmlWithRetry(payload: any, maxAttempts = 4) {
+        let lastError = null;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return await api('/purchases/import-xml', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+            } catch (error) {
+                lastError = error;
+                const shouldRetry = isTooManyRequestsError(error) && attempt < maxAttempts;
+                if (!shouldRetry) throw error;
+                await wait(1200 * attempt);
+            }
+        }
+        throw lastError || new Error('Falha ao importar XML.');
+    }
+
+    function formatImportFailureDetails(reasons: string[]) {
+        const uniqueReasons = Array.from(new Set(reasons));
+        if (uniqueReasons.length === 0) return 'Falha ao importar XML.';
+        const hasCnpjMismatch = uniqueReasons.some((reason) => /cnpj/i.test(reason));
+        const highlighted = hasCnpjMismatch ? 'CNPJ do destinatário diferente do CNPJ da empresa. ' : '';
+        const details = uniqueReasons.slice(0, 2).join(' | ');
+        const suffix = uniqueReasons.length > 2 ? ` | +${uniqueReasons.length - 2} erro(s)` : '';
+        return `${highlighted}${details}${suffix}`;
+    }
+
+    async function submitXmlImport() {
+        if (!state.selectedXmlFiles || state.selectedXmlFiles.length === 0) {
+            closeImportModal();
+            return;
+        }
+
+        const originalBtnHtml = els.btnConfirmImportPurchasesXml.innerHTML;
+        els.btnConfirmImportPurchasesXml.disabled = true;
+        els.btnConfirmImportPurchasesXml.classList.add('opacity-70', 'cursor-not-allowed');
+        els.btnConfirmImportPurchasesXml.innerHTML = 'Importando...';
+
+        try {
+            let successCount = 0;
+            let failedCount = 0;
+            let importedItemsTotal = 0;
+            let unmatchedTotal = 0;
+            const failedReasons: string[] = [];
+
+            for (const file of state.selectedXmlFiles) {
+                try {
+                    const xmlContent = await file.text();
+                    const response = await importXmlWithRetry({
+                        xml_content: xmlContent,
+                        bank_account_public_id: els.importPurchasesXmlBankAccount.value || null,
+                        category_public_id: els.importPurchasesXmlCategory.value || null,
+                    });
+
+                    successCount += 1;
+                    importedItemsTotal += Number(response?.data?.imported_items || 0);
+                    unmatchedTotal += Array.isArray(response?.data?.unmatched_items) ? response.data.unmatched_items.length : 0;
+                } catch (error: any) {
+                    failedCount += 1;
+                    console.error('Erro ao importar XML de compra', error);
+                    failedReasons.push(`${file.name}: ${error?.message || 'Falha desconhecida'}`);
+                }
+            }
+
+            if (failedCount === 0) {
+                showAlert(`Importação concluída. ${successCount} XML(s) importado(s), ${importedItemsTotal} item(ns) processado(s).`, 'success');
+            } else if (successCount === 0) {
+                const details = formatImportFailureDetails(failedReasons);
+                showAlert(`Importação não realizada. ${details}`, 'error');
+            } else {
+                const details = formatImportFailureDetails(failedReasons);
+                showAlert(`Importação finalizada com ressalvas. Sucesso: ${successCount}, falhas: ${failedCount}. ${details}`, 'warning');
+            }
+
+            if (successCount > 0) {
+                await loadPurchases();
+            }
+            closeImportModal();
+        } catch (error: any) {
+            console.error('Erro na importação de XML', error);
+            showAlert(error?.message || 'Falha ao importar XML da nota.', 'error');
+        } finally {
+            els.btnConfirmImportPurchasesXml.disabled = false;
+            els.btnConfirmImportPurchasesXml.classList.remove('opacity-70', 'cursor-not-allowed');
+            els.btnConfirmImportPurchasesXml.innerHTML = originalBtnHtml;
+            els.inputImportPurchasesXml.value = '';
+            state.selectedXmlFiles = [];
+        }
     }
     
     // --- Parse XML -> HTML ---

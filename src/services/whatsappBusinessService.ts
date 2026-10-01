@@ -11,6 +11,7 @@ import { WhatsAppBusinessMessageService } from './whatsappBusinessMessageService
 import { WhatsAppBusinessOwnerType } from '../types/WhatsAppBusiness';
 import { AppError } from '../errors/AppError';
 import { OrderService } from './orderService';
+import { patchWhatsAppWebJs } from '../utils/patchWhatsAppWebJs';
 
 const ffmpegPath: string | null = require('ffmpeg-static');
 const execFileAsync = promisify(execFile);
@@ -1741,6 +1742,7 @@ export class WhatsAppBusinessService {
 
     private static async getWhatsAppModule(): Promise<WhatsAppModule> {
         if (!whatsappModulePromise) {
+            patchWhatsAppWebJs();
             whatsappModulePromise = import('whatsapp-web.js');
         }
 
@@ -1825,8 +1827,10 @@ export class WhatsAppBusinessService {
                 SELECT phone FROM suppliers WHERE company_id = ? AND phone IS NOT NULL AND phone != ''
                 UNION ALL
                 SELECT phone FROM users WHERE company_id = ? AND phone IS NOT NULL AND phone != ''
+                UNION ALL
+                SELECT phone FROM contacts WHERE company_id = ? AND phone IS NOT NULL AND phone != ''
              ) AS all_phones`,
-            [companyId, companyId, companyId]
+            [companyId, companyId, companyId, companyId]
         );
 
         const registeredSet = new Set<string>();
@@ -2102,7 +2106,7 @@ export class WhatsAppBusinessService {
     private static async buildMessageMedia(attachment: WhatsAppBusinessAttachmentInput) {
         const mimeType = String(attachment.mimeType || '').trim();
         const fileName = String(attachment.fileName || '').trim();
-        const base64 = String(attachment.base64 || '').trim();
+        let base64 = String(attachment.base64 || '').trim();
 
         if (!mimeType) {
             const error = new Error('Tipo do arquivo nao informado para o envio do WhatsApp Business.');
@@ -2121,6 +2125,9 @@ export class WhatsAppBusinessService {
             (error as Error & { statusCode?: number }).statusCode = 400;
             throw error;
         }
+
+        // Limpa prefixo data URL se houver e remove espaços/linhas
+        base64 = base64.replace(/^data:[^;]+;base64,/, '').replace(/\s+/g, '');
 
         const { MessageMedia } = await this.getWhatsAppExports();
         return new MessageMedia(mimeType, base64, fileName);
@@ -2327,7 +2334,19 @@ export class WhatsAppBusinessService {
             };
         }
 
-        const contact = await message.getContact();
+        let contact: any = null;
+        if (typeof message.getContact === 'function') {
+            try {
+                contact = await message.getContact();
+            } catch (error: unknown) {
+                logger.warn(
+                    { err: error, from: message.from || null, author: (message as any)?.author || null },
+                    '[whatsappBusinessService] Falha no getContact() ao resolver dados do contato (usando fallback de metadados)'
+                );
+                contact = null;
+            }
+        }
+
         const inboundPhoneCandidates = [
             contact?.number || null,
             (contact as { id?: { user?: string | null; _serialized?: string | null } })?.id?.user || null,
@@ -2355,6 +2374,10 @@ export class WhatsAppBusinessService {
         preferredContactPhone?: string | null,
         preferredAttachment?: WhatsAppBusinessAttachmentInput | null
     ): Promise<void> {
+        if (!message) {
+            return;
+        }
+
         const chatId = direction === 'inbound' ? message.from || null : message.to || null;
         if (direction === 'inbound' && (message.fromMe || !this.isPersonalChat(chatId))) {
             if (!message.fromMe && !this.isPersonalChat(chatId)) {
@@ -2362,7 +2385,7 @@ export class WhatsAppBusinessService {
                     {
                         scope: this.buildRecordMapKey(scope),
                         chatId,
-                        messageId: message.id?._serialized || null,
+                        messageId: message?.id?._serialized || null,
                         messageType: message.type || null,
                     },
                     '[whatsappBusinessService] Mensagem inbound ignorada por nao ser chat pessoal'
@@ -2378,9 +2401,9 @@ export class WhatsAppBusinessService {
                 {
                     scope: this.buildRecordMapKey(scope),
                     chatId,
-                    messageId: message.id?._serialized || null,
-                    messageType: message.type || null,
-                    from: message.from || null,
+                    messageId: message?.id?._serialized || null,
+                    messageType: message?.type || null,
+                    from: message?.from || null,
                 },
                 '[whatsappBusinessService] Mensagem inbound ignorada por falta de telefone do contato'
             );
@@ -2394,7 +2417,7 @@ export class WhatsAppBusinessService {
                     scope: this.buildRecordMapKey(scope),
                     contactPhone,
                     direction,
-                    messageId: message.id?._serialized || null,
+                    messageId: message?.id?._serialized || null,
                 },
                 '[whatsappBusinessService] Mensagem nao persistida pois o contato nao esta cadastrado no ERP'
             );
@@ -2416,7 +2439,7 @@ export class WhatsAppBusinessService {
                         chatId,
                         contactName,
                         notifyName,
-                    }, 'WhatsApp contact_phone reconciliado para alias historico');
+                    }, '[whatsappBusinessService] Alias historico aplicado ao persistir');
                 }
                 persistedContactPhone = aliasedPhone;
             }
@@ -2442,16 +2465,16 @@ export class WhatsAppBusinessService {
             contact_phone: persistedContactPhone,
             contact_name: contactName,
             chat_id: chatId,
-            message_id: message.id?._serialized || null,
-            message_type: message.type || 'chat',
+            message_id: message?.id?._serialized || null,
+            message_type: message?.type || 'chat',
             message_text: this.buildMessageText(message),
             media_mime_type: mediaPayload.mediaMimeType,
             media_file_name: mediaPayload.mediaFileName,
             media_url: mediaPayload.mediaUrl,
             status: direction === 'inbound'
                 ? 'received'
-                : this.translateAckStatus(typeof message.ack === 'number' ? message.ack : null) || 'sent',
-            message_timestamp: typeof message.timestamp === 'number' ? message.timestamp : Math.floor(Date.now() / 1000),
+                : this.translateAckStatus(typeof message?.ack === 'number' ? message.ack : null) || 'sent',
+            message_timestamp: typeof message?.timestamp === 'number' ? message.timestamp : Math.floor(Date.now() / 1000),
             raw_payload: this.buildRawPayload(message),
         };
 
@@ -2462,8 +2485,8 @@ export class WhatsAppBusinessService {
                 contactPhone: persistedContactPhone,
                 originalContactPhone: contactPhone,
                 chatId,
-                messageId: message.id?._serialized || null,
-                messageType: message.type || null,
+                messageId: message?.id?._serialized || null,
+                messageType: message?.type || null,
             },
             '[whatsappBusinessService] Persistencia de mensagem preparada'
         );
@@ -2485,7 +2508,7 @@ export class WhatsAppBusinessService {
                     direction,
                     contactPhone: persistedContactPhone,
                     chatId,
-                    messageId: message.id?._serialized || null,
+                    messageId: message?.id?._serialized || null,
                     ownerType: scope.ownerType,
                     ownerId: scope.ownerId,
                 },
@@ -2510,7 +2533,7 @@ export class WhatsAppBusinessService {
                 direction,
                 contactPhone: persistedContactPhone,
                 chatId,
-                messageId: message.id?._serialized || null,
+                messageId: message?.id?._serialized || null,
                 ownerType: scope.ownerType,
                 ownerId: scope.ownerId,
             },
@@ -2801,7 +2824,7 @@ export class WhatsAppBusinessService {
         try {
             const registeredPhones = await this.getRegisteredPhonesForCompany(record.scope.companyId);
 
-            const chats = await client.getChats();
+            const chats = (await client.getChats()) || [];
             const personalChats = chats
                 .filter((chat: any) => {
                     const chatId = chat?.id?._serialized || chat?.id?.toString?.() || '';
@@ -2884,9 +2907,21 @@ export class WhatsAppBusinessService {
 
         this.inboundSyncInProgress.add(scopeKey);
         this.inboundSyncLastRunByScope.set(scopeKey, now);
-
         void (async () => {
             const client = record.client;
+            if (client && record.snapshot.status === 'ready') {
+                const browser = (client as any).pupBrowser;
+                const page = (client as any).pupPage;
+                if (!browser || !browser.isConnected() || !page || page.isClosed()) {
+                    logger.warn(
+                        { sessionKey: record.scope.sessionKey },
+                        '[whatsappBusinessService] Navegador Puppeteer fechado ou desconectado. Tentando recuperar sessão...'
+                    );
+                    void this.recoverScopedSessionAfterRuntimeError(record, 'Navegador Puppeteer desconectado inesperadamente.');
+                    return;
+                }
+            }
+
             if (!client || record.snapshot.status !== 'ready') {
                 logger.info(
                     {
@@ -2901,7 +2936,7 @@ export class WhatsAppBusinessService {
 
             const registeredPhones = await this.getRegisteredPhonesForCompany(record.scope.companyId);
 
-            const chats = await client.getChats();
+            const chats = (await client.getChats()) || [];
             const personalChats = chats
                 .filter((chat: any) => {
                     const chatId = chat?.id?._serialized || chat?.id?.toString?.() || '';
@@ -3017,7 +3052,7 @@ export class WhatsAppBusinessService {
 
         client.on('message_ack', (message: WhatsAppMessage, ack: number) => {
             const status = this.translateAckStatus(ack);
-            if (status && message.id?._serialized) {
+            if (status && message?.id?._serialized) {
                 logger.info(
                     {
                         scope: this.buildRecordMapKey(record.scope),
@@ -3083,14 +3118,61 @@ export class WhatsAppBusinessService {
             });
         });
 
-        client.on('ready', () => {
+        client.on('ready', async () => {
             const info = client.info;
+            const connectedNumber = info?.wid?.user || null;
+
+            if (connectedNumber && record.scope.ownerType === 'user') {
+                try {
+                    const [otherSessions]: any = await pool.query(
+                        `SELECT owner_id FROM whatsapp_business_sessions 
+                         WHERE company_id = ? 
+                           AND owner_type = 'user' 
+                           AND owner_id != ? 
+                           AND connected_number = ?`,
+                        [record.scope.companyId, record.scope.ownerId, connectedNumber]
+                    );
+
+                    if (otherSessions.length > 0) {
+                        logger.warn(
+                            { connectedNumber, companyId: record.scope.companyId, userId: record.scope.ownerId },
+                            `[whatsappBusinessService] Bloqueando conexao. Numero ${connectedNumber} ja configurado para outro usuario.`
+                        );
+
+                        // Destroy client connection to stop it
+                        void client.destroy().catch(() => {});
+
+                        this.updateSnapshot(record, {
+                            status: 'error',
+                            qr_code_data_url: null,
+                            pairing_code: null,
+                            has_qr_code: false,
+                            connected_number: null,
+                            connected_name: null,
+                            platform: null,
+                            wid: null,
+                            last_event_at: new Date().toISOString(),
+                            last_error: 'Este número de WhatsApp já está configurado em outro usuário desta empresa.',
+                        });
+
+                        // Clear local session storage directory
+                        const sessionDir = this.buildSessionDirectory(record.scope.sessionKey);
+                        if (fs.existsSync(sessionDir)) {
+                            fs.rmSync(sessionDir, { recursive: true, force: true });
+                        }
+                        return;
+                    }
+                } catch (dbErr) {
+                    logger.error({ err: dbErr }, '[whatsappBusinessService] Erro ao verificar duplicidade de sessao');
+                }
+            }
+
             this.updateSnapshot(record, {
                 status: 'ready',
                 qr_code_data_url: null,
                 pairing_code: null,
                 has_qr_code: false,
-                connected_number: info?.wid?.user || null,
+                connected_number: connectedNumber,
                 connected_name: info?.pushname || null,
                 platform: info?.platform || null,
                 wid: info?.wid?._serialized || null,
@@ -3116,6 +3198,9 @@ export class WhatsAppBusinessService {
 
         client.on('disconnected', (reason: string) => {
             this.stopInboundSyncTimer(record);
+
+            const wasConnected = record.client !== null && (record.snapshot.status === 'ready' || record.snapshot.status === 'authenticated');
+
             this.updateSnapshot(record, {
                 status: 'disconnected',
                 qr_code_data_url: null,
@@ -3125,9 +3210,25 @@ export class WhatsAppBusinessService {
                 last_error: reason || null,
             });
             record.client = null;
+
+            if (wasConnected) {
+                logger.warn(
+                    { sessionKey: record.scope.sessionKey, reason },
+                    '[whatsappBusinessService] Desconexão inesperada do WhatsApp. Tentando recuperar sessão automaticamente em 10 segundos...'
+                );
+                setTimeout(() => {
+                    void this.recoverScopedSessionAfterRuntimeError(record, `Reconexão automática após desconexão inesperada (${reason}).`).catch((err: unknown) => {
+                        logger.error(
+                            { err, sessionKey: record.scope.sessionKey },
+                            '[whatsappBusinessService] Falha ao tentar reconectar automaticamente após desconexão inesperada'
+                        );
+                    });
+                }, 10000);
+            }
         });
 
         client.on('message', (message: WhatsAppMessage) => {
+            if (!message || !message.id) return;
             logger.info(
                 {
                     scope: this.buildRecordMapKey(record.scope),
@@ -3150,7 +3251,7 @@ export class WhatsAppBusinessService {
         });
 
         client.on('message_create', (message: WhatsAppMessage) => {
-            if (message.fromMe) return;
+            if (!message || !message.id || message.fromMe) return;
 
             logger.info(
                 {
@@ -3175,6 +3276,11 @@ export class WhatsAppBusinessService {
                 clientId: record.scope.sessionKey,
                 dataPath: SESSION_ROOT,
             }),
+            webVersionCache: {
+                type: 'remote',
+                remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/{version}.html',
+                strict: false,
+            },
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             puppeteer: {
                 headless: true,
@@ -3186,6 +3292,26 @@ export class WhatsAppBusinessService {
                     '--disable-gpu',
                     '--no-zygote',
                     '--single-process',
+                    '--disable-extensions',
+                    '--disable-default-apps',
+                    '--no-first-run',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-background-networking',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-breakpad',
+                    '--disable-client-side-phishing-detection',
+                    '--disable-component-update',
+                    '--disable-features=AudioServiceOutOfProcess',
+                    '--disable-ipc-flooding-protection',
+                    '--disable-offer-store-unmasked-cards',
+                    '--disable-popup-blocking',
+                    '--disable-print-preview',
+                    '--disable-prompt-on-repost',
+                    '--disable-renderer-backgrounding',
+                    '--disable-speech-api',
+                    '--disable-sync',
+                    '--mute-audio',
                 ],
             },
             qrMaxRetries: 0,
@@ -3775,35 +3901,125 @@ export class WhatsAppBusinessService {
         }
 
         const isAudioAttachment = attachment?.mimeType?.trim().toLowerCase().startsWith('audio/');
+        const isPdfAttachment = attachment?.mimeType?.trim().toLowerCase() === 'application/pdf';
         const media = attachment ? await this.buildMessageMedia(attachment) : null;
-        const message = attachment
-            ? (trimmedMessage
-                ? await record.client.sendMessage(chatId, media!, {
-                    caption: trimmedMessage,
-                    sendAudioAsVoice: !!isAudioAttachment,
-                }) as WhatsAppMessage
-                : await record.client.sendMessage(chatId, media!, {
-                    sendAudioAsVoice: !!isAudioAttachment,
-                }) as WhatsAppMessage)
-            : await record.client.sendMessage(chatId, trimmedMessage) as WhatsAppMessage;
+        
+        let message: WhatsAppMessage | null = null;
+        const sendOptions: any = {
+            sendAudioAsVoice: !!isAudioAttachment,
+            sendMediaAsDocument: !!isPdfAttachment,
+            sendSeen: false,
+        };
+        if (trimmedMessage) {
+            sendOptions.caption = trimmedMessage;
+        }
 
+        let lastSendError: Error | null = null;
         try {
-            await this.persistScopedMessage(record.scope, message, 'outbound', recipientPhone, attachment);
-        } catch (error: unknown) {
-            logger.error(
-                { err: error, sessionKey: record.scope.sessionKey, messageId: message.id?._serialized || null },
-                '[whatsappBusinessService] Falha ao persistir mensagem enviada'
-            );
+            message = (attachment
+                ? await record.client.sendMessage(chatId, media!, sendOptions)
+                : await record.client.sendMessage(chatId, trimmedMessage, sendOptions)) as WhatsAppMessage;
+        } catch (sendErr: any) {
+            lastSendError = sendErr;
+            logger.warn({ err: sendErr, chatId, recipientPhone }, '[whatsappBusinessService] Tentativa inicial de envio falhou, verificando alternativas');
+        }
+
+        // Fallback 1: se não enviou e é número brasileiro, tenta com o formato alternativo (8 vs 9 dígitos)
+        if (!message && recipientPhone.startsWith('55')) {
+            let altPhone: string | null = null;
+            if (recipientPhone.length === 13) {
+                const ddd = recipientPhone.slice(2, 4);
+                const rest = recipientPhone.slice(5);
+                altPhone = `55${ddd}${rest}`;
+            } else if (recipientPhone.length === 12) {
+                const ddd = recipientPhone.slice(2, 4);
+                const rest = recipientPhone.slice(4);
+                altPhone = `55${ddd}9${rest}`;
+            }
+
+            if (altPhone) {
+                const altChatId = `${altPhone}@c.us`;
+                if (altChatId !== chatId) {
+                    logger.info({ originalChatId: chatId, altChatId }, '[whatsappBusinessService] Tentando envio para chat_id alternativo (8/9 digitos)');
+                    try {
+                        message = (attachment
+                            ? await record.client.sendMessage(altChatId, media!, sendOptions)
+                            : await record.client.sendMessage(altChatId, trimmedMessage)) as WhatsAppMessage;
+                        if (message) {
+                            chatId = altChatId;
+                            lastSendError = null;
+                        }
+                    } catch (altErr: any) {
+                        logger.warn({ err: altErr, altChatId }, '[whatsappBusinessService] Falha ao enviar para chat alternativo');
+                    }
+                }
+            }
+        }
+
+        // Fallback 2: se falhou com anexo de documento, tenta enviar o texto da mensagem com os dados de cobrança
+        if (!message && lastSendError && attachment && trimmedMessage) {
+            logger.warn({ chatId }, '[whatsappBusinessService] Tentando envio de mensagem de texto puro como fallback de contingencia');
+            try {
+                message = await record.client.sendMessage(chatId, trimmedMessage) as WhatsAppMessage;
+                if (message) {
+                    lastSendError = null;
+                }
+            } catch (fallbackTextErr: any) {
+                logger.error({ err: fallbackTextErr, chatId }, '[whatsappBusinessService] Falha ao enviar texto puro');
+            }
+        }
+
+        if (!message && lastSendError) {
+            throw new AppError(lastSendError.message || 'Não foi possível enviar a mensagem pelo WhatsApp. Verifique se a sessão do WhatsApp está conectada e se o telefone informado é válido.', 400);
+        }
+
+        const messageId = message?.id?._serialized || `out_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+        if (message) {
+            try {
+                await this.persistScopedMessage(record.scope, message, 'outbound', recipientPhone, attachment);
+            } catch (error: unknown) {
+                logger.error(
+                    { err: error, sessionKey: record.scope.sessionKey, messageId },
+                    '[whatsappBusinessService] Falha ao persistir mensagem enviada'
+                );
+            }
+        } else {
+            // Se o WhatsApp Web enviou mas Msg.get retornou undefined no instante da chamada, persiste o registro sintético
+            try {
+                const syntheticPayload = {
+                    direction: 'outbound' as const,
+                    contact_phone: recipientPhone,
+                    contact_name: null,
+                    chat_id: chatId,
+                    message_id: messageId,
+                    message_type: attachment ? (isPdfAttachment ? 'document' : (isAudioAttachment ? 'audio' : 'media')) : 'chat',
+                    message_text: trimmedMessage,
+                    media_mime_type: attachment?.mimeType || null,
+                    media_file_name: attachment?.fileName || null,
+                    media_url: null,
+                    status: 'sent',
+                    message_timestamp: Math.floor(Date.now() / 1000),
+                    raw_payload: null,
+                };
+                if (record.scope.ownerType === 'user') {
+                    await WhatsAppBusinessMessageService.saveUserMessage(record.scope.companyId, record.scope.ownerId, syntheticPayload);
+                } else {
+                    await WhatsAppBusinessMessageService.saveMessage(record.scope.companyId, syntheticPayload);
+                }
+            } catch (persistErr: unknown) {
+                logger.warn({ err: persistErr, messageId }, '[whatsappBusinessService] Falha ao persistir mensagem sintética');
+            }
         }
 
         return {
             status: 'sent',
             to: recipientPhone,
             chat_id: chatId,
-            message_id: message.id?._serialized || null,
-            ack: typeof message.ack === 'number' ? message.ack : null,
-            timestamp: typeof message.timestamp === 'number' ? message.timestamp : null,
-            message_type: message.type || null,
+            message_id: messageId,
+            ack: typeof message?.ack === 'number' ? message.ack : 1,
+            timestamp: typeof message?.timestamp === 'number' ? message.timestamp : Math.floor(Date.now() / 1000),
+            message_type: message?.type || (attachment ? (isPdfAttachment ? 'document' : 'media') : 'chat'),
             attachment_name: attachment?.fileName || null,
         };
     }
@@ -3854,6 +4070,147 @@ export class WhatsAppBusinessService {
         return this.sendScopedMessage(this.buildUserScope(companyId, userId), input);
     }
 
+    static async sendBestAvailableSessionMessage(
+        companyId: number | string,
+        preferredUserId: number | string | null | undefined,
+        input: WhatsAppBusinessSendMessageInput,
+        companyData?: any
+    ): Promise<WhatsAppBusinessSendResult> {
+        const compId = Number(companyId);
+
+        // 1. Se preferredUserId fornecido, verifica se a sessão do usuário está pronta
+        if (preferredUserId) {
+            const userScope = this.buildUserScope(compId, preferredUserId);
+            const userKey = this.buildRecordMapKey(userScope);
+            const userRecord = this.sessions.get(userKey);
+            if (userRecord && userRecord.client && userRecord.snapshot.status === 'ready') {
+                return this.sendScopedMessage(userScope, input);
+            }
+        }
+
+        // 2. Verifica se o remetente configurado na empresa está pronto
+        if (companyData?.boleto_send_whatsapp_name || companyData?.boleto_send_whatsapp_number) {
+            try {
+                const [companySenderRows] = await pool.query<RowDataPacket[]>(
+                    `SELECT id, public_id, full_name, phone FROM users 
+                     WHERE company_id = ? AND is_active = 1 
+                       AND (full_name = ? OR phone = ? OR whatsapp_number = ?) LIMIT 1`,
+                    [
+                        compId, 
+                        companyData.boleto_send_whatsapp_name || '', 
+                        companyData.boleto_send_whatsapp_number || '', 
+                        companyData.boleto_send_whatsapp_number || ''
+                    ]
+                );
+                if (companySenderRows && companySenderRows[0]) {
+                    const configuredScope = this.buildUserScope(compId, companySenderRows[0].id);
+                    const confKey = this.buildRecordMapKey(configuredScope);
+                    const confRecord = this.sessions.get(confKey);
+                    if (confRecord && confRecord.client && confRecord.snapshot.status === 'ready') {
+                        logger.info(`[whatsappBusinessService] Enviando mensagem via remetente configurado da empresa: ${companySenderRows[0].full_name}`);
+                        return this.sendScopedMessage(configuredScope, input);
+                    }
+                }
+            } catch (err) {
+                logger.warn({ err }, '[whatsappBusinessService] Falha ao consultar remetente configurado da empresa');
+            }
+        }
+
+        // 3. Procura qualquer sessão ativa/conectada na memória pertencente à empresa
+        for (const [key, record] of this.sessions.entries()) {
+            if (record.scope.companyId === compId && record.client && record.snapshot.status === 'ready') {
+                logger.info(`[whatsappBusinessService] Utilizando sessão conectada da empresa em memória: ${key}`);
+                return this.sendScopedMessage(record.scope, input);
+            }
+        }
+
+        // 4. Procura no banco de dados por alguma sessão persistida da empresa
+        try {
+            const [dbSessions] = await pool.query<RowDataPacket[]>(
+                `SELECT owner_type, owner_id FROM whatsapp_business_sessions 
+                 WHERE company_id = ? AND status = 'ready' AND persisted_session = 1 
+                 ORDER BY owner_type = 'company' DESC, updated_at DESC LIMIT 1`,
+                [compId]
+            );
+            if (dbSessions && dbSessions[0]) {
+                const fallbackScope = dbSessions[0].owner_type === 'company'
+                    ? this.buildCompanyScope(compId)
+                    : this.buildUserScope(compId, dbSessions[0].owner_id);
+                logger.info(`[whatsappBusinessService] Utilizando sessão ativa encontrada no banco: ${fallbackScope.sessionKey}`);
+                return this.sendScopedMessage(fallbackScope, input);
+            }
+        } catch (dbErr) {
+            logger.warn({ dbErr }, '[whatsappBusinessService] Falha ao consultar sessões persistidas no banco');
+        }
+
+        // 5. Se nenhuma sessão estiver pronta, tenta preferredUser ou company scope para exibir erro claro de QR Code
+        if (preferredUserId) {
+            return this.sendUserMessage(compId, preferredUserId, input);
+        }
+        return this.sendMessage(compId, input);
+    }
+
+    static async isAnySessionConnected(companyId: number | string): Promise<boolean> {
+        const compId = Number(companyId);
+        for (const [, record] of this.sessions.entries()) {
+            if (record.scope.companyId === compId && record.client && record.snapshot.status === 'ready') {
+                return true;
+            }
+        }
+        try {
+            const [dbSessions] = await pool.query<RowDataPacket[]>(
+                `SELECT id FROM whatsapp_business_sessions 
+                 WHERE company_id = ? AND status = 'ready' AND persisted_session = 1 LIMIT 1`,
+                [compId]
+            );
+            return !!(dbSessions && dbSessions.length > 0);
+        } catch {
+            return false;
+        }
+    }
+
+    static async getCompanyActiveSessionInfo(companyId: number | string): Promise<{
+        connected: boolean;
+        connectedNumber: string | null;
+        connectedName: string | null;
+        sessionKey: string | null;
+    }> {
+        const compId = Number(companyId);
+        for (const [, record] of this.sessions.entries()) {
+            if (record.scope.companyId === compId && record.client && record.snapshot.status === 'ready') {
+                return {
+                    connected: true,
+                    connectedNumber: record.snapshot.connected_number || null,
+                    connectedName: record.snapshot.connected_name || null,
+                    sessionKey: record.scope.sessionKey,
+                };
+            }
+        }
+        try {
+            const [dbSessions] = await pool.query<RowDataPacket[]>(
+                `SELECT session_key, connected_number, connected_name FROM whatsapp_business_sessions 
+                 WHERE company_id = ? AND status = 'ready' AND persisted_session = 1 ORDER BY updated_at DESC LIMIT 1`,
+                [compId]
+            );
+            if (dbSessions && dbSessions[0]) {
+                return {
+                    connected: true,
+                    connectedNumber: dbSessions[0].connected_number || null,
+                    connectedName: dbSessions[0].connected_name || null,
+                    sessionKey: dbSessions[0].session_key || null,
+                };
+            }
+        } catch {
+            // ignore
+        }
+        return {
+            connected: false,
+            connectedNumber: null,
+            connectedName: null,
+            sessionKey: null,
+        };
+    }
+
     static async getSessionScreenshot(companyId: number | string): Promise<Buffer | null> {
         const scope = this.buildCompanyScope(companyId);
         const record = this.sessions.get(this.buildRecordMapKey(scope));
@@ -3869,6 +4226,34 @@ export class WhatsAppBusinessService {
         } catch (e: any) {
             logger.warn({ err: e }, '[whatsappBusinessService] Falha ao tirar screenshot da pagina');
             return null;
+        }
+    }
+
+    static async startAllPersistedSessions(): Promise<void> {
+        try {
+            const [rows] = await pool.query<RowDataPacket[]>(
+                `SELECT company_id, owner_type, owner_id FROM whatsapp_business_sessions WHERE persisted_session = 1`
+            );
+            if (!rows || rows.length === 0) {
+                logger.info('[whatsappBusinessService] Nenhuma sessão persistida para inicializar');
+                return;
+            }
+            logger.info(`[whatsappBusinessService] Inicializando ${rows.length} sessões persistidas...`);
+            for (const row of rows) {
+                const scope: SessionScopeContext = {
+                    companyId: row.company_id,
+                    ownerType: row.owner_type,
+                    ownerId: row.owner_id,
+                    companyKey: `company_${row.company_id}`,
+                    ownerKey: row.owner_type === 'company' ? `company_${row.company_id}` : `user_${row.owner_id}`,
+                    sessionKey: row.owner_type === 'company' ? `company_${row.company_id}` : `company_${row.company_id}_user_${row.owner_id}`
+                };
+                void this.startScopedSession(scope).catch((err) => {
+                    logger.error({ scope: scope.sessionKey, err }, '[whatsappBusinessService] Falha ao auto-iniciar sessão persistida');
+                });
+            }
+        } catch (error) {
+            logger.error(error, '[whatsappBusinessService] Erro ao buscar sessões persistidas para inicialização');
         }
     }
 

@@ -40,12 +40,23 @@ export async function runMigration98BankStatements() {
         // 2. Seed role permissions for 'statements' if not already done
         const roles = ['admin', 'super_admin', 'financial'];
         for (const role of roles) {
-            await conn.query(`
-                INSERT INTO role_permissions (company_id, role, module, can_view)
-                SELECT c.id, ?, 'statements', 1
-                FROM companies c
-                ON DUPLICATE KEY UPDATE can_view = VALUES(can_view)
-            `, [role]);
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await conn.query(`
+                        INSERT INTO role_permissions (company_id, role, module, can_view)
+                        SELECT c.id, ?, 'statements', 1
+                        FROM companies c
+                        ON DUPLICATE KEY UPDATE can_view = VALUES(can_view)
+                    `, [role]);
+                    break;
+                } catch (roleErr: any) {
+                    if (roleErr?.code === 'ER_LOCK_DEADLOCK' && attempt < 3) {
+                        await new Promise((res) => setTimeout(res, 200 * attempt));
+                        continue;
+                    }
+                    throw roleErr;
+                }
+            }
         }
 
         await conn.commit();

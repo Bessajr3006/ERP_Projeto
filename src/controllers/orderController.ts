@@ -37,7 +37,9 @@ const createSalesSchema = z.object({
     items: z.array(itemSchema).min(1, 'Order must contain at least one item'),
     payments: z.array(z.object({
         method: z.enum(['pix', 'credit', 'debit', 'cash', 'transfer', 'boleto']),
-        amount: z.coerce.number().min(0.01)
+        amount: z.coerce.number().min(0.01),
+        card_brand_public_id: z.string().uuid('Invalid card brand ID').optional().nullable(),
+        receivable_type_public_id: z.string().uuid('Invalid receivable type ID').optional().nullable()
     })).optional()
 });
 

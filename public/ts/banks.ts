@@ -64,11 +64,20 @@
     }
   };
 
+  let currentActiveTab = 'geral';
+
+  const getDefaultAsaasWebhookUrl = (): string => {
+    return `${window.location.origin}/api/v1/public/webhooks/asaas/billing`;
+  };
+
   const switchTab = (tabName: string): void => {
+    currentActiveTab = tabName;
     const tabGeral = getById('tabContentGeral');
     const tabApi = getById('tabContentApi');
+    const tabAsaas = getById('tabContentAsaas');
     const btnGeral = getById('tabBtnGeral');
     const btnApi = getById('tabBtnApi');
+    const btnAsaas = getById('tabBtnAsaas');
 
     const activeClasses = ['border-brand-500', 'text-brand-600'];
     const inactiveClasses = [
@@ -81,26 +90,48 @@
       'dark:hover:border-gray-500',
     ];
 
+    // Reset all tabs
+    [tabGeral, tabApi, tabAsaas].forEach((tab) => {
+      if (tab) {
+        tab.classList.remove('block');
+        tab.classList.add('hidden');
+      }
+    });
+
+    [btnGeral, btnApi, btnAsaas].forEach((btn) => {
+      if (btn) {
+        btn.classList.remove(...activeClasses);
+        btn.classList.add(...inactiveClasses);
+      }
+    });
+
     if (tabName === 'geral') {
-      tabGeral.classList.remove('hidden');
-      tabGeral.classList.add('block');
-      tabApi.classList.remove('block');
-      tabApi.classList.add('hidden');
-
-      btnGeral.classList.remove(...inactiveClasses);
-      btnGeral.classList.add(...activeClasses);
-      btnApi.classList.remove(...activeClasses);
-      btnApi.classList.add(...inactiveClasses);
+      if (tabGeral) {
+        tabGeral.classList.remove('hidden');
+        tabGeral.classList.add('block');
+      }
+      if (btnGeral) {
+        btnGeral.classList.remove(...inactiveClasses);
+        btnGeral.classList.add(...activeClasses);
+      }
     } else if (tabName === 'api') {
-      tabApi.classList.remove('hidden');
-      tabApi.classList.add('block');
-      tabGeral.classList.remove('block');
-      tabGeral.classList.add('hidden');
-
-      btnApi.classList.remove(...inactiveClasses);
-      btnApi.classList.add(...activeClasses);
-      btnGeral.classList.remove(...activeClasses);
-      btnGeral.classList.add(...inactiveClasses);
+      if (tabApi) {
+        tabApi.classList.remove('hidden');
+        tabApi.classList.add('block');
+      }
+      if (btnApi) {
+        btnApi.classList.remove(...inactiveClasses);
+        btnApi.classList.add(...activeClasses);
+      }
+    } else if (tabName === 'asaas') {
+      if (tabAsaas) {
+        tabAsaas.classList.remove('hidden');
+        tabAsaas.classList.add('block');
+      }
+      if (btnAsaas) {
+        btnAsaas.classList.remove(...inactiveClasses);
+        btnAsaas.classList.add(...activeClasses);
+      }
     }
   };
 
@@ -224,10 +255,8 @@
         dropzone.classList.add('hidden');
         filenameDiv.classList.remove('hidden');
         let labelName = '';
-        if (type === 'Cert') labelName = '.crt';
-        else if (type === 'Key') labelName = '.key';
-        else if (type === 'WebhookCert') labelName = 'Certificado do Webhook .crt';
-        else if (type === 'WebhookKey') labelName = 'Chave do Webhook .key';
+        if (type === 'Cert' || type === 'WebhookCert') labelName = '.crt';
+        else if (type === 'Key' || type === 'WebhookKey') labelName = '.key';
         filenameText.textContent = `Arquivo ${labelName} carregado do banco`;
       } else {
         dropzone.classList.remove('hidden');
@@ -240,12 +269,44 @@
     getById('bankModal').classList.add('hidden');
   };
 
+  const getDefaultWebhookUrl = (): string => {
+    return `${window.location.origin}/api/v1/public/webhooks/inter/billing`;
+  };
+
   const openModal = (): void => {
     getById('bankForm').reset();
     getById('bankId').value = '';
 
     const initialBalanceInputEl = getById('initialBalance');
     if (initialBalanceInputEl) initialBalanceInputEl.value = 'R$ 0,00';
+
+    getById('webhookUrl').value = getDefaultWebhookUrl();
+    getById('billetFine').value = '';
+    getById('billetInterest').value = '';
+    getById('billetValidity').value = '';
+    getById('pixFine').value = '';
+    getById('pixInterest').value = '';
+    getById('pixValidity').value = '';
+
+    // Asaas defaults
+    if (getById('asaasEnvironment')) getById('asaasEnvironment').value = 'production';
+    if (getById('asaasWalletId')) getById('asaasWalletId').value = '';
+    if (getById('asaasApiKey')) getById('asaasApiKey').value = '';
+    if (getById('asaasFine')) getById('asaasFine').value = '';
+    if (getById('asaasInterest')) getById('asaasInterest').value = '';
+    if (getById('asaasDiscountValue')) getById('asaasDiscountValue').value = '';
+    if (getById('asaasDiscountDays')) getById('asaasDiscountDays').value = '';
+    if (getById('asaasWebhookUrl')) getById('asaasWebhookUrl').value = getDefaultAsaasWebhookUrl();
+    if (getById('asaasWebhookEmail')) getById('asaasWebhookEmail').value = '';
+    if (getById('asaasWebhookToken')) getById('asaasWebhookToken').value = '';
+    if (getById('asaasEventPaymentCreated')) getById('asaasEventPaymentCreated').checked = false;
+    if (getById('asaasEventPaymentReceived')) getById('asaasEventPaymentReceived').checked = true;
+    if (getById('asaasEventPaymentOverdue')) getById('asaasEventPaymentOverdue').checked = false;
+    if (getById('asaasEventPaymentDeleted')) getById('asaasEventPaymentDeleted').checked = false;
+    if (getById('asaasEventPaymentRefunded')) getById('asaasEventPaymentRefunded').checked = false;
+    if (getById('asaasEventPaymentChargeback')) getById('asaasEventPaymentChargeback').checked = false;
+    if (getById('asaasEventTransferCreated')) getById('asaasEventTransferCreated').checked = false;
+    if (getById('asaasEventTransferDone')) getById('asaasEventTransferDone').checked = false;
 
     getById('modalTitle').textContent = 'Nova Conta Bancária';
 
@@ -548,13 +609,15 @@
     getById('agencyNumber').value = bank.agency_number || '';
     getById('accountNumber').value = bank.account_number || '';
     getById('pixKey').value = bank.pix_key || '';
+    getById('solidconBankId').value = bank.solidcon_bank_id || '';
 
+    // Inter
     getById('apiClientId').value = bank.api_client_id || '';
     getById('apiClientSecret').value = bank.api_client_secret || '';
     getById('apiCertificado').value = bank.api_certificate ? atob(bank.api_certificate) : '';
     getById('apiKey').value = bank.api_key ? atob(bank.api_key) : '';
 
-    getById('webhookUrl').value = bank.webhook_url || '';
+    getById('webhookUrl').value = bank.webhook_url || getDefaultWebhookUrl();
     getById('webhookSecret').value = bank.webhook_secret || '';
     getById('webhookCertificado').value = bank.webhook_certificate ? atob(bank.webhook_certificate) : '';
     getById('webhookKey').value = bank.webhook_key ? atob(bank.webhook_key) : '';
@@ -562,6 +625,32 @@
     getById('webhookEventAccount').checked = !!bank.webhook_event_account;
     getById('webhookEventStatusSync').checked = !!bank.webhook_event_status_sync;
     getById('webhookEventBoleto').checked = !!bank.webhook_event_boleto;
+    getById('billetFine').value = bank.billet_fine !== undefined && bank.billet_fine !== null ? bank.billet_fine : '';
+    getById('billetInterest').value = bank.billet_interest !== undefined && bank.billet_interest !== null ? bank.billet_interest : '';
+    getById('billetValidity').value = bank.billet_validity !== undefined && bank.billet_validity !== null ? bank.billet_validity : '';
+    getById('pixFine').value = bank.pix_fine !== undefined && bank.pix_fine !== null ? bank.pix_fine : '';
+    getById('pixInterest').value = bank.pix_interest !== undefined && bank.pix_interest !== null ? bank.pix_interest : '';
+    getById('pixValidity').value = bank.pix_validity !== undefined && bank.pix_validity !== null ? bank.pix_validity : '';
+
+    // Asaas
+    if (getById('asaasEnvironment')) getById('asaasEnvironment').value = bank.asaas_environment || 'production';
+    if (getById('asaasWalletId')) getById('asaasWalletId').value = bank.asaas_wallet_id || '';
+    if (getById('asaasApiKey')) getById('asaasApiKey').value = bank.asaas_api_key || '';
+    if (getById('asaasFine')) getById('asaasFine').value = bank.asaas_fine !== undefined && bank.asaas_fine !== null ? bank.asaas_fine : '';
+    if (getById('asaasInterest')) getById('asaasInterest').value = bank.asaas_interest !== undefined && bank.asaas_interest !== null ? bank.asaas_interest : '';
+    if (getById('asaasDiscountValue')) getById('asaasDiscountValue').value = bank.asaas_discount_value !== undefined && bank.asaas_discount_value !== null ? bank.asaas_discount_value : '';
+    if (getById('asaasDiscountDays')) getById('asaasDiscountDays').value = bank.asaas_discount_days !== undefined && bank.asaas_discount_days !== null ? bank.asaas_discount_days : '';
+    if (getById('asaasWebhookUrl')) getById('asaasWebhookUrl').value = bank.asaas_webhook_url || getDefaultAsaasWebhookUrl();
+    if (getById('asaasWebhookEmail')) getById('asaasWebhookEmail').value = bank.asaas_webhook_email || '';
+    if (getById('asaasWebhookToken')) getById('asaasWebhookToken').value = bank.asaas_webhook_token || '';
+    if (getById('asaasEventPaymentCreated')) getById('asaasEventPaymentCreated').checked = !!bank.asaas_webhook_event_payment_created;
+    if (getById('asaasEventPaymentReceived')) getById('asaasEventPaymentReceived').checked = bank.asaas_webhook_event_payment_received !== undefined && bank.asaas_webhook_event_payment_received !== null ? !!bank.asaas_webhook_event_payment_received : true;
+    if (getById('asaasEventPaymentOverdue')) getById('asaasEventPaymentOverdue').checked = !!bank.asaas_webhook_event_payment_overdue;
+    if (getById('asaasEventPaymentDeleted')) getById('asaasEventPaymentDeleted').checked = !!bank.asaas_webhook_event_payment_deleted;
+    if (getById('asaasEventPaymentRefunded')) getById('asaasEventPaymentRefunded').checked = !!bank.asaas_webhook_event_payment_refunded;
+    if (getById('asaasEventPaymentChargeback')) getById('asaasEventPaymentChargeback').checked = !!bank.asaas_webhook_event_payment_chargeback;
+    if (getById('asaasEventTransferCreated')) getById('asaasEventTransferCreated').checked = !!bank.asaas_webhook_event_transfer_created;
+    if (getById('asaasEventTransferDone')) getById('asaasEventTransferDone').checked = !!bank.asaas_webhook_event_transfer_done;
 
     populateFileDropzoneUI('Cert', !!bank.api_certificate);
     populateFileDropzoneUI('Key', !!bank.api_key);
@@ -590,13 +679,15 @@
     getById('agencyNumber').value = bank.agency_number || '';
     getById('accountNumber').value = bank.account_number || '';
     getById('pixKey').value = bank.pix_key || '';
+    getById('solidconBankId').value = bank.solidcon_bank_id || '';
 
+    // Inter
     getById('apiClientId').value = bank.api_client_id || '';
     getById('apiClientSecret').value = bank.api_client_secret || '';
     getById('apiCertificado').value = bank.api_certificate ? atob(bank.api_certificate) : '';
     getById('apiKey').value = bank.api_key ? atob(bank.api_key) : '';
 
-    getById('webhookUrl').value = bank.webhook_url || '';
+    getById('webhookUrl').value = bank.webhook_url || getDefaultWebhookUrl();
     getById('webhookSecret').value = bank.webhook_secret || '';
     getById('webhookCertificado').value = bank.webhook_certificate ? atob(bank.webhook_certificate) : '';
     getById('webhookKey').value = bank.webhook_key ? atob(bank.webhook_key) : '';
@@ -604,6 +695,32 @@
     getById('webhookEventAccount').checked = !!bank.webhook_event_account;
     getById('webhookEventStatusSync').checked = !!bank.webhook_event_status_sync;
     getById('webhookEventBoleto').checked = !!bank.webhook_event_boleto;
+    getById('billetFine').value = bank.billet_fine !== undefined && bank.billet_fine !== null ? bank.billet_fine : '';
+    getById('billetInterest').value = bank.billet_interest !== undefined && bank.billet_interest !== null ? bank.billet_interest : '';
+    getById('billetValidity').value = bank.billet_validity !== undefined && bank.billet_validity !== null ? bank.billet_validity : '';
+    getById('pixFine').value = bank.pix_fine !== undefined && bank.pix_fine !== null ? bank.pix_fine : '';
+    getById('pixInterest').value = bank.pix_interest !== undefined && bank.pix_interest !== null ? bank.pix_interest : '';
+    getById('pixValidity').value = bank.pix_validity !== undefined && bank.pix_validity !== null ? bank.pix_validity : '';
+
+    // Asaas
+    if (getById('asaasEnvironment')) getById('asaasEnvironment').value = bank.asaas_environment || 'production';
+    if (getById('asaasWalletId')) getById('asaasWalletId').value = bank.asaas_wallet_id || '';
+    if (getById('asaasApiKey')) getById('asaasApiKey').value = bank.asaas_api_key || '';
+    if (getById('asaasFine')) getById('asaasFine').value = bank.asaas_fine !== undefined && bank.asaas_fine !== null ? bank.asaas_fine : '';
+    if (getById('asaasInterest')) getById('asaasInterest').value = bank.asaas_interest !== undefined && bank.asaas_interest !== null ? bank.asaas_interest : '';
+    if (getById('asaasDiscountValue')) getById('asaasDiscountValue').value = bank.asaas_discount_value !== undefined && bank.asaas_discount_value !== null ? bank.asaas_discount_value : '';
+    if (getById('asaasDiscountDays')) getById('asaasDiscountDays').value = bank.asaas_discount_days !== undefined && bank.asaas_discount_days !== null ? bank.asaas_discount_days : '';
+    if (getById('asaasWebhookUrl')) getById('asaasWebhookUrl').value = bank.asaas_webhook_url || getDefaultAsaasWebhookUrl();
+    if (getById('asaasWebhookEmail')) getById('asaasWebhookEmail').value = bank.asaas_webhook_email || '';
+    if (getById('asaasWebhookToken')) getById('asaasWebhookToken').value = bank.asaas_webhook_token || '';
+    if (getById('asaasEventPaymentCreated')) getById('asaasEventPaymentCreated').checked = !!bank.asaas_webhook_event_payment_created;
+    if (getById('asaasEventPaymentReceived')) getById('asaasEventPaymentReceived').checked = bank.asaas_webhook_event_payment_received !== undefined && bank.asaas_webhook_event_payment_received !== null ? !!bank.asaas_webhook_event_payment_received : true;
+    if (getById('asaasEventPaymentOverdue')) getById('asaasEventPaymentOverdue').checked = !!bank.asaas_webhook_event_payment_overdue;
+    if (getById('asaasEventPaymentDeleted')) getById('asaasEventPaymentDeleted').checked = !!bank.asaas_webhook_event_payment_deleted;
+    if (getById('asaasEventPaymentRefunded')) getById('asaasEventPaymentRefunded').checked = !!bank.asaas_webhook_event_payment_refunded;
+    if (getById('asaasEventPaymentChargeback')) getById('asaasEventPaymentChargeback').checked = !!bank.asaas_webhook_event_payment_chargeback;
+    if (getById('asaasEventTransferCreated')) getById('asaasEventTransferCreated').checked = !!bank.asaas_webhook_event_transfer_created;
+    if (getById('asaasEventTransferDone')) getById('asaasEventTransferDone').checked = !!bank.asaas_webhook_event_transfer_done;
 
     populateFileDropzoneUI('Cert', !!bank.api_certificate);
     populateFileDropzoneUI('Key', !!bank.api_key);
@@ -639,16 +756,29 @@
     const btn = getById('btnTestApi');
     const originalText = btn.innerHTML;
 
-    const requiredFields = ['apiClientId', 'apiClientSecret', 'apiCertificado', 'apiKey'];
-    const missingFields = requiredFields.some((id) => !getById(id).value);
+    const isAsaasTab = currentActiveTab === 'asaas' || (getById('asaasApiKey')?.value && !getById('apiClientId')?.value);
 
-    if (missingFields) {
-      (window as any).UI.showAlert(
-        'alertMessage',
-        'Por favor, preencha as 4 credenciais (ID, Secret, Certificado e Chave) e SALVE antes de testar.',
-        'error'
-      );
-      return;
+    if (isAsaasTab) {
+      if (!getById('asaasApiKey')?.value) {
+        (window as any).UI.showAlert(
+          'alertMessage',
+          'Por favor, preencha a API Key / Token do Asaas e SALVE antes de testar.',
+          'error'
+        );
+        return;
+      }
+    } else {
+      const requiredFields = ['apiClientId', 'apiClientSecret', 'apiCertificado', 'apiKey'];
+      const missingFields = requiredFields.some((id) => !getById(id).value);
+
+      if (missingFields) {
+        (window as any).UI.showAlert(
+          'alertMessage',
+          'Por favor, preencha as 4 credenciais do Inter (ID, Secret, Certificado e Chave) e SALVE antes de testar.',
+          'error'
+        );
+        return;
+      }
     }
 
     btn.disabled = true;
@@ -656,7 +786,8 @@
       '<svg class="animate-spin h-5 w-5 text-amber-700 dark:text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
 
     try {
-      const response = await (window as any).api(`/bank-accounts/${bankId}/test-connection`, {
+      const providerQuery = isAsaasTab ? '?provider=asaas' : '?provider=inter';
+      const response = await (window as any).api(`/bank-accounts/${bankId}/test-connection${providerQuery}`, {
         method: 'POST',
       });
 
@@ -740,6 +871,24 @@
 
     getById('tabBtnGeral')?.addEventListener('click', () => switchTab('geral'));
     getById('tabBtnApi')?.addEventListener('click', () => switchTab('api'));
+    getById('tabBtnAsaas')?.addEventListener('click', () => switchTab('asaas'));
+
+    getById('toggleAsaasApiKeyVisibility')?.addEventListener('click', () => {
+      const keyInput = getById('asaasApiKey');
+      const eyeOpen = getById('eyeOpenAsaasKey');
+      const eyeClosed = getById('eyeClosedAsaasKey');
+      if (keyInput) {
+        if (keyInput.type === 'password') {
+          keyInput.type = 'text';
+          eyeOpen?.classList.add('hidden');
+          eyeClosed?.classList.remove('hidden');
+        } else {
+          keyInput.type = 'password';
+          eyeOpen?.classList.remove('hidden');
+          eyeClosed?.classList.add('hidden');
+        }
+      }
+    });
 
     getById('btnListView')?.addEventListener('click', () => {
       currentView = 'list';
@@ -815,6 +964,33 @@
       webhook_event_account: getById('webhookEventAccount').checked ? 1 : 0,
       webhook_event_status_sync: getById('webhookEventStatusSync').checked ? 1 : 0,
       webhook_event_boleto: getById('webhookEventBoleto').checked ? 1 : 0,
+      billet_fine: getById('billetFine').value !== '' ? parseFloat(getById('billetFine').value) : null,
+      billet_interest: getById('billetInterest').value !== '' ? parseFloat(getById('billetInterest').value) : null,
+      billet_validity: getById('billetValidity').value !== '' ? parseInt(getById('billetValidity').value, 10) : null,
+      pix_fine: getById('pixFine').value !== '' ? parseFloat(getById('pixFine').value) : null,
+      pix_interest: getById('pixInterest').value !== '' ? parseFloat(getById('pixInterest').value) : null,
+      pix_validity: getById('pixValidity').value !== '' ? parseInt(getById('pixValidity').value, 10) : null,
+      solidcon_bank_id: getById('solidconBankId').value || null,
+
+      // Asaas fields
+      asaas_environment: getById('asaasEnvironment')?.value || 'production',
+      asaas_wallet_id: getById('asaasWalletId')?.value || null,
+      asaas_api_key: getById('asaasApiKey')?.value || null,
+      asaas_fine: getById('asaasFine')?.value !== '' ? parseFloat(getById('asaasFine').value) : null,
+      asaas_interest: getById('asaasInterest')?.value !== '' ? parseFloat(getById('asaasInterest').value) : null,
+      asaas_discount_value: getById('asaasDiscountValue')?.value !== '' ? parseFloat(getById('asaasDiscountValue').value) : null,
+      asaas_discount_days: getById('asaasDiscountDays')?.value !== '' ? parseInt(getById('asaasDiscountDays').value, 10) : null,
+      asaas_webhook_url: getById('asaasWebhookUrl')?.value || null,
+      asaas_webhook_email: getById('asaasWebhookEmail')?.value || null,
+      asaas_webhook_token: getById('asaasWebhookToken')?.value || null,
+      asaas_webhook_event_payment_created: getById('asaasEventPaymentCreated')?.checked ? 1 : 0,
+      asaas_webhook_event_payment_received: getById('asaasEventPaymentReceived')?.checked ? 1 : 0,
+      asaas_webhook_event_payment_overdue: getById('asaasEventPaymentOverdue')?.checked ? 1 : 0,
+      asaas_webhook_event_payment_deleted: getById('asaasEventPaymentDeleted')?.checked ? 1 : 0,
+      asaas_webhook_event_payment_refunded: getById('asaasEventPaymentRefunded')?.checked ? 1 : 0,
+      asaas_webhook_event_payment_chargeback: getById('asaasEventPaymentChargeback')?.checked ? 1 : 0,
+      asaas_webhook_event_transfer_created: getById('asaasEventTransferCreated')?.checked ? 1 : 0,
+      asaas_webhook_event_transfer_done: getById('asaasEventTransferDone')?.checked ? 1 : 0,
     };
 
     saveBtn.disabled = true;
@@ -844,6 +1020,33 @@
             webhook_event_account: payload.webhook_event_account,
             webhook_event_status_sync: payload.webhook_event_status_sync,
             webhook_event_boleto: payload.webhook_event_boleto,
+            billet_fine: payload.billet_fine,
+            billet_interest: payload.billet_interest,
+            billet_validity: payload.billet_validity,
+            pix_fine: payload.pix_fine,
+            pix_interest: payload.pix_interest,
+            pix_validity: payload.pix_validity,
+            solidcon_bank_id: payload.solidcon_bank_id,
+
+            // Asaas
+            asaas_environment: payload.asaas_environment,
+            asaas_wallet_id: payload.asaas_wallet_id,
+            asaas_api_key: payload.asaas_api_key,
+            asaas_fine: payload.asaas_fine,
+            asaas_interest: payload.asaas_interest,
+            asaas_discount_value: payload.asaas_discount_value,
+            asaas_discount_days: payload.asaas_discount_days,
+            asaas_webhook_url: payload.asaas_webhook_url,
+            asaas_webhook_email: payload.asaas_webhook_email,
+            asaas_webhook_token: payload.asaas_webhook_token,
+            asaas_webhook_event_payment_created: payload.asaas_webhook_event_payment_created,
+            asaas_webhook_event_payment_received: payload.asaas_webhook_event_payment_received,
+            asaas_webhook_event_payment_overdue: payload.asaas_webhook_event_payment_overdue,
+            asaas_webhook_event_payment_deleted: payload.asaas_webhook_event_payment_deleted,
+            asaas_webhook_event_payment_refunded: payload.asaas_webhook_event_payment_refunded,
+            asaas_webhook_event_payment_chargeback: payload.asaas_webhook_event_payment_chargeback,
+            asaas_webhook_event_transfer_created: payload.asaas_webhook_event_transfer_created,
+            asaas_webhook_event_transfer_done: payload.asaas_webhook_event_transfer_done,
           }),
         });
         (window as any).UI.showAlert('alertMessage', 'Conta bancária atualizada com sucesso!', 'success');

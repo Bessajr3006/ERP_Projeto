@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import https from 'https';
 import { z } from 'zod';
 import { BankAccountService } from '../services/bankAccountService';
+import { AsaasService } from '../services/bankAccountApi/asaasService';
 
 const createBankAccountSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -25,7 +26,33 @@ const createBankAccountSchema = z.object({
     webhook_event_transaction: z.coerce.number().optional(),
     webhook_event_account: z.coerce.number().optional(),
     webhook_event_status_sync: z.coerce.number().optional(),
-    webhook_event_boleto: z.coerce.number().optional()
+    webhook_event_boleto: z.coerce.number().optional(),
+    billet_fine: z.coerce.number().nullable().optional(),
+    billet_interest: z.coerce.number().nullable().optional(),
+    billet_validity: z.coerce.number().nullable().optional(),
+    pix_fine: z.coerce.number().nullable().optional(),
+    pix_interest: z.coerce.number().nullable().optional(),
+    pix_validity: z.coerce.number().nullable().optional(),
+    solidcon_bank_id: z.string().nullable().optional(),
+    // Asaas
+    asaas_environment: z.string().optional(),
+    asaas_api_key: z.string().nullable().optional(),
+    asaas_wallet_id: z.string().nullable().optional(),
+    asaas_fine: z.coerce.number().nullable().optional(),
+    asaas_interest: z.coerce.number().nullable().optional(),
+    asaas_discount_value: z.coerce.number().nullable().optional(),
+    asaas_discount_days: z.coerce.number().nullable().optional(),
+    asaas_webhook_url: z.string().nullable().optional(),
+    asaas_webhook_email: z.string().nullable().optional(),
+    asaas_webhook_token: z.string().nullable().optional(),
+    asaas_webhook_event_payment_created: z.coerce.number().optional(),
+    asaas_webhook_event_payment_updated: z.coerce.number().optional(),
+    asaas_webhook_event_payment_confirmed: z.coerce.number().optional(),
+    asaas_webhook_event_payment_received: z.coerce.number().optional(),
+    asaas_webhook_event_payment_overdue: z.coerce.number().optional(),
+    asaas_webhook_event_payment_deleted: z.coerce.number().optional(),
+    asaas_webhook_event_payment_restored: z.coerce.number().optional(),
+    asaas_webhook_event_payment_refunded: z.coerce.number().optional()
 });
 
 const updateBankAccountSchema = z.object({
@@ -50,7 +77,33 @@ const updateBankAccountSchema = z.object({
     webhook_event_transaction: z.coerce.number().optional(),
     webhook_event_account: z.coerce.number().optional(),
     webhook_event_status_sync: z.coerce.number().optional(),
-    webhook_event_boleto: z.coerce.number().optional()
+    webhook_event_boleto: z.coerce.number().optional(),
+    billet_fine: z.coerce.number().nullable().optional(),
+    billet_interest: z.coerce.number().nullable().optional(),
+    billet_validity: z.coerce.number().nullable().optional(),
+    pix_fine: z.coerce.number().nullable().optional(),
+    pix_interest: z.coerce.number().nullable().optional(),
+    pix_validity: z.coerce.number().nullable().optional(),
+    solidcon_bank_id: z.string().nullable().optional(),
+    // Asaas
+    asaas_environment: z.string().optional(),
+    asaas_api_key: z.string().nullable().optional(),
+    asaas_wallet_id: z.string().nullable().optional(),
+    asaas_fine: z.coerce.number().nullable().optional(),
+    asaas_interest: z.coerce.number().nullable().optional(),
+    asaas_discount_value: z.coerce.number().nullable().optional(),
+    asaas_discount_days: z.coerce.number().nullable().optional(),
+    asaas_webhook_url: z.string().nullable().optional(),
+    asaas_webhook_email: z.string().nullable().optional(),
+    asaas_webhook_token: z.string().nullable().optional(),
+    asaas_webhook_event_payment_created: z.coerce.number().optional(),
+    asaas_webhook_event_payment_updated: z.coerce.number().optional(),
+    asaas_webhook_event_payment_confirmed: z.coerce.number().optional(),
+    asaas_webhook_event_payment_received: z.coerce.number().optional(),
+    asaas_webhook_event_payment_overdue: z.coerce.number().optional(),
+    asaas_webhook_event_payment_deleted: z.coerce.number().optional(),
+    asaas_webhook_event_payment_restored: z.coerce.number().optional(),
+    asaas_webhook_event_payment_refunded: z.coerce.number().optional()
 });
 
 export class BankAccountController {
@@ -60,7 +113,7 @@ export class BankAccountController {
             const companyId = req.user!.company_id; // Guaranteed by requireTenantContext
             const validatedData = createBankAccountSchema.parse(req.body);
 
-            const account = await BankAccountService.create(companyId, validatedData);
+            const account = await BankAccountService.create(companyId, validatedData as any);
 
             res.status(201).json({
                 status: 'success',
@@ -86,6 +139,24 @@ export class BankAccountController {
             });
         } catch (error) {
             throw error;
+        }
+    }
+
+    static async getRealtimeBalances(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const result = await BankAccountService.getRealtimeBalances(companyId);
+
+            res.status(200).json({
+                status: 'success',
+                data: result
+            });
+        } catch (error: any) {
+            console.error('[BankAccountController] Erro ao obter saldos em tempo real:', error);
+            res.status(500).json({
+                status: 'error',
+                message: error?.message || 'Erro ao consultar saldos bancários em tempo real'
+            });
         }
     }
 
@@ -178,6 +249,7 @@ export class BankAccountController {
     static async testConnection(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
+            const provider = String(req.query.provider || '').toLowerCase();
             const companyId = req.user!.company_id;
 
             if (!id) {
@@ -186,11 +258,32 @@ export class BankAccountController {
             }
 
             const account = await BankAccountService.getByPublicId(id, companyId);
+            const inst = String(account.institution || '').toLowerCase();
 
+            // Se for solicitado teste Asaas ou se a conta tiver credencial Asaas
+            if (provider === 'asaas' || (account.asaas_api_key && (!account.api_client_id || inst.includes('asaas')))) {
+                if (!account.asaas_api_key) {
+                    res.status(400).json({
+                        status: 'error',
+                        message: 'Chave de API / Access Token do Asaas não configurada. Preencha e salve antes de testar.'
+                    });
+                    return;
+                }
+
+                const asaasResult = await AsaasService.testConnection(account);
+                res.status(200).json({
+                    status: 'success',
+                    message: asaasResult.message,
+                    data: asaasResult.data
+                });
+                return;
+            }
+
+            // Teste de conexão com o Banco Inter
             if (!account.api_client_id || !account.api_client_secret || !account.api_certificate || !account.api_key) {
                 res.status(400).json({
                     status: 'error',
-                    message: 'Faltam credenciais da API. É necessário configurar Client ID, Client Secret, Certificado (.crt) e Chave (.key) antes de testar a conexão.'
+                    message: 'Faltam credenciais da API do Banco Inter. É necessário configurar Client ID, Client Secret, Certificado (.crt) e Chave (.key) antes de testar a conexão.'
                 });
                 return;
             }
@@ -206,7 +299,7 @@ export class BankAccountController {
                 client_id: clientId.trim(),
                 client_secret: clientSecret.trim(),
                 grant_type: 'client_credentials',
-                scope: 'boleto-cobranca.read' // Alterado para o escopo que com certeza eles marcaram
+                scope: 'boleto-cobranca.read'
             }).toString();
 
             const options: https.RequestOptions = {
@@ -221,7 +314,7 @@ export class BankAccountController {
                 }
             };
 
-            // Disparar requisição nativa Node.js (sem dependências) passando o Certificado mTLS
+            // Disparar requisição nativa Node.js passando o Certificado mTLS
             const interApiCall = new Promise<{status: number | undefined, body: any}>((resolve, reject) => {
                 const reqHttp = https.request(options, (resHttp) => {
                     let data = '';

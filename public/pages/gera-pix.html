@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Gerador de PIX</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <!-- Navbar -->
+    <div id="app-navbar"></div>
+
+    <!-- Main Content -->
+    <main class="pt-4 pb-4 mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden max-w-none" style="margin-left: auto; margin-right: auto;">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <!-- Header bar -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <svg class="h-6 w-6 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 12l10 10 10-10L12 2z" />
+                    </svg>
+                    Gerador de PIX
+                </h3>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="btnOpenModal" title="Novo PIX"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table section -->
+            <div id="pixChargesSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    ID / Txid</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Descrição</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Usuário</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Valor</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Data de Criação</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Status</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Pago em</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pixChargesTable"
+                            class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer statistics bar -->
+            <div id="pixChargesResultsFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4" role="status" aria-live="polite">
+                <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+                    </svg>
+                    <span id="footerCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span>
+                    <span>PIX gerado(s)</span>
+                </span>
+                <div class="flex items-center gap-4 text-xs font-medium">
+                    <span class="text-emerald-600 dark:text-emerald-400">
+                        Pago: <span id="footerTotalPaid" class="font-bold text-emerald-700 dark:text-emerald-300">R$ 0,00</span>
+                    </span>
+                    <span class="text-yellow-600 dark:text-yellow-500">
+                        Pendente: <span id="footerTotalPending" class="font-bold text-yellow-700 dark:text-yellow-400">R$ 0,00</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Creation Modal Form -->
+    <div id="createPixModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen pt-10 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="modalBackdrop"></div>
+            <div
+                class="relative z-10 inline-block align-top bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-[94vw] mx-auto sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <form id="createPixForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[68vh] overflow-y-auto">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modalTitle">
+                                Gerar Nova Cobrança PIX</h3>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="pixAmount"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor (R$)</label>
+                                <input type="text" id="pixAmount" name="pixAmount" required placeholder="R$ 0,00"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                            </div>
+                            <div>
+                                <label for="pixDescription"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição / Solicitante</label>
+                                <input type="text" id="pixDescription" name="pixDescription" required max="140" placeholder="Ex: Cobrança Ref. Venda #01"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse dark:border-t dark:border-slate-700">
+                        <button type="submit" id="saveBtn"
+                            class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
+                            Gerar PIX
+                        </button>
+                        <button type="button" id="btnCancelModal"
+                            class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Display Modal -->
+    <div id="qrCodeModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen pt-10 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"
+                id="qrModalBackdrop"></div>
+            <div
+                class="relative z-10 inline-block align-top bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-[94vw] mx-auto sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[68vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+                            PIX Gerado com Sucesso</h3>
+                    </div>
+                    <div class="space-y-4 flex flex-col items-center">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 text-center">
+                            Aponte a câmera do seu celular para o QR Code abaixo para realizar o pagamento.
+                        </p>
+                        <!-- QR Code Container -->
+                        <div class="w-48 h-48 bg-white p-2 rounded-lg flex items-center justify-center border border-gray-200 dark:border-slate-700 shadow-inner">
+                            <img id="qrCodeImage" src="" alt="QR Code PIX" class="w-full h-full object-contain">
+                        </div>
+                        <div class="w-full">
+                            <label for="pixCopyPasteCode"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PIX Copia e Cola</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="pixCopyPasteCode" readonly
+                                    class="block w-full bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-700 rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-xs select-all">
+                                <button type="button" id="btnCopyPix"
+                                    class="inline-flex items-center justify-center rounded-lg border border-transparent px-3 py-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none transition-colors text-xs font-semibold shrink-0">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse dark:border-t dark:border-slate-700">
+                    <button type="button" id="btnCloseQrModal"
+                        class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Visualizar Recibo PDF -->
+    <div id="pdfModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen pt-10 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity"
+                aria-hidden="true" id="closePdfModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-top bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-[94vw] mx-auto sm:my-8 sm:align-middle md:max-w-4xl sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between px-5 py-4 border-b dark:border-slate-700">
+                    <h3 id="pdfModalTitle" class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span id="pdfModalTitleText">Recibo</span>
+                    </h3>
+                    <button type="button" id="closePdfModalCross" title="Fechar visualização do PDF" aria-label="Fechar visualização do PDF"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-0 h-[70vh]">
+                    <iframe id="pdfIframe" src="" title="Visualização do PDF" class="w-full h-full border-0"></iframe>
+                </div>
+                <div class="flex items-center justify-end gap-2 px-5 py-4 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                    <button type="button" id="closePdfModalBtn"
+                        class="px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all">
+                        Fechar
+                    </button>
+                    <button type="button" id="printPdfBtn"
+                        class="hidden min-w-32 items-center justify-center px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 whitespace-nowrap">
+                        Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/filter-panel.js?v=20261001145619"></script>
+    <script src="/js/gera-pix.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+</body>
+
+</html>

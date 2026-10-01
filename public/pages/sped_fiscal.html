@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - SPED Fiscal (Importação)</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+</head>
+
+<body data-required-module="sped_fiscal" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col min-h-screen">
+
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-12 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex flex-col flex-1">
+        <!-- ── HEADER DA PÁGINA ─────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <span class="inline-flex items-center justify-center p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800/60 shadow-sm shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            SPED Fiscal - Importação de Arquivo
+                        </h1>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                            Importação e apuração analítica do SPED EFD ICMS/IPI (Entradas, Saídas, CFOPs, Impostos e Participantes).
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <a href="/pages/fechamento.html" id="btnGoToFechamento" class="hidden sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-10.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 active:bg-gray-100 transition-colors">
+                    <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Ir para Fechamento
+                </a>
+                <button type="button" id="btnResetAll" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-10.5 rounded-lg border border-transparent bg-gray-200 dark:bg-slate-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-slate-600 active:bg-gray-400 transition-colors shadow-sm cursor-pointer">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Limpar
+                </button>
+            </div>
+        </div>
+
+        <!-- Feedback Alert Banner -->
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm transition-all duration-300 shadow-sm"></div>
+
+        <!-- ── CARD DE CONFIGURAÇÃO E UPLOAD ───────────────────────────── -->
+        <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 p-5 sm:p-6 mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Coluna 1: Seleção de Cliente e Opções -->
+                <div class="lg:col-span-4 space-y-4">
+                    <div>
+                        <label for="customerSelect" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
+                            Cliente / Empresa <span class="text-[11px] font-normal text-teal-600 dark:text-teal-400 lowercase">(auto-detectado pelo arquivo)</span>
+                        </label>
+                        <div class="relative">
+                            <select id="customerSelect" class="w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm text-gray-900 dark:text-gray-100">
+                                <option value="">Carregando clientes...</option>
+                            </select>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+                            Selecione ou deixe que o cabeçalho do SPED identifique e amarre automaticamente o movimento à empresa declarante.
+                        </p>
+                    </div>
+
+                    <div id="customerDetailsCard" class="hidden p-3.5 rounded-lg bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600/60 text-xs space-y-2">
+                        <div class="flex justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">CNPJ/CPF:</span>
+                            <span id="customerCnpjVal" class="font-mono font-semibold text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">Regime:</span>
+                            <span id="customerRegimeVal" class="font-semibold text-brand-600 dark:text-brand-400">-</span>
+                        </div>
+                        
+                        <!-- Notificação quando o cliente é uma Empresa cadastrada -->
+                        <div id="customerCompanyAlert" class="hidden p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200 space-y-1 mt-1">
+                            <div class="flex items-center gap-1.5 font-bold text-xs text-emerald-700 dark:text-emerald-300">
+                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Empresa Cadastrada no ERP</span>
+                            </div>
+                            <p class="text-[11px] leading-snug text-emerald-800 dark:text-emerald-300">
+                                Vinculada à: <strong id="customerCompanyNameVal" class="text-emerald-950 dark:text-emerald-100 font-bold">-</strong>
+                            </p>
+                            <p class="text-[10px] text-emerald-700 dark:text-emerald-400 leading-tight">
+                                ✨ Dados de clientes, fornecedores e produtos (0200) serão integrados diretamente no banco de dados desta empresa.
+                            </p>
+                        </div>
+
+                        <!-- Notificação quando o cliente NÃO é empresa cadastrada -->
+                        <div id="customerRegularAlert" class="hidden p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] space-y-0.5 mt-1">
+                            <div class="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
+                                <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Cliente sem Empresa Vinculada</span>
+                            </div>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                                A apuração fiscal será registrada normalmente para o cliente selecionado.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-start gap-2.5">
+                            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                                Os participantes (clientes e fornecedores) identificados no registro <strong>0150</strong> serão sincronizados automaticamente com o cadastro do ERP.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna 2: Dropzone do Arquivo SPED -->
+                <div class="lg:col-span-8 flex flex-col justify-between">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
+                            Arquivo SPED EFD ICMS/IPI (.TXT) <span class="text-rose-500">*</span>
+                        </label>
+                        
+                        <!-- Dropzone Container -->
+                        <div id="dropzoneContainer" class="border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-brand-500 dark:hover:border-brand-400 rounded-xl p-6 text-center cursor-pointer transition-all bg-gray-50/50 dark:bg-slate-800/40 hover:bg-brand-50/30 dark:hover:bg-slate-700/30 relative flex flex-col items-center justify-center min-h-40">
+                            <input type="file" id="spedFileInput" accept=".txt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Selecionar arquivo SPED Fiscal" />
+                            
+                            <div id="dropzonePrompt" class="space-y-2">
+                                <div class="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 mx-auto flex items-center justify-center shadow-inner">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                        <span class="text-brand-600 dark:text-brand-400 hover:underline">Clique para selecionar</span> ou arraste o arquivo SPED aqui
+                                    </p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                        Suporta arquivos SPED Fiscal / EFD ICMS IPI no formato <span class="font-mono font-bold text-gray-600 dark:text-gray-300">.TXT</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Selected File Info (hidden by default) -->
+                            <div id="selectedFileInfo" class="hidden w-full max-w-md bg-white dark:bg-slate-700 p-3.5 rounded-lg border border-teal-200 dark:border-teal-800/70 shadow-sm text-left">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2.5 overflow-hidden">
+                                        <span class="p-2 rounded bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        </span>
+                                        <div class="truncate">
+                                            <p id="selectedFileName" class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">arquivo.txt</p>
+                                            <p id="selectedFileSize" class="text-xs text-gray-500 dark:text-gray-400">0 KB</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="btnRemoveFile" class="text-gray-400 hover:text-rose-500 p-1 rounded-md transition-colors" title="Remover arquivo">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Action Buttons -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-gray-100 dark:border-slate-700/60">
+                        <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                            Pronto para processamento e apuração fiscal
+                        </div>
+                        <button type="button" id="btnProcessSped" disabled class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <svg id="processIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            <svg id="processSpinner" class="hidden w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span id="processBtnText">Processar Arquivo SPED</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PAINEL DE RESULTADOS E APURAÇÃO (Exibido após processamento) ── -->
+        <div id="resultsSection" class="hidden space-y-6">
+            
+            <!-- Resumo do Declarante (Registro 0000) -->
+            <div class="bg-linear-to-r from-teal-900/40 via-slate-800 to-slate-800/80 border border-teal-500/30 rounded-xl p-4 sm:p-5 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 bg-teal-500/20 text-teal-400 rounded-xl border border-teal-500/30">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold tracking-widest text-teal-400">Escrituração Fiscal EFD</span>
+                            <h2 id="resHeaderNome" class="text-lg sm:text-xl font-bold text-white leading-tight">-</h2>
+                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-300 mt-1">
+                                <span>CNPJ/CPF: <strong id="resHeaderCnpj" class="font-mono text-white">-</strong></span>
+                                <span>ID Público Empresa: <strong id="resHeaderCompanyPublicId" class="font-mono text-teal-300">-</strong></span>
+                                <span>UF: <strong id="resHeaderUf" class="text-white">-</strong></span>
+                                <span>IE: <strong id="resHeaderIe" class="font-mono text-white">-</strong></span>
+                                <span>Finalidade: <strong id="resHeaderFinalidade" class="text-white">-</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/60 px-4 py-2.5 rounded-lg border border-slate-700 text-right">
+                        <span class="text-[10px] uppercase text-gray-400 font-semibold block">Período de Apuração</span>
+                        <span id="resHeaderPeriodo" class="text-sm sm:text-base font-bold text-teal-300 font-mono">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banner de Reimportação / Alteração -->
+            <div id="reimportNoticeBanner" class="hidden p-4 sm:p-5 rounded-xl border border-sky-200 dark:border-sky-800/60 bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 shadow-sm transition-all">
+                <div class="flex items-start gap-3.5">
+                    <div class="p-2.5 bg-sky-100 dark:bg-sky-900/60 text-sky-600 dark:text-sky-400 rounded-xl shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-sky-200 dark:bg-sky-900 text-sky-800 dark:text-sky-300">
+                                Alteração / Reimportação
+                            </span>
+                            <h4 class="font-bold text-base text-sky-950 dark:text-sky-100">
+                                Dados deste Período Atualizados no Sistema
+                            </h4>
+                        </div>
+                        <p class="text-xs text-sky-800 dark:text-sky-300 mt-1 leading-relaxed">
+                            Atenção: Os dados deste cliente para a competência <strong id="reimportCompetenciaVal" class="font-mono font-bold text-sky-950 dark:text-sky-100">-</strong> já haviam sido importados anteriormente. O fechamento fiscal e os cadastros foram <strong>atualizados com sucesso</strong> a partir dos novos dados deste arquivo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banner de Integração com Empresa Vinculada -->
+            <div id="targetCompanyBanner" class="hidden bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-4 sm:p-5 shadow-sm text-sm text-emerald-900 dark:text-emerald-200 transition-all">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="p-2.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 rounded-xl shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span id="syncActionBadge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300">
+                                    Empresa Identificada
+                                </span>
+                                <h4 class="font-bold text-base text-emerald-950 dark:text-emerald-100 flex flex-wrap items-center gap-1.5">
+                                    Importação e Sincronização na Empresa: <span id="syncCompanyName" class="underline underline-offset-2">-</span>
+                                    <span id="syncCompanyPublicIdWrapper" class="hidden text-xs font-mono font-normal text-emerald-700 dark:text-emerald-300">(ID Público: <strong id="syncCompanyPublicId" class="font-mono font-bold">-</strong>)</span>
+                                </h4>
+                            </div>
+                            <p id="syncCompanyDesc" class="text-xs text-emerald-800 dark:text-emerald-300 mt-1 leading-relaxed">
+                                Como este cliente corresponde a uma empresa cadastrada no ERP, os participantes e produtos do SPED foram integrados e o fechamento fiscal foi salvo automaticamente.
+                            </p>
+                            <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 text-xs font-semibold">
+                                <span class="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-200">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    <strong id="syncCustomersCount" class="font-mono">0</strong> novos clientes
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-200">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    <strong id="syncSuppliersCount" class="font-mono">0</strong> novos fornecedores
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-200">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                    <strong id="syncProductsCount" class="font-mono">0</strong> novos produtos (0200)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── CARDS KPI / TOTAIS PRINCIPAIS ────────────────────────── -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Card 1: ICMS Próprio a Recolher / Saldo Credor -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-rose-200/80 dark:border-rose-900/50 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">ICMS a Recolher</span>
+                        <span id="badgeIcmsStatus" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
+                            A Pagar
+                        </span>
+                    </div>
+                    <div class="mt-3">
+                        <h3 id="cardIcmsRecolher" class="text-xl sm:text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">R$ 0,00</h3>
+                        <div class="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                            <div class="flex justify-between"><span>(+) Débitos Saídas:</span><span id="cardIcmsDebitos" class="font-mono font-medium text-gray-700 dark:text-gray-300">R$ 0,00</span></div>
+                            <div class="flex justify-between"><span>(-) Créditos Entradas:</span><span id="cardIcmsCreditos" class="font-mono font-medium text-gray-700 dark:text-gray-300">R$ 0,00</span></div>
+                            <div class="flex justify-between"><span>Saldo Credor Seguinte:</span><span id="cardIcmsCredorTransp" class="font-mono font-medium text-emerald-600 dark:text-emerald-400">R$ 0,00</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: FECP a Recolher (Fundo Estadual de Combate à Pobreza) -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-amber-200/80 dark:border-amber-900/50 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">FECP a Recolher</span>
+                        <span id="badgeFecpStatus" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+                            2,00%
+                        </span>
+                    </div>
+                    <div class="mt-3">
+                        <h3 id="cardFecpRecolher" class="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono">R$ 0,00</h3>
+                        <div class="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                            <div class="flex justify-between"><span>Base de Cálculo:</span><span id="cardFecpBase" class="font-mono font-medium text-gray-700 dark:text-gray-300">R$ 0,00</span></div>
+                            <div class="flex justify-between"><span>Alíquota:</span><span id="cardFecpAliquota" class="font-mono font-medium text-gray-700 dark:text-gray-300">2,00%</span></div>
+                            <div class="flex justify-between"><span>Origem da Apuração:</span><span id="cardFecpOrigem" class="font-medium text-gray-700 dark:text-gray-300">SPED</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Total Tributos Estaduais a Pagar -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-purple-200/80 dark:border-purple-900/50 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Total Impostos Estaduais</span>
+                        <span class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                    </div>
+                    <div class="mt-3">
+                        <h3 id="cardTotalImpostosRecolher" class="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono">R$ 0,00</h3>
+                        <div class="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                            <div class="flex justify-between"><span>ICMS Próprio:</span><span id="cardSubIcmsProprio" class="font-mono font-medium text-gray-700 dark:text-gray-300">R$ 0,00</span></div>
+                            <div class="flex justify-between"><span>FECP (FCP):</span><span id="cardSubFecp" class="font-mono font-medium text-gray-700 dark:text-gray-300">R$ 0,00</span></div>
+                            <div class="flex justify-between"><span>ICMS-ST (se houver):</span><span id="cardSubIcmsSt" class="font-mono font-medium text-gray-700 dark:text-gray-300">R$ 0,00</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Volume e Documentos -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Volume do Arquivo</span>
+                        <span class="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6m-4-3h8"/></svg>
+                        </span>
+                    </div>
+                    <div class="mt-3">
+                        <h3 id="cardTotalDocumentos" class="text-xl sm:text-2xl font-bold text-teal-600 dark:text-teal-400 font-mono">0 docs</h3>
+                        <div class="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                            <div class="flex justify-between"><span>Total Saídas:</span><span id="cardVolumeSaidas" class="font-mono font-semibold text-emerald-600 dark:text-emerald-400">R$ 0,00</span></div>
+                            <div class="flex justify-between"><span>Total Entradas:</span><span id="cardVolumeEntradas" class="font-mono font-semibold text-blue-600 dark:text-blue-400">R$ 0,00</span></div>
+                            <div class="flex justify-between"><span>Participantes (0150):</span><span id="cardCountParticipants" class="font-mono font-semibold text-gray-700 dark:text-gray-300">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAINEL DE ABAS DE DETALHAMENTO ───────────────────────── -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <!-- Tab Headers (Scroll horizontal fluido e toque confortável no tablet) -->
+                <div class="border-b border-gray-200 dark:border-slate-700 bg-gray-50/75 dark:bg-slate-800/80 px-2 sm:px-4 flex items-center gap-1 sm:gap-2 overflow-x-auto whitespace-nowrap" role="tablist" style="-webkit-overflow-scrolling: touch;">
+                    <button type="button" id="tabApuracaoBtn" class="tab-btn active min-h-11 py-3 px-3.5 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 border-brand-500 text-brand-600 dark:text-brand-400 flex items-center gap-2 shrink-0 cursor-pointer">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        <span>Apuração de ICMS e FECP</span>
+                    </button>
+                    <button type="button" id="tabCfopBtn" class="tab-btn min-h-11 py-3 px-3.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-2 shrink-0 cursor-pointer">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        <span>CFOPs Analíticos (<span id="tabBadgeCfopCount">0</span>)</span>
+                    </button>
+                    <button type="button" id="tabDocsBtn" class="tab-btn min-h-11 py-3 px-3.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-2 shrink-0 cursor-pointer">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Documentos Fiscais (<span id="tabBadgeDocCount">0</span>)</span>
+                    </button>
+                    <button type="button" id="tabParticipantsBtn" class="tab-btn min-h-11 py-3 px-3.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-2 shrink-0 cursor-pointer">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>Participantes (<span id="tabBadgePartCount">0</span>)</span>
+                    </button>
+                    <button type="button" id="tabProductsBtn" class="tab-btn min-h-11 py-3 px-3.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-2 shrink-0 cursor-pointer">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        <span>Produtos (<span id="tabBadgeProdCount">0</span>)</span>
+                    </button>
+                    <button type="button" id="tabHeaderBtn" class="tab-btn min-h-11 py-3 px-3.5 sm:px-4 text-xs sm:text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-2 shrink-0 cursor-pointer">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Declarante (0000)</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Resumo da Apuração -->
+                <div id="tabPanelApuracao" class="tab-panel p-6 space-y-6">
+                    
+                    <!-- ── BLOCO 1: APURAÇÃO DO ICMS PRÓPRIO (E110/E116) ───────────── -->
+                    <div class="rounded-xl border border-rose-200/80 dark:border-rose-900/40 bg-white dark:bg-slate-800/80 shadow-sm overflow-hidden">
+                        <div class="p-4 bg-rose-50/50 dark:bg-rose-950/20 border-b border-rose-200/80 dark:border-rose-900/40 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="p-2 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                </span>
+                                <div>
+                                    <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
+                                        Apuração do ICMS Próprio (Registro E110)
+                                    </h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        Confronto de débitos por saídas e créditos por entradas da escrituração fiscal.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="badgeIcmsOrigem" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300">
+                                    Bloco E110
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="p-5 space-y-6">
+                            <!-- Math Grid Breakdown -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Coluna Débitos (+) -->
+                                <div class="p-4 rounded-xl bg-gray-50/70 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700 space-y-2.5 text-sm">
+                                    <div class="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-slate-700">
+                                        <span class="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                                            <span class="text-rose-500 font-bold">(+)</span> Débitos de ICMS
+                                        </span>
+                                        <span id="apurIcmsTotDebitos" class="font-mono font-bold text-rose-600 dark:text-rose-400">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 text-xs text-gray-600 dark:text-gray-400">
+                                        <span>(+) Débitos por Saídas com Imposto:</span>
+                                        <span id="apurIcmsDebSaidas" class="font-mono font-medium text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 text-xs text-gray-600 dark:text-gray-400">
+                                        <span>(+) Ajustes de Débitos (E111):</span>
+                                        <span id="apurIcmsAjDebitos" class="font-mono font-medium text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 text-xs text-gray-600 dark:text-gray-400">
+                                        <span>(+) Estorno de Créditos:</span>
+                                        <span id="apurIcmsEstornoCred" class="font-mono font-medium text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                    </div>
+                                </div>
+
+                                <!-- Coluna Créditos (-) -->
+                                <div class="p-4 rounded-xl bg-gray-50/70 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700 space-y-2.5 text-sm">
+                                    <div class="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-slate-700">
+                                        <span class="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                                            <span class="text-emerald-500 font-bold">(-)</span> Créditos de ICMS
+                                        </span>
+                                        <span id="apurIcmsTotCreditos" class="font-mono font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 text-xs text-gray-600 dark:text-gray-400">
+                                        <span>(-) Créditos por Entradas com Imposto:</span>
+                                        <span id="apurIcmsCredEntradas" class="font-mono font-medium text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 text-xs text-gray-600 dark:text-gray-400">
+                                        <span>(-) Ajustes de Créditos:</span>
+                                        <span id="apurIcmsAjCreditos" class="font-mono font-medium text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 text-xs text-gray-600 dark:text-gray-400">
+                                        <span>(-) Estorno de Débitos:</span>
+                                        <span id="apurIcmsEstornoDeb" class="font-mono font-medium text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between py-1 text-xs text-gray-600 dark:text-gray-400">
+                                        <span>(-) Saldo Credor Anterior:</span>
+                                        <span id="apurIcmsSaldoCredorAnt" class="font-mono font-medium text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Resultado Final do ICMS -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="p-4 rounded-xl bg-gray-100/80 dark:bg-slate-700/60 border border-gray-200 dark:border-slate-600 text-center">
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Saldo Apurado</span>
+                                    <p id="apurIcmsSaldoApurado" class="text-lg font-bold font-mono text-gray-900 dark:text-gray-100 mt-1">R$ 0,00</p>
+                                </div>
+                                <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-center">
+                                    <span class="text-xs font-bold text-rose-700 dark:text-rose-400 uppercase">ICMS a Recolher</span>
+                                    <p id="apurIcmsRecolherVal" class="text-xl font-extrabold font-mono text-rose-600 dark:text-rose-400 mt-1">R$ 0,00</p>
+                                </div>
+                                <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-center">
+                                    <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase">Saldo Credor a Transportar</span>
+                                    <p id="apurIcmsCredorTransportarVal" class="text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 mt-1">R$ 0,00</p>
+                                </div>
+                            </div>
+
+                            <!-- Tabela de Obrigações do ICMS (E116) -->
+                            <div class="space-y-2">
+                                <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    Guias / Obrigações do ICMS a Recolher (Registro E116)
+                                </h5>
+                                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700 text-xs">
+                                        <thead class="bg-gray-50 dark:bg-slate-900/60 font-semibold text-gray-500 dark:text-gray-400 uppercase">
+                                            <tr>
+                                                <th scope="col" class="px-3 py-2 text-left w-24">Cód. Obrig.</th>
+                                                <th scope="col" class="px-3 py-2 text-left w-28">Cód. Receita</th>
+                                                <th scope="col" class="px-3 py-2 text-left w-28">Vencimento</th>
+                                                <th scope="col" class="px-3 py-2 text-left">Complemento / Descrição</th>
+                                                <th scope="col" class="px-3 py-2 text-right w-36">Valor da Guia (R$)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="icmsObrigacoesTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                            <tr>
+                                                <td colspan="5" class="px-3 py-3 text-center text-gray-400">Nenhuma guia E116 informada no arquivo.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── BLOCO 2: APURAÇÃO DO FECP (FUNDO DE COMBATE À POBREZA) ───── -->
+                    <div class="rounded-xl border border-amber-200/80 dark:border-amber-900/40 bg-white dark:bg-slate-800/80 shadow-sm overflow-hidden">
+                        <div class="p-4 bg-amber-50/50 dark:bg-amber-950/20 border-b border-amber-200/80 dark:border-amber-900/40 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </span>
+                                <div>
+                                    <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">
+                                        Apuração do FECP / FCP (Fundo Estadual de Combate à Pobreza)
+                                    </h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        Cálculo do adicional de 2,00% sobre as operações tributadas de ICMS.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="badgeFecpOrigem" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
+                                    Apurado
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="p-5 space-y-6">
+                            <!-- Cards de Detalhes do FECP -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div class="p-4 rounded-xl bg-gray-50/70 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700 text-center">
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Base de Cálculo FECP</span>
+                                    <p id="dtlFecpBase" class="text-base sm:text-lg font-bold font-mono text-gray-900 dark:text-gray-100 mt-1">R$ 0,00</p>
+                                </div>
+                                <div class="p-4 rounded-xl bg-gray-50/70 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700 text-center">
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Alíquota Aplicada</span>
+                                    <p id="dtlFecpAliquota" class="text-base sm:text-lg font-bold font-mono text-gray-900 dark:text-gray-100 mt-1">2,00%</p>
+                                </div>
+                                <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-center">
+                                    <span class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase">FECP a Recolher</span>
+                                    <p id="dtlFecpRecolher" class="text-lg sm:text-xl font-extrabold font-mono text-amber-600 dark:text-amber-400 mt-1">R$ 0,00</p>
+                                </div>
+                                <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-center">
+                                    <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase">Saldo a Transportar</span>
+                                    <p id="dtlFecpTransp" class="text-lg sm:text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 mt-1">R$ 0,00</p>
+                                </div>
+                            </div>
+
+                            <!-- Tabela de Obrigações do FECP (E316/1926/E116) -->
+                            <div class="space-y-2">
+                                <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    Guias / Obrigações do FECP a Recolher (E316 / 1926 / E116)
+                                </h5>
+                                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700 text-xs">
+                                        <thead class="bg-gray-50 dark:bg-slate-900/60 font-semibold text-gray-500 dark:text-gray-400 uppercase">
+                                            <tr>
+                                                <th scope="col" class="px-3 py-2 text-left w-20">Origem</th>
+                                                <th scope="col" class="px-3 py-2 text-left w-28">Cód. Receita</th>
+                                                <th scope="col" class="px-3 py-2 text-left w-28">Vencimento</th>
+                                                <th scope="col" class="px-3 py-2 text-left">Complemento / Descrição</th>
+                                                <th scope="col" class="px-3 py-2 text-right w-36">Valor da Guia (R$)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="fecpObrigacoesTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                            <tr>
+                                                <td colspan="5" class="px-3 py-3 text-center text-gray-400">Nenhuma guia específica de FECP detalhada no arquivo.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── BLOCO 3: RESUMO DE ENTRADAS E SAÍDAS ───────────────────── -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Box Entradas -->
+                        <div class="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/20 dark:bg-blue-950/10 p-5 space-y-4">
+                            <div class="flex items-center justify-between border-b border-blue-100 dark:border-blue-900/40 pb-3">
+                                <h4 class="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                                    Detalhamento de Entradas (Compras)
+                                </h4>
+                                <span id="apuracaoTotalEntradaBadge" class="text-xs font-bold font-mono px-2.5 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">R$ 0,00</span>
+                            </div>
+                            <div class="space-y-2.5 text-sm">
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">Valor Contábil Total:</span>
+                                    <span id="dtlEntradaValor" class="font-mono font-bold text-gray-900 dark:text-gray-100">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">Base de Cálculo ICMS:</span>
+                                    <span id="dtlEntradaBcIcms" class="font-mono font-semibold text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">Isentas / Não Tributadas:</span>
+                                    <span id="dtlEntradaIsento" class="font-mono text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">Outras:</span>
+                                    <span id="dtlEntradaOutros" class="font-mono text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">PIS das Entradas:</span>
+                                    <span id="dtlEntradaPis" class="font-mono text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1">
+                                    <span class="text-gray-600 dark:text-gray-400">COFINS das Entradas:</span>
+                                    <span id="dtlEntradaCofins" class="font-mono text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Box Saídas -->
+                        <div class="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/20 dark:bg-emerald-950/10 p-5 space-y-4">
+                            <div class="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900/40 pb-3">
+                                <h4 class="text-base font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                    Detalhamento de Saídas (Vendas)
+                                </h4>
+                                <span id="apuracaoTotalSaidaBadge" class="text-xs font-bold font-mono px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">R$ 0,00</span>
+                            </div>
+                            <div class="space-y-2.5 text-sm">
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">Valor Contábil Total:</span>
+                                    <span id="dtlSaidaValor" class="font-mono font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">Base de Cálculo ICMS:</span>
+                                    <span id="dtlSaidaBcIcms" class="font-mono font-semibold text-gray-800 dark:text-gray-200">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">Isentas / Não Tributadas:</span>
+                                    <span id="dtlSaidaIsento" class="font-mono text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">Outras:</span>
+                                    <span id="dtlSaidaOutros" class="font-mono text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-gray-100 dark:border-slate-700/50">
+                                    <span class="text-gray-600 dark:text-gray-400">PIS das Saídas:</span>
+                                    <span id="dtlSaidaPis" class="font-mono text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1">
+                                    <span class="text-gray-600 dark:text-gray-400">COFINS das Saídas:</span>
+                                    <span id="dtlSaidaCofins" class="font-mono text-gray-700 dark:text-gray-300">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: CFOPs Analíticos -->
+                <div id="tabPanelCfop" class="tab-panel hidden p-6 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="relative w-full sm:w-72">
+                            <input type="text" id="searchCfop" placeholder="Buscar por código CFOP..." class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                            </div>
+                        </div>
+                        <span id="cfopCountSummary" class="text-xs text-gray-500 dark:text-gray-400">0 CFOPs encontrados</span>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                            <thead class="bg-gray-50 dark:bg-slate-900/60 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left w-24">CFOP</th>
+                                    <th scope="col" class="px-4 py-3 text-left w-32">Tipo</th>
+                                    <th scope="col" class="px-4 py-3 text-right">Valor Total (R$)</th>
+                                    <th scope="col" class="px-4 py-3 text-left w-48">Representatividade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cfopTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700 text-sm">
+                                <tr>
+                                    <td colspan="4" class="px-4 py-6 text-center text-gray-400">Nenhum CFOP registrado.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Documentos Fiscais -->
+                <div id="tabPanelDocs" class="tab-panel hidden p-6 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="relative w-full sm:w-80">
+                            <input type="text" id="searchDocs" placeholder="Buscar por número, chave ou participante..." class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                            </div>
+                        </div>
+                        <span id="docCountSummary" class="text-xs text-gray-500 dark:text-gray-400">0 documentos</span>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700 max-h-125 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                            <thead class="sticky top-0 bg-gray-50 dark:bg-slate-900/90 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider z-10">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left">Registro</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Tipo</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Número / Série</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Data</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Participante</th>
+                                    <th scope="col" class="px-4 py-3 text-right">Valor Documento</th>
+                                    <th scope="col" class="px-4 py-3 text-right">ICMS</th>
+                                    <th scope="col" class="px-4 py-3 text-right">PIS/COFINS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="docsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700 text-xs">
+                                <tr>
+                                    <td colspan="8" class="px-4 py-6 text-center text-gray-400">Nenhum documento listado.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Participantes (0150) -->
+                <div id="tabPanelParticipants" class="tab-panel hidden p-6 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="relative w-full sm:w-80">
+                            <input type="text" id="searchParticipants" placeholder="Buscar por Razão Social, CNPJ ou Código..." class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                            </div>
+                        </div>
+                        <span id="participantCountSummary" class="text-xs text-gray-500 dark:text-gray-400">0 participantes sincronizados</span>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700 max-h-125 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                            <thead class="sticky top-0 bg-gray-50 dark:bg-slate-900/90 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider z-10">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left w-24">Cód.</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Razão Social / Nome</th>
+                                    <th scope="col" class="px-4 py-3 text-left">CNPJ / CPF</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Município / UF</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Papel</th>
+                                    <th scope="col" class="px-4 py-3 text-center">Status no ERP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="participantsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700 text-xs">
+                                <tr>
+                                    <td colspan="6" class="px-4 py-6 text-center text-gray-400">Nenhum participante listado.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Produtos (0200) -->
+                <div id="tabPanelProducts" class="tab-panel hidden p-6 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="relative w-full sm:w-80">
+                            <input type="text" id="searchProducts" placeholder="Buscar por código, descrição ou EAN..." class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                            </div>
+                        </div>
+                        <span id="productCountSummary" class="text-xs text-gray-500 dark:text-gray-400">0 produtos encontrados</span>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700 max-h-125 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                            <thead class="sticky top-0 bg-gray-50 dark:bg-slate-900/90 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider z-10">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left w-28">Cód. Item (SKU)</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Descrição do Item (0200)</th>
+                                    <th scope="col" class="px-4 py-3 text-left w-36">Cód. Barra (EAN)</th>
+                                    <th scope="col" class="px-4 py-3 text-center w-16">UN</th>
+                                    <th scope="col" class="px-4 py-3 text-left w-24">NCM</th>
+                                    <th scope="col" class="px-4 py-3 text-left w-24">CEST</th>
+                                    <th scope="col" class="px-4 py-3 text-center w-32">Status no ERP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700 text-xs">
+                                <tr>
+                                    <td colspan="7" class="px-4 py-6 text-center text-gray-400">Nenhum produto listado no arquivo.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Declarante (0000) -->
+                <div id="tabPanelHeader" class="tab-panel hidden p-6 space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="p-4 rounded-lg bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600/60 space-y-1">
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Razão Social</span>
+                            <p id="declNome" class="text-sm font-bold text-gray-900 dark:text-gray-100">-</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600/60 space-y-1">
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">CNPJ / CPF</span>
+                            <p id="declCnpj" class="text-sm font-mono font-bold text-gray-900 dark:text-gray-100">-</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600/60 space-y-1">
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Inscrição Estadual</span>
+                            <p id="declIe" class="text-sm font-mono font-bold text-gray-900 dark:text-gray-100">-</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600/60 space-y-1">
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Período Inicial e Final</span>
+                            <p id="declPeriodo" class="text-sm font-mono font-bold text-teal-600 dark:text-teal-400">-</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600/60 space-y-1">
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">UF / Cód. Município</span>
+                            <p id="declUfMun" class="text-sm font-bold text-gray-900 dark:text-gray-100">-</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600/60 space-y-1">
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Finalidade do Arquivo</span>
+                            <p id="declFinalidade" class="text-sm font-bold text-gray-900 dark:text-gray-100">-</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/sped_fiscal.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+</body>
+
+</html>

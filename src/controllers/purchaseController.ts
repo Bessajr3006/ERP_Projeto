@@ -22,8 +22,9 @@ export class PurchaseController {
     static async getAll(req: Request, res: Response): Promise<void> {
         try {
             const user = req.user as UserPayload;
-            const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-            const purchases = await PurchaseService.getRecentPurchases(user.company_id, limit);
+            const limit = req.query.limit ? parseInt(req.query.limit as string) : 2000;
+            const includeSped = req.query.include_sped !== 'false' && req.query.include_sped !== '0';
+            const purchases = await PurchaseService.getRecentPurchases(user.company_id, limit, includeSped);
             res.json({ status: 'success', data: purchases });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message });
@@ -60,5 +61,35 @@ export class PurchaseController {
         const user = req.user as UserPayload;
         await PurchaseService.cancelPurchaseOrder(req.params.id as string, user.company_id);
         res.json({ status: 'success', message: 'Compra cancelada e transações revertidas.' });
+    }
+
+    static async importPurchaseFromXml(req: Request, res: Response): Promise<void> {
+        try {
+            const user = req.user as UserPayload;
+            const importPurchaseXmlSchema = z.object({
+                xml_content: z.string().min(1, 'Conteúdo XML é obrigatório'),
+                bank_account_public_id: z.string().uuid().optional().nullable(),
+                category_public_id: z.string().uuid().optional().nullable(),
+            });
+
+            const validatedData = importPurchaseXmlSchema.parse(req.body);
+
+            const imported = await PurchaseService.importPurchaseFromXml(user.company_id, String(user.id), validatedData);
+
+            res.status(201).json({ status: 'success', data: imported });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                const msgs = error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(' | ');
+                res.status(400).json({ status: 'error', message: `Dados inválidos: ${msgs}`, errors: error.errors });
+                return;
+            }
+
+            if (error instanceof Error) {
+                res.status(400).json({ status: 'error', message: error.message || 'Falha ao importar XML da nota fiscal de compra' });
+                return;
+            }
+
+            res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+        }
     }
 }

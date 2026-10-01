@@ -280,6 +280,11 @@
                 title.textContent = 'Editar Serviço';
                 getById('serviceId').value = String(item.public_id);
                 getById('serviceName').value = item.name || '';
+                getById('serviceCost').value = item.cost !== undefined ? Number(item.cost).toFixed(2) : '';
+                getById('serviceTaxPercent').value = item.tax_percent !== undefined ? Number(item.tax_percent).toFixed(2) : '';
+                getById('serviceTaxAmount').value = item.tax_amount !== undefined ? Number(item.tax_amount).toFixed(2) : '';
+                getById('serviceTotalCost').value = item.total_cost !== undefined ? Number(item.total_cost).toFixed(2) : '';
+                getById('serviceMarkup').value = item.markup !== undefined ? Number(item.markup).toFixed(2) : '';
                 getById('servicePrice').value = Number(item.price || 0).toFixed(2);
                 getById('serviceDescription').value = item.description || '';
                 populateServiceTypeSelect(item.service_type_public_id || '');
@@ -316,6 +321,11 @@
         event.preventDefault();
         const id = normalizeText(getById('serviceId').value);
         const name = normalizeText(getById('serviceName').value);
+        const costRaw = normalizeText(getById('serviceCost').value);
+        const taxPercentRaw = normalizeText(getById('serviceTaxPercent').value);
+        const taxAmountRaw = normalizeText(getById('serviceTaxAmount').value);
+        const totalCostRaw = normalizeText(getById('serviceTotalCost').value);
+        const markupRaw = normalizeText(getById('serviceMarkup').value);
         const priceRaw = normalizeText(getById('servicePrice').value);
         const description = normalizeText(getById('serviceDescription').value);
         const serviceTypePublicId = normalizeText(getById('serviceType')?.value);
@@ -326,6 +336,11 @@
         const nbsItem = normalizeOptionalText(getById('serviceNbsItem')?.value);
         const saveBtn = getById('saveBtn');
         const price = parsePrice(priceRaw);
+        const cost = parsePrice(costRaw) || 0;
+        const taxPercent = parsePrice(taxPercentRaw) || 0;
+        const taxAmount = parsePrice(taxAmountRaw) || 0;
+        const totalCost = parsePrice(totalCostRaw) || 0;
+        const markup = parsePrice(markupRaw) || 0;
 
         if (!name) {
             showAlert('Informe o nome do serviço.', 'error');
@@ -354,6 +369,11 @@
 
         const payload = {
             name,
+            cost,
+            tax_percent: taxPercent,
+            tax_amount: taxAmount,
+            total_cost: totalCost,
+            markup,
             price,
             description: description || null,
             service_type_public_id: serviceTypePublicId,
@@ -493,6 +513,84 @@
         getById('btnCancelModal')?.addEventListener('click', closeModal);
         getById('modalBackdrop')?.addEventListener('click', closeModal);
         getById('serviceForm')?.addEventListener('submit', handleSubmit);
+
+        const costInput = getById('serviceCost');
+        const taxPercentInput = getById('serviceTaxPercent');
+        const taxAmountInput = getById('serviceTaxAmount');
+        const totalCostInput = getById('serviceTotalCost');
+        const markupInput = getById('serviceMarkup');
+        const priceInput = getById('servicePrice');
+
+        const calculateFromCostAndPercent = () => {
+            const cost = Number(costInput.value) || 0;
+            const percent = Number(taxPercentInput.value) || 0;
+            const taxAmount = cost * (percent / 100);
+            const totalCost = cost + taxAmount;
+            const markup = Number(markupInput.value) || 0;
+            const price = totalCost * (1 + markup / 100);
+
+            taxAmountInput.value = taxAmount.toFixed(2);
+            totalCostInput.value = totalCost.toFixed(2);
+            priceInput.value = price.toFixed(2);
+        };
+
+        const calculateFromTaxAmount = () => {
+            const cost = Number(costInput.value) || 0;
+            const taxAmount = Number(taxAmountInput.value) || 0;
+            let percent = 0;
+            if (cost > 0) {
+                percent = (taxAmount / cost) * 100;
+            }
+            const totalCost = cost + taxAmount;
+            const markup = Number(markupInput.value) || 0;
+            const price = totalCost * (1 + markup / 100);
+
+            taxPercentInput.value = percent.toFixed(2);
+            totalCostInput.value = totalCost.toFixed(2);
+            priceInput.value = price.toFixed(2);
+        };
+
+        const calculateFromTotalCost = () => {
+            const totalCost = Number(totalCostInput.value) || 0;
+            const cost = Number(costInput.value) || 0;
+            const taxAmount = totalCost - cost;
+            let percent = 0;
+            if (cost > 0) {
+                percent = (taxAmount / cost) * 100;
+            }
+            const markup = Number(markupInput.value) || 0;
+            const price = totalCost * (1 + markup / 100);
+
+            taxAmountInput.value = taxAmount.toFixed(2);
+            taxPercentInput.value = percent.toFixed(2);
+            priceInput.value = price.toFixed(2);
+        };
+
+        const calculateFromMarkup = () => {
+            const totalCost = Number(totalCostInput.value) || 0;
+            const markup = Number(markupInput.value) || 0;
+            const price = totalCost * (1 + markup / 100);
+
+            priceInput.value = price.toFixed(2);
+        };
+
+        const calculateFromPrice = () => {
+            const totalCost = Number(totalCostInput.value) || 0;
+            const price = Number(priceInput.value) || 0;
+            let markup = 0;
+            if (totalCost > 0) {
+                markup = ((price - totalCost) / totalCost) * 100;
+            }
+
+            markupInput.value = markup.toFixed(2);
+        };
+
+        costInput?.addEventListener('input', calculateFromCostAndPercent);
+        taxPercentInput?.addEventListener('input', calculateFromCostAndPercent);
+        taxAmountInput?.addEventListener('input', calculateFromTaxAmount);
+        totalCostInput?.addEventListener('input', calculateFromTotalCost);
+        markupInput?.addEventListener('input', calculateFromMarkup);
+        priceInput?.addEventListener('input', calculateFromPrice);
 
         getById('btnListView')?.addEventListener('click', () => {
             currentView = 'list';

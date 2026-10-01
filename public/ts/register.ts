@@ -29,7 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const cnpjError = document.getElementById('cnpjError');
 
     const makeMask = window.createMaskAdapter || ((input: any, options: any) => window.IMask?.(input, options));
-    const cnpjMask = makeMask ? makeMask(cnpjInput, { mask: '00.000.000/0000-00' }) : null;
+    const cnpjMask = makeMask ? makeMask(cnpjInput, {
+        mask: 'XX.XXX.XXX/XXXX-XX',
+        definitions: {
+            'X': /[a-zA-Z0-9]/
+        },
+        prepare: (str: string) => str.toUpperCase()
+    }) : null;
 
     if (cnpjInput && cnpjMask && companyNameInput && cnpjLoading && cnpjError) {
         // Busca dados da Empresa via CNPJ (BrasilAPI)

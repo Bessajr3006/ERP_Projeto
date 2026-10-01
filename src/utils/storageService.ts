@@ -60,8 +60,8 @@ export class StorageService {
      * @param mimeType - MIME type original (ex: 'image/jpeg')
      * @returns SaveResult com URL pública e caminho absoluto
      */
-    static saveBuffer(bucket: StorageBucket, buffer: Buffer, mimeType: string): SaveResult {
-        const ext = StorageService.mimeToExt(mimeType);
+    static saveBuffer(bucket: StorageBucket, buffer: Buffer, mimeType: string, overrideExt?: string | null): SaveResult {
+        const ext = overrideExt || StorageService.mimeToExt(mimeType);
         const filename = `${randomUUID()}${ext}`;
         const absolutePath = path.join(UPLOADS_ROOT, bucket, filename);
 
@@ -89,7 +89,8 @@ export class StorageService {
      */
     static saveBase64(
         bucket: StorageBucket,
-        base64: string | null | undefined
+        base64: string | null | undefined,
+        originalFilename?: string | null
     ): SaveResult | null {
         if (!base64) return null;
 
@@ -112,7 +113,8 @@ export class StorageService {
             throw new Error('Arquivo de upload vazio ou inválido.');
         }
 
-        return StorageService.saveBuffer(bucket, buffer, mimeType);
+        const overrideExt = originalFilename ? path.extname(originalFilename) : null;
+        return StorageService.saveBuffer(bucket, buffer, mimeType, overrideExt);
     }
 
     // ─── Deletar ────────────────────────────────────────────────────────────────

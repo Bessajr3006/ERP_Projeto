@@ -54,8 +54,8 @@
         const target = String(targetRoleId || '').trim();
         if (!target) return false;
         if (target === 'super_admin') return false;
-        if (target === 'admin') return currentUserRole === 'super_admin';
-        return currentUserRole === 'admin' || currentUserRole === 'super_admin';
+        if (target === 'admin' || target === 'supervisor') return currentUserRole === 'super_admin';
+        return currentUserRole === 'admin' || currentUserRole === 'supervisor' || currentUserRole === 'super_admin';
     }
 
     function showAlert(id: string, msg: string, type: string = 'success', timeoutMs: number = 4000) {
@@ -67,27 +67,69 @@
         setTimeout(() => el.classList.add('hidden'), timeoutMs);
     }
 
+    function renderLinkCheckbox(link: any, gridId: string, roleId: string): string {
+        const hasPermission = roleId === 'admin' || roleId === 'supervisor' || state.currentPermissions.some((p) => {
+            if (!p.can_view) {
+                return false;
+            }
+
+            // Compatibilidade com base antiga em nuvem: Tipo de Estoque era acoplado a "categories".
+            if (link.id === 'stock_types') {
+                return p.module === 'stock_types' || p.module === 'categories';
+            }
+
+            if (link.id === 'product_types') {
+                return p.module === 'product_types' || p.module === 'categories';
+            }
+
+            return p.module === link.id;
+        });
+
+        const canEdit = canEditTargetRole(roleId);
+        const disabledAtt = !canEdit
+            ? 'disabled title="Permissões protegidas"'
+            : '';
+        return `
+        <label class="flex items-center cursor-pointer p-2.5 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-700/50 transition-all ${disabledAtt ? 'opacity-60 cursor-not-allowed' : ''}" title="Clique para Mostrar ou Ocultar este módulo">
+            <input type="checkbox" data-module="${link.id}" value="${link.id}" 
+                   class="module-checkbox peer sr-only"
+                   data-grid-id="${gridId}"
+                   ${hasPermission ? 'checked' : ''} ${disabledAtt} data-bwignore="true" data-lpignore="true" placeholder="">
+            
+            <div class="flex items-center justify-center w-8 h-8 rounded-md bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 peer-checked:hidden transition-all shrink-0 shadow-sm border border-rose-200 dark:border-rose-800/60" title="Oculto (Sem acesso)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                </svg>
+            </div>
+            
+            <div class="items-center justify-center w-8 h-8 rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 hidden peer-checked:flex transition-all shrink-0 shadow-sm border border-emerald-200 dark:border-emerald-800/60" title="Exibido (Acesso permitido)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+            </div>
+
+            <div class="flex flex-col ml-3 group min-w-0">
+                <span class="text-sm font-medium text-gray-700 dark:text-slate-200 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-300 peer-checked:font-semibold transition-colors truncate">${link.label}</span>
+                <span class="text-[10px] text-gray-400 dark:text-slate-400 font-mono tracking-tight opacity-0 group-hover:opacity-100 transition-opacity">${link.id}.html</span>
+            </div>
+        </label>
+        `;
+    }
+
     function renderModuleCheckboxes(roleId: string) {
         const container = getById('modulesCheckboxesContainer');
         if (!container) return;
 
         const systemModules = [
             {
-                groupName: 'Principal',
+                groupName: 'Operação',
                 links: [
                     { id: 'sales', label: 'PDV / Vendas' },
                     { id: 'quotes', label: 'Orçamentos' },
-                    { id: 'service_launches', label: 'Lançamento de Serviço' },
-                    { id: 'restaurant', label: 'Restaurante' }
-                ]
-            },
-            {
-                groupName: 'Visão',
-                links: [
-                    { id: 'dashboard', label: 'Visão Geral' },
-                    { id: 'finance_vision', label: 'Visão Financeiro' },
-                    { id: 'stock_vision', label: 'Visão Estoque' },
-                    { id: 'whatsapp-info', label: 'Visão Whatsapp' }
+                    { id: 'service_launches', label: 'Serviço' },
+                    { id: 'restaurant', label: 'Restaurante' },
+                    { id: 'gera-pix', label: 'Gera PIX' }
                 ]
             },
             {
@@ -104,19 +146,15 @@
                     { id: 'products', label: 'Produtos' },
                     { id: 'categories', label: 'Categoria' },
                     { id: 'stock_types', label: 'Tipo de Estoque' },
+                    { id: 'product_types', label: 'Tipo de Produto' },
                     { id: 'manufacturers', label: 'Fabricante' },
                     { id: 'taxes', label: 'Tributo' },
                     { id: 'prices', label: 'Tabela de Preço' },
-                    { id: 'measures', label: 'Medida' }
-                ]
-            },
-            {
-                groupName: 'Serviço',
-                links: [
-                    { id: 'service_types', label: 'Tipo de Serviço' },
-                    { id: 'services', label: 'Serviço' },
-                    { id: 'service_tax_municipal', label: 'Tributação Municipal' },
-                    { id: 'service_tax_federal', label: 'Tributação Federal' }
+                    { id: 'measures', label: 'Medida' },
+                    { id: 'service_types', label: 'Tipo de Serviço', subGroup: 'Cad.Serviço' },
+                    { id: 'services', label: 'Serviço', subGroup: 'Cad.Serviço' },
+                    { id: 'service_tax_municipal', label: 'Tributação Municipal', subGroup: 'Cad.Serviço' },
+                    { id: 'service_tax_federal', label: 'Tributação Federal', subGroup: 'Cad.Serviço' }
                 ]
             },
             {
@@ -131,37 +169,51 @@
                 groupName: 'Financeiro',
                 links: [
                     { id: 'expenses', label: 'Despesa' },
+                    { id: 'card_debits', label: 'Pagamento de Cartão' },
+                    { id: 'card_expenses', label: 'Despesa Cartão (Crédito)', subGroup: 'Despesa Cartão' },
+                    { id: 'card_brands', label: 'Bandeiras de Cartão', subGroup: 'Despesa Cartão' },
+                    { id: 'card_configurations', label: 'Config. de Cartão', subGroup: 'Despesa Cartão' },
+                    { id: 'payment_types', label: 'Formas de Pagamento', subGroup: 'Forma de Pagamento' },
+                    { id: 'receivable_types', label: 'Tipo de Recebível', subGroup: 'Forma de Recebível' },
                     { id: 'revenues', label: 'Receita' },
+                    { id: 'card_statements', label: 'Extrato Cartão' },
                     { id: 'finance_category_types', label: 'Tipo de Categoria' },
                     { id: 'finance_categories', label: 'Categoria (Finanças)' },
                     { id: 'banks', label: 'Bancos' },
-                    { id: 'statements', label: 'Extrato' }
+                    { id: 'statements', label: 'Extrato Banco' },
+                    { id: 'finance_poscontrol', label: 'Fin. Pos-Controll' },
+                    { id: 'cost_centers', label: 'Centro de Custo' }
                 ]
             },
             {
                 groupName: 'Pessoas',
                 links: [
+                    { id: 'customer_groups', label: 'Grupos de Clientes' },
+                    { id: 'activity_groups', label: 'Grupos de Atividade' },
                     { id: 'customers', label: 'Clientes' },
                     { id: 'contacts', label: 'Contato' },
                     { id: 'sellers', label: 'Vendedor' },
                     { id: 'buyers', label: 'Comprador' },
                     { id: 'service_providers', label: 'Prestador de Serviço' },
                     { id: 'suppliers', label: 'Fornecedor' },
-                    { id: 'company', label: 'Empresa' },
                     { id: 'accountant', label: 'Contador' },
-                    { id: 'users', label: 'Usuário' }
+                    { id: 'socio', label: 'Sócio' },
+                    { id: 'users', label: 'Usuário' },
+                    { id: 'company', label: 'Empresa' }
                 ]
             },
             {
                 groupName: 'Contabilidade',
                 links: [
-                    { id: 'accounting', label: 'Plano de Contas' },
-                    { id: 'accounting_entries', label: 'Lançamentos' },
-                    { id: 'accounting_auto_entries', label: 'Lançamento Automático' },
-                    { id: 'accounting_auto_history', label: 'Histórico Automático' },
-                    { id: 'declaration_registration', label: 'Cadastro de Declaração' },
-                    { id: 'declaration_control', label: 'Controle de Declaração' },
-                    { id: 'fechamento', label: 'Fechamento' }
+                    { id: 'accounting', label: 'Plano de Contas', subGroup: 'Contábil' },
+                    { id: 'accounting_entries', label: 'Lançamentos', subGroup: 'Contábil' },
+                    { id: 'accounting_auto_entries', label: 'Lançamento Automático', subGroup: 'Contábil' },
+                    { id: 'accounting_auto_history', label: 'Histórico Automático', subGroup: 'Contábil' },
+                    { id: 'declaration_registration', label: 'Cadastro de Declaração', subGroup: 'Fiscal' },
+                    { id: 'declaration_control', label: 'Controle de Declaração', subGroup: 'Fiscal' },
+                    { id: 'fechamento', label: 'Fechamento', subGroup: 'Fiscal' },
+                    { id: 'sped_fiscal', label: 'Sped Fiscal', subGroup: 'Fiscal' },
+                    { id: 'employees', label: 'Colaboradores', subGroup: 'D.Pessoal' }
                 ]
             },
             {
@@ -169,7 +221,10 @@
                 links: [
                     { id: 'dre', label: 'DRE' },
                     { id: 'balanco', label: 'Balanço Patrimonial' },
-                    { id: 'balancete', label: 'Balancete' }
+                    { id: 'balancete', label: 'Balancete' },
+                    { id: 'rel_rafael', label: 'Relatório Rafael' },
+                    { id: 'rel_pedido_dorsal', label: 'Rel. Pedido (Dorsal)' },
+                    { id: 'rel_saldo_banco', label: 'Saldo Banco' }
                 ]
             },
             {
@@ -182,68 +237,110 @@
                     { id: 'whatsapp', label: 'WhatsApp' },
                     { id: 'email', label: 'E-mail' },
                     { id: 'backup_restore', label: 'Backup e Restaurar' },
-                    { id: 'swagger', label: 'Swagger' }
+                    { id: 'swagger', label: 'Swagger' },
+                    { id: 'audit', label: 'Auditoria' },
+                    { id: 'dashboard', label: 'Visão Geral', subGroup: 'Visão' },
+                    { id: 'finance_vision', label: 'Visão Financeiro', subGroup: 'Visão' },
+                    { id: 'stock_vision', label: 'Visão Estoque', subGroup: 'Visão' },
+                    { id: 'whatsapp-info', label: 'Visão Whatsapp', subGroup: 'Visão' },
+                    { id: 'census-vision', label: 'Visão Censo', subGroup: 'Visão' },
+                    { id: 'mec-vision', label: 'Visão MEC', subGroup: 'Visão' },
+                    { id: 'sisu-professions', label: 'Visão Vagas SISU', subGroup: 'Visão' },
+                    { id: 'income-vision', label: 'Visão Renda', subGroup: 'Visão' },
+                    { id: 'sped_fiscal_vision', label: 'Visão Sped Fiscal', subGroup: 'Visão' },
+                    { id: 'maintenance', label: 'Manutenção de BD' }
                 ]
             }
         ];
 
         let html = '';
         systemModules.forEach(group => {
+            const gridId = `grid-${group.groupName.replace(/\s+/g, '-')}`;
+            const bodyId = `body-${gridId}`;
+
+            // Separate standard links and sub-grouped links
+            const standardLinks = group.links.filter(l => !l.subGroup);
+            
+            // Keep order of subGroups as they appear in links
+            const subGroupsOrder: string[] = [];
+            const subGroups: { [key: string]: typeof group.links } = {};
+            group.links.forEach(l => {
+                if (l.subGroup) {
+                    if (!subGroups[l.subGroup]) {
+                        subGroups[l.subGroup] = [];
+                        subGroupsOrder.push(l.subGroup);
+                    }
+                    subGroups[l.subGroup].push(l);
+                }
+            });
+
+            let innerHtml = '';
+            if (standardLinks.length > 0) {
+                innerHtml += `
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-6 card-body-grid transition-all duration-200" id="${gridId}">
+                    ${standardLinks.map(link => renderLinkCheckbox(link, gridId, roleId)).join('')}
+                </div>
+                `;
+            }
+
+            subGroupsOrder.forEach(subName => {
+                const subLinks = subGroups[subName];
+                const subGridId = `grid-Sub-${subName.replace(/\s+/g, '-')}`;
+                
+                const explicitPerm = state.currentPermissions.find(p => p.module === `menu_show_${subName}`);
+                const isSubMenuChecked = roleId === 'admin' || roleId === 'supervisor' || (explicitPerm !== undefined 
+                    ? (explicitPerm.can_view === 1 || explicitPerm.can_view === true || String(explicitPerm.can_view) === '1')
+                    : subLinks.some(link => {
+                        return state.currentPermissions.some(p => p.can_view && p.module === link.id);
+                    }));
+
+                const canEdit = canEditTargetRole(roleId);
+                const disabledAtt = !canEdit ? 'disabled' : '';
+
+                innerHtml += `
+                <div class="border-t border-gray-200 dark:border-slate-700 pt-4 mt-4 col-span-full">
+                    <div class="bg-gray-100/50 dark:bg-slate-800/40 p-4 rounded-lg border border-gray-200 dark:border-slate-700/50 shadow-inner">
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-2 mb-3">
+                            <h6 class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                                <span class="mr-1.5 inline-block w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                                Submenu: ${subName}
+                            </h6>
+                            <label class="inline-flex items-center cursor-pointer text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+                                <input type="checkbox" class="group-master-checkbox mr-1.5 rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 focus:ring-offset-0 bg-white dark:bg-slate-800" 
+                                       data-grid-id="${subGridId}" 
+                                       data-group="${subName}"
+                                       ${isSubMenuChecked ? 'checked' : ''} ${disabledAtt} placeholder="">
+                                Exibir Submenu ${subName}
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-6 card-body-grid" id="${subGridId}">
+                            ${subLinks.map(link => renderLinkCheckbox(link, subGridId, roleId)).join('')}
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+
             html += `
-            <div class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-md border border-gray-200 dark:border-slate-700 mb-4">
-                <h5 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 opacity-70">${group.groupName}</h5>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-6">
-                    ${group.links.map(link => {
-                        const isAdminServiceTypesDefault = roleId === 'admin' && (
-                            link.id === 'service_types'
-                            || link.id === 'services'
-                            || link.id === 'service_launches'
-                            || link.id === 'service_tax_municipal'
-                            || link.id === 'service_tax_federal'
-                        );
-                        const hasPermission = state.currentPermissions.some((p) => {
-                            if (!p.can_view) {
-                                return false;
-                            }
-
-                            // Compatibilidade com base antiga em nuvem: Tipo de Estoque era acoplado a "categories".
-                            if (link.id === 'stock_types') {
-                                return p.module === 'stock_types' || p.module === 'categories';
-                            }
-
-                            return p.module === link.id;
-                        }) || isAdminServiceTypesDefault;
-
-                        const canEdit = canEditTargetRole(roleId);
-                        const disabledAtt = !canEdit
-                            ? 'disabled title="Permissões protegidas"'
-                            : '';
-                        return `
-                        <label class="flex items-center cursor-pointer p-2 hover:bg-white dark:hover:bg-slate-800 rounded transition-colors ${disabledAtt ? 'opacity-70' : ''}" title="Marque para Mostrar, Desmarque para Ocultar">
-                            <input type="checkbox" data-module="${link.id}" value="${link.id}" 
-                                   class="module-checkbox peer sr-only"
-                                   ${hasPermission ? 'checked' : ''} ${disabledAtt} data-bwignore="true" data-lpignore="true" placeholder="">
-                            
-                            <div class="flex items-center justify-center w-8 h-8 rounded-md bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 peer-checked:hidden transition-all shrink-0 shadow-sm border border-red-200 dark:border-red-800/50">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                                </svg>
-                            </div>
-                            
-                            <div class="items-center justify-center w-8 h-8 rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 hidden peer-checked:flex transition-all shrink-0 shadow-sm border border-emerald-200 dark:border-emerald-800/50">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                            </div>
-
-                            <div class="flex flex-col ml-3 group">
-                                <span class="text-sm font-medium text-gray-900 dark:text-gray-100 transition-colors peer-checked:text-emerald-600">${link.label}</span>
-                                <span class="text-[10px] text-gray-400 font-mono tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">${link.id}.html</span>
-                            </div>
-                        </label>
-                    `;
-                    }).join('')}
+            <div class="bg-gray-50 dark:bg-slate-800/40 p-4 rounded-lg border border-gray-200 dark:border-slate-700 mb-4 shadow-sm group-card">
+                <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3 mb-4">
+                    <div class="flex items-center space-x-2">
+                        <button type="button" class="btn-toggle-card p-1 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400 focus:outline-none transition-colors" data-grid-id="${bodyId}" title="Recolher / Expandir Card">
+                            <svg class="w-4 h-4 transform transition-transform duration-200 toggle-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <h5 class="text-sm font-bold text-gray-700 dark:text-gray-300">${group.groupName}</h5>
+                    </div>
+                    
+                    <label class="inline-flex items-center cursor-pointer text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+                        <input type="checkbox" class="group-master-checkbox mr-1.5 rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 focus:ring-offset-0 bg-white dark:bg-slate-800" data-grid-id="${gridId}" data-group="${group.groupName}">
+                        Exibir Menu
+                    </label>
+                </div>
+                
+                <div class="card-body-wrapper transition-all duration-200" id="${bodyId}">
+                    ${innerHtml}
                 </div>
             </div>
             `;
@@ -251,6 +348,120 @@
         
         container.innerHTML = html;
         container.classList.remove('grid', 'grid-cols-1', 'sm:grid-cols-2', 'md:grid-cols-3', 'gap-4');
+
+        // Setup collapse buttons
+        const collapseButtons = container.querySelectorAll('.btn-toggle-card');
+        collapseButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const gridId = btn.getAttribute('data-grid-id');
+                const grid = document.getElementById(gridId || '');
+                const icon = btn.querySelector('.toggle-card-icon');
+                if (grid && icon) {
+                    const isHidden = grid.classList.contains('hidden');
+                    if (isHidden) {
+                        grid.classList.remove('hidden');
+                        icon.classList.remove('-rotate-90');
+                    } else {
+                        grid.classList.add('hidden');
+                        icon.classList.add('-rotate-90');
+                    }
+                }
+            });
+        });
+
+        // Setup master checkbox state updating helper
+        const updateMasterCheckboxState = (gridId: string) => {
+            const master = container.querySelector(`.group-master-checkbox[data-grid-id="${gridId}"]`) as HTMLInputElement;
+            if (!master) return;
+            const subCheckboxes = container.querySelectorAll(`.module-checkbox[data-grid-id="${gridId}"]`) as NodeListOf<HTMLInputElement>;
+            const hasChecked = Array.from(subCheckboxes).some(cb => cb.checked);
+            master.checked = hasChecked;
+        };
+
+        // Initialize state of master checkboxes from saved permissions or fall back to checking sub-checkboxes
+        const masterCheckboxes = container.querySelectorAll('.group-master-checkbox') as NodeListOf<HTMLInputElement>;
+        masterCheckboxes.forEach(master => {
+            const gridId = master.getAttribute('data-grid-id') || '';
+            const groupName = master.getAttribute('data-group') || '';
+            
+            const explicitPerm = state.currentPermissions.find(p => p.module === `menu_show_${groupName}`);
+            if (roleId === 'admin' || roleId === 'supervisor') {
+                master.checked = true;
+            } else if (explicitPerm !== undefined) {
+                master.checked = explicitPerm.can_view === 1 || explicitPerm.can_view === true || String(explicitPerm.can_view) === '1';
+            } else {
+                updateMasterCheckboxState(gridId);
+            }
+
+            // Handle master click: Checking/unchecking toggle behavior
+            master.addEventListener('change', () => {
+                const canEdit = canEditTargetRole(roleId);
+                if (!canEdit) {
+                    master.checked = !master.checked;
+                    showAlert('alertMessage', 'Acesso negado para alterar as permissões deste perfil.', 'error');
+                    return;
+                }
+                const gridId = master.getAttribute('data-grid-id') || '';
+                const subCheckboxes = container.querySelectorAll(`.module-checkbox[data-grid-id="${gridId}"]`) as NodeListOf<HTMLInputElement>;
+                
+                if (master.checked) {
+                    // Ensure the parent card's master checkbox is also enabled
+                    const parentCard = master.closest('.group-card');
+                    if (parentCard) {
+                        const parentMaster = parentCard.querySelector('.group-master-checkbox:not([data-grid-id^="grid-Sub-"])') as HTMLInputElement;
+                        if (parentMaster && !parentMaster.checked) {
+                            parentMaster.checked = true;
+                        }
+                    }
+
+                    // Se marcar e todos estiverem desmarcados, marca todos eles para conveniência
+                    const anyChecked = Array.from(subCheckboxes).some(cb => cb.checked);
+                    if (!anyChecked) {
+                        subCheckboxes.forEach(cb => {
+                            if (!cb.disabled) {
+                                cb.checked = true;
+                            }
+                        });
+                    }
+                } else {
+                    // Se desmarcar, desmarca todos eles
+                    subCheckboxes.forEach(cb => {
+                        if (!cb.disabled) {
+                            cb.checked = false;
+                        }
+                    });
+                }
+            });
+        });
+
+        // Handle sub-checkbox click to sync master state (checking a sub-item automatically turns on the menu show toggle)
+        const subCheckboxes = container.querySelectorAll('.module-checkbox') as NodeListOf<HTMLInputElement>;
+        subCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const gridId = cb.getAttribute('data-grid-id') || '';
+                const master = container.querySelector(`.group-master-checkbox[data-grid-id="${gridId}"]`) as HTMLInputElement;
+                if (master) {
+                    const subCheckboxesInGroup = container.querySelectorAll(`.module-checkbox[data-grid-id="${gridId}"]`) as NodeListOf<HTMLInputElement>;
+                    const hasChecked = Array.from(subCheckboxesInGroup).some(sub => sub.checked);
+                    if (cb.checked && !master.checked) {
+                        master.checked = true;
+                    } else if (!hasChecked) {
+                        master.checked = false;
+                    }
+                }
+
+                // If any sub-checkbox gets enabled, ensure the parent card's master checkbox is also enabled
+                if (cb.checked) {
+                    const parentCard = cb.closest('.group-card');
+                    if (parentCard) {
+                        const parentMaster = parentCard.querySelector('.group-master-checkbox:not([data-grid-id^="grid-Sub-"])') as HTMLInputElement;
+                        if (parentMaster && !parentMaster.checked) {
+                            parentMaster.checked = true;
+                        }
+                    }
+                }
+            });
+        });
     }
 
     function setBulkPermissionButtonsState(roleId: string) {
@@ -274,6 +485,11 @@
         }
 
         qsa('.module-checkbox').forEach((checkbox: any) => {
+            if (!checkbox.disabled) {
+                checkbox.checked = checked;
+            }
+        });
+        qsa('.group-master-checkbox').forEach((checkbox: any) => {
             if (!checkbox.disabled) {
                 checkbox.checked = checked;
             }
@@ -312,7 +528,7 @@
                 );
             }
 
-            if (currentUserRole !== 'admin' && currentUserRole !== 'super_admin') {
+            if (currentUserRole !== 'admin' && currentUserRole !== 'supervisor' && currentUserRole !== 'super_admin') {
                 showAlert('alertMessage', 'Acesso negado. Apenas administradores podem editar perfis.', 'error');
                 getById('rolesSection').classList.add('opacity-50', 'pointer-events-none');
                 getById('rolesGridSection').classList.add('opacity-50', 'pointer-events-none');
@@ -378,6 +594,8 @@
             e.preventDefault();
             const saveBtn = getById('saveBtn');
             const roleId = getById('entityRole').value;
+            const name = getById('entityName').value.trim();
+            const description = getById('entityDesc').value.trim();
 
             // Proteções: super_admin sempre é fixo; admin só pode ser alterado pelo super_admin
             if (!canEditTargetRole(roleId)) {
@@ -391,19 +609,37 @@
                 can_view: checkbox.checked,
             }));
 
+            // Collect state of the master checkboxes to save menu visibility choices
+            const masterCheckboxes = qsa('.group-master-checkbox');
+            masterCheckboxes.forEach((master: any) => {
+                const groupName = master.getAttribute('data-group') || '';
+                permissions.push({
+                    module: `menu_show_${groupName}`,
+                    can_view: master.checked,
+                });
+            });
+
             saveBtn.disabled = true;
             saveBtn.textContent = 'Salvando...';
 
             try {
+                // Update Name & Description
+                await api('/roles/' + roleId, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name, description })
+                });
+
+                // Update Permissions
                 await api('/permissions/' + roleId, {
                     method: 'POST',
                     body: JSON.stringify({ permissions })
                 });
                 
-                showAlert('alertMessage', 'Permissões atualizadas com sucesso!', 'success');
+                showAlert('alertMessage', 'Perfil e permissões atualizados com sucesso!', 'success');
                 rolesManager.closeModal();
+                rolesManager.loadData();
             } catch (error: any) {
-                showAlert('alertMessage', error.message || 'Erro ao atualizar permissões.', 'error');
+                showAlert('alertMessage', error.message || 'Erro ao atualizar perfil.', 'error');
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Salvar Permissões';
@@ -437,7 +673,7 @@
                             ${role.slug || role.id}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button type="button" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 edit-btn flex items-center justify-end w-full" data-item='${JSON.stringify({id: role.slug || role.id, name: role.name}).replace(/'/g, "&#39;")}'>
+                            <button type="button" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 edit-btn flex items-center justify-end w-full" data-item='${JSON.stringify({id: role.slug || role.id, name: role.name, description: role.description || ""}).replace(/'/g, "&#39;")}' data-id="${role.slug || role.id}">
                                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 Permissões
                             </button>
@@ -463,7 +699,7 @@
                             <p class="mt-4 text-sm text-gray-600 dark:text-gray-300 w-full whitespace-normal wrap-break-word">${role.description || ''}</p>
                         </div>
                         <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-end">
-                            <button type="button" class="text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg dark:hover:bg-brand-900/30 edit-btn flex items-center text-sm font-medium" data-item='${JSON.stringify({id: role.slug || role.id, name: role.name}).replace(/'/g, "&#39;")}'>
+                            <button type="button" class="text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg dark:hover:bg-brand-900/30 edit-btn flex items-center text-sm font-medium" data-item='${JSON.stringify({id: role.slug || role.id, name: role.name, description: role.description || ""}).replace(/'/g, "&#39;")}' data-id="${role.slug || role.id}">
                                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 Editar Permissões
                             </button>
@@ -476,6 +712,17 @@
                 const roleId = role.id;
                 getById('modalTitle').textContent = `Permissões: ${role.name}`;
                 getById('entityRole').value = roleId;
+                
+                const entityNameInput = getById('entityName');
+                const entityDescInput = getById('entityDesc');
+                if (entityNameInput) {
+                    entityNameInput.value = role.name || '';
+                    entityNameInput.disabled = !canEditTargetRole(roleId);
+                }
+                if (entityDescInput) {
+                    entityDescInput.value = role.description || '';
+                    entityDescInput.disabled = !canEditTargetRole(roleId);
+                }
 
                 // Reforço: se não conseguimos pegar o role ainda, tenta novamente agora.
                 if (!currentUserRole) {
@@ -504,7 +751,7 @@
                     saveBtn.disabled = true;
                     saveBtn.innerHTML = roleId === 'super_admin'
                         ? 'Acesso Super Admin Fixo'
-                        : (roleId === 'admin' ? 'Acesso Admin Protegido' : 'Sem permissão');
+                        : ((roleId === 'admin' || roleId === 'supervisor') ? 'Acesso Admin Protegido' : 'Sem permissão');
                     saveBtn.classList.remove('bg-brand-600', 'hover:bg-brand-700');
                     saveBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
                 } else {

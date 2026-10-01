@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Usuários</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -24,18 +24,6 @@
             <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Usuários</h3>
                 <div class="flex items-center gap-3">
-                    <div class="flex items-center bg-gray-100 dark:bg-slate-900/60 p-1 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
-                        <button type="button" id="btnListView" class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1" title="Ver como Lista" aria-label="Ver como Lista">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                            </svg>
-                        </button>
-                        <button type="button" id="btnGridView" class="flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1" title="Ver como Grade" aria-label="Ver como Grade">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                            </svg>
-                        </button>
-                    </div>
                     <button type="button" id="btnNewUser" title="Novo Usuário"
                         class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -87,10 +75,10 @@
 
     <!-- Modal Usuário -->
     <div id="userModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" role="dialog" aria-modal="true">
-        <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center lg:block sm:p-0">
+        <div class="flex min-h-screen items-start justify-center px-4 pb-20 pt-10 text-center lg:block sm:p-0">
             <div id="userModalBackdrop" class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true"></div>
-            <div class="relative z-10 inline-block w-full transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all dark:bg-slate-800 sm:my-8 sm:max-w-3xl sm:align-middle">
-                <form id="userForm" action="#" method="POST">
+            <div class="relative z-10 inline-block w-[94vw] mx-auto transform overflow-hidden rounded-lg bg-white text-left align-top shadow-xl transition-all dark:bg-slate-800 sm:my-8 sm:max-w-3xl sm:w-full sm:align-middle">
+                <form id="userForm" action="#" method="POST" autocomplete="off">
 
                     <!-- Header com tabs -->
                     <div class="border-b border-gray-200 bg-white px-4 pt-5 dark:border-slate-700 dark:bg-slate-800 sm:px-6">
@@ -104,24 +92,27 @@
                         </ul>
                     </div>
 
-                    <!-- Aba: Dados Base -->
-                    <div id="tabData" class="bg-white px-4 py-5 dark:bg-slate-800 sm:p-6">
-                        <input type="hidden" id="userId" name="userId" value="" data-bwignore="true" data-lpignore="true">
+                    <!-- Content Wrapper for scrolling on mobile -->
+                    <div class="max-h-[68vh] overflow-y-auto">
+
+                        <!-- Aba: Dados Base -->
+                        <div id="tabData" class="bg-white px-4 py-5 dark:bg-slate-800 sm:p-6">
+                            <input type="hidden" id="userId" name="userId" value="" data-bwignore="true" data-lpignore="true">
                         <div class="space-y-4">
                             <div>
                                 <label for="formFullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Completo <span class="text-red-500">*</span></label>
-                                <input type="text" id="formFullName" name="formFullName" required
+                                <input type="text" id="formFullName" name="formFullName" required autocomplete="off"
                                     class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
                             </div>
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label for="formEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail <span class="text-red-500">*</span></label>
-                                    <input type="email" id="formEmail" name="formEmail" autocomplete="username" required
+                                    <input type="email" id="formEmail" name="formEmail" autocomplete="off" required
                                         class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
                                 </div>
                                 <div>
                                     <label for="formPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
-                                    <input type="text" id="formPhone" name="formPhone"
+                                    <input type="text" id="formPhone" name="formPhone" autocomplete="off"
                                         class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
                                 </div>
                                 <div>
@@ -142,28 +133,108 @@
                                 <select id="formDefaultPage" name="formDefaultPage"
                                     class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true">
                                     <option value="">Padrão (Dashboard)</option>
-                                    <option value="/pages/dashboard.html">Dashboard</option>
-                                    <option value="/pages/sales.html">Vendas</option>
-                                    <option value="/pages/purchases.html">Compras</option>
-                                    <option value="/pages/customers.html">Clientes</option>
-                                    <option value="/pages/suppliers.html">Fornecedores</option>
-                                    <option value="/pages/products.html">Produtos</option>
-                                    <option value="/pages/service.html">Serviço</option>
-                                    <option value="/pages/lancamento_servico.html">Lançamento de Serviço</option>
-                                    <option value="/pages/tributacao_municipal.html">Tributação Municipal</option>
-                                    <option value="/pages/tributacao_federal.html">Tributação Federal</option>
-                                    <option value="/pages/picking.html">Estoque</option>
-                                    <option value="/pages/tasks.html">Tarefas</option>
-                                    <option value="/pages/revenues.html">Receitas</option>
-                                    <option value="/pages/expenses.html">Despesas</option>
-                                    <option value="/pages/statements.html">Extrato</option>
-                                    <option value="/pages/finance_categories.html">Categorias Financeiras</option>
-                                    <option value="/pages/dre.html">DRE</option>
-                                    <option value="/pages/balancete.html">Balancete</option>
-                                    <option value="/pages/balanco.html">Balanço</option>
-                                    <option value="/pages/users.html">Usuários</option>
-                                    <option value="/pages/organizer.html">Organizador</option>
-                                    <option value="/pages/whatsapp.html">WhatsApp</option>
+                                    <optgroup label="Operação">
+                                        <option value="/pages/dashboard.html">Visão Geral (Dashboard)</option>
+                                        <option value="/pages/sales.html">PDV / Vendas</option>
+                                        <option value="/pages/quotes.html">Orçamentos</option>
+                                        <option value="/pages/lancamento_servico.html">Serviço</option>
+                                        <option value="/pages/restaurant.html">Restaurante</option>
+                                        <option value="/pages/gera-pix.html">Gera PIX</option>
+                                    </optgroup>
+                                    <optgroup label="Pedido">
+                                        <option value="/pages/picking.html">Separação</option>
+                                        <option value="/pages/nota.html">Nota</option>
+                                        <option value="/pages/notas_vendidas.html">Notas Vendidas</option>
+                                    </optgroup>
+                                    <optgroup label="Estoque">
+                                        <option value="/pages/products.html">Produtos</option>
+                                        <option value="/pages/categories.html">Categorias</option>
+                                        <option value="/pages/stock-types.html">Tipo de Estoque</option>
+                                        <option value="/pages/product-types.html">Tipo de Produto</option>
+                                        <option value="/pages/manufacturers.html">Fabricantes</option>
+                                        <option value="/pages/taxes.html">Tributos</option>
+                                        <option value="/pages/prices.html">Tabelas de Preços</option>
+                                        <option value="/pages/measures.html">Medidas</option>
+                                        <option value="/pages/service_types.html">Tipo de Serviço</option>
+                                        <option value="/pages/service.html">Cadastro de Serviços</option>
+                                        <option value="/pages/tributacao_municipal.html">Tributação Municipal</option>
+                                        <option value="/pages/tributacao_federal.html">Tributação Federal</option>
+                                    </optgroup>
+                                    <optgroup label="Pedido de Compra">
+                                        <option value="/pages/purchases.html">Compras</option>
+                                        <option value="/pages/notas_compras.html">Notas de Compras</option>
+                                        <option value="/pages/manifestation.html">Manifesto</option>
+                                    </optgroup>
+                                    <optgroup label="Financeiro">
+                                        <option value="/pages/expenses.html">Despesas</option>
+                                        <option value="/pages/card-debits.html">Pagamento de Cartão</option>
+                                        <option value="/pages/card-expenses.html">Despesas de Cartão (Crédito)</option>
+                                        <option value="/pages/card-brands.html">Bandeiras de Cartão</option>
+                                        <option value="/pages/card-configurations.html">Config. de Cartão</option>
+                                        <option value="/pages/payment-types.html">Formas de Pagamento</option>
+                                        <option value="/pages/receivable-types.html">Tipos de Recebíveis</option>
+                                        <option value="/pages/revenues.html">Receitas</option>
+                                        <option value="/pages/card-statements.html">Extrato Cartão</option>
+                                        <option value="/pages/finance_category_types.html">Tipos de Categorias</option>
+                                        <option value="/pages/finance_categories.html">Categorias Financeiras</option>
+                                        <option value="/pages/banks.html">Bancos</option>
+                                        <option value="/pages/statements.html">Extrato Banco</option>
+                                        <option value="/pages/finance_poscontrol.html">Fin. Pos-Controll</option>
+                                    </optgroup>
+                                    <optgroup label="Pessoas">
+                                        <option value="/pages/customers.html">Clientes</option>
+                                        <option value="/pages/customer-groups.html">Grupos de Clientes</option>
+                                        <option value="/pages/contacts.html">Contatos</option>
+                                        <option value="/pages/sellers.html">Vendedores</option>
+                                        <option value="/pages/buyers.html">Compradores</option>
+                                        <option value="/pages/service_providers.html">Prestadores de Serviços</option>
+                                        <option value="/pages/suppliers.html">Fornecedores</option>
+                                        <option value="/pages/accountant.html">Contadores</option>
+                                        <option value="/pages/socio.html">Sócios</option>
+                                        <option value="/pages/users.html">Usuários</option>
+                                        <option value="/pages/company.html">Empresa</option>
+                                    </optgroup>
+                                    <optgroup label="Contabilidade & Fiscal">
+                                        <option value="/pages/plan_of_accounts.html">Plano de Contas</option>
+                                        <option value="/pages/accounting_entries.html">Lançamentos</option>
+                                        <option value="/pages/accounting_auto_entries.html">Lançamentos Automáticos</option>
+                                        <option value="/pages/accounting_auto_history.html">Histórico Automático</option>
+                                        <option value="/pages/accounting_closing.html">Fechamento Contábil</option>
+                                        <option value="/pages/declaration_registration.html">Cadastro de Declaração</option>
+                                        <option value="/pages/declaration_control.html">Controle de Declaração</option>
+                                        <option value="/pages/fechamento.html">Fechamento</option>
+                                        <option value="/pages/sped_fiscal.html">SPED Fiscal - Importação</option>
+                                        <option value="/pages/employees.html">Colaboradores</option>
+                                    </optgroup>
+                                    <optgroup label="Relatórios">
+                                        <option value="/pages/dre.html">DRE</option>
+                                        <option value="/pages/balancete.html">Balancete</option>
+                                        <option value="/pages/balanco.html">Balanço Patrimonial</option>
+                                        <option value="/pages/rel-rafael.html">Relatório Rafael</option>
+                                        <option value="/pages/rel-pedido-dorsal.html">Relatório Pedidos (Dorsal)</option>
+                                        <option value="/pages/rel-saldo-banco.html">Saldo Banco</option>
+                                    </optgroup>
+                                    <optgroup label="Configuração & Visão">
+                                        <option value="/pages/roles.html">Cadastro de Perfis</option>
+                                        <option value="/pages/tasks.html">Tarefas</option>
+                                        <option value="/pages/organizer.html">Organizador</option>
+                                        <option value="/pages/ajuste.html">Ajustes</option>
+                                        <option value="/pages/whatsapp.html">WhatsApp</option>
+                                        <option value="/pages/email.html">E-mails</option>
+                                        <option value="/pages/backup_restore.html">Backup e Restaurar</option>
+                                        <option value="/pages/swagger.html">Swagger</option>
+                                        <option value="/pages/audit.html">Auditoria</option>
+                                        <option value="/pages/company-groups.html">Grupo de Empresa</option>
+                                        <option value="/pages/finance_vision.html">Visão Financeiro</option>
+                                        <option value="/pages/stock_vision.html">Visão Estoque</option>
+                                        <option value="/pages/whatsapp-info.html">Visão Whatsapp</option>
+                                        <option value="/pages/census-vision.html">Visão Censo</option>
+                                        <option value="/pages/mec-vision.html">Visão MEC</option>
+                                        <option value="/pages/sisu-professions.html">Visão Vagas SISU</option>
+                                        <option value="/pages/income-vision.html">Visão Renda</option>
+                                        <option value="/pages/sped_fiscal_vision.html">Visão SPED Fiscal</option>
+                                        <option value="/pages/maintenance.html">Manutenção de BD</option>
+                                    </optgroup>
                                 </select>
                             </div>
                         </div>
@@ -295,7 +366,7 @@
                                 </div>
                                 <div class="mt-4 w-full px-4">
                                     <label for="userPhotoZoomSlider" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Ajustar Zoom</label>
-                                    <input type="range" id="userPhotoZoomSlider" min="100" max="300" value="100" class="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                                    <input type="range" id="userPhotoZoomSlider" min="10" max="300" value="100" class="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer">
                                 </div>
                                 <p class="text-xs text-gray-400 mt-1">Arraste a imagem para centralizar e use o controle acima para dar zoom.</p>
                                 <div class="mt-4 flex gap-2 w-full justify-center">
@@ -333,7 +404,27 @@
                                 </div>
                                 <p id="userPhotoInfo" class="w-full mt-2 text-xs text-gray-500 dark:text-gray-400">Nenhuma foto salva.</p>
                             </div>
+                    </div>
+                    </div>
+
+                    <!-- Aba: Configuração -->
+                    <div id="tabConfig" class="hidden bg-white px-4 py-5 dark:bg-slate-800 sm:p-6">
+                        <div class="max-w-md mx-auto space-y-4">
+                            <div>
+                                <label for="formDefaultBankAccount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Conta Bancária Padrão
+                                </label>
+                                <select id="formDefaultBankAccount" name="formDefaultBankAccount"
+                                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm">
+                                    <option value="">Nenhuma conta padrão</option>
+                                </select>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+                                    Esta conta bancária será selecionada por padrão ao realizar lançamentos financeiros para este usuário.
+                                </p>
+                            </div>
                         </div>
+                    </div>
+
                     </div>
 
                     <!-- Rodapé -->
@@ -353,12 +444,12 @@
         </div>
     </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/users.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/users.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

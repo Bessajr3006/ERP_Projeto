@@ -67,9 +67,13 @@ export async function runMigration38(): Promise<void> {
                     }
 
                     // Drop da antiga
-                    console.log(`[DROP] Removendo coluna legada ${col.old} da tabela ${table}...`);
-                    await conn.query('ALTER TABLE ?? ROW_FORMAT=DYNAMIC', [table]);
-                    await conn.query(`ALTER TABLE ?? DROP COLUMN ??`, [table, col.old]);
+                    try {
+                        console.log(`[DROP] Removendo coluna legada ${col.old} da tabela ${table}...`);
+                        await conn.query('ALTER TABLE ?? ROW_FORMAT=DYNAMIC', [table]);
+                        await conn.query(`ALTER TABLE ?? DROP COLUMN ??`, [table, col.old]);
+                    } catch (e: any) {
+                        console.log(`[SKIP] Coluna ${col.old} já foi removida ou não pôde ser excluída em ${table}.`);
+                    }
                 }
             }
         } finally {

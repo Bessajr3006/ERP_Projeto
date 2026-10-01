@@ -35,11 +35,21 @@ CREATE TABLE IF NOT EXISTS companies (
     solidcon_url_3 VARCHAR(500) DEFAULT NULL,
     solidcon_url_4 VARCHAR(500) DEFAULT NULL,
     solidcon_url_5 VARCHAR(500) DEFAULT NULL,
+    solidcon_customer_cpf VARCHAR(20) DEFAULT NULL,
+    solidcon_customer_name VARCHAR(255) DEFAULT NULL,
+    default_customer_group_id INT DEFAULT NULL,
+    default_bank_account_id INT DEFAULT NULL,
+    default_receivable_type_id INT DEFAULT NULL,
+    auto_generate_billets TINYINT(1) NOT NULL DEFAULT 0,
+    auto_generate_billets_time VARCHAR(5) NULL DEFAULT '08:00',
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     is_system TINYINT(1) NOT NULL DEFAULT 0,
+    is_general_admin TINYINT(1) NOT NULL DEFAULT 0,
     allow_print_without_confirmation TINYINT(1) NOT NULL DEFAULT 0,
     whatsapp_chat_provider ENUM('business_qr') NOT NULL DEFAULT 'business_qr',
     whatsapp_business_scope ENUM('company', 'user') NOT NULL DEFAULT 'company',
+    cdfilial VARCHAR(255) DEFAULT NULL,
+    cdpdv VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -116,6 +126,12 @@ CREATE TABLE IF NOT EXISTS users (
     whatsapp_auto_reply_mode ENUM('automatic', 'manual') NOT NULL DEFAULT 'automatic',
     role VARCHAR(50) NOT NULL DEFAULT 'user',
     is_active TINYINT(1) NOT NULL DEFAULT 1,
+    current_session_token VARCHAR(500) DEFAULT NULL,
+    current_session_ip VARCHAR(50) DEFAULT NULL,
+    current_session_location VARCHAR(255) DEFAULT NULL,
+    current_session_user_agent VARCHAR(500) DEFAULT NULL,
+    current_session_at TIMESTAMP NULL DEFAULT NULL,
+    last_activity_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -308,6 +324,7 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
     api_key TEXT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    solidcon_bank_id VARCHAR(50) DEFAULT NULL,
     
     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
     INDEX idx_company_id (company_id)
@@ -349,6 +366,8 @@ CREATE TABLE IF NOT EXISTS customers (
     company_id INT NOT NULL,
     name VARCHAR(150) NOT NULL,
     cnpj_cpf VARCHAR(18),
+    inscricao_estadual VARCHAR(50) DEFAULT NULL,
+    inscricao_municipal VARCHAR(50) DEFAULT NULL,
     email VARCHAR(255),
     phone VARCHAR(20),
     vencimento_dia TINYINT DEFAULT NULL,
@@ -424,17 +443,25 @@ CREATE TABLE IF NOT EXISTS products (
     min_stock INT DEFAULT 0,
     max_stock INT DEFAULT 0,
     category_id INT DEFAULT NULL,
+    stock_type_id INT DEFAULT NULL,
+    product_type_id INT DEFAULT NULL,
     manufacturer_id INT DEFAULT NULL,
     tax_rule_id INT DEFAULT NULL,
     measure_id INT DEFAULT NULL,
     image_base64 LONGTEXT DEFAULT NULL,
     image_url VARCHAR(512) DEFAULT NULL,
+    idprodutopos VARCHAR(255) DEFAULT NULL,
+    status_pos_id VARCHAR(255) DEFAULT NULL,
+    poscontrol_synced TINYINT(1) DEFAULT 0,
+    active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_type_id) REFERENCES product_types(id) ON DELETE SET NULL,
     INDEX idx_company_sku (company_id, sku),
     INDEX idx_products_category_id (category_id),
+    INDEX idx_products_product_type_id (product_type_id),
     INDEX idx_products_manufacturer_id (manufacturer_id),
     INDEX idx_products_tax_rule_id (tax_rule_id),
     INDEX idx_products_measure_id (measure_id)
@@ -562,6 +589,10 @@ CREATE TABLE IF NOT EXISTS transactions (
     barcode VARCHAR(255) NULL,
     pix_code TEXT NULL,
     billet_url VARCHAR(255) NULL,
+    pdv VARCHAR(50) DEFAULT NULL,
+    cdfilial VARCHAR(255) DEFAULT NULL,
+    solidcon_quitado TINYINT(1) DEFAULT 0,
+    solidcon_key VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -608,6 +639,9 @@ CREATE TABLE IF NOT EXISTS product_categories (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     image_base64 LONGTEXT DEFAULT NULL,
+    idgrupopos VARCHAR(255) DEFAULT NULL,
+    poscontrol_synced TINYINT(1) NOT NULL DEFAULT 0,
+    active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
@@ -750,3 +784,85 @@ CREATE TABLE IF NOT EXISTS price_tables (
     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
     INDEX idx_company_id (company_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ERP Fechamentos: Monthly Closings
+CREATE TABLE IF NOT EXISTS fechamentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    public_id VARCHAR(50) NOT NULL UNIQUE,
+    company_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    competencia VARCHAR(7) NOT NULL,
+    
+    compra_valor DECIMAL(15,2) DEFAULT 0.00,
+    compra_bs_icms DECIMAL(15,2) DEFAULT 0.00,
+    compra_isento DECIMAL(15,2) DEFAULT 0.00,
+    compra_outros DECIMAL(15,2) DEFAULT 0.00,
+    compra_pis DECIMAL(15,2) DEFAULT 0.00,
+    compra_cofins DECIMAL(15,2) DEFAULT 0.00,
+    
+    venda_valor DECIMAL(15,2) DEFAULT 0.00,
+    venda_bs_icms DECIMAL(15,2) DEFAULT 0.00,
+    venda_isento DECIMAL(15,2) DEFAULT 0.00,
+    venda_outros DECIMAL(15,2) DEFAULT 0.00,
+    venda_pis DECIMAL(15,2) DEFAULT 0.00,
+    venda_cofins DECIMAL(15,2) DEFAULT 0.00,
+    
+    apuracao_icms DECIMAL(15,2) DEFAULT 0.00,
+    apuracao_fecp DECIMAL(15,2) DEFAULT 0.00,
+    apuracao_pis DECIMAL(15,2) DEFAULT 0.00,
+    apuracao_cofins DECIMAL(15,2) DEFAULT 0.00,
+    apuracao_aj_icms DECIMAL(15,2) DEFAULT 0.00,
+    apuracao_aj_fecp DECIMAL(15,2) DEFAULT 0.00,
+    apuracao_aj_pis DECIMAL(15,2) DEFAULT 0.00,
+    apuracao_aj_cofins DECIMAL(15,2) DEFAULT 0.00,
+    
+    despesa_adm DECIMAL(15,2) DEFAULT 0.00,
+    despesa_operacional DECIMAL(15,2) DEFAULT 0.00,
+    despesa_folha DECIMAL(15,2) DEFAULT 0.00,
+    despesa_cmv DECIMAL(15,2) DEFAULT 0.00,
+    despesa_ir_aluguel DECIMAL(15,2) DEFAULT 0.00,
+    
+    imposto_irpj DECIMAL(15,2) DEFAULT 0.00,
+    imposto_csll DECIMAL(15,2) DEFAULT 0.00,
+    
+    simples_faturamento DECIMAL(15,2) DEFAULT 0.00,
+    simples_valor_nao_tributado DECIMAL(15,2) DEFAULT 0.00,
+    simples_valor_tributado DECIMAL(15,2) DEFAULT 0.00,
+    simples_aliquota DECIMAL(15,2) DEFAULT 0.00,
+    simples_das DECIMAL(15,2) DEFAULT 0.00,
+    simples_faturamento_acumulado_ano_anterior DECIMAL(15,2) DEFAULT 0.00,
+    simples_faturamento_acumulado_12m DECIMAL(15,2) DEFAULT 0.00,
+    simples_csll DECIMAL(15,2) DEFAULT 0.00,
+    simples_irpj DECIMAL(15,2) DEFAULT 0.00,
+    simples_cofins DECIMAL(15,2) DEFAULT 0.00,
+    simples_pis DECIMAL(15,2) DEFAULT 0.00,
+    simples_iss DECIMAL(15,2) DEFAULT 0.00,
+    simples_ipi DECIMAL(15,2) DEFAULT 0.00,
+    simples_icms DECIMAL(15,2) DEFAULT 0.00,
+    simples_cpp DECIMAL(15,2) DEFAULT 0.00,
+    
+    observacao TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_fechamentos_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fechamentos_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_company_customer_competencia (company_id, customer_id, competencia)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ERP Inventory: Product Types
+CREATE TABLE IF NOT EXISTS product_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    public_id CHAR(36) NOT NULL UNIQUE,
+    company_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    description TEXT DEFAULT NULL,
+    idprodutotipopos VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_product_types_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_product_types_company_name (company_id, name),
+    INDEX idx_product_types_company_name (company_id, name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

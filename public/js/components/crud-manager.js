@@ -1,5 +1,3 @@
-/// <reference path="../globals.d.ts" />
-/// <reference path="../api.ts" />
 /**
  * crud-manager.js
  * Fábrica central para gerenciar páginas de CRUD com Listagem/Grid,
@@ -25,10 +23,12 @@ class CrudManager {
         this.disableSummaryFooter = config.disableSummaryFooter || false;
         // State
         this.data = [];
+        this.defaultView = config.defaultView || 'list';
         this.storageKey = `${this.entityName.toLowerCase()}_view`;
-        this.currentView = localStorage.getItem(this.storageKey) || 'list';
+        this.currentView = (window.CompanyStorage?.getItem(this.storageKey) ?? localStorage.getItem(this.storageKey)) || this.defaultView;
         // Filtros
         this.filterConfig = config.filterConfig;
+        this.footerLabel = config.footerLabel || 'registro(s) exibido(s)';
     }
     async init() {
         this._setupViewToggles();
@@ -88,21 +88,26 @@ class CrudManager {
         }
         if (this.renderTableFn)
             this.renderTableFn(filtered);
-        if (false && this.renderGridFn)
+        if (this.renderGridFn)
             this.renderGridFn(filtered);
         if (window.GridSummaryFooter && !this.disableSummaryFooter) {
             window.GridSummaryFooter.update({
                 footerId: this.filterConfig?.footerId || `${this.entityName.toLowerCase()}ResultsFooter`,
                 anchorId: this.gridSectionId,
                 count: filtered.length,
-                label: `registro(s) exibido(s)`
+                label: this.footerLabel
             });
         }
         this._bindActionEvents();
     }
     _bindActionEvents() {
         document.querySelectorAll('.edit-btn').forEach((btn) => {
+            if (btn.__hasEditListener)
+                return;
+            btn.__hasEditListener = true;
             btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const target = e.currentTarget;
                 const id = target.getAttribute('data-id');
                 const rawItem = target.getAttribute('data-item');
@@ -112,7 +117,12 @@ class CrudManager {
             });
         });
         document.querySelectorAll('.duplicate-btn').forEach((btn) => {
+            if (btn.__hasDuplicateListener)
+                return;
+            btn.__hasDuplicateListener = true;
             btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const target = e.currentTarget;
                 const id = target.getAttribute('data-id');
                 const rawItem = target.getAttribute('data-item');
@@ -127,12 +137,25 @@ class CrudManager {
             });
         });
         document.querySelectorAll('.delete-btn').forEach((btn) => {
+            if (btn.__hasDeleteListener)
+                return;
+            btn.__hasDeleteListener = true;
             btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (btn.classList.contains('pointer-events-none'))
+                    return;
                 if (confirm('Deseja realmente excluir este registro?')) {
+                    btn.classList.add('pointer-events-none');
                     const target = e.currentTarget;
                     const id = target.getAttribute('data-id');
                     if (this.onDelete) {
-                        await this.onDelete(id);
+                        try {
+                            await this.onDelete(id);
+                        }
+                        finally {
+                            btn.classList.remove('pointer-events-none');
+                        }
                     }
                     else {
                         try {
@@ -144,6 +167,7 @@ class CrudManager {
                         }
                         catch (error) {
                             alert('Erro ao excluir: ' + (error?.message || String(error)));
+                            btn.classList.remove('pointer-events-none');
                         }
                     }
                 }
@@ -172,19 +196,29 @@ class CrudManager {
         const btnList = document.getElementById('btnListView');
         const btnGrid = document.getElementById('btnGridView');
         if (!btnList || !btnGrid) {
-            this.currentView = 'list';
+            this.currentView = this.defaultView;
         }
         if (btnList) {
             btnList.addEventListener('click', () => {
                 this.currentView = 'list';
-                localStorage.setItem(this.storageKey, 'list');
+                if (window.CompanyStorage) {
+                    window.CompanyStorage.setItem(this.storageKey, 'list');
+                }
+                else {
+                    localStorage.setItem(this.storageKey, 'list');
+                }
                 this._updateViewToggleUI();
             });
         }
         if (btnGrid) {
             btnGrid.addEventListener('click', () => {
                 this.currentView = 'grid';
-                localStorage.setItem(this.storageKey, 'grid');
+                if (window.CompanyStorage) {
+                    window.CompanyStorage.setItem(this.storageKey, 'grid');
+                }
+                else {
+                    localStorage.setItem(this.storageKey, 'grid');
+                }
                 this._updateViewToggleUI();
             });
         }
@@ -199,12 +233,14 @@ class CrudManager {
                 tableSection.classList.remove('hidden');
                 gridSection.style.display = 'none';
                 gridSection.classList.add('hidden');
+                gridSection.classList.remove('grid');
             }
             else {
                 tableSection.style.display = 'none';
                 tableSection.classList.add('hidden');
                 gridSection.style.display = '';
                 gridSection.classList.remove('hidden');
+                gridSection.classList.add('grid');
             }
         }
         const btnList = document.getElementById('btnListView');

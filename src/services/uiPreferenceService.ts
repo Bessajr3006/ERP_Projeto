@@ -19,6 +19,7 @@ export interface UiPreference {
     sales_cards_per_row?: string | null;
     sales_layout?: 'drawer' | 'split';
     split_cart_size?: 'small' | 'medium' | 'large';
+    wa_float_btn_visible?: boolean;
     created_at?: string | Date;
     updated_at?: string | Date;
 }
@@ -39,15 +40,17 @@ export interface UiPreferenceInput {
     sales_cards_per_row?: string | null;
     sales_layout?: 'drawer' | 'split';
     split_cart_size?: 'small' | 'medium' | 'large';
+    wa_float_btn_visible: boolean;
 }
 
-type UiPreferenceRow = RowDataPacket & Omit<UiPreference, 'theme_toggle_visible'> & { theme_toggle_visible: number | boolean };
+type UiPreferenceRow = RowDataPacket & Omit<UiPreference, 'theme_toggle_visible' | 'wa_float_btn_visible'> & { theme_toggle_visible: number | boolean; wa_float_btn_visible?: number | boolean | null };
 type ColumnExistsRow = RowDataPacket & { column_count: number };
 
 function mapPreferenceRow(row: UiPreferenceRow): UiPreference {
     return {
         ...row,
         theme_toggle_visible: Boolean(row.theme_toggle_visible),
+        wa_float_btn_visible: row.wa_float_btn_visible !== undefined && row.wa_float_btn_visible !== null ? Boolean(row.wa_float_btn_visible) : true,
         sales_cards_per_row: row.sales_cards_per_row || null,
     };
 }
@@ -117,6 +120,7 @@ export class UiPreferenceService {
         await UiPreferenceService.addColumnIfMissing('sales_cards_per_row', `sales_cards_per_row VARCHAR(120) DEFAULT NULL AFTER theme_toggle_visible`);
         await UiPreferenceService.addColumnIfMissing('sales_layout', `sales_layout VARCHAR(10) NOT NULL DEFAULT 'drawer' AFTER sales_cards_per_row`);
         await UiPreferenceService.addColumnIfMissing('split_cart_size', `split_cart_size VARCHAR(10) NOT NULL DEFAULT 'medium' AFTER sales_layout`);
+        await UiPreferenceService.addColumnIfMissing('wa_float_btn_visible', `wa_float_btn_visible TINYINT(1) NOT NULL DEFAULT 1 AFTER split_cart_size`);
 
         UiPreferenceService.schemaReady = true;
     }
@@ -127,7 +131,7 @@ export class UiPreferenceService {
         const [rows] = await pool.query<UiPreferenceRow[]>(
                 `SELECT company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color,
                     form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible, sales_cards_per_row,
-                    sales_layout, split_cart_size, created_at, updated_at
+                    sales_layout, split_cart_size, wa_float_btn_visible, created_at, updated_at
              FROM ui_preferences
              WHERE company_id = ? AND user_public_id = ?
              LIMIT 1`,
@@ -142,8 +146,8 @@ export class UiPreferenceService {
 
         await pool.query<ResultSetHeader>(
             `INSERT INTO ui_preferences
-                     (company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color, form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible, sales_cards_per_row, sales_layout, split_cart_size)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     (company_id, user_public_id, theme, layout_align, nav_align, layout_width, nav_width, nav_color, footer_color, form_company_name, form_profile, form_accent, form_header_size, theme_toggle_visible, sales_cards_per_row, sales_layout, split_cart_size, wa_float_btn_visible)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 theme = VALUES(theme),
                 layout_align = VALUES(layout_align),
@@ -160,6 +164,7 @@ export class UiPreferenceService {
                 sales_cards_per_row = VALUES(sales_cards_per_row),
                 sales_layout = VALUES(sales_layout),
                 split_cart_size = VALUES(split_cart_size),
+                wa_float_btn_visible = VALUES(wa_float_btn_visible),
                 updated_at = NOW()`,
             [
                 companyId,
@@ -179,6 +184,7 @@ export class UiPreferenceService {
                 data.sales_cards_per_row || null,
                 data.sales_layout || 'drawer',
                 data.split_cart_size || 'medium',
+                data.wa_float_btn_visible ? 1 : 0,
             ]
         );
 

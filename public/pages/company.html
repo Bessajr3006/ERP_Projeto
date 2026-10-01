@@ -5,27 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Minha Empresa</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
     <script src="/vendor/forge.min.js"></script>
 </head>
 
-<body class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 font-sans flex flex-col">
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
 
     <!-- Navbar -->
-    <div id="app-navbar"></div>
+    <div id="app-navbar" class="shrink-0"></div>
 
     <!-- Main Content -->
-    <main class="flex-1 w-full pt-4 pb-8 max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <main class="flex-1 w-full pt-4 pb-4 max-w-7xl mx-auto sm:px-6 lg:px-8 flex flex-col min-h-0 overflow-hidden">
 
-
-
-        <div id="alertMessage" class="hidden mx-4 sm:px-0 mb-4 p-4 rounded-md text-sm"></div>
+        <div id="alertMessage" class="hidden mx-4 sm:px-0 mb-4 p-4 rounded-md text-sm shrink-0"></div>
 
         <!-- Tabs Header -->
-        <div class="mb-4 border-b border-gray-200 dark:border-slate-700">
+        <div class="mb-4 border-b border-gray-200 dark:border-slate-700 shrink-0">
             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="companyTabs">
                 <li class="mr-2">
                     <button type="button" id="tabBtn-data"
@@ -70,9 +68,27 @@
                     </button>
                 </li>
                 <li class="mr-2">
+                    <button type="button" id="tabBtn-alterdata"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        API/Alterdata
+                    </button>
+                </li>
+                <li class="mr-2">
                     <button type="button" id="tabBtn-swagger"
                         class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
                         Swagger
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-waze"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Waze
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-document"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Documento
                     </button>
                 </li>
             </ul>
@@ -80,27 +96,40 @@
 
         <!-- Tab Content: Dados -->
         <div id="tabContent-data"
-            class="tab-content bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg mb-8 block">
-            <form id="companyForm" action="#" method="POST">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            class="tab-content bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <form id="companyForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="lg:flex sm:items-start">
                         <div class="text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Informações
                                 Básicas</h3>
                             <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">ID da Empresa</label>
-                                    <div class="mt-1 flex items-center gap-2">
-                                        <input type="text" id="companyPublicId" readonly
-                                            class="block w-full bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm cursor-default font-mono"
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">ID da Empresa (UUID)</label>
+                                        <div class="mt-1 flex items-center gap-2">
+                                            <input type="text" id="companyPublicId" readonly
+                                                class="block w-full bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm cursor-default font-mono"
+                                                placeholder="Carregando..." data-bwignore="true" data-lpignore="true">
+                                            <button type="button" id="copyCompanyIdBtn" title="Copiar ID"
+                                                class="shrink-0 p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 rounded-md transition-colors border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 cursor-pointer">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">ID da Empresa (Banco de Dados)</label>
+                                        <input type="text" id="companyDbId" readonly
+                                            class="mt-1 block w-full bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm cursor-default font-mono"
                                             placeholder="Carregando..." data-bwignore="true" data-lpignore="true">
-                                        <button type="button" id="copyCompanyIdBtn" title="Copiar ID"
-                                            class="shrink-0 p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/30 rounded-md transition-colors border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700">
-                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                            </svg>
-                                        </button>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data de Cadastro</label>
+                                        <input type="text" id="companyCreatedAt" readonly
+                                            class="mt-1 block w-full bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 sm:text-sm cursor-default"
+                                            placeholder="Carregando..." data-bwignore="true" data-lpignore="true">
                                     </div>
                                 </div>
                                 <div>
@@ -210,7 +239,7 @@
                     </div>
                 </div>
                 <div
-                    class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse dark:border-t dark:border-slate-700">
+                    class="shrink-0 bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse border-t border-gray-200 dark:border-slate-700">
                     <button type="submit" id="saveBtn"
                         class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
                         Salvar Alterações
@@ -221,9 +250,9 @@
 
         <!-- Tab Content: Parâmetro -->
         <div id="tabContent-param"
-            class="tab-content hidden bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg mb-8">
-            <form id="parameterForm" action="#" method="POST">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="parameterForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="lg:flex sm:items-start">
                         <div class="text-left w-full">
                             <div class="flex flex-col gap-3 mb-6">
@@ -313,12 +342,80 @@
                                             </div>
                                         </div>
                                     </section>
+
+                                    <!-- WhatsApp Boleto Section -->
+                                    <section class="rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-900/20">
+                                        <div class="p-5 sm:p-6 bg-linear-to-r from-brand-50/70 via-white to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+                                            <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5 mb-5">
+                                                <div class="max-w-2xl">
+                                                    <p class="text-[11px] uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300 font-semibold">Cobrança</p>
+                                                    <h4 class="mt-2 text-base font-semibold text-gray-900 dark:text-gray-100">WhatsApp Automático de Boleto</h4>
+                                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Permitir o envio automático de mensagem de boleto contendo o PDF e o código PIX Copia e Cola, com saudação inicial e horário determinado.</p>
+                                                </div>
+
+                                                <label class="flex items-center justify-between gap-4 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white/90 dark:bg-slate-950/70 px-4 py-3 shadow-sm min-w-full sm:min-w-80 xl:max-w-90 cursor-pointer">
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Ativar Envio Automático</p>
+                                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Habilita a rotina automática de envio de boletos.</p>
+                                                    </div>
+                                                    <span class="inline-flex items-center shrink-0">
+                                                        <input type="checkbox" id="autoSendBoletoWhatsapp" name="autoSendBoletoWhatsapp" class="sr-only peer" data-bwignore="true" data-lpignore="true">
+                                                        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 dark:peer-focus:ring-brand-800 rounded-full peer dark:bg-slate-700 peer-checked:bg-brand-600 after:content-[''] after:absolute after:top-0.5 after:inset-s-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label for="boletoSendTime" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Horário de Envio</label>
+                                                    <input type="time" id="boletoSendTime" name="boletoSendTime"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                </div>
+                                                <div>
+                                                    <label for="boletoSendWhatsappNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número do WhatsApp Ativo</label>
+                                                    <input type="text" id="boletoSendWhatsappNumber" name="boletoSendWhatsappNumber" readonly placeholder="Selecionado automaticamente"
+                                                        class="mt-1 block w-full bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-300 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none sm:text-sm cursor-not-allowed">
+                                                </div>
+                                                <div>
+                                                    <label for="boletoSendWhatsappName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome do Usuário Ativo</label>
+                                                    <select id="boletoSendWhatsappName" name="boletoSendWhatsappName"
+                                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                        <option value="">Selecione...</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- Medidas Section -->
+                                    <section class="rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-900/20">
+                                        <div class="p-5 sm:p-6 bg-linear-to-r from-brand-50/70 via-white to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+                                            <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
+                                                <div class="max-w-2xl">
+                                                    <p class="text-[11px] uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300 font-semibold">Interface</p>
+                                                    <h4 class="mt-2 text-base font-semibold text-gray-900 dark:text-gray-100">Botão "Novo" nas Medidas</h4>
+                                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Exibir ou ocultar o botão "Novo" de cadastro de medidas na página de unidades/medidas.</p>
+                                                </div>
+
+                                                <label class="flex items-center justify-between gap-4 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white/90 dark:bg-slate-950/70 px-4 py-3 shadow-sm min-w-full sm:min-w-80 xl:max-w-90 cursor-pointer">
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">Exibir Botão "Novo"</p>
+                                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Controla a visibilidade do botão em measures.html.</p>
+                                                    </div>
+                                                    <span class="inline-flex items-center shrink-0">
+                                                        <input type="checkbox" id="showNewMeasureButton" name="showNewMeasureButton" class="sr-only peer" data-bwignore="true" data-lpignore="true">
+                                                        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 dark:peer-focus:ring-brand-800 rounded-full peer dark:bg-slate-700 peer-checked:bg-brand-600 after:content-[''] after:absolute after:top-0.5 after:inset-s-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </section>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div
-                    class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse dark:border-t dark:border-slate-700">
+                    class="shrink-0 bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse border-t border-gray-200 dark:border-slate-700">
                     <button type="submit" id="saveParameterBtn"
                         class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
                         Salvar Parâmetros
@@ -329,9 +426,9 @@
 
         <!-- Tab Content: Certificado Digital -->
         <div id="tabContent-cert"
-            class="tab-content hidden bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg mb-8">
-            <form id="certForm" action="#" method="POST">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="certForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="lg:flex sm:items-start">
                         <div class="text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Certificado
@@ -409,7 +506,7 @@
                     </div>
                 </div>
                 <div
-                    class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-col sm:flex-row-reverse dark:border-t dark:border-slate-700 gap-3">
+                    class="shrink-0 bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-col sm:flex-row-reverse border-t border-gray-200 dark:border-slate-700 gap-3">
                     <button type="submit" id="saveCertBtn"
                         class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto sm:text-sm">
                         Instalar Certificado
@@ -424,9 +521,9 @@
         </div>
         <!-- Tab Content: Dados Notas -->
         <div id="tabContent-notas"
-            class="tab-content hidden bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg mb-8">
-            <form id="notasForm" action="#" method="POST">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="notasForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="lg:flex sm:items-start">
                         <div class="text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Dados de Notas Fiscais</h3>
@@ -486,7 +583,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse dark:border-t dark:border-slate-700">
+                <div class="shrink-0 bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse border-t border-gray-200 dark:border-slate-700">
                     <button type="submit" id="saveNotasBtn"
                         class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
                         Salvar Configurações
@@ -496,9 +593,9 @@
         </div>
         <!-- Tab Content: API/Pos-Controll -->
         <div id="tabContent-api"
-            class="tab-content hidden bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg mb-8">
-            <form id="apiForm" action="#" method="POST">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="apiForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="lg:flex sm:items-start">
                         <div class="text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Integração API & Pos-Controll
@@ -506,19 +603,40 @@
                             <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Gere ou atualize os tokens de acesso para
                                 conectar maquininhas, totens e sistemas de terceiros (POS-Controll).</p>
 
-                            <div class="space-y-4">
-                                <div>
-                                    <label for="apiToken"
-                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">Chave da API (Token)</label>
-                                    <div class="mt-1 flex rounded-md shadow-sm">
-                                        <input type="text" id="apiToken" name="apiToken" readonly placeholder="Nenhum token gerado..." 
-                                            class="block w-full bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-slate-600 rounded-l-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm cursor-not-allowed" data-bwignore="true" data-lpignore="true" placeholder="">
-                                        <button type="button" id="generateTokenBtn"
-                                            class="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-800 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none">
-                                            Gerar Novo
-                                        </button>
-                                    </div>
-                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Utilize esta chave para vincular o Pos-Controll ou outras integrações com este ambiente.</p>
+                            <!-- Pos-Control configurations table section -->
+                            <div class="mt-8 border-t border-gray-200 dark:border-slate-700 pt-6 font-sans">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                        <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        Credenciais de Acesso Pos-Controll
+                                    </h4>
+                                    <button type="button" id="btnNewPosControlConfig"
+                                        class="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-1.5 bg-brand-600 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        Nova Credencial
+                                    </button>
+                                </div>
+                                <div class="overflow-x-auto border border-gray-200 dark:border-slate-700 rounded-lg">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                        <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ocp-Apim-Subscription-Key</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuário</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Senha</th>
+                                                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="posControlConfigsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                            <tr>
+                                                <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma credencial configurada.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -528,9 +646,9 @@
         </div>
         <!-- Tab Content: API/Solidcon -->
         <div id="tabContent-solidcon"
-            class="tab-content hidden bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg mb-8">
-            <form id="solidconForm" action="#" method="POST">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="solidconForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="lg:flex sm:items-start">
                         <div class="text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Integração API & Solidcon
@@ -539,81 +657,139 @@
                                 conectar as integrações com o sistema Solidcon.</p>
 
                             <div class="space-y-4">
-                                <!-- Conexão Banco de Dados Solidcon -->
+                                <!-- Exibição do Botão Solidcon -->
                                 <div class="pt-4 border-b border-gray-200 dark:border-slate-700 pb-6">
                                     <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                                         <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
-                                        Conexão Banco de Dados Solidcon
+                                        Exibição do Botão Solidcon (Clientes e Produtos)
                                     </h4>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label for="servSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Servidor Solidcon (IP/Host)</label>
-                                            <input type="text" id="servSolidcon" name="servSolidcon" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: 192.168.1.100">
+                                            <label for="showSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Integração Solidcon</label>
+                                            <select id="showSolidcon" name="showSolidcon" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <option value="1">Exibir Botões</option>
+                                                <option value="0">Ocultar Botões</option>
+                                            </select>
                                         </div>
                                         <div>
-                                            <label for="bdSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Banco de Dados Solidcon</label>
-                                            <input type="text" id="bdSolidcon" name="bdSolidcon" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: solidcon_db">
+                                            <label for="defaultCustomerGroupPublicId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grupo de Cliente Padrão (Importação)</label>
+                                            <select id="defaultCustomerGroupPublicId" name="defaultCustomerGroupPublicId" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <option value="">Nenhum</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
+                                        <div>
+                                            <label for="defaultBankAccountPublicId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Banco Padrão</label>
+                                            <select id="defaultBankAccountPublicId" name="defaultBankAccountPublicId" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <option value="">Nenhum</option>
+                                            </select>
                                         </div>
                                         <div>
-                                            <label for="loginSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Login Solidcon</label>
-                                            <input type="text" id="loginSolidcon" name="loginSolidcon" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: db_user">
+                                            <label for="defaultReceivableTypePublicId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Forma de Recebimento Padrão</label>
+                                            <select id="defaultReceivableTypePublicId" name="defaultReceivableTypePublicId" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <option value="">Nenhum</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
+                                        <div>
+                                            <label for="autoGenerateBillets" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Geração Automática de Boletos (a vencer)</label>
+                                            <select id="autoGenerateBillets" name="autoGenerateBillets" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <option value="0">Desativado</option>
+                                                <option value="1">Ativado</option>
+                                            </select>
                                         </div>
                                         <div>
-                                            <label for="senhaSolidcon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha Solidcon</label>
-                                            <div class="relative mt-1">
-                                                <input type="password" id="senhaSolidcon" name="senhaSolidcon" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="••••••••">
-                                                <button type="button" id="toggleSenhaSolidconBtn" title="Mostrar ou ocultar senha" aria-label="Mostrar ou ocultar senha" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
-                                                    <svg class="h-5 w-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                    </svg>
-                                                    <svg class="h-5 w-5 eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                            <label for="autoGenerateBilletsTime" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Horário da Geração Automática</label>
+                                            <input type="time" id="autoGenerateBilletsTime" name="autoGenerateBilletsTime" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" value="08:00">
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Conexão Banco de Dados Dorsal -->
+                                <!-- Conexões Banco de Dados Solidcon -->
+                                <div class="pt-4 border-b border-gray-200 dark:border-slate-700 pb-6 font-sans">
+                                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                        <div>
+                                            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                                <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                                </svg>
+                                                Conexões Banco de Dados Solidcon
+                                            </h4>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cadastre múltiplos bancos de dados Solidcon com nomes identificadores para seleção na emissão de relatórios.</p>
+                                        </div>
+                                        <button type="button" id="btnNewSolidconConfig"
+                                            class="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-1.5 bg-brand-600 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors cursor-pointer">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            Nova Conexão
+                                        </button>
+                                    </div>
+
+                                    <div class="overflow-x-auto border border-gray-200 dark:border-slate-700 rounded-lg">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                            <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                                <tr>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome da Conexão</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Servidor (Host)</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Banco de Dados</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filial / PDV</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuário</th>
+                                                    <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Padrão</th>
+                                                    <th scope="col" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="solidconConfigsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                                <tr>
+                                                    <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma conexão cadastrada. Clique em "Nova Conexão" para adicionar.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Conexões Banco de Dados Dorsal -->
                                 <div class="pt-4 border-b border-gray-200 dark:border-slate-700 pb-6">
-                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                                        <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                                        </svg>
-                                        Conexão Banco de Dados Dorsal
-                                    </h4>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="flex items-center justify-between mb-4">
                                         <div>
-                                            <label for="servDorsal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Servidor Dorsal (IP/Host)</label>
-                                            <input type="text" id="servDorsal" name="servDorsal" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: 192.168.1.200">
+                                            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                                <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                                </svg>
+                                                Conexões Banco de Dados Dorsal
+                                            </h4>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Gerencie múltiplos bancos de dados Dorsal para esta empresa.</p>
                                         </div>
-                                        <div>
-                                            <label for="bdDorsal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Banco de Dados Dorsal</label>
-                                            <input type="text" id="bdDorsal" name="bdDorsal" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: dorsal_db">
-                                        </div>
-                                        <div>
-                                            <label for="loginDorsal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Login Dorsal</label>
-                                            <input type="text" id="loginDorsal" name="loginDorsal" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: db_user">
-                                        </div>
-                                        <div>
-                                            <label for="senhaDorsal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha Dorsal</label>
-                                            <div class="relative mt-1">
-                                                <input type="password" id="senhaDorsal" name="senhaDorsal" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="••••••••">
-                                                <button type="button" id="toggleSenhaDorsalBtn" title="Mostrar ou ocultar senha" aria-label="Mostrar ou ocultar senha" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
-                                                    <svg class="h-5 w-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                    </svg>
-                                                    <svg class="h-5 w-5 eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
+                                        <button type="button" id="btnNewDorsalConfig" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 focus:outline-none shadow-sm transition-colors cursor-pointer gap-1.5">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            Nova Conexão
+                                        </button>
+                                    </div>
+
+                                    <div class="overflow-x-auto border border-gray-200 dark:border-slate-700 rounded-lg">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                            <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                                <tr>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome da Conexão</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Servidor (Host)</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Banco de Dados</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filial / PDV</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuário</th>
+                                                    <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Padrão</th>
+                                                    <th scope="col" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="dorsalConfigsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                                <tr>
+                                                    <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma conexão cadastrada. Clique em "Nova Conexão" para adicionar.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
 
@@ -629,6 +805,10 @@
                                         <div>
                                             <label for="cdFilial" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código da Filial (cdfilial)</label>
                                             <input type="text" id="cdFilial" name="cdFilial" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: 1">
+                                        </div>
+                                        <div>
+                                            <label for="cdPdv" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código de PDV (cdpdv)</label>
+                                            <input type="text" id="cdPdv" name="cdPdv" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Ex: 1, 2, 3">
                                         </div>
                                     </div>
                                 </div>
@@ -652,24 +832,34 @@
                                             </div>
                                         </div>
                                         <div>
-                                            <label for="solidconUrl3" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL de Integração 3</label>
+                                            <label for="solidconUrl3" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL de Integração Produto por EAN</label>
                                             <div class="mt-1 flex rounded-md shadow-sm">
                                                 <input type="url" id="solidconUrl3" name="solidconUrl3" placeholder="https://..." class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
-                                                <button type="button" id="btnGenSolidconUrl3" class="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-800 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none">Gerar</button>
+                                                <button type="button" id="btnConsultSolidconUrl3" class="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-800 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none">Consultar</button>
                                             </div>
                                         </div>
                                         <div>
-                                            <label for="solidconUrl4" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL de Integração 4</label>
+                                            <label for="solidconUrl4" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL de Integração Pedido (POS)</label>
                                             <div class="mt-1 flex rounded-md shadow-sm">
                                                 <input type="url" id="solidconUrl4" name="solidconUrl4" placeholder="https://..." class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
-                                                <button type="button" id="btnGenSolidconUrl4" class="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-800 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none">Gerar</button>
+                                                <button type="button" id="btnConsultSolidconUrl4" class="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-800 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none">Consultar</button>
                                             </div>
                                         </div>
                                         <div>
-                                            <label for="solidconUrl5" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL de Integração 5</label>
+                                            <label for="solidconUrl5" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL de Integração Pedido Cancelamento (Put)</label>
                                             <div class="mt-1 flex rounded-md shadow-sm">
                                                 <input type="url" id="solidconUrl5" name="solidconUrl5" placeholder="https://..." class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="">
-                                                <button type="button" id="btnGenSolidconUrl5" class="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-800 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none">Gerar</button>
+                                                <button type="button" id="btnConsultSolidconUrl5" class="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-800 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none">Consultar</button>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="solidconCustomerCpf" class="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF Padrão do Cliente</label>
+                                                <input type="text" id="solidconCustomerCpf" name="solidconCustomerCpf" placeholder="Ex: 11111111188" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                            </div>
+                                            <div>
+                                                <label for="solidconCustomerName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Padrão do Cliente</label>
+                                                <input type="text" id="solidconCustomerName" name="solidconCustomerName" placeholder="Ex: Consumidor final" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
                                             </div>
                                         </div>
                                     </div>
@@ -679,7 +869,7 @@
                     </div>
                 </div>
                 <!-- Save URLs Button -->
-                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse dark:border-t dark:border-slate-700">
+                <div class="shrink-0 bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse border-t border-gray-200 dark:border-slate-700">
                     <button type="submit" id="saveSolidconBtn"
                         class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
                         Salvar Integração
@@ -688,11 +878,97 @@
             </form>
         </div>
 
+        <!-- Tab Content: API/Alterdata -->
+        <div id="tabContent-alterdata"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="alterdataForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="lg:flex sm:items-start">
+                        <div class="text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Integração API & Alterdata</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Configure os parâmetros de conexão com o banco de dados da Alterdata.</p>
+
+                            <div class="space-y-4">
+                                <div class="pt-4 border-b border-gray-200 dark:border-slate-700 pb-6">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                        <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        Exibição e Integração Alterdata
+                                    </h4>
+                                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label for="showAlterdata" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Integração Alterdata</label>
+                                            <select id="showAlterdata" name="showAlterdata" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                                <option value="1">Ativada</option>
+                                                <option value="0">Desativada</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Conexões Banco de Dados Alterdata -->
+                                <div class="pt-4 border-b border-gray-200 dark:border-slate-700 pb-6 font-sans">
+                                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                        <div>
+                                            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                                <svg class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                                </svg>
+                                                Conexões Banco de Dados Alterdata
+                                            </h4>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cadastre múltiplos bancos de dados Alterdata com nomes identificadores para seleção na emissão de relatórios e integrações.</p>
+                                        </div>
+                                        <button type="button" id="btnNewAlterdataConfig"
+                                            class="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-1.5 bg-brand-600 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors cursor-pointer">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            Nova Conexão
+                                        </button>
+                                    </div>
+
+                                    <div class="overflow-x-auto border border-gray-200 dark:border-slate-700 rounded-lg">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                            <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                                <tr>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome da Conexão</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Servidor (Host/Porta)</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Banco de Dados</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nº Empresa</th>
+                                                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuário</th>
+                                                    <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Padrão</th>
+                                                    <th scope="col" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="alterdataConfigsTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                                <tr>
+                                                    <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">Nenhuma conexão cadastrada. Clique em "Nova Conexão" para adicionar.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Actions -->
+                <div class="shrink-0 bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-col sm:flex-row-reverse border-t border-gray-200 dark:border-slate-700 gap-3">
+                    <button type="submit" id="saveAlterdataBtn"
+                        class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto sm:text-sm">
+                        Salvar Configuração
+                    </button>
+                </div>
+            </form>
+        </div>
+
         <!-- Tab Content: Logo -->
         <div id="tabContent-logo"
-            class="tab-content hidden bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg mb-8">
-            <form id="logoForm" action="#" method="POST">
-                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="logoForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="lg:flex sm:items-start">
                         <div class="text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Logo da Empresa</h3>
@@ -723,7 +999,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse dark:border-t dark:border-slate-700">
+                <div class="shrink-0 bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse border-t border-gray-200 dark:border-slate-700">
                     <button type="submit" id="saveLogoBtn" class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
                         Salvar Logo
                     </button>
@@ -733,8 +1009,9 @@
 
         <!-- Tab Content: Swagger -->
         <div id="tabContent-swagger"
-            class="tab-content hidden bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-lg mb-8">
-            <form id="swaggerForm" action="#" method="POST">                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="swaggerForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="lg:flex sm:items-start">
                         <div class="text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Swagger</h3>
@@ -756,7 +1033,7 @@
                                             Regerar
                                         </button>
                                     </div>
-                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Cada empresa possui seu proprio token para acesso externo.</p>
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Cada empresa possui seu próprio token para acesso externo. O token gerado não vence (não expira) a menos que você o regere.</p>
                                 </div>
                             </div>
                         </div>
@@ -765,7 +1042,92 @@
             </form>
         </div>
 
+        <!-- Tab Content: Waze -->
+        <div id="tabContent-waze"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <form id="wazeForm" action="#" method="POST" class="flex-1 min-h-0 flex flex-col">
+                <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="lg:flex sm:items-start">
+                        <div class="text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">Waze</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Configure a URL ou integração do Waze para a sua empresa.</p>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="wazeUrl" class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL do Waze</label>
+                                    <input type="text" id="wazeUrl" name="wazeUrl" placeholder="Ex: https://waze.com/ul?..."
+                                        class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="shrink-0 bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 lg:flex lg:flex-row-reverse border-t border-gray-200 dark:border-slate-700">
+                    <button type="submit" id="saveWazeBtn"
+                        class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
+                        Salvar Configuração
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab Content: Documento -->
+        <div id="tabContent-document"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col">
+            <div class="shrink-0 bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between gap-3 pb-4">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Documentos da Empresa</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Gerencie e anexe arquivos e documentos importantes da empresa.</p>
+                    </div>
+                    <label class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-sm font-medium text-white shadow-sm transition-colors cursor-pointer select-none">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Anexar Documento
+                        <input type="file" id="companyCnpjFile" class="hidden" multiple>
+                    </label>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-6">
+                <div id="companyDocumentContainer" class="font-sans">
+                    <!-- Cards dinâmicos -->
+                </div>
+            </div>
+        </div>
+
     </main>
+
+    <!-- Modal de Visualização de Documentos -->
+    <div id="companyDocPreviewModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="doc-preview-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity modal-backdrop" aria-hidden="true" id="companyDocPreviewModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="companyDocPreviewModalTitle">
+                        Visualizar Documento
+                    </h3>
+                    <button type="button" class="btn-close-doc-preview text-gray-400 hover:text-gray-500 dark:hover:text-gray-300" title="Fechar">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6 bg-white dark:bg-slate-800 flex justify-center items-center overflow-auto max-h-[70vh]">
+                    <div id="companyDocPreviewContent" class="w-full flex flex-col items-center justify-center min-h-50">
+                        <!-- Conteúdo dinâmico de preview -->
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+                    <a id="btnDownloadCompanyDoc" href="#" download="" class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto sm:text-sm decoration-none">
+                        Baixar Arquivo
+                    </a>
+                    <button type="button" class="btn-close-doc-preview w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:w-auto sm:text-sm">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal for Consulta -->
     <div id="consultaModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -799,13 +1161,360 @@
         </div>
     </div>
 
+    <!-- Modal for Pos-Control Config -->
+    <div id="posControlConfigModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="poscontrol-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity modal-backdrop" aria-hidden="true" id="posControlConfigModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full font-sans">
+                <form id="posControlConfigForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                        <h3 class="text-lg leading-6 font-bold text-gray-900 dark:text-white" id="poscontrol-modal-title">
+                            Credencial Pos-Controll
+                        </h3>
+                        <button type="button" class="btn-close-poscontrol text-gray-400 hover:text-gray-500 focus:outline-none">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-6 py-4 space-y-4">
+                        <div>
+                            <label for="poscontrolOcpApimSubKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ocp-Apim-Subscription-Key</label>
+                            <input type="text" id="poscontrolOcpApimSubKey" required placeholder="Ex: bcd5819e605d..."
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label for="poscontrolUsername" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Usuário API</label>
+                            <input type="text" id="poscontrolUsername" required placeholder="Ex: usuario_api"
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="poscontrolPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha API</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <input type="password" id="poscontrolPassword" required placeholder="Ex: senha_secreta"
+                                    class="block w-full pr-10 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                <button type="button" id="btnTogglePosControlPassword"
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:text-slate-400 dark:hover:text-slate-300">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path id="eyeIconOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path id="eyeIconOpenOuter" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        <path id="eyeIconClosed" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.024 10.024 0 014.502-4.825M17.61 5.61A10.016 10.016 0 0122 12c-1.274 4.057-5.064 7-9.542 7-1.398 0-2.723-.285-3.926-.8M9 9a3 3 0 000 6M3 3l18 18" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-700 px-6 py-3 sm:flex sm:flex-row-reverse gap-3 border-t border-gray-200 dark:border-slate-700">
+                        <button type="submit" id="btnSavePosControlConfig" class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto">
+                            Salvar
+                        </button>
+                        <button type="button" class="btn-close-poscontrol w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Conexão Banco de Dados Solidcon -->
+    <div id="solidconConfigModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="solidcon-config-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity modal-backdrop" aria-hidden="true" id="solidconConfigModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full font-sans">
+                <form id="solidconConfigForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                        <h3 class="text-lg leading-6 font-bold text-gray-900 dark:text-white" id="solidcon-config-modal-title">
+                            Conexão Banco de Dados Solidcon
+                        </h3>
+                        <button type="button" class="btn-close-solidcon-config text-gray-400 hover:text-gray-500 focus:outline-none cursor-pointer">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-6 py-4 space-y-4">
+                        <div id="solidconConfigModalAlert" class="hidden p-3 rounded-lg text-xs font-medium border"></div>
+
+                        <div>
+                            <label for="solidconConfigName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Conexão / Identificador <span class="text-red-500">*</span></label>
+                            <input type="text" id="solidconConfigName" required placeholder="Ex: Matriz - Loja 01, Filial Centro, etc."
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Este nome aparecerá para seleção nos relatórios.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="solidconConfigServer" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Servidor Solidcon (IP/Host) <span class="text-red-500">*</span></label>
+                                <input type="text" id="solidconConfigServer" required placeholder="Ex: 192.168.1.100"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="solidconConfigDatabase" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Banco de Dados Solidcon <span class="text-red-500">*</span></label>
+                                <input type="text" id="solidconConfigDatabase" required placeholder="Ex: solidcon_db"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="solidconConfigUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Login Solidcon <span class="text-red-500">*</span></label>
+                                <input type="text" id="solidconConfigUser" required placeholder="Ex: db_user"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="solidconConfigPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha Solidcon</label>
+                                <div class="relative mt-1">
+                                    <input type="password" id="solidconConfigPassword" autocomplete="new-password" placeholder="••••••••"
+                                        class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <button type="button" id="btnToggleSolidconConfigPassword" title="Mostrar ou ocultar senha" aria-label="Mostrar ou ocultar senha"
+                                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none cursor-pointer">
+                                        <svg class="h-5 w-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <svg class="h-5 w-5 eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="solidconConfigCdFilial" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código da Filial (cdfilial)</label>
+                                <input type="text" id="solidconConfigCdFilial" placeholder="Ex: 1"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="solidconConfigCdPdv" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código do PDV (cdpdv)</label>
+                                <input type="text" id="solidconConfigCdPdv" placeholder="Ex: 1, 2, 3"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-2">
+                            <input type="checkbox" id="solidconConfigIsDefault" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer">
+                            <label for="solidconConfigIsDefault" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Definir como conexão padrão da empresa</label>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-700/60 px-6 py-3 sm:flex sm:flex-row-reverse gap-2 border-t border-gray-200 dark:border-slate-700">
+                        <button type="submit" id="btnSaveSolidconConfig" class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto cursor-pointer">
+                            Salvar
+                        </button>
+                        <button type="button" id="btnTestSolidconConfigModal" class="w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none transition-colors sm:w-auto cursor-pointer">
+                            Testar Conexão
+                        </button>
+                        <button type="button" class="btn-close-solidcon-config w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none transition-colors sm:w-auto cursor-pointer">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Conexão Banco de Dados Dorsal -->
+    <div id="dorsalConfigModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="dorsal-config-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity modal-backdrop" aria-hidden="true" id="dorsalConfigModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full font-sans">
+                <form id="dorsalConfigForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                        <h3 class="text-lg leading-6 font-bold text-gray-900 dark:text-white" id="dorsal-config-modal-title">
+                            Conexão Banco de Dados Dorsal
+                        </h3>
+                        <button type="button" class="btn-close-dorsal-config text-gray-400 hover:text-gray-500 focus:outline-none cursor-pointer">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-6 py-4 space-y-4">
+                        <div id="dorsalConfigModalAlert" class="hidden p-3 rounded-lg text-xs font-medium border"></div>
+
+                        <div>
+                            <label for="dorsalConfigName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Conexão / Identificador <span class="text-red-500">*</span></label>
+                            <input type="text" id="dorsalConfigName" required placeholder="Ex: Dorsal - Loja 01, Filial Centro, etc."
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Este nome aparecerá para seleção nos relatórios.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="dorsalConfigServer" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Servidor Dorsal (IP/Host) <span class="text-red-500">*</span></label>
+                                <input type="text" id="dorsalConfigServer" required placeholder="Ex: 192.168.1.200"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="dorsalConfigDatabase" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Banco de Dados Dorsal <span class="text-red-500">*</span></label>
+                                <input type="text" id="dorsalConfigDatabase" required placeholder="Ex: dorsal_db"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="dorsalConfigUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Login Dorsal <span class="text-red-500">*</span></label>
+                                <input type="text" id="dorsalConfigUser" required placeholder="Ex: db_user"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="dorsalConfigPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha Dorsal</label>
+                                <div class="relative mt-1">
+                                    <input type="password" id="dorsalConfigPassword" autocomplete="new-password" placeholder="••••••••"
+                                        class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <button type="button" id="btnToggleDorsalConfigPassword" title="Mostrar ou ocultar senha" aria-label="Mostrar ou ocultar senha"
+                                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none cursor-pointer">
+                                        <svg class="h-5 w-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <svg class="h-5 w-5 eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="dorsalConfigCdFilial" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código da Filial (cdfilial)</label>
+                                <input type="text" id="dorsalConfigCdFilial" placeholder="Ex: 1"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="dorsalConfigCdPdv" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código do PDV (cdpdv)</label>
+                                <input type="text" id="dorsalConfigCdPdv" placeholder="Ex: 1, 2, 3"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-2">
+                            <input type="checkbox" id="dorsalConfigIsDefault" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer">
+                            <label for="dorsalConfigIsDefault" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Definir como conexão padrão da empresa</label>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-700/60 px-6 py-3 sm:flex sm:flex-row-reverse gap-2 border-t border-gray-200 dark:border-slate-700">
+                        <button type="submit" id="btnSaveDorsalConfig" class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto cursor-pointer">
+                            Salvar
+                        </button>
+                        <button type="button" id="btnTestDorsalConfigModal" class="w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none transition-colors sm:w-auto cursor-pointer">
+                            Testar Conexão
+                        </button>
+                        <button type="button" class="btn-close-dorsal-config w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none transition-colors sm:w-auto cursor-pointer">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Conexão Banco de Dados Alterdata -->
+    <div id="alterdataConfigModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="alterdata-config-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity modal-backdrop" aria-hidden="true" id="alterdataConfigModalBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full font-sans">
+                <form id="alterdataConfigForm" action="#" method="POST">
+                    <div class="bg-white dark:bg-slate-800 px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                        <h3 class="text-lg leading-6 font-bold text-gray-900 dark:text-white" id="alterdata-config-modal-title">
+                            Conexão Banco de Dados Alterdata
+                        </h3>
+                        <button type="button" class="btn-close-alterdata-config text-gray-400 hover:text-gray-500 focus:outline-none cursor-pointer">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 px-6 py-4 space-y-4">
+                        <div id="alterdataConfigModalAlert" class="hidden p-3 rounded-lg text-xs font-medium border"></div>
+
+                        <div>
+                            <label for="alterdataConfigName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome da Conexão / Identificador <span class="text-red-500">*</span></label>
+                            <input type="text" id="alterdataConfigName" required placeholder="Ex: Alterdata - Matriz, Filial 01, etc."
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Este nome aparecerá para seleção nos relatórios e integrações.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="sm:col-span-2">
+                                <label for="alterdataConfigServer" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Servidor Alterdata (IP/Host) <span class="text-red-500">*</span></label>
+                                <input type="text" id="alterdataConfigServer" required placeholder="Ex: 192.168.1.100"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="alterdataConfigPort" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Porta</label>
+                                <input type="number" id="alterdataConfigPort" placeholder="1433"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="alterdataConfigDatabase" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Banco de Dados Alterdata <span class="text-red-500">*</span></label>
+                                <input type="text" id="alterdataConfigDatabase" required placeholder="Ex: wpack"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="alterdataConfigCdEmpresa" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Código Empresa (cdempresa)</label>
+                                <input type="text" id="alterdataConfigCdEmpresa" placeholder="Ex: 00001"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="alterdataConfigUser" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Login Alterdata <span class="text-red-500">*</span></label>
+                                <input type="text" id="alterdataConfigUser" required placeholder="Ex: sa"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="alterdataConfigPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha Alterdata</label>
+                                <div class="relative mt-1">
+                                    <input type="password" id="alterdataConfigPassword" autocomplete="new-password" placeholder="••••••••"
+                                        class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 pr-10 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                                    <button type="button" id="btnToggleAlterdataConfigPassword" title="Mostrar ou ocultar senha" aria-label="Mostrar ou ocultar senha"
+                                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none cursor-pointer">
+                                        <svg class="h-5 w-5 eye-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <svg class="h-5 w-5 eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-2">
+                            <input type="checkbox" id="alterdataConfigIsDefault" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer">
+                            <label for="alterdataConfigIsDefault" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Definir como conexão padrão da empresa</label>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-700/60 px-6 py-3 sm:flex sm:flex-row-reverse gap-2 border-t border-gray-200 dark:border-slate-700">
+                        <button type="submit" id="btnSaveAlterdataConfig" class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto cursor-pointer">
+                            Salvar
+                        </button>
+                        <button type="button" id="btnTestAlterdataConfigModal" class="w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none transition-colors sm:w-auto cursor-pointer">
+                            Testar Conexão
+                        </button>
+                        <button type="button" class="btn-close-alterdata-config w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none transition-colors sm:w-auto cursor-pointer">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- App Scripts -->
-    <script src="/js/api.js"></script>
-    <script src="/js/company-v2.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/company-v2.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

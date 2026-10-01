@@ -73,14 +73,21 @@ echo ""
 echo "▶ [3/5] Enviando arquivos para o VPS..."
 ssh $SSH_OPTS "$REMOTE" "mkdir -p $REMOTE_DIR"
 
-rsync -az --delete \
-    -e "ssh $SSH_OPTS" \
+echo "  → Transmitindo arquivos compactados..."
+COPYFILE_DISABLE=1 tar \
     --exclude='.git' \
     --exclude='node_modules' \
     --exclude='dist' \
     --exclude='.env*' \
     --exclude='public/uploads' \
-    . "$REMOTE:$REMOTE_DIR"
+    --exclude='.gemini' \
+    --exclude='.agents' \
+    --exclude='.wwebjs_cache' \
+    --exclude='.node' \
+    --exclude='.runtime' \
+    --exclude='*.log' \
+    --exclude='*.webp' \
+    -czf - . | ssh $SSH_OPTS "$REMOTE" "tar -xzf - -C $REMOTE_DIR"
 
 echo "  → Enviando .env.production..."
 scp -o StrictHostKeyChecking=no -o ControlPath="${SSH_CONTROL}" \
@@ -106,18 +113,22 @@ ENDSSH
 # ── 5. Subir Docker Compose ───────────────────────────────────────
 echo ""
 echo "▶ [5/5] Subindo containers no VPS (pode demorar na 1ª vez)..."
-ssh $SSH_OPTS "$REMOTE" bash << ENDSSH
-cd $REMOTE_DIR
+ssh $SSH_OPTS "$REMOTE" bash << 'ENDSSH'
+cd /opt/erp-bessa
 
-# Para containers antigos para evitar conflito de build
-docker compose -f $COMPOSE_FILE down --remove-orphans 2>/dev/null || true
+# Build das novas imagens primeiro enquanto os containers continuam respondendo
+docker compose -f docker-compose.yml build
 
-# Build e sobe todos os serviços
-docker compose -f $COMPOSE_FILE up -d --build
+# Atualiza e sobe os containers com recriação garantida
+docker compose -f docker-compose.yml up -d --force-recreate --remove-orphans
+
+echo ""
+echo "  → Executando migrações de banco de dados..."
+docker compose -f docker-compose.yml exec -T backend node dist/scripts/initdb.js || true
 
 echo ""
 echo "  → Status dos containers:"
-docker compose -f $COMPOSE_FILE ps
+docker compose -f docker-compose.yml ps
 ENDSSH
 
 echo ""

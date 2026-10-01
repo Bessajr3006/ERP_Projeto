@@ -14,11 +14,20 @@
     let allCustomers = [];
     let sellerClients = [];
     let currentSellerId = null;
+    let companyPublicId = '';
+    let sendLinkTargetSellerId = null;
+    let sendLinkTargetSellerName = '';
+    let sendLinkMask = null;
     const getEl = (id) => document.getElementById(id);
     const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
     function setMaskedValue(maskInstance, inputId, value) {
         if (maskInstance) {
-            maskInstance.unmaskedValue = onlyDigits(value);
+            if (inputId === 'sellerDocument') {
+                maskInstance.unmaskedValue = String(value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            }
+            else {
+                maskInstance.unmaskedValue = onlyDigits(value);
+            }
             return;
         }
         const input = getEl(inputId);
@@ -28,7 +37,11 @@
     function getMaskedValue(maskInstance, inputId) {
         if (maskInstance)
             return maskInstance.unmaskedValue || '';
-        return onlyDigits(getEl(inputId)?.value || '');
+        const val = getEl(inputId)?.value || '';
+        if (inputId === 'sellerDocument') {
+            return String(val).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        }
+        return onlyDigits(val);
     }
     function getTrimmedValue(inputId) {
         return String(getEl(inputId)?.value || '').trim();
@@ -36,11 +49,11 @@
     function formatDoc(doc) {
         if (!doc)
             return '-';
-        const clean = String(doc).replace(/\D/g, '');
+        const clean = String(doc).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         if (clean.length === 11)
-            return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            return clean.replace(/([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{2})/, '$1.$2.$3-$4');
         if (clean.length === 14)
-            return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+            return clean.replace(/([a-zA-Z0-9]{2})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{4})([a-zA-Z0-9]{2})/, '$1.$2.$3/$4-$5');
         return String(doc);
     }
     function formatPhone(phone) {
@@ -226,7 +239,16 @@
         const btnSearchSellerCep = getEl('btnSearchSellerCep');
         if (documentInput && !sellerDocMask) {
             sellerDocMask = makeMask(documentInput, {
-                mask: [{ mask: '000.000.000-00' }, { mask: '00.000.000/0000-00' }],
+                mask: [
+                    { mask: '000.000.000-00' },
+                    {
+                        mask: 'XX.XXX.XXX/XXXX-XX',
+                        definitions: {
+                            'X': /[a-zA-Z0-9]/
+                        }
+                    }
+                ],
+                prepare: (str) => str.toUpperCase()
             });
             documentInput.addEventListener('blur', () => void handleSellerDocumentLookup());
         }
@@ -284,6 +306,43 @@
         }
         setupSellerFormEnhancements();
         void loadSellerStateOptions('');
+        setupDetailsModalTabs();
+        function updateGeneratedLinkUrl() {
+            if (!sendLinkTargetSellerId)
+                return;
+            const stockType = getEl('sendLinkStockType')?.value || '';
+            let catalogLink = `${window.location.origin}/pages/catalog.html?company=${companyPublicId}&seller=${sendLinkTargetSellerId}`;
+            if (stockType) {
+                catalogLink += `&stock_type=${stockType}`;
+            }
+            const urlInput = getEl('sendLinkGeneratedUrl');
+            if (urlInput) {
+                urlInput.value = catalogLink;
+            }
+        }
+        const sendLinkStockType = getEl('sendLinkStockType');
+        if (sendLinkStockType) {
+            sendLinkStockType.addEventListener('change', () => {
+                updateGeneratedLinkUrl();
+            });
+        }
+        async function loadStockTypesForSendLinkModal() {
+            const select = getEl('sendLinkStockType');
+            if (!select)
+                return;
+            try {
+                const response = await api('/estoque/stock-types');
+                const stockTypes = response.data || [];
+                select.innerHTML = '<option value="">Todos os estoques...</option>' + stockTypes.map((st) => `<option value="${st.public_id}">${st.name}</option>`).join('');
+            }
+            catch (error) {
+                console.error('Erro ao carregar tipos de estoque', error);
+                select.innerHTML = '<option value="">Erro ao carregar estoques...</option>';
+            }
+            finally {
+                updateGeneratedLinkUrl();
+            }
+        }
         function openClientsModal(sellerId) {
             currentSellerId = sellerId;
             const modal = getEl('clientsModal');
@@ -335,6 +394,12 @@
             </div>
           </td>
           <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+            <button type="button" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-3 copy-catalog-link-btn" data-customer-public-id="${c.public_id}">
+              Copiar Link
+            </button>
+            <button type="button" class="text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-400 mr-3 send-catalog-whatsapp-btn" data-customer-public-id="${c.public_id}" data-phone="${c.phone || ''}">
+              Enviar WhatsApp
+            </button>
             <button type="button" class="text-red-600 hover:text-red-900 remove-client-btn" data-id="${c.public_id}">
               Remover
             </button>
@@ -385,11 +450,175 @@
         });
         document.addEventListener('click', async (e) => {
             const target = e.target;
+            const openSendLinkBtn = target.closest('.send-link-seller-btn');
+            if (openSendLinkBtn) {
+                const id = openSendLinkBtn.getAttribute('data-id');
+                const name = openSendLinkBtn.getAttribute('data-name') || '';
+                const phone = openSendLinkBtn.getAttribute('data-phone') || '';
+                if (id) {
+                    sendLinkTargetSellerId = id;
+                    sendLinkTargetSellerName = name;
+                    const modal = getEl('sendLinkModal');
+                    if (modal) {
+                        modal.classList.remove('hidden');
+                        document.body.style.overflow = 'hidden';
+                        void loadStockTypesForSendLinkModal();
+                        const phoneInput = getEl('sendLinkPhone');
+                        if (phoneInput) {
+                            try {
+                                if (!sendLinkMask) {
+                                    sendLinkMask = makeMask(phoneInput, { mask: '(00) 00000-0000' });
+                                }
+                                if (sendLinkMask) {
+                                    sendLinkMask.unmaskedValue = phone.replace(/\D/g, '');
+                                }
+                                else {
+                                    phoneInput.value = phone;
+                                }
+                            }
+                            catch (maskError) {
+                                console.error('[SendLinkModal] Error applying mask to phone input:', maskError);
+                                phoneInput.value = phone;
+                            }
+                        }
+                    }
+                }
+                return;
+            }
+            if (target.id === 'btnCopyGeneratedUrl' || target.closest('#btnCopyGeneratedUrl')) {
+                const urlInput = getEl('sendLinkGeneratedUrl');
+                if (urlInput && urlInput.value) {
+                    navigator.clipboard.writeText(urlInput.value).then(() => {
+                        const copyBtn = getEl('btnCopyGeneratedUrl');
+                        if (copyBtn) {
+                            const origText = copyBtn.innerHTML;
+                            copyBtn.innerHTML = 'Copiado!';
+                            copyBtn.classList.add('bg-emerald-100', 'text-emerald-800', 'dark:bg-emerald-950/30', 'dark:text-emerald-400');
+                            setTimeout(() => {
+                                copyBtn.innerHTML = origText;
+                                copyBtn.classList.remove('bg-emerald-100', 'text-emerald-800', 'dark:bg-emerald-950/30', 'dark:text-emerald-400');
+                            }, 2000);
+                        }
+                    }).catch(err => {
+                        console.error('Erro ao copiar link', err);
+                    });
+                }
+                return;
+            }
+            if (target.closest('#btnCancelSendLink') || target.id === 'sendLinkModalBackdrop') {
+                const modal = getEl('sendLinkModal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+                sendLinkTargetSellerId = null;
+                sendLinkTargetSellerName = '';
+                return;
+            }
+            if (target.closest('#btnConfirmSendLink')) {
+                if (!sendLinkTargetSellerId)
+                    return;
+                let phoneValue = '';
+                try {
+                    phoneValue = sendLinkMask ? sendLinkMask.unmaskedValue : (getEl('sendLinkPhone')?.value || '');
+                }
+                catch (e) {
+                    console.error('[SendLinkModal] Error reading unmasked value:', e);
+                    phoneValue = getEl('sendLinkPhone')?.value || '';
+                }
+                const cleanPhone = phoneValue.replace(/\D/g, '');
+                const stockType = getEl('sendLinkStockType')?.value || '';
+                let sellerClients = [];
+                try {
+                    const res = await api('/entities/customers');
+                    const allCustomers = res.data || [];
+                    sellerClients = allCustomers.filter((c) => c.seller_public_id === sendLinkTargetSellerId);
+                }
+                catch (err) {
+                    console.error('[SendLinkModal] Error loading customers for seller:', err);
+                }
+                let catalogLink = `${window.location.origin}/pages/catalog.html?company=${companyPublicId}&seller=${sendLinkTargetSellerId}`;
+                if (stockType) {
+                    catalogLink += `&stock_type=${stockType}`;
+                }
+                let messageText = `Olá, ${sendLinkTargetSellerName}! Aqui está o link do seu catálogo de vendas personalizado. Compartilhe-o com os seus clientes para receber pedidos vinculados a você:\n\n${catalogLink}`;
+                if (sellerClients.length > 0) {
+                    messageText += `\n\nE aqui estão os links personalizados para cada um de seus clientes:`;
+                    for (const client of sellerClients) {
+                        let clientLink = `${window.location.origin}/pages/catalog.html?company=${companyPublicId}&seller=${sendLinkTargetSellerId}&customer=${client.public_id}`;
+                        if (stockType) {
+                            clientLink += `&stock_type=${stockType}`;
+                        }
+                        let discountText = '';
+                        if (client.discount_value && Number(client.discount_value) > 0) {
+                            if (client.discount_type === 'percentage') {
+                                discountText = ` (Desconto: ${client.discount_value}%)`;
+                            }
+                            else if (client.discount_type === 'fixed') {
+                                discountText = ` (Desconto: R$ ${Number(client.discount_value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+                            }
+                        }
+                        messageText += `\n- ${client.name}${discountText}:\n${clientLink}`;
+                    }
+                }
+                const message = encodeURIComponent(messageText);
+                let url = `https://api.whatsapp.com/send?text=${message}`;
+                if (cleanPhone) {
+                    let targetPhone = cleanPhone;
+                    if (!targetPhone.startsWith('55')) {
+                        targetPhone = '55' + targetPhone;
+                    }
+                    url = `https://api.whatsapp.com/send?phone=${targetPhone}&text=${message}`;
+                }
+                window.open(url, '_blank');
+                const modal = getEl('sendLinkModal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+                sendLinkTargetSellerId = null;
+                sendLinkTargetSellerName = '';
+                return;
+            }
             const openBtn = target.closest('.open-clients-btn');
             if (openBtn) {
                 const id = openBtn.getAttribute('data-id');
                 if (id)
                     openClientsModal(id);
+                return;
+            }
+            if (target.classList.contains('copy-catalog-link-btn') || target.closest('.copy-catalog-link-btn')) {
+                const btn = target.classList.contains('copy-catalog-link-btn') ? target : target.closest('.copy-catalog-link-btn');
+                const customerPublicId = btn?.getAttribute('data-customer-public-id');
+                if (!customerPublicId || !currentSellerId)
+                    return;
+                const catalogLink = `${window.location.origin}/pages/catalog.html?company=${companyPublicId}&seller=${currentSellerId}&customer=${customerPublicId}`;
+                navigator.clipboard.writeText(catalogLink)
+                    .then(() => {
+                    UI?.showAlert?.('alertMessage', 'Link do catálogo copiado com sucesso!', 'success');
+                })
+                    .catch(() => {
+                    UI?.showAlert?.('alertMessage', 'Erro ao copiar o link.', 'error');
+                });
+                return;
+            }
+            if (target.classList.contains('send-catalog-whatsapp-btn') || target.closest('.send-catalog-whatsapp-btn')) {
+                const btn = target.classList.contains('send-catalog-whatsapp-btn') ? target : target.closest('.send-catalog-whatsapp-btn');
+                const customerPublicId = btn?.getAttribute('data-customer-public-id');
+                const phone = btn?.getAttribute('data-phone') || '';
+                if (!customerPublicId || !currentSellerId)
+                    return;
+                const catalogLink = `${window.location.origin}/pages/catalog.html?company=${companyPublicId}&seller=${currentSellerId}&customer=${customerPublicId}`;
+                const message = encodeURIComponent(`Olá! Segue o link do nosso catálogo digital personalizado para você realizar os seus pedidos:\n\n${catalogLink}`);
+                let url = `https://api.whatsapp.com/send?text=${message}`;
+                if (phone) {
+                    let cleanPhone = phone.replace(/\D/g, '');
+                    if (cleanPhone.length > 0 && !cleanPhone.startsWith('55')) {
+                        cleanPhone = '55' + cleanPhone;
+                    }
+                    url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${message}`;
+                }
+                window.open(url, '_blank');
                 return;
             }
             if (target.classList.contains('remove-client-btn') || target.closest('.remove-client-btn')) {
@@ -438,6 +667,9 @@
         });
         api('/auth/me')
             .then((res) => {
+            if (res.data && res.data.company) {
+                companyPublicId = res.data.company.public_id;
+            }
             const userGreeting = getEl('userGreeting');
             if (userGreeting && res.data && res.data.user) {
                 userGreeting.textContent = `Olá, ${res.data.user.full_name || 'Usuário'}`;
@@ -491,9 +723,9 @@
                         .map((value) => FilterPanel.onlyDigits(value))
                         .some((value) => value.includes(searchDigits));
                 });
-                GridSummaryFooter?.update?.({
+                window.GridSummaryFooter?.update?.({
                     footerId: 'sellersResultsFooter',
-                    anchorId: 'sellersGridSection',
+                    anchorId: 'sellersSection',
                     count: filtered.length,
                     label: 'vendedor(es) exibido(s)',
                 });
@@ -528,8 +760,14 @@
                     : '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inativo</span>'}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button type="button" title="Detalhes" class="text-indigo-600 hover:text-indigo-900 dark:hover:text-indigo-400 mr-2 open-details-btn" data-id="${item.public_id}" data-name="${item.full_name}">
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </button>
                         <button type="button" title="Clientes" class="text-indigo-600 hover:text-indigo-900 dark:hover:text-indigo-400 mr-2 open-clients-btn" data-id="${item.public_id}">
                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </button>
+                        <button type="button" title="Enviar Catálogo" class="text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-400 mr-2 send-link-seller-btn" data-id="${item.public_id}" data-name="${item.full_name}" data-phone="${item.phone || ''}">
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                         </button>
                         <button type="button" title="Editar" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-2 edit-btn" data-item='${JSON.stringify(item).replace(/'/g, '&#39;')}'>
                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -672,5 +910,465 @@
                 }
             }
         });
+        // Custom details modal action
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            const btn = target?.closest('.open-details-btn');
+            if (btn) {
+                const id = btn.getAttribute('data-id');
+                const name = btn.getAttribute('data-name') || '';
+                if (id) {
+                    void openViewDetailsModal(id, name);
+                }
+            }
+        });
+        function setupDetailsModalTabs() {
+            const tabButtons = document.querySelectorAll('#viewSellerDetailsModal .details-modal-tab');
+            tabButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-details-tab-target');
+                    if (!targetId)
+                        return;
+                    tabButtons.forEach((b) => {
+                        const isActive = b === btn;
+                        b.setAttribute('aria-selected', String(isActive));
+                        b.classList.toggle('border-brand-500', isActive);
+                        b.classList.toggle('text-brand-600', isActive);
+                        b.classList.toggle('dark:text-brand-300', isActive);
+                        b.classList.toggle('border-transparent', !isActive);
+                        b.classList.toggle('text-gray-500', !isActive);
+                        b.classList.toggle('dark:text-gray-400', !isActive);
+                    });
+                    document.querySelectorAll('#viewSellerDetailsModal .details-modal-tab-panel').forEach((panel) => {
+                        if (panel.id === targetId) {
+                            panel.classList.remove('hidden');
+                        }
+                        else {
+                            panel.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+        }
+        function resetDetailsModalTabs() {
+            const tabButtons = Array.from(document.querySelectorAll('#viewSellerDetailsModal .details-modal-tab'));
+            const visibleButtons = tabButtons.filter((btn) => !btn.classList.contains('hidden'));
+            tabButtons.forEach((btn) => {
+                const isSelected = visibleButtons.length > 0 && btn === visibleButtons[0];
+                btn.setAttribute('aria-selected', String(isSelected));
+                btn.classList.toggle('border-brand-500', isSelected);
+                btn.classList.toggle('text-brand-600', isSelected);
+                btn.classList.toggle('dark:text-brand-300', isSelected);
+                btn.classList.toggle('border-transparent', !isSelected);
+                btn.classList.toggle('text-gray-500', !isSelected);
+                btn.classList.toggle('dark:text-gray-400', !isSelected);
+            });
+            document.querySelectorAll('#viewSellerDetailsModal .details-modal-tab-panel').forEach((panel) => {
+                const panelId = panel.getAttribute('id');
+                const correspondingBtn = tabButtons.find((btn) => btn.getAttribute('aria-controls') === panelId);
+                const shouldBeVisible = correspondingBtn && visibleButtons.length > 0 && correspondingBtn === visibleButtons[0];
+                if (shouldBeVisible) {
+                    panel.classList.remove('hidden');
+                }
+                else {
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+        async function openViewDetailsModal(sellerId, sellerName) {
+            const modal = getEl('viewSellerDetailsModal');
+            const closeBtn = getEl('btnCloseViewDetailsModal');
+            const cancelBtn = getEl('btnCancelViewDetailsModal');
+            const backdrop = getEl('viewDetailsModalBackdrop');
+            if (!modal)
+                return;
+            // Close modal actions
+            const closeModal = () => {
+                modal.classList.add('hidden');
+            };
+            closeBtn?.addEventListener('click', closeModal, { once: true });
+            cancelBtn?.addEventListener('click', closeModal, { once: true });
+            backdrop?.addEventListener('click', closeModal, { once: true });
+            modal.classList.remove('hidden');
+            // Populate basic seller details
+            const seller = sellersManager?.data?.find((c) => c.public_id === sellerId);
+            const docEl = getEl('viewDetailsDocument');
+            const emailEl = getEl('viewDetailsEmail');
+            const phoneEl = getEl('viewDetailsPhone');
+            const locEl = getEl('viewDetailsLocation');
+            const titleNameEl = getEl('viewDetailsSellerName');
+            if (titleNameEl)
+                titleNameEl.textContent = sellerName;
+            if (docEl)
+                docEl.textContent = formatDoc(seller?.cpf_cnpj);
+            if (emailEl) {
+                emailEl.textContent = seller?.email || 'Não informado';
+                emailEl.title = seller?.email || '';
+            }
+            if (phoneEl)
+                phoneEl.textContent = formatPhone(seller?.phone);
+            if (locEl)
+                locEl.textContent = formatSellerLocation(seller || {});
+            // Map configuration
+            const mapSellerAddressSpan = getEl('mapSellerAddress');
+            const googleMapsIframe = getEl('googleMapsIframe');
+            const btnOpenWaze = getEl('btnOpenWaze');
+            const btnOpenGoogleMaps = getEl('btnOpenGoogleMaps');
+            if (seller) {
+                const sellerAddressParts = [
+                    seller.street,
+                    seller.number,
+                    seller.neighborhood,
+                    seller.city,
+                    seller.state,
+                    seller.zipcode
+                ].filter(Boolean);
+                const sellerAddressStr = sellerAddressParts.join(', ');
+                if (mapSellerAddressSpan) {
+                    mapSellerAddressSpan.textContent = sellerAddressStr || 'Endereço não cadastrado';
+                }
+                const authCtx = window.gNavbarAuthContext;
+                const company = authCtx?.company;
+                const companyAddressParts = company ? [
+                    company.street,
+                    company.number,
+                    company.neighborhood,
+                    company.city,
+                    company.state,
+                    company.zipcode
+                ].filter(Boolean) : [];
+                const companyAddressStr = companyAddressParts.join(', ');
+                if (sellerAddressStr) {
+                    let embedUrl = '';
+                    let mapsUrl = '';
+                    let wazeUrl = '';
+                    if (companyAddressStr) {
+                        embedUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(companyAddressStr)}&daddr=${encodeURIComponent(sellerAddressStr)}&output=embed`;
+                        mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(companyAddressStr)}&destination=${encodeURIComponent(sellerAddressStr)}`;
+                        wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(sellerAddressStr)}&navigate=yes`;
+                    }
+                    else {
+                        embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(sellerAddressStr)}&output=embed`;
+                        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sellerAddressStr)}`;
+                        wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(sellerAddressStr)}&navigate=yes`;
+                    }
+                    if (googleMapsIframe) {
+                        googleMapsIframe.src = embedUrl;
+                    }
+                    if (btnOpenWaze) {
+                        btnOpenWaze.href = wazeUrl;
+                        btnOpenWaze.classList.remove('hidden');
+                    }
+                    if (btnOpenGoogleMaps) {
+                        btnOpenGoogleMaps.href = mapsUrl;
+                        btnOpenGoogleMaps.classList.remove('hidden');
+                    }
+                }
+                else {
+                    if (googleMapsIframe)
+                        googleMapsIframe.removeAttribute('src');
+                    if (btnOpenWaze)
+                        btnOpenWaze.classList.add('hidden');
+                    if (btnOpenGoogleMaps)
+                        btnOpenGoogleMaps.classList.add('hidden');
+                }
+            }
+            else {
+                if (mapSellerAddressSpan)
+                    mapSellerAddressSpan.textContent = 'Vendedor não encontrado';
+                if (googleMapsIframe)
+                    googleMapsIframe.removeAttribute('src');
+                if (btnOpenWaze)
+                    btnOpenWaze.classList.add('hidden');
+                if (btnOpenGoogleMaps)
+                    btnOpenGoogleMaps.classList.add('hidden');
+            }
+            resetDetailsModalTabs();
+            const docContainer = getEl('viewDetailsDocumentContainer');
+            let docsList = [];
+            const parseCnpjDocuments = (val) => {
+                if (!val)
+                    return [];
+                let list = [];
+                if (Array.isArray(val)) {
+                    list = val;
+                }
+                else {
+                    try {
+                        if (typeof val === 'string' && val.trim().startsWith('[')) {
+                            list = JSON.parse(val);
+                        }
+                        else if (typeof val === 'string' && val.trim() !== '') {
+                            list = [val];
+                        }
+                    }
+                    catch (e) { }
+                }
+                return list.map(item => {
+                    if (typeof item === 'string') {
+                        const fileName = item.substring(item.lastIndexOf('/') + 1);
+                        return { name: fileName, url: item, attachedAt: new Date(2026, 0, 1).toISOString() };
+                    }
+                    if (item && typeof item === 'object' && item.url) {
+                        return {
+                            name: item.name || item.url.substring(item.url.lastIndexOf('/') + 1),
+                            url: item.url,
+                            attachedAt: item.attachedAt || new Date().toISOString()
+                        };
+                    }
+                    return null;
+                }).filter(Boolean);
+            };
+            docsList = parseCnpjDocuments(seller?.cnpj_document_url);
+            const getBase64 = (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            };
+            const renderDetailsDocsList = () => {
+                if (!docContainer)
+                    return;
+                docsList.sort((a, b) => new Date(b.attachedAt || 0).getTime() - new Date(a.attachedAt || 0).getTime());
+                if (docsList.length === 0) {
+                    docContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12 gap-2 text-gray-400 dark:text-gray-500 w-full font-sans">
+                        <svg class="w-12 h-12 text-gray-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-sm font-medium">Nenhum documento anexado.</p>
+                    </div>
+                `;
+                    return;
+                }
+                docContainer.innerHTML = docsList.map((doc, idx) => {
+                    const fileName = doc.url.substring(doc.url.lastIndexOf('/') + 1);
+                    const d = doc.attachedAt ? new Date(doc.attachedAt) : null;
+                    const dateStr = d ? `Anexado em ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '';
+                    return `
+                    <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:border-brand-300 dark:hover:border-brand-700 transition-all font-sans mb-3">
+                        <a href="${doc.url}" target="_blank" class="flex items-center gap-3 flex-1 min-w-0 mr-4 group text-left cursor-pointer decoration-none">
+                            <div class="p-2 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/60 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0 font-sans">
+                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">${doc.name}</p>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">${fileName}</p>
+                                ${dateStr ? `
+                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 font-mono mt-1 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        ${dateStr}
+                                    </p>
+                                ` : ''}
+                            </div>
+                        </a>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" class="btn-rename-doc p-1.5 rounded text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 transition-colors" data-index="${idx}" title="Renomear documento">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-delete-doc p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors" data-index="${idx}" title="Excluir documento">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+            };
+            renderDetailsDocsList();
+            // Bind upload input
+            const detailCnpjFileInput = modal.querySelector('#detailCnpjFile');
+            if (detailCnpjFileInput) {
+                const newFileInput = detailCnpjFileInput.cloneNode(true);
+                detailCnpjFileInput.parentNode?.replaceChild(newFileInput, detailCnpjFileInput);
+                newFileInput.addEventListener('change', async (e) => {
+                    const files = Array.from(newFileInput.files || []);
+                    if (files.length === 0)
+                        return;
+                    const uploads = [];
+                    for (const file of files) {
+                        try {
+                            const b64 = (await getBase64(file));
+                            const defaultName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                            uploads.push({
+                                name: defaultName,
+                                base64: b64,
+                                attachedAt: new Date().toISOString(),
+                                filename: file.name
+                            });
+                        }
+                        catch (err) {
+                            console.error(err);
+                        }
+                    }
+                    if (uploads.length > 0) {
+                        try {
+                            newFileInput.disabled = true;
+                            if (docContainer)
+                                docContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 animate-pulse font-sans">Enviando documentos...</p>';
+                            await api(`/users/${sellerId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({
+                                    cnpj_document_uploads: uploads
+                                })
+                            });
+                            UI.showAlert('alertMessage', 'Documentos anexados com sucesso!', 'success');
+                            await sellersManager.loadData();
+                            const updatedSeller = sellersManager?.data?.find((c) => c.public_id === sellerId);
+                            docsList = parseCnpjDocuments(updatedSeller?.cnpj_document_url);
+                            renderDetailsDocsList();
+                        }
+                        catch (err) {
+                            console.error(err);
+                            UI.showAlert('alertMessage', err.message || 'Erro ao enviar documentos.', 'error');
+                            renderDetailsDocsList();
+                        }
+                        finally {
+                            newFileInput.disabled = false;
+                            newFileInput.value = '';
+                        }
+                    }
+                });
+            }
+            // Bind clicks for rename and delete within document container
+            if (docContainer) {
+                const newDocContainer = docContainer.cloneNode(true);
+                docContainer.parentNode?.replaceChild(newDocContainer, docContainer);
+                newDocContainer.addEventListener('click', async (e) => {
+                    const target = e.target;
+                    const renameBtn = target?.closest('.btn-rename-doc');
+                    const deleteBtn = target?.closest('.btn-delete-doc');
+                    if (renameBtn) {
+                        const idx = parseInt(renameBtn.getAttribute('data-index') || '0', 10);
+                        const doc = docsList[idx];
+                        if (doc) {
+                            const newName = prompt('Digite o novo nome para o documento:', doc.name);
+                            if (newName && newName.trim()) {
+                                docsList[idx].name = newName.trim();
+                                try {
+                                    await api(`/users/${sellerId}`, {
+                                        method: 'PUT',
+                                        body: JSON.stringify({
+                                            cnpj_document_url: JSON.stringify(docsList)
+                                        })
+                                    });
+                                    UI.showAlert('alertMessage', 'Documento renomeado com sucesso!', 'success');
+                                    await sellersManager.loadData();
+                                    renderDetailsDocsList();
+                                }
+                                catch (err) {
+                                    console.error(err);
+                                    UI.showAlert('alertMessage', 'Erro ao renomear documento.', 'error');
+                                }
+                            }
+                        }
+                    }
+                    if (deleteBtn) {
+                        const idx = parseInt(deleteBtn.getAttribute('data-index') || '0', 10);
+                        if (confirm('Deseja realmente excluir este documento?')) {
+                            docsList.splice(idx, 1);
+                            try {
+                                await api(`/users/${sellerId}`, {
+                                    method: 'PUT',
+                                    body: JSON.stringify({
+                                        cnpj_document_url: JSON.stringify(docsList)
+                                    })
+                                });
+                                UI.showAlert('alertMessage', 'Documento excluído com sucesso!', 'success');
+                                await sellersManager.loadData();
+                                renderDetailsDocsList();
+                            }
+                            catch (err) {
+                                console.error(err);
+                                UI.showAlert('alertMessage', 'Erro ao excluir documento.', 'error');
+                            }
+                        }
+                    }
+                });
+            }
+            // ── Loader / API calls ──
+            const salesTable = getEl('viewDetailsSalesTable');
+            const financialsTable = getEl('viewDetailsFinancialsTable');
+            const tasksTable = getEl('viewDetailsTasksTable');
+            if (salesTable)
+                salesTable.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans animate-pulse">Carregando...</td></tr>';
+            if (financialsTable)
+                financialsTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans animate-pulse">Carregando...</td></tr>';
+            if (tasksTable)
+                tasksTable.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans animate-pulse">Carregando...</td></tr>';
+            try {
+                const [salesRes, revenuesRes, expensesRes, tasksRes] = await Promise.all([
+                    api(`/sales?seller_public_id=${sellerId}`).catch(() => ({ data: [] })),
+                    api('/finance/revenues').catch(() => ({ data: [] })),
+                    api('/finance/expenses').catch(() => ({ data: [] })),
+                    api('/tasks').catch(() => ({ data: [] }))
+                ]);
+                // Filter sales orders
+                const sales = salesRes.data || [];
+                if (salesTable) {
+                    if (sales.length === 0) {
+                        salesTable.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhuma venda encontrada.</td></tr>';
+                    }
+                    else {
+                        salesTable.innerHTML = sales.map((o) => `
+                        <tr>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">${o.public_id.substring(0, 8).toUpperCase()}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${new Date(o.date).toLocaleDateString('pt-BR')}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-sans">${o.customer_name || 'Venda manual'}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${o.status}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100 font-mono">${Number(o.total_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        </tr>
+                    `).join('');
+                    }
+                }
+                // Filter transactions
+                const revenues = (revenuesRes.data || []).filter((item) => item.related_user_public_id === sellerId);
+                const expenses = (expensesRes.data || []).filter((item) => item.related_user_public_id === sellerId);
+                const transactions = [...revenues, ...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                if (financialsTable) {
+                    if (transactions.length === 0) {
+                        financialsTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhum lançamento financeiro encontrado.</td></tr>';
+                    }
+                    else {
+                        financialsTable.innerHTML = transactions.map((t) => `
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-sans">${t.description}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.status === 'paid' ? 'Pago' : 'Pendente'}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-mono ${t.type === 'revenue' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                                ${t.type === 'revenue' ? '+' : '-'}${Number(t.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                        </tr>
+                    `).join('');
+                    }
+                }
+                // Filter tasks
+                const tasks = (tasksRes.data || []).filter((t) => t.personType === 'seller' && t.personId === sellerId);
+                if (tasksTable) {
+                    if (tasks.length === 0) {
+                        tasksTable.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhuma tarefa encontrada.</td></tr>';
+                    }
+                    else {
+                        tasksTable.innerHTML = tasks.map((t) => `
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-sans">${t.title}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : '-'}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.status}</td>
+                        </tr>
+                    `).join('');
+                    }
+                }
+            }
+            catch (error) {
+                console.error('Erro ao buscar dados do vendedor:', error);
+            }
+        }
     });
 })();

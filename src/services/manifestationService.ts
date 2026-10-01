@@ -14,7 +14,7 @@ export class ManifestationService {
             'RO':'11','RR':'14','SC':'42','SP':'35','SE':'28','TO':'17'
         };
         const codigoUF = UF_IBGE[cUFAutor.toUpperCase()] || (/[0-9]{2}/.test(cUFAutor) ? cUFAutor : '35');
-        const cleanCnpj = cnpj.replace(/\D/g, '');
+        const cleanCnpj = cnpj.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 
         logger.info({ cnpj: cleanCnpj, codigoUF, lastNSU, environment }, '[Manifestation] Iniciando consulta SEFAZ');
 
@@ -74,7 +74,7 @@ export class ManifestationService {
             `<infEvento Id="ID${tpEvento}${chNFe}01">` +
                 `<cOrgao>${codigoUF}</cOrgao>` +
                 `<tpAmb>${environment === 'producao' ? '1' : '2'}</tpAmb>` +
-                `<CNPJ>${cnpj.replace(/\D/g, '')}</CNPJ>` +
+                `<CNPJ>${cnpj.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}</CNPJ>` +
                 `<chNFe>${chNFe}</chNFe>` +
                 `<dhEvento>${dhEvento}</dhEvento>` +
                 `<tpEvento>${tpEvento}</tpEvento>` +

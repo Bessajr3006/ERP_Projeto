@@ -50,6 +50,7 @@ router.get('/:id', (req, res, next) => PurchaseController.getById(req, res).catc
  *       201: { description: Compra criada }
  */
 router.post('/', (req, res, next) => PurchaseController.create(req, res).catch(next));
+router.post('/import-xml', (req, res, next) => PurchaseController.importPurchaseFromXml(req, res).catch(next));
 /**
  * @openapi
  * /purchases/{id}:

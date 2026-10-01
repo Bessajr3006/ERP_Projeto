@@ -237,4 +237,181 @@ export class AccountingEntryService {
         
         return { success: true, count: generatedEntries.length };
     }
+
+    static async verifySolidconEntries(companyId: number, entries: any[]) {
+        if (!Array.isArray(entries) || entries.length === 0) {
+            return {
+                summary: { total: 0, validCount: 0, errorCount: 0, duplicateCount: 0 },
+                results: []
+            };
+        }
+
+        // 1. Fetch all accounts for the company to validate codes and types
+        const [accountRows] = await pool.query<RowDataPacket[]>(
+            `SELECT id, code, name, type, status FROM chart_of_accounts WHERE company_id = ?`,
+            [companyId]
+        );
+        const accountMap = new Map<string, { id: number; name: string; type: string; status: string }>();
+        accountRows.forEach((acc) => {
+            if (acc.code) {
+                accountMap.set(String(acc.code).trim(), {
+                    id: Number(acc.id),
+                    name: String(acc.name),
+                    type: String(acc.type),
+                    status: String(acc.status)
+                });
+            }
+        });
+
+        // 2. Determine min and max dates of the batch to query existing entries in Keystone
+        const dates = entries
+            .map(e => String(e.entry_date || '').split('T')[0])
+            .filter(Boolean)
+            .sort();
+        const minDate = dates[0] || '1970-01-01';
+        const maxDate = dates[dates.length - 1] || '2099-12-31';
+
+        // Query active accounting entries in the date range with debit and credit account codes
+        const [existingEntries] = await pool.query<RowDataPacket[]>(
+            `SELECT ae.id, DATE_FORMAT(ae.entry_date, '%Y-%m-%d') as entry_date, 
+                    ae.amount, ae.document_ref, ae.history,
+                    da.code as debit_account_code, ca.code as credit_account_code
+             FROM accounting_entries ae
+             LEFT JOIN chart_of_accounts da ON da.id = ae.debit_account_id
+             LEFT JOIN chart_of_accounts ca ON ca.id = ae.credit_account_id
+             WHERE ae.company_id = ? 
+               AND ae.status = 'active'
+               AND ae.entry_date BETWEEN ? AND ?`,
+            [companyId, minDate, maxDate]
+        );
+
+        // Map existing entries for fast O(1) duplicate lookup
+        const existingKeys = new Set<string>();
+        const existingDocKeys = new Set<string>();
+
+        existingEntries.forEach(ex => {
+            const date = String(ex.entry_date);
+            const amt = Math.abs(Number(ex.amount)).toFixed(2);
+            const deb = String(ex.debit_account_code || '').trim();
+            const cred = String(ex.credit_account_code || '').trim();
+            const doc = String(ex.document_ref || '').trim().toLowerCase();
+
+            existingKeys.add(`${date}|${amt}|${deb}|${cred}`);
+            if (doc && doc !== '-' && doc !== 'null' && doc !== 'undefined') {
+                existingDocKeys.add(`${date}|${amt}|${doc}`);
+            }
+        });
+
+        // Track batch duplicates within the query itself
+        const batchKeysCount = new Map<string, number>();
+
+        let validCount = 0;
+        let errorCount = 0;
+        let duplicateCount = 0;
+
+        const results = entries.map((entry, index) => {
+            const id = String(entry.id || index);
+            const date = String(entry.entry_date || '').split('T')[0];
+            const amount = Math.abs(Number(entry.amount) || 0);
+            const amtFixed = amount.toFixed(2);
+            const debitCode = String(entry.debit_account_code || '').trim();
+            const creditCode = String(entry.credit_account_code || '').trim();
+            const doc = String(entry.document_ref || '').trim().toLowerCase();
+
+            const errors: string[] = [];
+            const warnings: string[] = [];
+            let isDuplicate = false;
+            let duplicateReason = '';
+
+            // Check date
+            if (!date || isNaN(Date.parse(date))) {
+                errors.push('Data do lançamento inválida ou ausente');
+            }
+
+            // Check amount
+            if (amount <= 0 || isNaN(amount)) {
+                errors.push('Valor do lançamento deve ser maior que zero');
+            }
+
+            // Check debit account
+            if (!debitCode) {
+                errors.push('Conta Débito não informada');
+            } else {
+                const acc = accountMap.get(debitCode);
+                if (!acc) {
+                    errors.push(`Conta Débito '${debitCode}' não encontrada no plano de contas`);
+                } else if (acc.status !== 'active') {
+                    errors.push(`Conta Débito '${debitCode}' está inativa`);
+                } else if (acc.type !== 'analytic') {
+                    errors.push(`Conta Débito '${debitCode}' é sintética (não aceita lançamentos)`);
+                }
+            }
+
+            // Check credit account
+            if (!creditCode) {
+                errors.push('Conta Crédito não informada');
+            } else {
+                const acc = accountMap.get(creditCode);
+                if (!acc) {
+                    errors.push(`Conta Crédito '${creditCode}' não encontrada no plano de contas`);
+                } else if (acc.status !== 'active') {
+                    errors.push(`Conta Crédito '${creditCode}' está inativa`);
+                } else if (acc.type !== 'analytic') {
+                    errors.push(`Conta Crédito '${creditCode}' é sintética (não aceita lançamentos)`);
+                }
+            }
+
+            // Check identical debit and credit
+            if (debitCode && creditCode && debitCode === creditCode) {
+                errors.push('Conta Débito e Conta Crédito não podem ser iguais');
+            }
+
+            // Check duplicate in Keystone
+            const keyExact = `${date}|${amtFixed}|${debitCode}|${creditCode}`;
+            if (debitCode && creditCode && existingKeys.has(keyExact)) {
+                isDuplicate = true;
+                duplicateReason = 'Lançamento idêntico já cadastrado no Keystone (mesma data, valor, débito e crédito)';
+            } else if (doc && doc !== '-' && doc !== 'null' && doc !== 'undefined' && existingDocKeys.has(`${date}|${amtFixed}|${doc}`)) {
+                isDuplicate = true;
+                duplicateReason = `Documento '${entry.document_ref}' já cadastrado no Keystone com mesmo valor e data`;
+            }
+
+            // Check duplicate within the batch
+            const batchKey = `${date}|${amtFixed}|${debitCode}|${creditCode}|${doc}`;
+            const countInBatch = (batchKeysCount.get(batchKey) || 0) + 1;
+            batchKeysCount.set(batchKey, countInBatch);
+            if (countInBatch > 1 && !isDuplicate) {
+                warnings.push(`Movimento repetido (${countInBatch}º ocorrência no lote)`);
+            }
+
+            const isValid = errors.length === 0 && !isDuplicate;
+            if (isValid) {
+                validCount++;
+            } else if (isDuplicate) {
+                duplicateCount++;
+            } else {
+                errorCount++;
+            }
+
+            return {
+                id,
+                isValid,
+                isDuplicate,
+                duplicateReason,
+                errors,
+                warnings,
+                status: isValid ? 'valid' : (isDuplicate ? 'duplicate' : 'error')
+            };
+        });
+
+        return {
+            summary: {
+                total: entries.length,
+                validCount,
+                errorCount,
+                duplicateCount
+            },
+            results
+        };
+    }
 }

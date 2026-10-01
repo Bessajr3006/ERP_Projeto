@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { UserService } from '../services/userService';
-import { CompanyService } from '../services/companyService';
 import { WhatsAppBusinessService } from '../services/whatsappBusinessService';
 import { WhatsAppBusinessMessageService } from '../services/whatsappBusinessMessageService';
 import { AppError } from '../errors/AppError';
@@ -56,7 +55,14 @@ const createUserSchema = z.object({
     default_page: optionalNullableTrimmedString(100),
     photo_base64: z.string().optional().nullable(),
     photo_filename: z.string().optional().nullable(),
+    face_descriptor: z.string().optional().nullable(),
+    cnpj_document_url: z.any().nullable().optional(),
+    cnpj_document_uploads: z.any().nullable().optional(),
     whatsapp_auto_reply_mode: whatsappAutoReplyModeSchema.optional().default('automatic'),
+    whatsapp_enable_manual_billing: z.boolean().or(z.number().transform(val => Boolean(val))).optional().default(true),
+    whatsapp_auto_send_boleto: z.boolean().or(z.number().transform(val => Boolean(val))).optional().default(false),
+    default_bank_account_public_id: optionalNullableTrimmedString(36),
+    is_default_declaration_signer: z.boolean().or(z.number().transform(val => Boolean(val))).optional(),
 });
 
 const updateUserSchema = z.object({
@@ -78,7 +84,14 @@ const updateUserSchema = z.object({
     default_page: optionalNullableTrimmedString(100),
     photo_base64: z.string().optional().nullable(),
     photo_filename: z.string().optional().nullable(),
+    face_descriptor: z.string().optional().nullable(),
+    cnpj_document_url: z.any().nullable().optional(),
+    cnpj_document_uploads: z.any().nullable().optional(),
     whatsapp_auto_reply_mode: whatsappAutoReplyModeSchema.optional(),
+    whatsapp_enable_manual_billing: z.boolean().or(z.number().transform(val => Boolean(val))).optional(),
+    whatsapp_auto_send_boleto: z.boolean().or(z.number().transform(val => Boolean(val))).optional(),
+    default_bank_account_public_id: optionalNullableTrimmedString(36),
+    is_default_declaration_signer: z.boolean().or(z.number().transform(val => Boolean(val))).optional(),
 });
 
 const toggleUserSchema = z.object({
@@ -146,9 +159,8 @@ export class UserController {
         }
     }
 
-    private static async usesCompanyWhatsAppScope(companyId: number): Promise<boolean> {
-        const company = await CompanyService.getById(companyId);
-        return (company.whatsapp_business_scope || 'company') === 'company';
+    private static async usesCompanyWhatsAppScope(_companyId: number): Promise<boolean> {
+        return false;
     }
 
     private static async resolveScopedUserTarget(req: Request): Promise<any> {
@@ -159,8 +171,11 @@ export class UserController {
             throw new AppError('User ID required', 400);
         }
 
-        if (req.user!.role !== 'admin' && req.user!.role !== 'super_admin' && !(await UserController.isSelfTarget(req, targetId))) {
-            throw new AppError('Not authorized to manage this WhatsApp session', 403);
+        const isSelf = await UserController.isSelfTarget(req, targetId);
+        const isAdmin = req.user!.role === 'admin' || req.user!.role === 'super_admin' || Boolean(req.user!.general_admin_company_id);
+
+        if (!isSelf && !isAdmin) {
+            throw new AppError('Not authorized to manage another user\'s WhatsApp session', 403);
         }
 
         return UserService.getScopedUser(companyId, targetId);
@@ -169,7 +184,29 @@ export class UserController {
     static async getAll(req: Request, res: Response) {
         const companyId = req.user!.company_id;
         const users = await UserService.getAllByCompany(companyId);
-        res.status(200).json({ status: 'success', data: users });
+
+        const enrichedUsers = await Promise.all(
+            users.map(async (u: any) => {
+                try {
+                    const session = await WhatsAppBusinessService.getUserSessionStatus(companyId, u.id);
+                    return {
+                        ...u,
+                        whatsapp_status: session.status,
+                        whatsapp_number: session.connected_number,
+                        whatsapp_name: session.connected_name
+                    };
+                } catch (err) {
+                    return {
+                        ...u,
+                        whatsapp_status: 'disconnected',
+                        whatsapp_number: null,
+                        whatsapp_name: null
+                    };
+                }
+            })
+        );
+
+        res.status(200).json({ status: 'success', data: enrichedUsers });
     }
 
     static async create(req: Request, res: Response): Promise<any> {

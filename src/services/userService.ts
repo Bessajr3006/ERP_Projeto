@@ -4,9 +4,20 @@ import { UserRole } from '../types/User';
 import { AppError } from '../errors/AppError';
 import { PublicUserSchema, PublicUserListSchema, ScopedUserSchema } from '../schemas/userSchemas';
 import { UserRepository } from '../repositories/userRepository';
+import { StorageService } from '../utils/storageService';
+import pool from '../config/db';
+
+async function resolveBankAccountId(companyId: number, bankAccountPublicId: string | null | undefined): Promise<number | null> {
+    if (!bankAccountPublicId) return null;
+    const [rows]: any = await pool.query(
+        'SELECT id FROM bank_accounts WHERE public_id = ? AND company_id = ? LIMIT 1',
+        [bankAccountPublicId, companyId]
+    );
+    return rows.length > 0 ? rows[0].id : null;
+}
 
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || '10', 10);
-const USER_PROFILE_FIELDS = ['cpf_cnpj', 'crc', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page', 'photo_base64', 'photo_filename'] as const;
+const USER_PROFILE_FIELDS = ['cpf_cnpj', 'crc', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page', 'photo_base64', 'photo_filename', 'cnpj_document_url', 'face_descriptor'] as const;
 const WHATSAPP_AUTO_REPLY_MODES = ['automatic', 'manual'] as const;
 
 type UserProfileField = typeof USER_PROFILE_FIELDS[number];
@@ -46,6 +57,69 @@ function buildUserProfilePayload(data: Record<string, unknown>): Record<UserProf
     }, {} as Record<UserProfileField, string | null>);
 }
 
+function processUserCnpjDocuments(data: any, currentCnpjDocumentUrl?: string | null): string | null {
+    const parseCnpjDocuments = (val: any): { name: string; url: string; attachedAt?: string }[] => {
+        if (!val) return [];
+        let list: any[] = [];
+        if (Array.isArray(val)) {
+            list = val;
+        } else {
+            try {
+                if (typeof val === 'string' && val.trim().startsWith('[')) {
+                    list = JSON.parse(val);
+                } else if (typeof val === 'string' && val.trim() !== '') {
+                    list = [val];
+                }
+            } catch (e) {}
+        }
+        return list.map(item => {
+            if (typeof item === 'string') {
+                const fileName = item.substring(item.lastIndexOf('/') + 1);
+                return { name: fileName, url: item, attachedAt: new Date(2026, 0, 1).toISOString() };
+            }
+            if (item && typeof item === 'object' && item.url) {
+                return {
+                    name: item.name || item.url.substring(item.url.lastIndexOf('/') + 1),
+                    url: item.url,
+                    attachedAt: item.attachedAt || new Date().toISOString()
+                };
+            }
+            return null;
+        }).filter(Boolean) as { name: string; url: string; attachedAt: string }[];
+    };
+
+    const targetDocs = data.cnpj_document_url !== undefined ? parseCnpjDocuments(data.cnpj_document_url) : parseCnpjDocuments(currentCnpjDocumentUrl);
+
+    // If some documents were deleted (compared to current), delete their files.
+    if (currentCnpjDocumentUrl && data.cnpj_document_url !== undefined) {
+        const currentDocs = parseCnpjDocuments(currentCnpjDocumentUrl);
+        const targetUrls = new Set(targetDocs.map(d => d.url));
+        for (const doc of currentDocs) {
+            if (!targetUrls.has(doc.url)) {
+                StorageService.delete(doc.url);
+            }
+        }
+    }
+
+    if (data.cnpj_document_uploads && Array.isArray(data.cnpj_document_uploads)) {
+        for (const upload of data.cnpj_document_uploads) {
+            if (upload && upload.base64) {
+                const saved = StorageService.saveBase64('documents', upload.base64, upload.filename);
+                if (saved) {
+                    const displayName = upload.name || saved.filename || saved.url.substring(saved.url.lastIndexOf('/') + 1);
+                    targetDocs.push({
+                        name: displayName,
+                        url: saved.url,
+                        attachedAt: upload.attachedAt || new Date().toISOString()
+                    });
+                }
+            }
+        }
+    }
+
+    return targetDocs.length > 0 ? JSON.stringify(targetDocs) : null;
+}
+
 export class UserService {
     private static async resolveTargetPublicId(companyId: number, identifier: string): Promise<string> {
         const publicId = await UserRepository.resolvePublicIdByIdentifier(companyId, identifier);
@@ -82,7 +156,10 @@ export class UserService {
     static async create(companyId: number, data: any) {
         const { email, full_name, passwordRaw, role = 'user', is_active = true } = data;
         const profile = buildUserProfilePayload(data);
+        profile.cnpj_document_url = processUserCnpjDocuments(data, null);
         const whatsappAutoReplyMode = normalizeWhatsAppAutoReplyMode(data.whatsapp_auto_reply_mode) || 'automatic';
+        const whatsappEnableManualBilling = data.whatsapp_enable_manual_billing !== undefined ? (data.whatsapp_enable_manual_billing ? 1 : 0) : 1;
+        const whatsappAutoSendBoleto = data.whatsapp_auto_send_boleto !== undefined ? (data.whatsapp_auto_send_boleto ? 1 : 0) : 0;
 
         // Check if email is already in use
         const existing = await UserRepository.getByEmail(email);
@@ -91,10 +168,19 @@ export class UserService {
         const publicId = randomUUID();
         const passwordHash = await bcrypt.hash(passwordRaw || '12345678', SALT_ROUNDS); // Default password if none provided, though validation should catch it
 
+        const defaultBankAccountId = data.default_bank_account_public_id
+            ? await resolveBankAccountId(companyId, data.default_bank_account_public_id)
+            : null;
+
+        const isDefaultDeclarationSigner = data.is_default_declaration_signer ? 1 : 0;
+        if (isDefaultDeclarationSigner) {
+            await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ?', [companyId]);
+        }
+
         const columns = [
             'public_id', 'company_id', 'email', 'password_hash', 'raw_password', 'full_name',
-            'cpf_cnpj', 'crc', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page', 'whatsapp_auto_reply_mode',
-            'role', 'is_active', 'photo_base64', 'photo_filename'
+            'cpf_cnpj', 'crc', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page', 'whatsapp_auto_reply_mode', 'whatsapp_enable_manual_billing', 'whatsapp_auto_send_boleto',
+            'role', 'is_active', 'photo_base64', 'photo_filename', 'cnpj_document_url', 'face_descriptor', 'default_bank_account_id', 'is_default_declaration_signer'
         ];
         const placeholders = columns.map(() => '?');
         const values = [
@@ -116,15 +202,21 @@ export class UserService {
             profile.state,
             profile.default_page,
             whatsappAutoReplyMode,
+            whatsappEnableManualBilling,
+            whatsappAutoSendBoleto,
             role,
             is_active,
             profile.photo_base64,
             profile.photo_filename,
+            profile.cnpj_document_url,
+            profile.face_descriptor,
+            defaultBankAccountId,
+            isDefaultDeclarationSigner
         ];
 
         await UserRepository.create(columns, placeholders, values);
 
-        return { public_id: publicId, email, full_name, role, is_active, whatsapp_auto_reply_mode: whatsappAutoReplyMode, password: passwordRaw, ...profile };
+        return { public_id: publicId, email, full_name, role, is_active, is_default_declaration_signer: isDefaultDeclarationSigner, whatsapp_auto_reply_mode: whatsappAutoReplyMode, whatsapp_enable_manual_billing: whatsappEnableManualBilling, whatsapp_auto_send_boleto: whatsappAutoSendBoleto, password: passwordRaw, default_bank_account_public_id: data.default_bank_account_public_id, ...profile };
     }
 
     static async toggleActive(companyId: number, identifier: string, isActive: boolean) {
@@ -138,9 +230,16 @@ export class UserService {
 
     static async update(companyId: number, identifier: string, data: any) {
         const publicId = await this.resolveTargetPublicId(companyId, identifier);
+        const currentUser = await this.getById(companyId, publicId);
+
         const updates: string[] = [];
         const values: any[] = [];
         const typedData = data as Record<string, unknown>;
+
+        if (hasOwnProperty(typedData, 'cnpj_document_url') || hasOwnProperty(typedData, 'cnpj_document_uploads')) {
+            const newCnpjDocUrl = processUserCnpjDocuments(typedData, currentUser.cnpj_document_url);
+            typedData.cnpj_document_url = newCnpjDocUrl;
+        }
         
         if (hasOwnProperty(typedData, 'full_name') && typedData.full_name !== undefined) {
             updates.push('full_name = ?');
@@ -172,9 +271,36 @@ export class UserService {
             values.push(Boolean(typedData.is_active));
         }
 
+        if (hasOwnProperty(typedData, 'is_default_declaration_signer') && typedData.is_default_declaration_signer !== undefined) {
+            const isDef = typedData.is_default_declaration_signer ? 1 : 0;
+            if (isDef) {
+                await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ?', [companyId]);
+            }
+            updates.push('is_default_declaration_signer = ?');
+            values.push(isDef);
+        }
+
         if (hasOwnProperty(typedData, 'whatsapp_auto_reply_mode') && typedData.whatsapp_auto_reply_mode !== undefined) {
             updates.push('whatsapp_auto_reply_mode = ?');
             values.push(normalizeWhatsAppAutoReplyMode(typedData.whatsapp_auto_reply_mode) || 'automatic');
+        }
+
+        if (hasOwnProperty(typedData, 'whatsapp_enable_manual_billing') && typedData.whatsapp_enable_manual_billing !== undefined) {
+            updates.push('whatsapp_enable_manual_billing = ?');
+            values.push(typedData.whatsapp_enable_manual_billing ? 1 : 0);
+        }
+
+        if (hasOwnProperty(typedData, 'whatsapp_auto_send_boleto') && typedData.whatsapp_auto_send_boleto !== undefined) {
+            updates.push('whatsapp_auto_send_boleto = ?');
+            values.push(typedData.whatsapp_auto_send_boleto ? 1 : 0);
+        }
+
+        if (hasOwnProperty(typedData, 'default_bank_account_public_id')) {
+            const defaultBankAccountId = typedData.default_bank_account_public_id
+                ? await resolveBankAccountId(companyId, String(typedData.default_bank_account_public_id))
+                : null;
+            updates.push('default_bank_account_id = ?');
+            values.push(defaultBankAccountId);
         }
 
         for (const field of USER_PROFILE_FIELDS) {

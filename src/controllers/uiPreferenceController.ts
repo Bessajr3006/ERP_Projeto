@@ -21,41 +21,25 @@ const uiPreferenceSchema = z.object({
     sales_cards_per_row: z.string().trim().max(120).nullable().optional(),
     sales_layout: z.enum(['drawer', 'split']).optional(),
     split_cart_size: z.enum(['small', 'medium', 'large']).optional(),
+    wa_float_btn_visible: z.boolean().optional(),
     target_role: z.string().trim().max(80).nullable().optional(),
 });
 
 export class UiPreferenceController {
     static async get(req: Request, res: Response): Promise<void> {
         const companyId = req.user!.company_id;
-        const targetRole = req.query.target_role ? String(req.query.target_role).trim() : null;
-
-        if (targetRole && req.user!.role !== 'admin' && req.user!.role !== 'super_admin') {
-            throw new AppError('Only administrators can access role-based preferences', 403);
-        }
-
-        const userPublicId = targetRole ? `role:${targetRole}` : String(req.user!.id || '').trim();
-        let data = await UiPreferenceService.getByCompanyAndUser(companyId, userPublicId);
-
-        // Se for uma busca comum (do proprio usuario) e nao tiver preferencia propria,
-        // busca a preferencia padrao do perfil (role) dele.
-        if (!data && !targetRole) {
-            const role = String(req.user!.role || '').trim();
-            data = await UiPreferenceService.getByCompanyAndUser(companyId, `role:${role}`);
-        }
-
+        const data = await UiPreferenceService.getByCompanyAndUser(companyId, 'company_default');
         res.status(200).json({ status: 'success', data });
     }
 
     static async save(req: Request, res: Response): Promise<void> {
         const companyId = req.user!.company_id;
-        const validated = uiPreferenceSchema.parse(req.body || {});
-        const targetRole = validated.target_role || null;
 
-        if (targetRole && req.user!.role !== 'admin' && req.user!.role !== 'super_admin') {
-            throw new AppError('Only administrators can save role-based preferences', 403);
+        if (req.user!.role !== 'admin' && req.user!.role !== 'super_admin') {
+            throw new AppError('Only administrators can save UI preferences', 403);
         }
 
-        const userPublicId = targetRole ? `role:${targetRole}` : String(req.user!.id || '').trim();
+        const validated = uiPreferenceSchema.parse(req.body || {});
 
         const normalized = {
             theme: validated.theme,
@@ -73,9 +57,10 @@ export class UiPreferenceController {
             sales_cards_per_row: (validated.sales_cards_per_row || '').trim() || null,
             sales_layout: validated.sales_layout || 'drawer',
             split_cart_size: validated.split_cart_size || 'medium',
+            wa_float_btn_visible: validated.wa_float_btn_visible !== false,
         };
 
-        const data = await UiPreferenceService.upsert(companyId, userPublicId, normalized);
+        const data = await UiPreferenceService.upsert(companyId, 'company_default', normalized);
         res.status(200).json({ status: 'success', data });
     }
 }

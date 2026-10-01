@@ -8,6 +8,51 @@ import pool from '../config/db';
 import { runMigration18 } from './run_migration_18';
 import { runMigration19 } from './run_migration_19';
 import { runMigration21 } from './run_migration_21';
+import { runMigration202AddSolidconBankIdToBankAccounts } from './run_migration_202_add_solidcon_bank_id_to_bank_accounts';
+import { runMigration203CardStatements } from './run_migration_203_card_statements';
+import { runMigration204ReportRafaelPermissions } from './run_migration_204_report_rafael_permissions';
+import { runMigration205AddSolidconRole } from './run_migration_205_add_solidcon_role';
+import { runMigration206ActivityGroups } from './run_migration_206_activity_groups';
+import { runMigration207CustomerActivities } from './run_migration_207_customer_activities';
+import { runMigration208ActivityGroupsMonthlyFee } from './run_migration_208_activity_groups_monthly_fee';
+import { runMigration209ActivityGroupsOperationCost } from './run_migration_209_activity_groups_operation_cost';
+import { runMigration210AddAuxiliarContadorRole } from './run_migration_210_add_auxiliar_contador_role';
+import { runMigration211CopyDbCredentials } from './run_migration_211_copy_db_credentials';
+import { runMigration212MigrateUiPreferences } from './run_migration_212_migrate_ui_preferences';
+import { runMigration213CreateCostCentersTable } from './run_migration_213_create_cost_centers_table';
+import { runMigration214AddAlterdataFields } from './run_migration_214_add_alterdata_fields';
+import { runMigration215AddOnlyPixToCustomers } from './run_migration_215_add_only_pix_to_customers';
+import { runMigration216AddCdempresaAlterdata } from './run_migration_216_add_cdempresa_alterdata';
+import { runMigration222TransactionsWhatsappSentInt } from './run_migration_222_transactions_whatsapp_sent_int';
+import { runMigration223AddFineInterestToTransactions } from './run_migration_223_add_fine_interest_to_transactions';
+import { runMigration224BankAccountsPixSettings } from './run_migration_224_bank_accounts_pix_settings';
+import { runMigration225AddReceivedChannelToTransactions } from './run_migration_225_add_received_channel_to_transactions';
+import { runMigration226RemoveKeystoneInterestTransactions } from './run_migration_226_remove_keystone_interest_transactions';
+import { runMigration227ExpandDeclarationTypesTaxRegime } from './run_migration_227_expand_declaration_types_tax_regime';
+import { runMigration228AddSolidconInterestKeyToTransactions } from './run_migration_228_add_solidcon_interest_key_to_transactions';
+import { runMigration229UpdateSolidconInterestKeyToConta } from './run_migration_229_update_solidcon_interest_key_to_conta';
+import { runMigration230SyncAllSolidconInterestRevenues } from './run_migration_230_sync_all_solidcon_interest_revenues';
+import { runMigration231ReportPedidosDorsalPermissions } from './run_migration_231_report_pedidos_dorsal_permissions';
+import { runMigration232ReportSaldoBancoPermissions } from './run_migration_232_report_saldo_banco_permissions';
+import { runMigration233AddOnlySolidconBaixaToCustomers } from './run_migration_233_add_only_solidcon_baixa_to_customers';
+import { runMigration234AddExemptInterestFineToCustomers } from './run_migration_234_add_exempt_interest_fine_to_customers';
+import { runMigration235AddAsaasFieldsToBankAccounts } from './run_migration_235_add_asaas_fields_to_bank_accounts';
+import { runMigration236CleanEsgN1Transactions } from './run_migration_236_clean_esg_n1_transactions';
+import { runMigration237RevenueWhatsappAudits } from './run_migration_237_revenue_whatsapp_audits';
+import { runMigration238BackfillWhatsappAudits } from './run_migration_238_backfill_whatsapp_audits';
+import { runMigration240SyncSolidconInterestAndFines } from './run_migration_240_sync_solidcon_interest_and_fines';
+import { runMigration241FixReceivedAmountWithFines } from './run_migration_241_fix_received_amount_with_fines';
+import { runMigration242CompanySolidconConfigs } from './run_migration_242_company_solidcon_configs';
+import { runMigration243CustomerHideInRevenuesGrid } from './run_migration_243_customer_hide_in_revenues_grid';
+import { runMigration244ChangeDateLaunchToDatetime } from './run_migration_244_change_date_launch_to_datetime';
+import { runMigration245FixCorruptedFinesAndInterestKeys } from './run_migration_245_fix_corrupted_fines_and_interest_keys';
+import { runMigration246CompanyDorsalConfigs } from './run_migration_246_company_dorsal_configs';
+import { runMigration247CompanyWhatsappAllowAllUsersActiveSender } from './run_migration_247_company_whatsapp_allow_all_users_active_sender';
+import runMigration248FinSolidconVisionPermissions from './run_migration_248_fin_solidcon_vision_permissions';
+import { runMigration249CompanyAlterdataConfigs } from './run_migration_249_company_alterdata_configs';
+import { runMigration250AccountingClosings } from './run_migration_250_accounting_closings';
+import { runMigration251UserDefaultDeclarationSigner } from './run_migration_251_user_default_declaration_signer';
+import runMigration252SocioModulePermissions from './run_migration_252_socio_module_permissions';
 import { runMigration22 } from './run_migration_22';
 import { runMigration23 } from './run_migration_23';
 import { runMigration24 } from './run_migration_24';
@@ -95,9 +140,118 @@ import { runMigration98BankStatements } from './run_migration_98_bank_statements
 import { runMigration99AddAdminBasicRole } from './run_migration_99_add_admin_basic_role';
 import runMigration100NotasComprasPermissions from './run_migration_100_notas_compras_permissions';
 import runMigration101ReceivableTypes from './run_migration_101_receivable_types';
+import runMigration102CardConfigurations from './run_migration_102_card_configurations';
+import runMigration103CardBrands from './run_migration_103_card_brands';
+import runMigration104CardConfigPaymentType from './run_migration_104_card_config_payment_type';
+import runMigration105CompanyShowSolidcon from './run_migration_105_company_show_solidcon';
+import runMigration106TransactionCardBrand from './run_migration_106_transaction_card_brand';
+import { runMigration107 } from './run_migration_107_cnpj_document_url_text';
+import { runMigration108 } from './run_migration_108_contacts_birth_date';
+import { runMigration109 } from './run_migration_109_employees';
+import { runMigration110 } from './run_migration_110_customer_notes';
+import { runMigration111 } from './run_migration_111_transaction_pix_key';
+import { runMigration112 } from './run_migration_112_services_cost_and_tax';
+import { runMigration113 } from './run_migration_113_services_markup_and_total_cost';
+import { runMigration114 } from './run_migration_114_company_general_admin';
+import { runMigration115 } from './run_migration_115_customer_contact';
+import runMigration116PaymentTypes from './run_migration_116_payment_types';
+import { runMigration117 } from './run_migration_117_transaction_payment_method_varchar';
+import { runMigration118 } from './run_migration_118_transaction_scheduled_status';
+import runMigration119CustomerGroups from './run_migration_119_customer_groups';
+import runMigration120Fechamentos from './run_migration_120_fechamentos';
+import { runMigration121AddTradeNameToCustomers } from './run_migration_121_add_trade_name_to_customers';
+import { runMigration122CardExpenses } from './run_migration_122_card_expenses';
+import { runMigration123AddTempo } from './run_migration_123_add_tempo';
+import { runMigration124CardExpensesCategory } from './run_migration_124_card_expenses_category';
+import { runMigration125ServiceLaunchesAddProduct } from './run_migration_125_service_launches_add_product';
+import { runMigration126FechamentosAddAjustes } from './run_migration_126_fechamentos_add_ajustes';
+import { runMigration127FechamentosAddSimples } from './run_migration_127_fechamentos_add_simples';
+import { runMigration128FechamentosAddSimplesTaxes } from './run_migration_128_fechamentos_add_simples_taxes';
+import { runMigration129FechamentosAddSimplesTaxedUntaxed } from './run_migration_129_fechamentos_add_simples_taxed_untaxed';
+import { runMigration130ServiceLaunchesChecklist } from './run_migration_130_service_launches_checklist';
+import { runMigration131FechamentosAddObservacao } from './run_migration_131_fechamentos_add_observacao';
+import { runMigration132ContactNotes } from './run_migration_132_contact_notes';
+import { runMigration133SupplierNotes } from './run_migration_133_supplier_notes';
+import { runMigration134ContactsCnpjDocumentUrlText } from './run_migration_134_contacts_cnpj_document_url_text';
+import { runMigration135 } from './run_migration_135_company_waze_url';
+import { runMigration136 } from './run_migration_136_users_cnpj_document_url';
+import { runMigration137 } from './run_migration_137_company_cnpj_document_url';
+import { runMigration138 } from './run_migration_138_transaction_billet_batch_generated';
+import { runMigration139CardDebits } from './run_migration_139_card_debits';
+import { runMigration140CardDebitsFields } from './run_migration_140_card_debits_fields';
+import { runMigration141CardExpensesCardDebit } from './run_migration_141_card_expenses_card_debit';
+import { runMigration142EntityCertificateName } from './run_migration_142_entity_certificate_name';
+import { runMigration143PurchaseNfeFields } from './run_migration_143_purchase_nfe_fields';
+import { runMigration145CensusCountryData } from './run_migration_145_census_country_data';
+import { runMigration146MecDataTables } from './run_migration_146_mec_data_tables';
+import { runMigration147MecPermissions } from './run_migration_147_mec_permissions';
+import { runMigration144CensusVisionPermissions } from './run_migration_144_census_vision_permissions';
+import { runMigration148AlignRolePermissions } from './run_migration_148_align_role_permissions';
+import { runMigration149EnemApprovedTable } from './run_migration_149_enem_approved_table';
+import { runMigration150EnemAddYear } from './run_migration_150_enem_add_year';
+import { runMigration151EnemAdd2025 } from './run_migration_151_enem_add_2025';
+import { runMigration152EnemAddNiteroiSchools } from './run_migration_152_enem_add_niteroi_schools';
+import { runMigration153IncomeVisionPermissions } from './run_migration_153_income_vision_permissions';
+import { runMigration154EnemAddRegisteredCount } from './run_migration_154_enem_add_registered_count';
+import { runMigration155EnemAddMoreNiteroiSchools } from './run_migration_155_enem_add_more_niteroi_schools';
+import { runMigration156EnemAddBabylandiaNiteroi } from './run_migration_156_enem_add_babylandia_niteroi';
+import { runMigration157EnemAddAverageScoreColumn } from './run_migration_157_enem_add_average_score_column';
+import { runMigration158EnemForceSeedAverageScore } from './run_migration_158_enem_force_seed_average_score';
+import { runMigration159CreateSisuProfessionsTable } from './run_migration_159_create_sisu_professions_table';
+import { runMigration160AddCensusPopulation } from './run_migration_160_add_census_population';
+import { runMigration161CreatePnadIncomeTable } from './run_migration_161_create_pnad_income_table';
+import { runMigration162AddSchoolCnpjColumn } from './run_migration_162_add_school_cnpj_column';
+import { runMigration163CreateEnemStudentsTable } from './run_migration_163_create_enem_students_table';
+import { runMigration164RecreateEnemStudentsWithFullNames } from './run_migration_164_recreate_enem_students_with_full_names';
+import { runMigration165AddStudentType } from './run_migration_165_add_student_type';
+import { runMigration166OfficialEnemScores } from './run_migration_166_official_enem_scores';
+import { runMigration167AddIdprodutoposToProducts } from './run_migration_167_add_idprodutopos_to_products';
+import { runMigration168AddIdgrupoposToProductCategories } from './run_migration_168_add_idgrupopos_to_product_categories';
+import { runMigration169CreateCompanyPoscontrolConfigsTable } from './run_migration_169_create_company_poscontrol_configs_table';
+import { runMigration170AddUrlProductgroupsPostToCompanyPoscontrolConfigs } from './run_migration_170_add_url_productgroups_post_to_company_poscontrol_configs';
+import { runMigration171AddPoscontrolUsernameAndPasswordToCompanyPoscontrolConfigs } from './run_migration_171_add_poscontrol_username_and_password_to_company_poscontrol_configs';
+import { runMigration172AddPoscontrolSyncedToProductsAndCategories } from './run_migration_172_add_poscontrol_synced_to_products_and_categories';
+import { runMigration173AddIdmedidaposToMeasures } from './run_migration_173_add_idmedidapos_to_measures';
+import runMigration174CreateProductTypes from './run_migration_174_create_product_types';
+import { runMigration175AddIdprodutotipoposToProductTypes } from './run_migration_175_add_idprodutotipopos_to_product_types';
+import { runMigration176AddProductTypeIdToProducts } from './run_migration_176_add_product_type_id_to_products';
+import { runMigration177AddActiveToProductCategories } from './run_migration_177_add_active_to_product_categories';
+import { runMigration178AddActiveToProducts } from './run_migration_178_add_active_to_products';
+import { runMigration179AddDefaultCustomerGroupToCompanies } from './run_migration_179_add_default_customer_group_to_companies';
+import { runMigration180AddDefaultBankAndReceivableToCompanies } from './run_migration_180_add_default_bank_and_receivable_to_companies';
+import { runMigration181AddAutoGenerateBilletsToCompanies } from './run_migration_181_add_auto_generate_billets_to_companies';
+import { runMigration182AddWhatsappBoletoParametersToCompanies } from './run_migration_182_add_whatsapp_boleto_parameters_to_companies';
+import { runMigration183TransactionNetAmount } from './run_migration_183_transaction_net_amount';
+import { runMigration184TransactionCardConfiguration } from './run_migration_184_transaction_card_configuration';
+import { runMigration185ProductStatusPosId } from './run_migration_185_product_status_pos_id';
+import { runMigration186SolidconCustomerFields } from './run_migration_186_solidcon_customer_fields';
+import { runMigration187AddDateLaunchToTransactions } from './run_migration_187_add_date_launch_to_transactions';
+import { runMigration188CompanyGroups } from './run_migration_188_company_groups';
+import { runMigration189BankAccountsBilletSettings } from './run_migration_189_bank_accounts_billet_settings';
+import { runMigration190UserDefaultBankAccount } from './run_migration_190_user_default_bank_account';
+import { runMigration191PixOperatorRole } from './run_migration_191_pix_operator_role';
+import { runMigration192UserRoleToVarchar } from './run_migration_192_user_role_to_varchar';
+import { runMigration193CompanyWhatsappScopeToUser } from './run_migration_193_company_whatsapp_scope_to_user';
+import { runMigration194AddWhatsappManualBilling } from './run_migration_194_add_whatsapp_manual_billing';
+import { runMigration195AddWhatsappAutoSendBoleto } from './run_migration_195_add_whatsapp_auto_send_boleto';
+import { runMigration196AddInscricaoToCustomers } from './run_migration_196_add_inscricao_to_customers';
+import { runMigration197AddCdpdvToCompanies } from './run_migration_197_add_cdpdv_to_companies';
+import { runMigration198AddPdvToTransactions } from './run_migration_198_add_pdv_to_transactions';
+import { runMigration199AddCdfilialToTransactions } from './run_migration_199_add_cdfilial_to_transactions';
+import { runMigration200AddSolidconQuitadoToTransactions } from './run_migration_200_add_solidcon_quitado_to_transactions';
+import { runMigration201AddSolidconKeyToTransactions } from './run_migration_201_add_solidcon_key_to_transactions';
+import runMigration150SpedFiscalPermissions from './run_migration_150_sped_fiscal_permissions';
+import runMigration151SpedFiscalVisionPermissions from './run_migration_151_sped_fiscal_vision_permissions';
+import { runMigration217FechamentosSpedDataJson } from './run_migration_217_fechamentos_sped_data_json';
+import { runMigration219SingleSessionPerUser } from './run_migration_219_single_session_per_user';
+import { runMigration220FechamentosFecp } from './run_migration_220_fechamentos_fecp';
+import { runMigration221CompanyGroupMaster } from './run_migration_221_company_group_master';
+import { runMigration223PopulateSolidconKeyInTransactions } from './run_migration_223_populate_solidcon_key_in_transactions';
 
 
-type SeedRole = 'admin' | 'operator' | 'financial' | 'seller' | 'contact' | 'accountant' | 'buyer' | 'service_provider' | 'user' | 'super_admin' | 'admin_basic';
+
+
+type SeedRole = 'admin' | 'operator' | 'financial' | 'seller' | 'contact' | 'accountant' | 'buyer' | 'service_provider' | 'user' | 'super_admin' | 'admin_basic' | 'supervisor' | 'pix_operator' | 'solidcon' | 'auxiliar_contador' | 'socio';
 
 type CompanyRow = RowDataPacket & {
     id: number;
@@ -114,6 +268,7 @@ const SYSTEM_COMPANY_NAME = 'Sistema Keystone';
 
 const ALL_MODULES = [
     'sales',
+    'quotes',
     'service_launches',
     'restaurant',
     'dashboard',
@@ -126,6 +281,7 @@ const ALL_MODULES = [
     'products',
     'categories',
     'stock_types',
+    'product_types',
     'manufacturers',
     'taxes',
     'prices',
@@ -138,50 +294,86 @@ const ALL_MODULES = [
     'notas_compras',
     'manifestation',
     'expenses',
+    'card_debits',
+    'card_expenses',
+    'card_brands',
+    'card_configurations',
+    'payment_types',
     'revenues',
     'finance_categories',
     'finance_category_types',
     'banks',
     'statements',
     'customers',
+    'customer_groups',
     'contacts',
     'sellers',
     'buyers',
     'service_providers',
     'suppliers',
+    'employees',
     'company',
     'accountant',
+    'socio',
+    'users',
     'accounting',
     'accounting_entries',
+    'accounting_auto_entries',
+    'accounting_auto_history',
+    'accounting_closing',
+    'declaration_registration',
+    'declaration_control',
+    'fechamento',
+    'sped_fiscal',
+    'sped_fiscal_vision',
     'dre',
     'balanco',
     'balancete',
     'roles',
-    'users',
     'tasks',
     'organizer',
     'ajuste',
     'whatsapp',
     'email',
     'receivable_types',
-    'swagger'
+    'swagger',
+    'census-vision',
+    'mec-vision',
+    'rel_rafael',
+    'rel_pedido_dorsal',
+    'rel_saldo_banco',
+    'cost_centers'
 ] as const;
 
 const ROLE_MODULES: Record<SeedRole, readonly string[]> = {
     admin: ALL_MODULES,
-    operator: ['dashboard', 'sales', 'restaurant', 'picking', 'nota'],
-    financial: ['dashboard', 'finance_vision', 'expenses', 'revenues', 'finance_categories', 'finance_category_types', 'banks', 'statements', 'purchases', 'notas_compras', 'accountant', 'receivable_types'],
-    seller: ['dashboard', 'sales', 'customers', 'contacts', 'sellers'],
+    operator: ['dashboard', 'sales', 'restaurant', 'picking', 'nota', 'census-vision', 'mec-vision'],
+    financial: [
+        'dashboard', 'finance_vision', 'expenses', 'card_debits', 'card_expenses', 
+        'card_brands', 'card_configurations', 'payment_types', 'revenues', 
+        'finance_categories', 'finance_category_types', 'banks', 'statements', 
+        'purchases', 'notas_compras', 'accountant', 'socio', 'receivable_types', 
+        'fechamento', 'sped_fiscal', 'sped_fiscal_vision', 'census-vision', 'mec-vision', 'rel_rafael', 'cost_centers'
+    ],
+    seller: [
+        'dashboard', 'sales', 'customers', 'contacts', 'sellers', 
+        'customer_groups', 'employees', 'census-vision', 'mec-vision'
+    ],
     contact: ['dashboard', 'contacts'],
-    accountant: ['dashboard', 'company', 'accountant'],
-    buyer: ['dashboard', 'purchases', 'notas_compras', 'suppliers', 'buyers'],
-    service_provider: ['dashboard', 'service_providers'],
-    user: ['dashboard'],
+    accountant: ['dashboard', 'company', 'accountant', 'fechamento', 'sped_fiscal', 'sped_fiscal_vision', 'census-vision', 'mec-vision'],
+    socio: ['dashboard', 'company', 'socio', 'census-vision', 'mec-vision'],
+    buyer: ['dashboard', 'purchases', 'notas_compras', 'suppliers', 'buyers', 'census-vision', 'mec-vision'],
+    service_provider: ['dashboard', 'service_providers', 'census-vision', 'mec-vision'],
+    user: ['dashboard', 'census-vision', 'mec-vision'],
     super_admin: ALL_MODULES,
     admin_basic: ALL_MODULES,
+    supervisor: ALL_MODULES,
+    pix_operator: ['dashboard', 'gera-pix'],
+    solidcon: ['dashboard', 'rel_rafael'],
+    auxiliar_contador: ['dashboard', 'company', 'fechamento', 'sped_fiscal', 'sped_fiscal_vision', 'census-vision', 'mec-vision'],
 };
 
-const DEFAULT_COMPANY_USERS: Array<{ fullName: string; role: Exclude<SeedRole, 'super_admin'>; emailPrefix: string }> = [
+export const DEFAULT_COMPANY_USERS: Array<{ fullName: string; role: Exclude<SeedRole, 'super_admin'>; emailPrefix: string }> = [
     { fullName: 'Administrador', role: 'admin', emailPrefix: 'administrador' },
     { fullName: 'Operador', role: 'operator', emailPrefix: 'operador' },
     { fullName: 'Financeiro', role: 'financial', emailPrefix: 'financeiro' },
@@ -215,7 +407,7 @@ function normalizeSchemaDatabase(sql: string): string {
         .replace(/USE\s+`?[^`;]+`?;/i, `USE ${escapedDbName};`);
 }
 
-function makeCompanySeedEmail(prefix: string, companyId: number): string {
+export function makeCompanySeedEmail(prefix: string, companyId: number): string {
     return `${prefix}+empresa-${companyId}@keystone.local`;
 }
 
@@ -308,7 +500,7 @@ async function ensureAtLeastOneVisibleCompany(): Promise<void> {
     console.log(`[OK] default visible company created: ${DEFAULT_VISIBLE_COMPANY_NAME}`);
 }
 
-async function getVisibleCompanies(): Promise<CompanyRow[]> {
+export async function getVisibleCompanies(): Promise<CompanyRow[]> {
     const [rows] = await pool.query<CompanyRow[]>(
         `SELECT id, public_id, trade_name, is_system
          FROM companies
@@ -350,13 +542,25 @@ async function ensureRolePermissions(companyId: number, role: SeedRole, modules:
     }
 }
 
+/*
 async function seedDefaultCompanyUsers(companies: CompanyRow[]): Promise<void> {
     for (const company of companies) {
+        const [existingUserCount] = await pool.query<RowDataPacket[]>(
+            'SELECT COUNT(*) AS count FROM users WHERE company_id = ?',
+            [company.id]
+        );
+        if (existingUserCount[0] && Number(existingUserCount[0].count) > 0) {
+            console.log(`[SKIP] company ${company.id} (${company.trade_name}) already has users. Skipping default company users seeding.`);
+            continue;
+        }
+
         console.log(`[INFO] seeding users for company ${company.id} (${company.trade_name})`);
 
         await ensureRolePermissions(company.id, 'seller', ROLE_MODULES.seller);
         await ensureRolePermissions(company.id, 'accountant', ROLE_MODULES.accountant);
         await ensureRolePermissions(company.id, 'admin_basic', ROLE_MODULES.admin_basic);
+        await ensureRolePermissions(company.id, 'pix_operator', ROLE_MODULES.pix_operator);
+        await ensureRolePermissions(company.id, 'auxiliar_contador', ROLE_MODULES.auxiliar_contador);
 
         for (const user of DEFAULT_COMPANY_USERS) {
             await ensureUser(
@@ -369,6 +573,7 @@ async function seedDefaultCompanyUsers(companies: CompanyRow[]): Promise<void> {
         }
     }
 }
+*/
 
 async function seedSuperAdmin(systemCompanyId: number): Promise<void> {
     await ensureUser(systemCompanyId, 'Super Admin', 'superadmin@keystone.local', 'super_admin');
@@ -485,24 +690,222 @@ async function runInitDb(): Promise<void> {
     await runMigration99AddAdminBasicRole();
     await runMigration100NotasComprasPermissions();
     await runMigration101ReceivableTypes();
+    await runMigration102CardConfigurations();
+    await runMigration103CardBrands();
+    await runMigration104CardConfigPaymentType();
+    await runMigration105CompanyShowSolidcon();
+    await runMigration106TransactionCardBrand();
+    await runMigration107();
+    await runMigration108();
+    await runMigration109();
+    await runMigration110();
+    await runMigration111();
+    await runMigration112();
+    await runMigration113();
+    await runMigration114();
+    await runMigration115();
+    await runMigration116PaymentTypes();
+    await runMigration117();
+    await runMigration118();
+    await runMigration119CustomerGroups();
+    await runMigration120Fechamentos();
+    await runMigration121AddTradeNameToCustomers();
+    await runMigration122CardExpenses();
+    await runMigration123AddTempo();
+    await runMigration124CardExpensesCategory();
+    await runMigration125ServiceLaunchesAddProduct();
+    await runMigration126FechamentosAddAjustes();
+    await runMigration127FechamentosAddSimples();
+    await runMigration128FechamentosAddSimplesTaxes();
+    await runMigration129FechamentosAddSimplesTaxedUntaxed();
+    await runMigration130ServiceLaunchesChecklist();
+    await runMigration131FechamentosAddObservacao();
+    await runMigration132ContactNotes();
+    await runMigration133SupplierNotes();
+    await runMigration134ContactsCnpjDocumentUrlText();
+    await runMigration135();
+    await runMigration136();
+    await runMigration137();
+    await runMigration138();
+    await runMigration139CardDebits();
+    await runMigration140CardDebitsFields();
+    await runMigration141CardExpensesCardDebit();
+    await runMigration142EntityCertificateName();
+    await runMigration143PurchaseNfeFields();
+    await runMigration144CensusVisionPermissions();
+    await runMigration145CensusCountryData();
+    await runMigration146MecDataTables();
+    await runMigration147MecPermissions();
+    await runMigration148AlignRolePermissions();
+    await runMigration149EnemApprovedTable();
+    await runMigration150EnemAddYear();
+    await runMigration151EnemAdd2025();
+    await runMigration152EnemAddNiteroiSchools();
+    await runMigration153IncomeVisionPermissions();
+    await runMigration154EnemAddRegisteredCount();
+    await runMigration155EnemAddMoreNiteroiSchools();
+    await runMigration156EnemAddBabylandiaNiteroi();
+    await runMigration157EnemAddAverageScoreColumn();
+    await runMigration158EnemForceSeedAverageScore();
+    await runMigration159CreateSisuProfessionsTable();
+    await runMigration160AddCensusPopulation();
+    await runMigration161CreatePnadIncomeTable();
+    await runMigration162AddSchoolCnpjColumn();
+    await runMigration163CreateEnemStudentsTable();
+    await runMigration164RecreateEnemStudentsWithFullNames();
+    await runMigration165AddStudentType();
+    await runMigration166OfficialEnemScores();
+    await runMigration167AddIdprodutoposToProducts();
+    await runMigration168AddIdgrupoposToProductCategories();
+    await runMigration169CreateCompanyPoscontrolConfigsTable();
+    await runMigration170AddUrlProductgroupsPostToCompanyPoscontrolConfigs();
+    await runMigration171AddPoscontrolUsernameAndPasswordToCompanyPoscontrolConfigs();
+    await runMigration172AddPoscontrolSyncedToProductsAndCategories();
+    await runMigration173AddIdmedidaposToMeasures();
+    await runMigration174CreateProductTypes();
+    await runMigration175AddIdprodutotipoposToProductTypes();
+    await runMigration176AddProductTypeIdToProducts();
+    await runMigration177AddActiveToProductCategories();
+    await runMigration178AddActiveToProducts();
+    await runMigration179AddDefaultCustomerGroupToCompanies();
+    await runMigration180AddDefaultBankAndReceivableToCompanies();
+    await runMigration181AddAutoGenerateBilletsToCompanies();
+    await runMigration182AddWhatsappBoletoParametersToCompanies();
+    await runMigration183TransactionNetAmount();
+    await runMigration184TransactionCardConfiguration();
+    await runMigration185ProductStatusPosId();
+    await runMigration186SolidconCustomerFields();
+    await runMigration187AddDateLaunchToTransactions();
+    await runMigration188CompanyGroups();
+    await runMigration189BankAccountsBilletSettings();
+    await runMigration190UserDefaultBankAccount();
+    await runMigration191PixOperatorRole();
+    await runMigration192UserRoleToVarchar();
+    await runMigration193CompanyWhatsappScopeToUser();
+    await runMigration194AddWhatsappManualBilling();
+    await runMigration195AddWhatsappAutoSendBoleto();
+    await runMigration196AddInscricaoToCustomers();
+    await runMigration197AddCdpdvToCompanies();
+    await runMigration198AddPdvToTransactions();
+    await runMigration199AddCdfilialToTransactions();
+    await runMigration200AddSolidconQuitadoToTransactions();
+    await runMigration201AddSolidconKeyToTransactions();
+    await runMigration202AddSolidconBankIdToBankAccounts();
+    await runMigration203CardStatements();
+    await runMigration204ReportRafaelPermissions();
+    await runMigration205AddSolidconRole();
+    await runMigration206ActivityGroups();
+    await runMigration207CustomerActivities();
+    await runMigration208ActivityGroupsMonthlyFee();
+    await runMigration209ActivityGroupsOperationCost();
+    await runMigration210AddAuxiliarContadorRole();
+    await runMigration211CopyDbCredentials();
+    await runMigration212MigrateUiPreferences();
+    await runMigration213CreateCostCentersTable();
+    await runMigration214AddAlterdataFields();
+    await runMigration215AddOnlyPixToCustomers();
+    await runMigration216AddCdempresaAlterdata();
+    await runMigration150SpedFiscalPermissions();
+    await runMigration151SpedFiscalVisionPermissions();
+    await runMigration217FechamentosSpedDataJson();
+    await runMigration219SingleSessionPerUser();
+    await runMigration220FechamentosFecp();
+    await runMigration221CompanyGroupMaster();
+    await runMigration222TransactionsWhatsappSentInt();
+    await runMigration223AddFineInterestToTransactions();
+    await runMigration224BankAccountsPixSettings();
+    await runMigration225AddReceivedChannelToTransactions();
+    await runMigration226RemoveKeystoneInterestTransactions();
+    await runMigration227ExpandDeclarationTypesTaxRegime();
+    await runMigration228AddSolidconInterestKeyToTransactions();
+    await runMigration229UpdateSolidconInterestKeyToConta();
+    await runMigration230SyncAllSolidconInterestRevenues();
+    await runMigration231ReportPedidosDorsalPermissions();
+    await runMigration232ReportSaldoBancoPermissions();
+    await runMigration233AddOnlySolidconBaixaToCustomers();
+    await runMigration234AddExemptInterestFineToCustomers();
+    await runMigration235AddAsaasFieldsToBankAccounts();
+    await runMigration236CleanEsgN1Transactions();
+    await runMigration237RevenueWhatsappAudits();
+    await runMigration238BackfillWhatsappAudits();
+    await runMigration240SyncSolidconInterestAndFines();
+    await runMigration241FixReceivedAmountWithFines();
+    await runMigration242CompanySolidconConfigs();
+    await runMigration243CustomerHideInRevenuesGrid();
+    await runMigration244ChangeDateLaunchToDatetime();
+    await runMigration245FixCorruptedFinesAndInterestKeys();
+    await runMigration246CompanyDorsalConfigs();
+    await runMigration247CompanyWhatsappAllowAllUsersActiveSender();
+    await runMigration248FinSolidconVisionPermissions();
+    await runMigration249CompanyAlterdataConfigs();
+    await runMigration250AccountingClosings();
+    await runMigration251UserDefaultDeclarationSigner();
+    await runMigration252SocioModulePermissions();
+    await runMigration223PopulateSolidconKeyInTransactions();
+    await normalizeAllDocuments();
 
     const systemCompany = await ensureSystemCompany();
     await ensureAtLeastOneVisibleCompany();
-    const visibleCompanies = await getVisibleCompanies();
+    // const visibleCompanies = await getVisibleCompanies();
 
-    await seedDefaultCompanyUsers(visibleCompanies);
+    // Deactivated seed of default company users under user request
+    // await seedDefaultCompanyUsers(visibleCompanies);
     await seedSuperAdmin(systemCompany.id);
 
     console.log('');
     console.log('[OK] initdb completed successfully.');
-    console.log('[INFO] Default password for newly created seed users: 123');
     console.log('[INFO] Super admin login: superadmin@keystone.local');
-    for (const company of visibleCompanies) {
-        console.log(`[INFO] Seed users for company ${company.trade_name} (#${company.id}):`);
-        console.log(`       administrador+empresa-${company.id}@keystone.local`);
-        console.log(`       operador+empresa-${company.id}@keystone.local`);
-        console.log(`       financeiro+empresa-${company.id}@keystone.local`);
-        console.log(`       usuario+empresa-${company.id}@keystone.local`);
+}
+
+async function normalizeAllDocuments(): Promise<void> {
+    console.log('[INFO] Normalizing all CPF/CNPJ documents to 11 or 14 digits...');
+    try {
+        // Customers
+        await pool.query(
+            `UPDATE customers 
+             SET cnpj_cpf = LPAD(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), 11, '0') 
+             WHERE LENGTH(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', '')) BETWEEN 1 AND 10`
+        );
+        await pool.query(
+            `UPDATE customers 
+             SET cnpj_cpf = LPAD(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), 14, '0') 
+             WHERE LENGTH(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', '')) BETWEEN 12 AND 13`
+        );
+
+        // Suppliers
+        await pool.query(
+            `UPDATE suppliers 
+             SET cnpj_cpf = LPAD(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), 11, '0') 
+             WHERE LENGTH(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', '')) BETWEEN 1 AND 10`
+        );
+        await pool.query(
+            `UPDATE suppliers 
+             SET cnpj_cpf = LPAD(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), 14, '0') 
+             WHERE LENGTH(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', '')) BETWEEN 12 AND 13`
+        );
+
+        // Contacts
+        await pool.query(
+            `UPDATE contacts 
+             SET cnpj_cpf = LPAD(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), 11, '0') 
+             WHERE LENGTH(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', '')) BETWEEN 1 AND 10`
+        );
+        await pool.query(
+            `UPDATE contacts 
+             SET cnpj_cpf = LPAD(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), 14, '0') 
+             WHERE LENGTH(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', '')) BETWEEN 12 AND 13`
+        );
+
+        // Companies
+        await pool.query(
+            `UPDATE companies 
+             SET cnpj = LPAD(REPLACE(REPLACE(REPLACE(cnpj, '.', ''), '-', ''), '/', ''), 14, '0') 
+             WHERE LENGTH(REPLACE(REPLACE(REPLACE(cnpj, '.', ''), '-', ''), '/', '')) BETWEEN 1 AND 13`
+        );
+
+        console.log('[OK] Document normalization completed.');
+    } catch (e) {
+        console.error('[WARN] Failed to normalize documents:', e);
     }
 }
 

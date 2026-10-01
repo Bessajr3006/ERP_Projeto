@@ -19,100 +19,191 @@ export const declarationStatusSchema = z.object({
 export type DeclarationStatusData = z.infer<typeof declarationStatusSchema>;
 
 export class DeclarationControlService {
-    static async getDeclarations(companyId: number, month: number, year: number, type: string) {
-        if (month === 0) {
-            const sql = `
-                SELECT 
-                    c.id as customer_id, 
-                    c.public_id as customer_public_id,
-                    c.name as customer_name,
-                    c.cnpj_cpf,
-                    c.tax_regime,
-                    d.public_id as declaration_id,
-                    IFNULL(d.status, 'PENDENTE') as status,
-                    d.competence_month,
-                    d.delivery_date,
-                    d.receipt_url,
-                    d.amount_due,
-                    d.due_date as d_due_date,
-                    d.gross_revenue,
-                    d.accumulated_revenue,
-                    d.document_period,
-                    d.receipt_number
-                FROM customer_declarations d
-                JOIN customers c ON d.customer_id = c.id
-                WHERE d.company_id = ? 
-                  AND d.competence_year = ? 
-                  AND d.declaration_type = ?
-                ORDER BY d.competence_month DESC, c.name ASC
-            `;
-            const params = [companyId, year, type];
-            const [rows] = await pool.query<RowDataPacket[]>(sql, params);
-            return rows;
+    static async getDeclarations(
+        companyId: number, 
+        month: number, 
+        year: number, 
+        type?: string | null,
+        taxRegime?: string | null,
+        customerFilter?: string | null
+    ) {
+        // 1. Obter os tipos de declarações ativos da empresa
+        let dtQuery = `SELECT id, public_id, name, description, frequency, due_day, tax_regime FROM declaration_types WHERE company_id = ? AND active = 1`;
+        const dtParams: any[] = [companyId];
+        const isSpecificType = Boolean(type && type !== 'todos' && type.trim() !== '');
+        if (isSpecificType) {
+            dtQuery += ` AND name = ?`;
+            dtParams.push(type!.trim());
         }
+        dtQuery += ` ORDER BY name ASC`;
+        const [declarationTypes] = await pool.query<RowDataPacket[]>(dtQuery, dtParams);
 
-        // Obter o tax_regime configurado para o tipo de declaração
-        const [declarationTypes] = await pool.query<RowDataPacket[]>(
-            `SELECT tax_regime FROM declaration_types WHERE company_id = ? AND name = ? LIMIT 1`,
-            [companyId, type]
-        );
-        const dtRegime = declarationTypes.length > 0 ? declarationTypes[0]?.tax_regime : null;
-
-        let sql = `
-            SELECT 
-                c.id as customer_id, 
-                c.public_id as customer_public_id,
-                c.name as customer_name,
-                c.cnpj_cpf,
-                c.tax_regime,
-                d.public_id as declaration_id,
-                IFNULL(d.status, 'PENDENTE') as status,
-                ? as competence_month,
-                d.delivery_date,
-                d.receipt_url,
-                d.amount_due,
-                d.due_date as d_due_date,
-                d.gross_revenue,
-                d.accumulated_revenue,
-                d.document_period,
-                d.receipt_number
-            FROM customers c
-            LEFT JOIN customer_declarations d 
-                ON d.customer_id = c.id 
-                AND d.company_id = ? 
-                AND d.competence_month = ? 
-                AND d.competence_year = ? 
-                AND d.declaration_type = ?
-            WHERE c.company_id = ?
-              AND c.tax_regime IS NOT NULL 
-              AND c.tax_regime != ''
+        // 2. Obter os clientes da empresa aplicando filtros de regime tributário e busca de cliente se informados
+        let custQuery = `
+            SELECT id, public_id, name, cnpj_cpf, tax_regime 
+            FROM customers 
+            WHERE company_id = ?
+              AND tax_regime IS NOT NULL 
+              AND TRIM(tax_regime) != ''
         `;
-        
-        const params: any[] = [month, companyId, month, year, type, companyId];
+        const custParams: any[] = [companyId];
 
-        if (dtRegime) {
-            // Map the internal enum-like value to the human-readable value stored in `customers` table
-            let humanRegime = dtRegime;
-            switch (dtRegime) {
-                case 'SIMPLES_NACIONAL': humanRegime = 'Simples Nacional'; break;
-                case 'LUCRO_PRESUMIDO': humanRegime = 'Lucro Presumido'; break;
-                case 'LUCRO_REAL': humanRegime = 'Lucro Real'; break;
-                case 'GERAL': humanRegime = 'Geral'; break;
-                case 'MEI': humanRegime = 'MEI'; break;
-                case 'PF': humanRegime = 'Pessoa Física'; break;
+        if (taxRegime && taxRegime !== 'todos' && taxRegime.trim() !== '') {
+            const rawReg = taxRegime.trim().toUpperCase();
+            const allowed = [taxRegime.trim()];
+            if (rawReg === 'SIMPLES_NACIONAL' || rawReg === 'SIMPLES NACIONAL') {
+                allowed.push('SIMPLES_NACIONAL', 'Simples Nacional');
+            } else if (rawReg === 'LUCRO_PRESUMIDO' || rawReg === 'LUCRO PRESUMIDO') {
+                allowed.push('LUCRO_PRESUMIDO', 'Lucro Presumido');
+            } else if (rawReg === 'LUCRO_REAL' || rawReg === 'LUCRO REAL') {
+                allowed.push('LUCRO_REAL', 'Lucro Real');
+            } else if (rawReg === 'MEI') {
+                allowed.push('MEI');
+            } else if (rawReg === 'PF' || rawReg === 'PESSOA_FISICA' || rawReg === 'PESSOA FÍSICA') {
+                allowed.push('PF', 'Pessoa Física', 'PESSOA_FISICA');
+            } else if (rawReg.includes('OUTROS') || rawReg.includes('ISENTO')) {
+                allowed.push('OUTROS', 'Outros / Isento', 'Outros');
             }
-            
-            // Allow matching both formats just in case some are stored with the enum string
-            sql += ` AND c.tax_regime IN (?, ?)`;
-            params.push(dtRegime, humanRegime);
+            const uniqueAllowed = Array.from(new Set(allowed));
+            custQuery += ` AND tax_regime IN (${uniqueAllowed.map(() => '?').join(', ')})`;
+            custParams.push(...uniqueAllowed);
         }
 
-        sql += ` ORDER BY c.name ASC`;
+        if (customerFilter && customerFilter.trim() !== '') {
+            const search = `%${customerFilter.trim()}%`;
+            custQuery += ` AND (name LIKE ? OR cnpj_cpf LIKE ?)`;
+            custParams.push(search, search);
+        }
 
-        const [rows] = await pool.query<RowDataPacket[]>(sql, params);
-        
-        return rows;
+        custQuery += ` ORDER BY name ASC`;
+        const [customers] = await pool.query<RowDataPacket[]>(custQuery, custParams);
+
+        // 3. Obter as declarações já salvas no banco
+        let declQuery = `
+            SELECT 
+                id, public_id, customer_id, competence_month, competence_year, declaration_type,
+                status, delivery_date, receipt_url, amount_due, due_date,
+                gross_revenue, accumulated_revenue, document_period, receipt_number
+            FROM customer_declarations
+            WHERE company_id = ? AND competence_year = ?
+        `;
+        const declParams: any[] = [companyId, year];
+        if (month > 0) {
+            declQuery += ` AND competence_month = ?`;
+            declParams.push(month);
+        }
+        if (isSpecificType) {
+            declQuery += ` AND declaration_type = ?`;
+            declParams.push(type!.trim());
+        }
+        const [existingDeclarations] = await pool.query<RowDataPacket[]>(declQuery, declParams);
+
+        const declMap = new Map<string, any>();
+        for (const d of existingDeclarations) {
+            const key = `${d.customer_id}_${d.competence_month}_${String(d.declaration_type || '').toUpperCase()}`;
+            declMap.set(key, d);
+        }
+
+        const matchesTaxRegime = (custRegimeRaw: string | null | undefined, declRegimeRaw: string | null | undefined): boolean => {
+            if (!declRegimeRaw || declRegimeRaw.trim() === '') return true;
+            const decRegimes = declRegimeRaw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+            if (decRegimes.length === 0 || decRegimes.includes('GERAL')) return true;
+            
+            if (!custRegimeRaw || custRegimeRaw.trim() === '') return false;
+            const cReg = custRegimeRaw.trim().toUpperCase();
+
+            for (const dReg of decRegimes) {
+                if (dReg === cReg) return true;
+                if (dReg === 'SIMPLES_NACIONAL' && (cReg === 'SIMPLES NACIONAL' || cReg === 'SIMPLES_NACIONAL')) return true;
+                if (dReg === 'LUCRO_PRESUMIDO' && (cReg === 'LUCRO PRESUMIDO' || cReg === 'LUCRO_PRESUMIDO')) return true;
+                if (dReg === 'LUCRO_REAL' && (cReg === 'LUCRO REAL' || cReg === 'LUCRO_REAL')) return true;
+                if (dReg === 'MEI' && cReg === 'MEI') return true;
+                if ((dReg === 'PF' || dReg === 'PESSOA_FISICA') && (cReg === 'PF' || cReg === 'PESSOA FÍSICA' || cReg === 'PESSOA FISICA' || cReg === 'PESSOA_FISICA')) return true;
+                if ((dReg === 'OUTROS' || dReg === 'OUTROS_ISENTO') && (cReg.includes('OUTROS') || cReg.includes('ISENTO'))) return true;
+            }
+            return false;
+        };
+
+        const results: any[] = [];
+        const monthsToList = month === 0 ? (
+            existingDeclarations.length > 0 
+                ? Array.from(new Set(existingDeclarations.map(d => d.competence_month))).sort((a, b) => b - a) 
+                : [new Date().getMonth() + 1]
+        ) : [month];
+
+        for (const m of monthsToList) {
+            for (const cust of customers) {
+                // Obter os tipos de declaração aplicáveis para este cliente
+                let applicableTypes = declarationTypes.filter(dt => matchesTaxRegime(cust.tax_regime, dt.tax_regime));
+
+                if (isSpecificType && applicableTypes.length === 0 && declarationTypes.length > 0) {
+                    applicableTypes = declarationTypes.filter(dt => dt.name.toUpperCase() === type!.trim().toUpperCase());
+                }
+
+                if (applicableTypes.length > 0) {
+                    for (const dt of applicableTypes) {
+                        const key = `${cust.id}_${m}_${String(dt.name).toUpperCase()}`;
+                        const d = declMap.get(key);
+
+                        results.push({
+                            customer_id: cust.id,
+                            customer_public_id: cust.public_id,
+                            customer_name: cust.name,
+                            cnpj_cpf: cust.cnpj_cpf,
+                            tax_regime: cust.tax_regime,
+                            declaration_type: dt.name,
+                            declaration_type_public_id: dt.public_id,
+                            declaration_id: d?.public_id || null,
+                            status: d?.status || 'PENDENTE',
+                            competence_month: d?.competence_month || m,
+                            delivery_date: d?.delivery_date || null,
+                            receipt_url: d?.receipt_url || null,
+                            amount_due: d?.amount_due || null,
+                            d_due_date: d?.due_date || null,
+                            gross_revenue: d?.gross_revenue || null,
+                            accumulated_revenue: d?.accumulated_revenue || null,
+                            document_period: d?.document_period || null,
+                            receipt_number: d?.receipt_number || null
+                        });
+                    }
+                } else if (isSpecificType) {
+                    const key = `${cust.id}_${m}_${type!.trim().toUpperCase()}`;
+                    const d = declMap.get(key);
+                    results.push({
+                        customer_id: cust.id,
+                        customer_public_id: cust.public_id,
+                        customer_name: cust.name,
+                        cnpj_cpf: cust.cnpj_cpf,
+                        tax_regime: cust.tax_regime,
+                        declaration_type: type!.trim(),
+                        declaration_type_public_id: null,
+                        declaration_id: d?.public_id || null,
+                        status: d?.status || 'PENDENTE',
+                        competence_month: d?.competence_month || m,
+                        delivery_date: d?.delivery_date || null,
+                        receipt_url: d?.receipt_url || null,
+                        amount_due: d?.amount_due || null,
+                        d_due_date: d?.due_date || null,
+                        gross_revenue: d?.gross_revenue || null,
+                        accumulated_revenue: d?.accumulated_revenue || null,
+                        document_period: d?.document_period || null,
+                        receipt_number: d?.receipt_number || null
+                    });
+                }
+            }
+        }
+
+        if (month === 0) {
+            results.sort((a, b) => {
+                if (b.competence_month !== a.competence_month) return b.competence_month - a.competence_month;
+                if (a.customer_name !== b.customer_name) return a.customer_name.localeCompare(b.customer_name);
+                return (a.declaration_type || '').localeCompare(b.declaration_type || '');
+            });
+        }
+
+        return results;
     }
+
 
     static async updateDeclaration(
         companyId: number, 

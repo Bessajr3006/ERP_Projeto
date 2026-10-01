@@ -1,4 +1,3 @@
-/// <reference path="./globals.d.ts" />
 
 (() => {
     let userId: string = '';

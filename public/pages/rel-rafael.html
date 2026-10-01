@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Relatório Rafael</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+</head>
+<body data-required-module="rel_rafael" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+        <!-- ── HEADER ────────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-5 flex flex-wrap justify-between items-center gap-3 shrink-0">
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight">Relatório Rafael (Vendas e Custos)</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                 <button id="btnPrint" class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer">
+                     Imprimir
+                 </button>
+            </div>
+        </div>
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm border font-medium"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <!-- ── FILTERS ───────────────────────────────────────────── -->
+            <div class="mb-3 shrink-0">
+                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
+                    <button type="button" id="toggleFilterBtn" class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors rounded-xl">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                        </div>
+                        <svg id="filterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="filterBody" class="overflow-hidden transition-all duration-300">
+                        <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                            <form id="filterForm" onsubmit="event.preventDefault();">
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 items-end">
+                                    <div id="filterCompanyContainer">
+                                        <label for="filterCompany" class="block text-[10px] font-bold text-gray-500 uppercase">Empresa (Grupo)</label>
+                                        <select id="filterCompany" name="filterCompany" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                            <option value="">Carregando...</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="filterConnection" class="block text-[10px] font-bold text-gray-500 uppercase">Conexão Dorsal</label>
+                                        <select id="filterConnection" name="filterConnection" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                            <option value="">Carregando...</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="filterStartDate" class="block text-[10px] font-bold text-gray-500 uppercase">Data Início</label>
+                                        <input type="date" id="filterStartDate" name="filterStartDate" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                    <div>
+                                        <label for="filterEndDate" class="block text-[10px] font-bold text-gray-500 uppercase">Data Fim</label>
+                                        <input type="date" id="filterEndDate" name="filterEndDate" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                    <div>
+                                        <label for="filterFilial" class="block text-[10px] font-bold text-gray-500 uppercase">Código Filial(s)</label>
+                                        <input type="text" id="filterFilial" name="filterFilial" placeholder="Ex: 10 ou 1,2" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                    <div>
+                                        <label for="filterClassificacao" class="block text-[10px] font-bold text-gray-500 uppercase">Classificação</label>
+                                        <select id="filterClassificacao" name="filterClassificacao" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                            <option value="">Todas</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="filterSearch" class="block text-[10px] font-bold text-gray-500 uppercase">Buscar Produto</label>
+                                        <input type="text" id="filterSearch" name="filterSearch" placeholder="Nome ou código do produto..." class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex flex-wrap justify-end gap-2">
+                                    <button type="button" id="btnClearFilters" class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none transition-colors cursor-pointer">Limpar Filtros</button>
+                                    <button type="button" id="btnApplyFilters" class="px-5 py-1.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer">Consultar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── SUMMARY CARDS ────────────────────────────────────────── -->
+            <div id="summaryCardWrapper" class="mb-3 shrink-0 hidden">
+                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
+                    <button type="button" id="toggleSummaryBtn" class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors rounded-xl">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Painel de Resumos</h3>
+                        </div>
+                        <svg id="summaryChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="summaryBody" class="overflow-hidden transition-all duration-300">
+                        <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                            <div id="summarySection" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <!-- Geral -->
+                                <div class="bg-gray-50 dark:bg-slate-900/20 border border-gray-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quantidade Total</span>
+                                    <span id="totalQty" class="text-xl font-bold text-gray-900 dark:text-white mt-1">0</span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-slate-900/20 border border-gray-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Valor Venda</span>
+                                    <span id="totalSales" class="text-xl font-bold text-gray-900 dark:text-white mt-1">R$ 0,00</span>
+                                </div>
+                                
+                                <!-- Custos -->
+                                <div class="bg-gray-50 dark:bg-slate-900/20 border border-gray-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Custo Venda</span>
+                                    <span id="totalCostSales" class="text-xl font-bold text-gray-900 dark:text-white mt-1">R$ 0,00</span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-slate-900/20 border border-gray-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Custo Dia</span>
+                                    <span id="totalCostCustody" class="text-xl font-bold text-gray-900 dark:text-white mt-1">R$ 0,00</span>
+                                </div>
+
+                                <!-- Lucros & Markups -->
+                                <div class="bg-gray-50 dark:bg-slate-900/20 border border-gray-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Lucro Venda</span>
+                                    <span id="totalProfitSales" class="text-xl font-bold mt-1">R$ 0,00</span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-slate-900/20 border border-gray-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Lucro Dia</span>
+                                    <span id="totalProfitDay" class="text-xl font-bold mt-1">R$ 0,00</span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-slate-900/20 border border-gray-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Markup Venda</span>
+                                    <span id="averageMarkupSales" class="text-xl font-bold mt-1">0,00 %</span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-slate-900/20 border border-gray-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Markup Dia</span>
+                                    <span id="averageMarkupDay" class="text-xl font-bold mt-1">0,00 %</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── TABLE ─────────────────────────────────────────────── -->
+            <div id="reportSection" class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 flex-col flex-1 min-h-0 overflow-hidden relative hidden">
+                <div id="loadingOverlay" class="absolute inset-0 bg-slate-900/10 dark:bg-slate-900/50 backdrop-blur-sm z-50 items-center justify-center rounded-xl flex">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-2xl flex flex-col items-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 dark:border-brand-400"></div>
+                        <p class="mt-4 text-sm font-medium text-gray-900 dark:text-white">Carregando relatório...</p>
+                    </div>
+                </div>
+
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50 dark:bg-slate-800">
+                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <span class="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
+                        Vendas por Produto
+                    </h3>
+                </div>
+                
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
+                        <thead class="bg-gray-200 dark:bg-slate-900/60 border-y border-gray-300 dark:border-slate-700 sticky top-0 z-20">
+                            <tr>
+                                <th scope="col" data-sort="cdProduto" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-center text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-16">
+                                    Cód. Prod.
+                                </th>
+                                <th scope="col" data-sort="superProduto" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-center text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-16">
+                                    Cód. Super
+                                </th>
+                                <th scope="col" data-sort="Produto" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent">
+                                    Produto
+                                </th>
+                                <th scope="col" data-sort="classificacao" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-28">
+                                    Classificação
+                                </th>
+                                <th scope="col" data-sort="qtItem" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-center text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-20">
+                                    Qtd. Item
+                                </th>
+                                <th scope="col" data-sort="vlVenda" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-24">
+                                    Vl. Venda
+                                </th>
+                                <th scope="col" data-sort="vlCustovenda" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-24">
+                                    Custo Venda
+                                </th>
+                                <th scope="col" data-sort="vlCustodia" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-24">
+                                    Custo Dia
+                                </th>
+                                <th scope="col" data-sort="Descontos" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-24">
+                                    Descontos
+                                </th>
+                                <th scope="col" data-sort="vlunCusto" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-20">
+                                    Custo Unit.
+                                </th>
+                                <th scope="col" data-sort="vlunvenda" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-20">
+                                    Venda Unit.
+                                </th>
+                                <th scope="col" data-sort="markup" class="sortable cursor-pointer sticky top-0 z-20 bg-gray-200 dark:bg-slate-900/60 px-3 py-2.5 text-right text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider border-y border-gray-300 dark:border-transparent w-20">
+                                    Markup (%)
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
+                            <!-- Gerado via Javascript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ── DETALHAMENTO MODAL ───────────────────────────────────────── -->
+    <div id="detailModal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-200 dark:border-slate-700 w-full max-w-5xl xl:max-w-6xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-slate-700/60 flex items-center justify-between bg-gray-50 dark:bg-slate-900/40 shrink-0">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white uppercase">Detalhamento de Vendas</h3>
+                    <p id="detailProductName" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">-</p>
+                </div>
+                <button type="button" onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Cost Alteration Panel inside Detail Modal -->
+            <div class="px-6 py-3 bg-brand-50/70 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="p-1.5 bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </span>
+                    <div>
+                        <div class="text-xs font-bold text-gray-800 dark:text-gray-200">Alteração de Custos Solidcon</div>
+                        <div class="text-[10px] text-gray-500 dark:text-gray-400">Ajuste o Custo Unit. Venda das vendas do período e/ou o Custo Unit. Dia no Solidcon</div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-1.5">
+                        <label for="inputEditCustoVenda" class="text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase">Custo Unit. Venda:</label>
+                        <div class="relative rounded-lg shadow-sm">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-xs text-gray-400">R$</div>
+                            <input type="number" step="0.0001" id="inputEditCustoVenda" placeholder="0,00" class="block w-28 pl-7 pr-2 py-1 bg-white dark:bg-slate-800 border border-orange-300 dark:border-orange-600/60 rounded-lg text-xs font-semibold text-gray-900 dark:text-white focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <label for="inputEditCustoDia" class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">Custo Unit. Dia:</label>
+                        <div class="relative rounded-lg shadow-sm">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-xs text-gray-400">R$</div>
+                            <input type="number" step="0.0001" id="inputEditCustoDia" placeholder="0,00" class="block w-28 pl-7 pr-2 py-1 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600/60 rounded-lg text-xs font-semibold text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    <button type="button" id="btnSaveCosts" onclick="saveProductCosts()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg shadow-sm transition cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Salvar no Solidcon
+                    </button>
+                </div>
+            </div>
+
+            <div id="detailAlertMessage" class="hidden mx-6 mt-3 p-3 rounded-lg text-xs border font-medium"></div>
+            
+            <!-- Body (Scrollable Table) -->
+            <div class="p-6 overflow-y-auto flex-1 min-h-0">
+                <div class="overflow-x-auto border border-gray-200 dark:border-slate-700/60 rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="bg-gray-100 dark:bg-slate-900/60">
+                            <tr>
+                                <th class="px-3 py-3 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
+                                <th class="px-2 py-3 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor Unit.</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor Total</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Custo Unit. Venda</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Custo Venda</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Custo Unit. Dia</th>
+                                <th class="px-3 py-3 text-right text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Custo Dia</th>
+                                <th class="px-3 py-3 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Operador</th>
+                                <th class="px-2 py-3 text-center text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
+                            <!-- Injetado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer (Totals summary) -->
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-slate-700/60 bg-gray-50 dark:bg-slate-900/40 flex items-center justify-between text-xs font-bold text-gray-700 dark:text-gray-300">
+                <div class="flex gap-6">
+                    <div>Qtd Total: <span id="detailTotalQty" class="text-gray-900 dark:text-white">0</span></div>
+                    <div>Valor Total: <span id="detailTotalValue" class="text-gray-900 dark:text-white">R$ 0,00</span></div>
+                    <div>Custo Venda: <span id="detailTotalCostSales" class="text-gray-900 dark:text-white">R$ 0,00</span></div>
+                    <div>Custo Dia: <span id="detailTotalCostDay" class="text-gray-900 dark:text-white">R$ 0,00</span></div>
+                </div>
+                <button type="button" onclick="closeDetailModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors cursor-pointer text-xs font-medium">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-footer" class="shrink-0"></div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+    <script src="/js/rel-rafael.js?v=20261001145619"></script>
+</body>
+</html>

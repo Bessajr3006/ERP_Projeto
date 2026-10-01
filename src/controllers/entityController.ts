@@ -24,11 +24,24 @@ const optionalSellerPublicId = z.preprocess(
     z.string().uuid('Invalid seller reference').nullable().optional()
 );
 
+const optionalCustomerGroupPublicId = z.preprocess(
+    (value) => {
+        if (typeof value !== 'string') return value;
+        const trimmed = value.trim();
+        return trimmed === '' ? null : trimmed;
+    },
+    z.string().uuid('Invalid group reference').nullable().optional()
+);
+
 const baseEntitySchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
+    trade_name: z.string().nullable().optional(),
     cnpj_cpf: z.string().optional(),
+    inscricao_estadual: z.string().nullable().optional(),
+    inscricao_municipal: z.string().nullable().optional(),
     email: z.string().email('Invalid email').optional().or(z.literal('')),
     phone: z.string().optional(),
+    phone_landline: z.string().nullable().optional(),
     zipcode: z.string().nullable().optional(),
     street: z.string().nullable().optional(),
     number: z.string().nullable().optional(),
@@ -40,14 +53,24 @@ const baseEntitySchema = z.object({
     certificate_url: z.string().nullable().optional(),
     certificate_password: z.string().nullable().optional(),
     certificate_expiration: z.string().nullable().optional(),
+    certificate_name: z.string().nullable().optional(),
     social_contract_base64: z.string().nullable().optional(),
     social_contract_url: z.string().nullable().optional(),
-    cnpj_document_base64: z.string().nullable().optional(),
-    cnpj_document_url: z.string().nullable().optional(),
+    cnpj_document_base64: z.any().nullable().optional(),
+    cnpj_document_url: z.any().nullable().optional(),
+    cnpj_document_uploads: z.any().nullable().optional(),
 });
 
 const customerCreateSchema = baseEntitySchema.extend({
+    contact: z.string().nullable().optional(),
     seller_public_id: optionalSellerPublicId,
+    customer_group_public_id: optionalCustomerGroupPublicId,
+    company_user: z.any().optional(),
+    register_as_company: z.preprocess((val) => {
+        if (val === 'true' || val === 1 || val === '1') return true;
+        if (val === 'false' || val === 0 || val === '0') return false;
+        return val;
+    }, z.boolean().optional()),
     vencimento_dia: z.number().int().min(1).max(31).nullable().optional(),
     limite: z.number().min(0).optional(),
     discount_type: z.enum(['percentage', 'fixed']).nullable().optional(),
@@ -62,6 +85,27 @@ const customerCreateSchema = baseEntitySchema.extend({
         },
         z.number().int().nullable().optional()
     ),
+    only_pix: z.preprocess((val) => {
+        if (val === 'true' || val === 1 || val === '1' || val === true) return 1;
+        if (val === 'false' || val === 0 || val === '0' || val === false) return 0;
+        return val;
+    }, z.number().int().min(0).max(1).optional()),
+    only_solidcon_baixa: z.preprocess((val) => {
+        if (val === 'true' || val === 1 || val === '1' || val === true) return 1;
+        if (val === 'false' || val === 0 || val === '0' || val === false) return 0;
+        return val;
+    }, z.number().int().min(0).max(1).optional()),
+    exempt_interest_fine: z.preprocess((val) => {
+        if (val === 'true' || val === 1 || val === '1' || val === true) return 1;
+        if (val === 'false' || val === 0 || val === '0' || val === false) return 0;
+        return val;
+    }, z.number().int().min(0).max(1).optional()),
+    hide_in_revenues_grid: z.preprocess((val) => {
+        if (val === 'true' || val === 1 || val === '1' || val === true) return 1;
+        if (val === 'false' || val === 0 || val === '0' || val === false) return 0;
+        return val;
+    }, z.number().int().min(0).max(1).optional()),
+    activity_groups_public_ids: z.array(z.string()).nullable().optional(),
 });
 
 const customerUpdateSchema = customerCreateSchema.partial();
@@ -75,8 +119,33 @@ const contactUpdateSchema = contactCreateSchema.partial();
 const bulkUpdateCustomersSchema = z.object({
     customerIds: z.array(z.string()).min(1, 'At least one customer is required'),
     seller_public_id: optionalSellerPublicId,
+    customer_group_public_id: optionalCustomerGroupPublicId,
     vencimento_dia: z.number().int().min(1).max(31).nullable().optional(),
     limite: z.number().min(0).optional(),
+    only_pix: z.preprocess((val) => {
+        if (val === '' || val === null || val === undefined) return undefined;
+        if (val === 'true' || val === 1 || val === '1' || val === true) return 1;
+        if (val === 'false' || val === 0 || val === '0' || val === false) return 0;
+        return val;
+    }, z.number().int().min(0).max(1).optional()),
+    only_solidcon_baixa: z.preprocess((val) => {
+        if (val === '' || val === null || val === undefined) return undefined;
+        if (val === 'true' || val === 1 || val === '1' || val === true) return 1;
+        if (val === 'false' || val === 0 || val === '0' || val === false) return 0;
+        return val;
+    }, z.number().int().min(0).max(1).optional()),
+    exempt_interest_fine: z.preprocess((val) => {
+        if (val === '' || val === null || val === undefined) return undefined;
+        if (val === 'true' || val === 1 || val === '1' || val === true) return 1;
+        if (val === 'false' || val === 0 || val === '0' || val === false) return 0;
+        return val;
+    }, z.number().int().min(0).max(1).optional()),
+    hide_in_revenues_grid: z.preprocess((val) => {
+        if (val === '' || val === null || val === undefined) return undefined;
+        if (val === 'true' || val === 1 || val === '1' || val === true) return 1;
+        if (val === 'false' || val === 0 || val === '0' || val === false) return 0;
+        return val;
+    }, z.number().int().min(0).max(1).optional()),
 });
 
 const bulkDeleteCustomersSchema = z.object({
@@ -97,6 +166,7 @@ function makeHandlers(table: EntityTable) {
             const parsed = createSchema.safeParse(req.body);
 
             if (!parsed.success) {
+                console.error('[Entity Create Validation Error]', JSON.stringify(parsed.error.errors, null, 2));
                 res.status(400).json({ status: 'error', errors: parsed.error.errors });
                 return;
             }
@@ -125,6 +195,7 @@ function makeHandlers(table: EntityTable) {
             const parsed = updateSchema.safeParse(req.body);
 
             if (!parsed.success) {
+                console.error('[Entity Update Validation Error]', JSON.stringify(parsed.error.errors, null, 2));
                 res.status(400).json({ status: 'error', errors: parsed.error.errors });
                 return;
             }
@@ -323,6 +394,189 @@ export class EntityController {
             });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error?.message || 'Internal Server Error' });
+        }
+    }
+
+    static async importSuppliersSolidcon(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const payload = req.body?.payload ?? req.body?.items ?? req.body?.data ?? req.body;
+
+            const normalizeItems = (value: any): any[] => {
+                if (Array.isArray(value)) return value;
+                if (value?.body && Array.isArray(value.body)) return value.body;
+                if (value?.items && Array.isArray(value.items)) return value.items;
+                if (value?.data && Array.isArray(value.data)) return value.data;
+                if (value?.suppliers && Array.isArray(value.suppliers)) return value.suppliers;
+                if (value?.fornecedores && Array.isArray(value.fornecedores)) return value.fornecedores;
+                if (value?.data?.items && Array.isArray(value.data.items)) return value.data.items;
+                return [];
+            };
+
+            const items = normalizeItems(payload);
+            if (!items.length) {
+                res.status(400).json({ status: 'error', message: 'Nenhum item valido encontrado para importacao.' });
+                return;
+            }
+
+            const result = await EntityService.importSolidconSuppliers(companyId, items);
+
+            res.status(200).json({
+                status: 'success',
+                data: result,
+            });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Internal Server Error' });
+        }
+    }
+
+    static async createCustomerNote(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const customerPublicId = req.params.id as string;
+            const userPublicId = req.user?.id || null;
+            const { note } = req.body;
+
+            if (!note || typeof note !== 'string' || !note.trim()) {
+                res.status(400).json({ status: 'error', message: 'A nota não pode estar vazia.' });
+                return;
+            }
+
+            const { CustomerNotesRepository } = await import('../repositories/customerNotesRepository');
+            const created = await CustomerNotesRepository.create(companyId, customerPublicId, userPublicId, note);
+            res.status(201).json({ status: 'success', data: created });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao criar nota.' });
+        }
+    }
+
+    static async listCustomerNotes(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const customerPublicId = req.params.id as string;
+
+            const { CustomerNotesRepository } = await import('../repositories/customerNotesRepository');
+            const notes = await CustomerNotesRepository.list(companyId, customerPublicId);
+            res.status(200).json({ status: 'success', data: notes });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao listar notas.' });
+        }
+    }
+
+    static async deleteCustomerNote(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const noteId = req.params.noteId as string;
+
+            const { CustomerNotesRepository } = await import('../repositories/customerNotesRepository');
+            const deleted = await CustomerNotesRepository.delete(companyId, noteId);
+            if (!deleted) {
+                res.status(404).json({ status: 'error', message: 'Nota não encontrada.' });
+                return;
+            }
+            res.status(200).json({ status: 'success', message: 'Nota removida com sucesso.' });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao excluir nota.' });
+        }
+    }
+
+    static async createContactNote(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const contactPublicId = req.params.id as string;
+            const userPublicId = req.user?.id || null;
+            const { note } = req.body;
+
+            if (!note || typeof note !== 'string' || !note.trim()) {
+                res.status(400).json({ status: 'error', message: 'A nota não pode estar vazia.' });
+                return;
+            }
+
+            const { ContactNotesRepository } = await import('../repositories/contactNotesRepository');
+            const created = await ContactNotesRepository.create(companyId, contactPublicId, userPublicId, note);
+            res.status(201).json({ status: 'success', data: created });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao criar nota.' });
+        }
+    }
+
+    static async listContactNotes(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const contactPublicId = req.params.id as string;
+
+            const { ContactNotesRepository } = await import('../repositories/contactNotesRepository');
+            const notes = await ContactNotesRepository.list(companyId, contactPublicId);
+            res.status(200).json({ status: 'success', data: notes });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao listar notas.' });
+        }
+    }
+
+    static async deleteContactNote(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const noteId = req.params.noteId as string;
+
+            const { ContactNotesRepository } = await import('../repositories/contactNotesRepository');
+            const deleted = await ContactNotesRepository.delete(companyId, noteId);
+            if (!deleted) {
+                res.status(404).json({ status: 'error', message: 'Nota não encontrada.' });
+                return;
+            }
+            res.status(200).json({ status: 'success', message: 'Nota removida com sucesso.' });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao excluir nota.' });
+        }
+    }
+
+    static async createSupplierNote(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const supplierPublicId = req.params.id as string;
+            const userPublicId = req.user?.id || null;
+            const { note } = req.body;
+
+            if (!note || typeof note !== 'string' || !note.trim()) {
+                res.status(400).json({ status: 'error', message: 'A nota não pode estar vazia.' });
+                return;
+            }
+
+            const { SupplierNotesRepository } = await import('../repositories/supplierNotesRepository');
+            const created = await SupplierNotesRepository.create(companyId, supplierPublicId, userPublicId, note);
+            res.status(201).json({ status: 'success', data: created });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao criar nota.' });
+        }
+    }
+
+    static async listSupplierNotes(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const supplierPublicId = req.params.id as string;
+
+            const { SupplierNotesRepository } = await import('../repositories/supplierNotesRepository');
+            const notes = await SupplierNotesRepository.list(companyId, supplierPublicId);
+            res.status(200).json({ status: 'success', data: notes });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao listar notas.' });
+        }
+    }
+
+    static async deleteSupplierNote(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const noteId = req.params.noteId as string;
+
+            const { SupplierNotesRepository } = await import('../repositories/supplierNotesRepository');
+            const deleted = await SupplierNotesRepository.delete(companyId, noteId);
+            if (!deleted) {
+                res.status(404).json({ status: 'error', message: 'Nota não encontrada.' });
+                return;
+            }
+            res.status(200).json({ status: 'success', message: 'Nota removida com sucesso.' });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao excluir nota.' });
         }
     }
 }

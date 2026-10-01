@@ -49,6 +49,8 @@ export interface Transaction {
     type: TransactionType;
     date: Date;
     status: TransactionStatus;
+    finance_category_type_name?: string | null;
+    customer_group_name?: string | null;
     created_at: Date;
     updated_at: Date;
 }

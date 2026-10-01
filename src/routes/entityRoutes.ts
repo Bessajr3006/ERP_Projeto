@@ -19,6 +19,7 @@ router.use(protectRoute, requireTenantContext);
  *       201: { description: Fornecedor criado }
  */
 router.post('/suppliers', (req, res, next) => EntityController.createSupplier(req, res).catch(next));
+router.post('/suppliers/solidcon-import', (req, res, next) => EntityController.importSuppliersSolidcon(req, res).catch(next));
 /**
  * @openapi
  * /entities/suppliers:
@@ -219,5 +220,20 @@ router.put('/contacts/:id', (req, res, next) => EntityController.updateContact(r
  *       204: { description: Contato removido }
  */
 router.delete('/contacts/:id', (req, res, next) => EntityController.deleteContact(req, res).catch(next));
+
+// ── Customer Notes ────────────────────────────────────────────────────────
+router.post('/customers/:id/notes', (req, res, next) => EntityController.createCustomerNote(req, res).catch(next));
+router.get('/customers/:id/notes', (req, res, next) => EntityController.listCustomerNotes(req, res).catch(next));
+router.delete('/customers/:id/notes/:noteId', (req, res, next) => EntityController.deleteCustomerNote(req, res).catch(next));
+
+// ── Contact Notes ────────────────────────────────────────────────────────
+router.post('/contacts/:id/notes', (req, res, next) => EntityController.createContactNote(req, res).catch(next));
+router.get('/contacts/:id/notes', (req, res, next) => EntityController.listContactNotes(req, res).catch(next));
+router.delete('/contacts/:id/notes/:noteId', (req, res, next) => EntityController.deleteContactNote(req, res).catch(next));
+
+// ── Supplier Notes ────────────────────────────────────────────────────────
+router.post('/suppliers/:id/notes', (req, res, next) => EntityController.createSupplierNote(req, res).catch(next));
+router.get('/suppliers/:id/notes', (req, res, next) => EntityController.listSupplierNotes(req, res).catch(next));
+router.delete('/suppliers/:id/notes/:noteId', (req, res, next) => EntityController.deleteSupplierNote(req, res).catch(next));
 
 export default router;

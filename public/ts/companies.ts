@@ -1,5 +1,3 @@
-/// <reference path="./globals.d.ts" />
-/// <reference path="./api.ts" />
 
 (function initCompaniesPage() {
 
@@ -39,9 +37,9 @@ function onlyDigits(value) {
 }
 
 function formatCNPJ(value) {
-    const digits = onlyDigits(value);
-    if (digits.length !== 14) return value || '-';
-    return digits.replace(/^(\)?[0-9]{2})(\)?[0-9]{3})(\)?[0-9]{3})(\)?[0-9]{4})(\)?[0-9]{2})$/, "$1.$2.$3/$4-$5");
+    const clean = String(value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    if (clean.length !== 14) return value || '-';
+    return clean.replace(/^([a-zA-Z0-9]{2})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{4})([a-zA-Z0-9]{2})$/, "$1.$2.$3/$4-$5");
 }
 
 function formatPhone(value) {
@@ -71,7 +69,11 @@ function getMaskedValue(maskInstance, inputId) {
         return maskInstance.unmaskedValue || '';
     }
 
-    return onlyDigits(getById(inputId)?.value || '');
+    const val = getById(inputId)?.value || '';
+    if (inputId === 'companyCnpj') {
+        return String(val).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    }
+    return onlyDigits(val);
 }
 
 function populateCompanyStateOptions(selectedValue = '') {
@@ -216,8 +218,14 @@ function setupCompanyFormEnhancements() {
         companyDocMask = makeMask(cnpjInput, {
             mask: [
                 { mask: '000.000.000-00' },
-                { mask: '00.000.000/0000-00' },
+                { 
+                    mask: 'XX.XXX.XXX/XXXX-XX',
+                    definitions: {
+                        'X': /[a-zA-Z0-9]/
+                    }
+                },
             ],
+            prepare: (str: string) => str.toUpperCase()
         });
         cnpjInput.addEventListener('blur', handleCompanyCnpjLookup);
     }
@@ -278,9 +286,26 @@ function getCompanyByPublicId(publicId) {
     return companiesData.find((item) => String(item.public_id) === String(publicId)) || null;
 }
 
+function syncCompanyGroupMasterVisibility() {
+    const groupSelect = getById('companyGroup') as HTMLSelectElement | null;
+    const isGroupMasterCheckbox = getById('companyIsGroupMaster') as HTMLInputElement | null;
+    if (!groupSelect || !isGroupMasterCheckbox) return;
+
+    if (!groupSelect.value && isGroupMasterCheckbox.checked) {
+        isGroupMasterCheckbox.checked = false;
+    }
+}
+
 function resetCompanyForm() {
     getById('companyForm')?.reset();
     getById('companyId').value = '';
+    const isGeneralAdminCheckbox = getById('companyIsGeneralAdmin');
+    if (isGeneralAdminCheckbox) isGeneralAdminCheckbox.checked = false;
+    const isGroupMasterCheckbox = getById('companyIsGroupMaster');
+    if (isGroupMasterCheckbox) isGroupMasterCheckbox.checked = false;
+    const groupSelect = getById('companyGroup');
+    if (groupSelect) groupSelect.value = '';
+    syncCompanyGroupMasterVisibility();
     getById('companyModalTitle').textContent = 'Nova Empresa';
     getById('companyModalStatus').textContent = 'Cadastre uma nova empresa para o ambiente global.';
     setMaskedValue(companyDocMask, 'companyCnpj', '');
@@ -297,11 +322,18 @@ function resetCompanyForm() {
     getById('initialUserName').value = '';
     getById('initialUserEmail').value = '';
     getById('initialUserPassword').value = '';
-    getById('initialUserRole').value = 'admin';
+    getById('initialUserRole').value = 'supervisor';
 }
 
 function fillCompanyForm(item) {
     getById('companyId').value = item.public_id || '';
+    const isGeneralAdminCheckbox = getById('companyIsGeneralAdmin');
+    if (isGeneralAdminCheckbox) isGeneralAdminCheckbox.checked = item.is_general_admin === true || item.is_general_admin === 1;
+    const isGroupMasterCheckbox = getById('companyIsGroupMaster');
+    if (isGroupMasterCheckbox) isGroupMasterCheckbox.checked = item.is_group_master === true || item.is_group_master === 1;
+    const groupSelect = getById('companyGroup');
+    if (groupSelect) groupSelect.value = item.company_group_public_id || '';
+    syncCompanyGroupMasterVisibility();
     getById('companyTradeName').value = item.trade_name || '';
     getById('companyLegalName').value = item.company_name || '';
     getById('companyTaxRegime').value = item.tax_regime || '';
@@ -327,7 +359,7 @@ function fillCompanyForm(item) {
     getById('initialUserName').value = '';
     getById('initialUserEmail').value = '';
     getById('initialUserPassword').value = '';
-    getById('initialUserRole').value = 'admin';
+    getById('initialUserRole').value = 'supervisor';
 }
 
 function openCompanyModal(item = null) {
@@ -360,6 +392,9 @@ function getCompanyFormPayload(isEdit = false) {
         neighborhood: getById('companyNeighborhood').value.trim(),
         city: getById('companyCity').value.trim(),
         state: getById('companyState').value.trim(),
+        is_general_admin: getById('companyIsGeneralAdmin')?.checked || false,
+        is_group_master: getById('companyIsGroupMaster')?.checked || false,
+        company_group_public_id: getById('companyGroup')?.value || null,
     };
 
     const initialUserName = getById('initialUserName').value.trim();
@@ -388,6 +423,12 @@ async function submitCompanyForm(event) {
     if (!payload.trade_name) {
         UI.showAlert('alertMessage', 'O nome fantasia / responsável é obrigatório.', 'error');
         getById('companyTradeName')?.focus();
+        return;
+    }
+
+    if (payload.is_group_master && !payload.company_group_public_id) {
+        UI.showAlert('alertMessage', 'Para definir a empresa como Principal do Grupo, selecione um Grupo de Empresa.', 'error');
+        getById('companyGroup')?.focus();
         return;
     }
 
@@ -496,9 +537,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const authResponse = await api('/auth/me');
         const currentUser = authResponse?.data?.user || null;
 
-        if (!currentUser || currentUser.role !== 'super_admin') {
+        const currentCompany = authResponse?.data?.company || null;
+        const isGeneralAdminCompany = currentCompany?.is_general_admin === true || currentCompany?.is_general_admin === 1;
+        const hasGeneralAdminContext = Boolean(currentUser?.general_admin_company_id);
+        const isGroupMasterCompany = (currentCompany?.is_group_master === true || currentCompany?.is_group_master === 1) && !!currentCompany?.company_group_id;
+        const hasGroupMasterContext = Boolean(currentUser?.group_master_company_id);
+
+        const isSuperOrGeneralAdmin = currentUser?.role === 'super_admin' || isGeneralAdminCompany || hasGeneralAdminContext;
+
+        if (!currentUser || (!isSuperOrGeneralAdmin && !isGroupMasterCompany && !hasGroupMasterContext)) {
             window.location.href = '/pages/dashboard.html';
             return;
+        }
+
+        const generalAdminContainer = getById('companyGeneralAdminContainer');
+        if (generalAdminContainer) {
+            generalAdminContainer.classList.toggle('hidden', !isSuperOrGeneralAdmin);
         }
 
         const userGreeting = getById('userGreeting');
@@ -515,6 +569,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage.setItem('companiesView', 'list');
     setupCompanyFormEnhancements();
     await loadCompanyStateOptions();
+    await loadCompanyGroupsOptions();
+
+    async function loadCompanyGroupsOptions() {
+        try {
+            const res = await api('/company-groups');
+            const groups = res.data || [];
+            const select = getById('companyGroup');
+            if (select) {
+                select.innerHTML = '<option value="">Nenhum grupo</option>';
+                groups.forEach((g) => {
+                    select.innerHTML += `<option value="${g.public_id}">${g.name}</option>`;
+                });
+            }
+            syncCompanyGroupMasterVisibility();
+        } catch (e) {
+            console.error('Erro ao carregar grupos de empresa', e);
+        }
+    }
 
     window.FilterPanel.mount({
         storageKey: 'companies_filter_panel',
@@ -566,11 +638,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     getById('filterStatus')?.addEventListener('change', applyFilters);
     getById('filterState')?.addEventListener('change', applyFilters);
+    getById('companyGroup')?.addEventListener('change', syncCompanyGroupMasterVisibility);
+    getById('companyIsGroupMaster')?.addEventListener('change', (e: any) => {
+        const groupSelect = getById('companyGroup') as HTMLSelectElement | null;
+        if (e.target.checked && !groupSelect?.value) {
+            UI.showAlert('alertMessage', 'Selecione um Grupo de Empresa para definir esta empresa como Principal do Grupo.', 'info');
+            groupSelect?.focus();
+        }
+    });
     getById('btnOpenCompanyModal')?.addEventListener('click', () => openCompanyModal());
     getById('btnCancelCompanyModal')?.addEventListener('click', closeCompanyModal);
     getById('companyModalBackdrop')?.addEventListener('click', closeCompanyModal);
     getById('companyForm')?.addEventListener('submit', submitCompanyForm);
 
+    setupDetailsModalTabs();
     updateViewToggle();
     loadCompanies();
 });
@@ -776,6 +857,9 @@ async function switchCompanyContext(publicId) {
             
             // Salvar o nome da empresa no localStorage para o footer carregar instantaneamente na próxima página
             const companyName = getCompanyDisplayName(company);
+            localStorage.setItem('keystone_last_company_name', companyName);
+            if (company.cnpj) localStorage.setItem('keystone_last_company_cnpj', company.cnpj);
+            if (company.public_id) localStorage.setItem('keystone_last_company_public_id', company.public_id);
             localStorage.setItem('erp_last_company_name', companyName);
             if (company.cnpj) localStorage.setItem('erp_last_company_cnpj', company.cnpj);
 
@@ -824,6 +908,12 @@ function bindTableActionEvents() {
             if (button.dataset.id) deleteCompany(button.dataset.id);
         });
     });
+
+    qsa('#companiesTable .view-company-details-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (button.dataset.id) openViewDetailsModal(button.dataset.id);
+        });
+    });
 }
 
 function bindGridActionEvents() {
@@ -849,6 +939,12 @@ function bindGridActionEvents() {
     qsa('#companiesGridSection .delete-company-btn').forEach((button) => {
         button.addEventListener('click', () => {
             if (button.dataset.id) deleteCompany(button.dataset.id);
+        });
+    });
+
+    qsa('#companiesGridSection .view-company-details-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (button.dataset.id) openViewDetailsModal(button.dataset.id);
         });
     });
 }
@@ -945,7 +1041,19 @@ function renderTable(items) {
                 <input type="checkbox" value="${key}" class="item-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" ${isSelected ? 'checked' : ''} data-bwignore="true" data-lpignore="true" placeholder="">
             </td>
             <td class="px-6 py-4 text-sm">
-                <p class="font-semibold text-gray-900 dark:text-gray-100">${getCompanyDisplayName(item)}</p>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold text-gray-900 dark:text-gray-100">${getCompanyDisplayName(item)}</span>
+                    <span class="text-[10px] font-mono bg-gray-100 text-gray-600 dark:bg-slate-700/60 dark:text-gray-300 px-1.5 py-0.5 rounded">ID: ${item.public_id}</span>
+                    ${item.company_group_name ? `
+                        <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm select-none">${item.company_group_name}</span>
+                    ` : ''}
+                    ${item.is_group_master === true || item.is_group_master === 1 ? `
+                        <span class="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm select-none">Principal do Grupo</span>
+                    ` : ''}
+                    ${item.is_general_admin === true || item.is_general_admin === 1 ? `
+                        <span class="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/50 px-2 py-0.5 text-xs font-semibold text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-sm select-none">Adm Geral</span>
+                    ` : ''}
+                </div>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">${getCompanyLegalName(item)}</p>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${formatCNPJ(item.cnpj)}</td>
@@ -956,7 +1064,13 @@ function renderTable(items) {
                 <div class="flex items-center justify-end gap-2">
                     <button type="button" title="Acessar Empresa" aria-label="Acessar empresa ${getCompanyDisplayName(item)}" class="switch-company-btn text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300" data-id="${item.public_id}">
                         <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
+                    <button type="button" title="Visualizar Detalhes" aria-label="Visualizar empresa ${getCompanyDisplayName(item)}" class="view-company-details-btn text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" data-id="${item.public_id}">
+                        <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                     </button>
                     <button type="button" title="Editar" aria-label="Editar empresa ${getCompanyDisplayName(item)}" class="edit-company-btn text-brand-600 hover:text-brand-900 dark:hover:text-brand-400" data-id="${item.public_id}">
@@ -1003,7 +1117,21 @@ function renderGrid(items) {
                 </div>
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <h4 class="text-base leading-snug font-bold text-gray-900 dark:text-gray-100 pr-2 wrap-break-word">${getCompanyDisplayName(item)}</h4>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="text-base leading-snug font-bold text-gray-900 dark:text-gray-100 pr-2 wrap-break-word flex flex-wrap items-center gap-1.5">
+                                <span>${getCompanyDisplayName(item)}</span>
+                                <span class="text-[10px] font-mono font-normal bg-gray-100 text-gray-600 dark:bg-slate-700/60 dark:text-gray-300 px-1.5 py-0.5 rounded">ID: ${item.public_id}</span>
+                            </h4>
+                            ${item.company_group_name ? `
+                                <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm select-none">${item.company_group_name}</span>
+                            ` : ''}
+                            ${item.is_group_master === true || item.is_group_master === 1 ? `
+                                <span class="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm select-none">Principal do Grupo</span>
+                            ` : ''}
+                            ${item.is_general_admin === true || item.is_general_admin === 1 ? `
+                                <span class="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/50 px-2 py-0.5 text-xs font-semibold text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-sm select-none">Adm Geral</span>
+                            ` : ''}
+                        </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">${getCompanyLegalName(item)}</p>
                     </div>
                     <div class="shrink-0">${getStatusBadge(item)}</div>
@@ -1034,6 +1162,12 @@ function renderGrid(items) {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                             </svg>
                         </button>
+                        <button type="button" title="Visualizar Detalhes" aria-label="Visualizar empresa ${getCompanyDisplayName(item)}" class="view-company-details-btn p-1.5 rounded-full text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30" data-id="${item.public_id}">
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
                         <button type="button" title="Editar" aria-label="Editar empresa ${getCompanyDisplayName(item)}" class="edit-company-btn p-1.5 rounded-full text-brand-600 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-900/30" data-id="${item.public_id}">
                             ${getEditActionIcon()}
                         </button>
@@ -1054,6 +1188,369 @@ function renderGrid(items) {
 
     bindGridSelectionEvents(items);
     bindGridActionEvents();
+}
+
+function setupDetailsModalTabs() {
+    const tabButtons = document.querySelectorAll('#viewCompanyDetailsModal .details-modal-tab');
+    tabButtons.forEach((btn: any) => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-details-tab-target');
+            if (!targetId) return;
+            tabButtons.forEach((b: any) => {
+                const isActive = b === btn;
+                b.setAttribute('aria-selected', String(isActive));
+                b.classList.toggle('border-brand-500', isActive);
+                b.classList.toggle('text-brand-600', isActive);
+                b.classList.toggle('dark:text-brand-300', isActive);
+                b.classList.toggle('border-transparent', !isActive);
+                b.classList.toggle('text-gray-500', !isActive);
+                b.classList.toggle('dark:text-gray-400', !isActive);
+            });
+            document.querySelectorAll('#viewCompanyDetailsModal .details-modal-tab-panel').forEach((panel: any) => {
+                if (panel.id === targetId) {
+                    panel.classList.remove('hidden');
+                } else {
+                    panel.classList.add('hidden');
+                }
+            });
+        });
+    });
+}
+
+function resetDetailsModalTabs() {
+    const tabButtons = Array.from(document.querySelectorAll('#viewCompanyDetailsModal .details-modal-tab'));
+    tabButtons.forEach((btn: any, idx) => {
+        const isSelected = idx === 0;
+        btn.setAttribute('aria-selected', String(isSelected));
+        btn.classList.toggle('border-brand-500', isSelected);
+        btn.classList.toggle('text-brand-600', isSelected);
+        btn.classList.toggle('dark:text-brand-300', isSelected);
+        btn.classList.toggle('border-transparent', !isSelected);
+        btn.classList.toggle('text-gray-500', !isSelected);
+        btn.classList.toggle('dark:text-gray-400', !isSelected);
+    });
+
+    document.querySelectorAll('#viewCompanyDetailsModal .details-modal-tab-panel').forEach((panel: any, idx) => {
+        if (idx === 0) {
+            panel.classList.remove('hidden');
+        } else {
+            panel.classList.add('hidden');
+        }
+    });
+}
+
+async function openViewDetailsModal(companyId: string) {
+    const modal = getById('viewCompanyDetailsModal');
+    const closeBtn = getById('btnCloseViewDetailsModal');
+    const cancelBtn = getById('btnCancelViewDetailsModal');
+    const backdrop = getById('viewDetailsModalBackdrop');
+    
+    if (!modal) return;
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+    };
+    closeBtn?.addEventListener('click', closeModal, { once: true });
+    cancelBtn?.addEventListener('click', closeModal, { once: true });
+    backdrop?.addEventListener('click', closeModal, { once: true });
+
+    modal.classList.remove('hidden');
+
+    const company = getCompanyByPublicId(companyId);
+    if (!company) return;
+
+    // Set text values
+    getById('viewDetailsCompanyTradeName').textContent = company.trade_name || '';
+    getById('viewDetailsCompanyName').textContent = company.company_name || 'Não informado';
+    getById('viewDetailsCnpj').textContent = formatCNPJ(company.cnpj);
+    getById('viewDetailsTaxRegime').textContent = company.tax_regime || 'Não informado';
+    const groupText = company.company_group_name 
+        ? `${company.company_group_name}${company.is_group_master === true || company.is_group_master === 1 ? ' (Principal)' : ''}` 
+        : 'Nenhum grupo';
+    if (getById('viewDetailsCompanyGroup')) {
+        getById('viewDetailsCompanyGroup').textContent = groupText;
+    }
+    getById('viewDetailsActiveStatus').textContent = company.is_active ? 'Ativa' : 'Inativa';
+    getById('viewDetailsEmail').textContent = company.email || 'Não informado';
+    getById('viewDetailsPhone').textContent = formatPhone(company.phone);
+    getById('viewDetailsLocation').textContent = [
+        company.street,
+        company.number,
+        company.neighborhood,
+        company.city,
+        company.state,
+        company.zipcode
+    ].filter(Boolean).join(', ') || 'Endereço não informado';
+
+    // Map setup
+    const mapCompanyAddressSpan = getById('mapCompanyAddress');
+    const googleMapsIframe = getById('googleMapsIframe') as HTMLIFrameElement | null;
+    const btnOpenWaze = getById('btnOpenWaze') as HTMLAnchorElement | null;
+    const btnOpenGoogleMaps = getById('btnOpenGoogleMaps') as HTMLAnchorElement | null;
+
+    const companyAddressParts = [
+        company.street,
+        company.number,
+        company.neighborhood,
+        company.city,
+        company.state,
+        company.zipcode
+    ].filter(Boolean);
+    const companyAddressStr = companyAddressParts.join(', ');
+
+    if (mapCompanyAddressSpan) {
+        mapCompanyAddressSpan.textContent = companyAddressStr || 'Endereço não cadastrado';
+    }
+
+    if (companyAddressStr) {
+        const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(companyAddressStr)}&output=embed`;
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(companyAddressStr)}`;
+        const wazeUrl = company.waze_url || `https://waze.com/ul?q=${encodeURIComponent(companyAddressStr)}&navigate=yes`;
+
+        if (googleMapsIframe) googleMapsIframe.src = embedUrl;
+        if (btnOpenWaze) {
+            btnOpenWaze.href = wazeUrl;
+            btnOpenWaze.classList.remove('hidden');
+            btnOpenWaze.classList.add('inline-flex');
+        }
+        if (btnOpenGoogleMaps) {
+            btnOpenGoogleMaps.href = mapsUrl;
+            btnOpenGoogleMaps.classList.remove('hidden');
+            btnOpenGoogleMaps.classList.add('inline-flex');
+        }
+    } else {
+        if (googleMapsIframe) googleMapsIframe.removeAttribute('src');
+        if (btnOpenWaze) {
+            btnOpenWaze.classList.add('hidden');
+            btnOpenWaze.classList.remove('inline-flex');
+        }
+        if (btnOpenGoogleMaps) {
+            btnOpenGoogleMaps.classList.add('hidden');
+            btnOpenGoogleMaps.classList.remove('inline-flex');
+        }
+    }
+
+    resetDetailsModalTabs();
+
+    // Documents logic
+    const docContainer = getById('viewDetailsDocumentContainer');
+    let docsList: { name: string; url: string; attachedAt?: string }[] = [];
+    
+    const parseCnpjDocuments = (val: any): { name: string; url: string; attachedAt?: string }[] => {
+        if (!val) return [];
+        let list: any[] = [];
+        if (Array.isArray(val)) {
+            list = val;
+        } else {
+            try {
+                if (typeof val === 'string' && val.trim().startsWith('[')) {
+                    list = JSON.parse(val);
+                } else if (typeof val === 'string' && val.trim() !== '') {
+                    list = [val];
+                }
+            } catch (e) {}
+        }
+        return list.map(item => {
+            if (typeof item === 'string') {
+                const fileName = item.substring(item.lastIndexOf('/') + 1);
+                return { name: fileName, url: item, attachedAt: new Date(2026, 0, 1).toISOString() };
+            }
+            if (item && typeof item === 'object' && item.url) {
+                return {
+                    name: item.name || item.url.substring(item.url.lastIndexOf('/') + 1),
+                    url: item.url,
+                    attachedAt: item.attachedAt || new Date().toISOString()
+                };
+            }
+            return null;
+        }).filter(Boolean) as { name: string; url: string; attachedAt: string }[];
+    };
+
+    docsList = parseCnpjDocuments(company.cnpj_document_url);
+
+    const getBase64 = (file: File) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    };
+
+    const renderDetailsDocsList = () => {
+        if (!docContainer) return;
+        docsList.sort((a: any, b: any) => new Date(b.attachedAt || 0).getTime() - new Date(a.attachedAt || 0).getTime());
+        if (docsList.length === 0) {
+            docContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12 gap-2 text-gray-400 dark:text-gray-500 w-full font-sans">
+                    <svg class="w-12 h-12 text-gray-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-sm font-medium">Nenhum documento anexado.</p>
+                </div>
+            `;
+            return;
+        }
+        docContainer.innerHTML = docsList.map((doc, idx) => {
+            const fileName = doc.url.substring(doc.url.lastIndexOf('/') + 1);
+            const d = doc.attachedAt ? new Date(doc.attachedAt) : null;
+            const dateStr = d ? `Anexado em ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '';
+            return `
+                <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:border-brand-300 dark:hover:border-brand-700 transition-all font-sans mb-3">
+                    <a href="${doc.url}" target="_blank" class="flex items-center gap-3 flex-1 min-w-0 mr-4 group text-left cursor-pointer decoration-none">
+                        <div class="p-2 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/60 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">${doc.name}</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">${fileName}</p>
+                            ${dateStr ? `
+                                <p class="text-[10px] text-gray-400 dark:text-gray-500 font-mono mt-1 flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    ${dateStr}
+                                </p>
+                            ` : ''}
+                        </div>
+                    </a>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button type="button" class="btn-rename-doc p-1.5 rounded text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 transition-colors" data-index="${idx}" title="Renomear documento">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                            </svg>
+                        </button>
+                        <button type="button" class="btn-delete-doc p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors" data-index="${idx}" title="Excluir documento">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    renderDetailsDocsList();
+
+    // Bind upload input
+    const detailCnpjFileInput = modal.querySelector('#detailCnpjFile') as HTMLInputElement | null;
+    if (detailCnpjFileInput) {
+        const newFileInput = detailCnpjFileInput.cloneNode(true) as HTMLInputElement;
+        detailCnpjFileInput.parentNode?.replaceChild(newFileInput, detailCnpjFileInput);
+        newFileInput.addEventListener('change', async (e: any) => {
+            const files = Array.from(newFileInput.files || []);
+            if (files.length === 0) return;
+            
+            const uploads: { name: string; base64: string; attachedAt: string; filename?: string }[] = [];
+            for (const file of files) {
+                try {
+                    const b64 = (await getBase64(file)) as string;
+                    const defaultName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                    uploads.push({
+                        name: defaultName,
+                        base64: b64,
+                        attachedAt: new Date().toISOString(),
+                        filename: file.name
+                    });
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            
+            if (uploads.length > 0) {
+                try {
+                    newFileInput.disabled = true;
+                    if (docContainer) docContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 animate-pulse font-sans">Enviando documentos...</p>';
+                    const response = await api(`/companies/${companyId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            cnpj_document_uploads: uploads
+                        })
+                    });
+                    
+                    const idx = companiesData.findIndex((c) => String(c.public_id) === String(companyId));
+                    if (idx >= 0) companiesData[idx] = response.data;
+                    filteredCompanies = [...companiesData];
+
+                    (window as any).UI.showAlert('alertMessage', 'Documentos anexados com sucesso!', 'success');
+                    docsList = parseCnpjDocuments(response.data?.cnpj_document_url);
+                    renderDetailsDocsList();
+                } catch (err: any) {
+                    console.error(err);
+                    (window as any).UI.showAlert('alertMessage', err.message || 'Erro ao enviar documentos.', 'error');
+                    renderDetailsDocsList();
+                } finally {
+                    newFileInput.disabled = false;
+                    newFileInput.value = '';
+                }
+            }
+        });
+    }
+
+    // Bind clicks for rename and delete within document container
+    if (docContainer) {
+        const newDocContainer = docContainer.cloneNode(true);
+        docContainer.parentNode?.replaceChild(newDocContainer, docContainer);
+        
+        newDocContainer.addEventListener('click', async (e: Event) => {
+            const target = e.target as HTMLElement | null;
+            const renameBtn = target?.closest('.btn-rename-doc');
+            const deleteBtn = target?.closest('.btn-delete-doc');
+            
+            if (renameBtn) {
+                const idx = parseInt(renameBtn.getAttribute('data-index') || '0', 10);
+                const doc = docsList[idx];
+                if (doc) {
+                    const newName = prompt('Digite o novo nome para o documento:', doc.name);
+                    if (newName && newName.trim()) {
+                        docsList[idx].name = newName.trim();
+                        try {
+                            const response = await api(`/companies/${companyId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({
+                                    cnpj_document_url: JSON.stringify(docsList)
+                                })
+                            });
+                            const cIdx = companiesData.findIndex((c) => String(c.public_id) === String(companyId));
+                            if (cIdx >= 0) companiesData[cIdx] = response.data;
+                            filteredCompanies = [...companiesData];
+
+                            (window as any).UI.showAlert('alertMessage', 'Documento renomeado com sucesso!', 'success');
+                            renderDetailsDocsList();
+                        } catch (err: any) {
+                            console.error(err);
+                            (window as any).UI.showAlert('alertMessage', 'Erro ao renomear documento.', 'error');
+                        }
+                    }
+                }
+            }
+            
+            if (deleteBtn) {
+                const idx = parseInt(deleteBtn.getAttribute('data-index') || '0', 10);
+                if (confirm('Deseja realmente excluir este documento?')) {
+                    docsList.splice(idx, 1);
+                    try {
+                        const response = await api(`/companies/${companyId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({
+                                    cnpj_document_url: JSON.stringify(docsList)
+                                })
+                            });
+                            const cIdx = companiesData.findIndex((c) => String(c.public_id) === String(companyId));
+                            if (cIdx >= 0) companiesData[cIdx] = response.data;
+                            filteredCompanies = [...companiesData];
+
+                            (window as any).UI.showAlert('alertMessage', 'Documento excluído com sucesso!', 'success');
+                            renderDetailsDocsList();
+                    } catch (err: any) {
+                        console.error(err);
+                        (window as any).UI.showAlert('alertMessage', 'Erro ao excluir documento.', 'error');
+                    }
+                }
+            }
+        });
+    }
 }
 
 })();

@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { AccountingEntryService, accountingEntrySchema } from '../services/accountingEntryService';
+import { SolidconConfigService } from '../services/solidconConfigService';
+import { ExternalDbService } from '../services/externalDbService';
+import pool from '../config/db';
 
 export class AccountingEntryController {
     static async createEntry(req: Request, res: Response): Promise<void> {
@@ -135,6 +138,155 @@ export class AccountingEntryController {
                 return;
             }
             throw error;
+        }
+    }
+    static async getSolidconAccountingEntries(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { connectionId, startDate, endDate, source, cdFilial } = req.query;
+
+            if (!startDate || !endDate) {
+                res.status(400).json({ status: 'error', message: 'Período obrigatório (startDate e endDate).' });
+                return;
+            }
+
+            let solidconConfig: any = null;
+            if (connectionId) {
+                const cleanId = parseInt(String(connectionId).replace('solidcon_', ''), 10);
+                if (!isNaN(cleanId)) {
+                    solidconConfig = await SolidconConfigService.getById(cleanId, companyId);
+                }
+            }
+
+            if (!solidconConfig) {
+                const configs = await SolidconConfigService.list(companyId);
+                solidconConfig = configs.find(c => c.is_default) || configs[0] || null;
+            }
+
+            if (!solidconConfig) {
+                const [compRows]: any = await pool.query('SELECT serv_solidcon, bd_solidcon, login_solidcon, senha_solidcon, trade_name, company_name FROM companies WHERE id = ?', [companyId]);
+                const comp = compRows?.[0];
+                if (comp && comp.serv_solidcon) {
+                    solidconConfig = {
+                        name: comp.trade_name || comp.company_name || 'Padrão da Empresa',
+                        serv_solidcon: comp.serv_solidcon,
+                        bd_solidcon: comp.bd_solidcon || 'solidcon',
+                        login_solidcon: comp.login_solidcon,
+                        senha_solidcon: comp.senha_solidcon
+                    };
+                }
+            }
+
+            let host = (solidconConfig?.serv_solidcon || '').trim();
+            if (host.includes('190.107.93.66')) {
+                host = host.replace('190.107.93.66', 'n13884.ddns.net');
+            }
+            if (!host) {
+                host = 'n13884.ddns.net,1433';
+            }
+
+            const database = (solidconConfig?.bd_solidcon || 'solidcon').trim();
+            const user = (solidconConfig?.login_solidcon || 'aporttec').trim();
+            const password = solidconConfig?.senha_solidcon || '30mariafn@';
+
+            const entries = await ExternalDbService.getSolidconAccountingEntries(
+                {
+                    host: host,
+                    database: database === 'dorsal' ? 'solidcon' : database,
+                    user: user,
+                    password: password
+                },
+                {
+                    startDate: String(startDate),
+                    endDate: String(endDate),
+                    source: (source as any) || 'all',
+                    cdFilial: cdFilial ? String(cdFilial) : undefined
+                }
+            );
+
+            res.status(200).json({
+                status: 'success',
+                data: entries,
+                count: entries.length,
+                connection: {
+                    id: solidconConfig?.id || null,
+                    name: solidconConfig?.name || 'Solidcon Principal',
+                    host: host,
+                    database: database === 'dorsal' ? 'solidcon' : database
+                }
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                status: 'error',
+                message: `Falha ao consultar movimentos do Solidcon: ${error?.message || error}`
+            });
+        }
+    }
+
+    static async importFromSolidcon(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { entries } = req.body;
+
+            if (!Array.isArray(entries) || entries.length === 0) {
+                res.status(400).json({ status: 'error', message: 'Nenhum lançamento fornecido para importação.' });
+                return;
+            }
+
+            // Normaliza os lançamentos para o formato do AccountingEntryService
+            const normalizedEntries = entries.map((e: any) => ({
+                entry_date: String(e.entry_date || '').split('T')[0],
+                debit_account_code: String(e.debit_account_code || e.debit_account_easy_code || '').trim(),
+                credit_account_code: String(e.credit_account_code || e.credit_account_easy_code || '').trim(),
+                amount: Math.abs(Number(e.amount) || 0),
+                document_ref: e.document_ref ? String(e.document_ref).trim() : undefined,
+                history: String(e.history || 'Importado do Solidcon').trim(),
+            })).filter(e => e.entry_date && e.amount > 0 && e.debit_account_code && e.credit_account_code);
+
+            if (normalizedEntries.length === 0) {
+                res.status(400).json({
+                    status: 'error',
+                    message: 'Nenhum lançamento válido com Conta Débito e Conta Crédito preenchidas para importação.'
+                });
+                return;
+            }
+
+            const result = await AccountingEntryService.batchImportEntries(companyId, normalizedEntries, 'code');
+
+            res.status(200).json({
+                status: 'success',
+                data: result,
+                message: `Importação do Solidcon concluída! ${result.success} lançamento(s) importado(s), ${result.errors.length} falha(s).`
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                status: 'error',
+                message: `Erro na importação de lançamentos do Solidcon: ${error?.message || error}`
+            });
+        }
+    }
+
+    static async verifySolidconEntries(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { entries } = req.body;
+
+            if (!Array.isArray(entries) || entries.length === 0) {
+                res.status(400).json({ status: 'error', message: 'Nenhum lançamento fornecido para verificação.' });
+                return;
+            }
+
+            const verification = await AccountingEntryService.verifySolidconEntries(companyId, entries);
+
+            res.status(200).json({
+                status: 'success',
+                data: verification
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                status: 'error',
+                message: `Erro ao verificar lançamentos do Solidcon: ${error?.message || error}`
+            });
         }
     }
 }

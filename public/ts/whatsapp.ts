@@ -216,10 +216,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const registerEntityOptions = [
         { key: 'customer', label: 'Cliente', page: '/pages/customers.html' },
         { key: 'supplier', label: 'Fornecedor', page: '/pages/suppliers.html' },
+        { key: 'contact', label: 'Contato', page: '/pages/contacts.html' },
         { key: 'seller', label: 'Vendedor', page: '/pages/sellers.html' },
         { key: 'buyer', label: 'Comprador', page: '/pages/buyers.html' },
         { key: 'service_provider', label: 'Prestador de Servico', page: '/pages/service_providers.html' },
         { key: 'accountant', label: 'Contador', page: '/pages/accountant.html' },
+        { key: 'socio', label: 'Sócio', page: '/pages/socio.html' },
+        { key: 'admin', label: 'Administrador', page: '/pages/users.html' },
+        { key: 'operator', label: 'Operador', page: '/pages/users.html' },
+        { key: 'financial', label: 'Financeiro', page: '/pages/users.html' },
+        { key: 'super_admin', label: 'Super Admin', page: '/pages/users.html' },
+        { key: 'admin_basic', label: 'Admin Básico', page: '/pages/users.html' },
+        { key: 'user', label: 'Usuário', page: '/pages/users.html' },
     ];
 
     const registerEntityLabelByKey = new Map<string, string>(
@@ -985,11 +993,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderConversations() {
         if (!convList) return;
 
-        if (currentSessionStatus !== 'ready') {
-            convList.innerHTML = '<div class="py-10 px-4 text-center text-sm text-gray-400 dark:text-gray-500">O WhatsApp não está sincronizado. Conecte para visualizar os contatos.</div>';
-            return;
-        }
-
         const mergedConversations = getMergedConversationList();
         const registeredPhones = new Set(Array.from(registeredContactRolesByPhone.keys()));
         const filtered = searchTerm
@@ -1062,9 +1065,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const contactMap = new Map<string, any>();
             const rolesByPhone = new Map<string, Set<string>>();
 
-            const [customersResult, suppliersResult, usersResult] = await Promise.allSettled([
+            const [customersResult, suppliersResult, contactsResult, usersResult] = await Promise.allSettled([
                 api('/entities/customers'),
                 api('/entities/suppliers'),
+                api('/entities/contacts'),
                 api('/users'),
             ]);
 
@@ -1100,9 +1104,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
+            if (contactsResult.status === 'fulfilled') {
+                const contacts = Array.isArray(contactsResult.value?.data) ? contactsResult.value.data : [];
+                for (const contact of contacts) {
+                    const phone = normalizePhone(contact?.phone);
+                    if (!phone) continue;
+
+                    const existing = contactMap.get(phone);
+                    const fallbackName = String(contact?.name || phone);
+                    const nextName = existing?.contact_name || fallbackName;
+
+                    contactMap.set(phone, {
+                        contact_phone: phone,
+                        contact_name: nextName,
+                    });
+                    addRoleForPhone(rolesByPhone, phone, 'contact');
+                }
+            }
+
             if (usersResult.status === 'fulfilled') {
                 const users = Array.isArray(usersResult.value?.data) ? usersResult.value.data : [];
-                const supportedRoles = new Set(['seller', 'buyer', 'service_provider', 'accountant']);
+                const supportedRoles = new Set([
+                    'seller', 'buyer', 'service_provider', 'accountant',
+                    'admin', 'operator', 'financial', 'super_admin', 'admin_basic', 'user'
+                ]);
 
                 for (const user of users) {
                     const role = String(user?.role || '');

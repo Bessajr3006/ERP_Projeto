@@ -31,6 +31,10 @@
             discount: 0,
             saleData: { customerId: '', deliveryAddress: '' },
             payments: { cash: 0, pix: 0, credit: 0, debit: 0, boleto: 0 },
+            addedPayments: [],
+            currentMethodAdding: null,
+            currentReceivableTypeAdding: null,
+            currentAmountAdding: 0,
             paymentMethodsList: [
                 { id: 'cash', name: 'Dinheiro' },
                 { id: 'pix', name: 'PIX' },
@@ -38,9 +42,79 @@
                 { id: 'debit', name: 'Débito' },
                 { id: 'boleto', name: 'Boleto' },
             ],
+            cardBrands: [],
+            receivableTypes: [],
+            cardConfigurations: [],
+            bankAccounts: [],
+            selectedCreditCardBrandPublicId: null,
+            selectedCreditReceivableTypePublicId: null,
+            selectedDebitCardBrandPublicId: null,
+            selectedDebitReceivableTypePublicId: null,
+            companyDetails: null,
         };
         // --- Helpers ---
+        function generatePixCopyPaste(key, name, city, amount) {
+            const cleanKey = String(key || '').trim();
+            const cleanName = String(name || 'KEYSTONE ERP').trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            const cleanCity = String(city || 'SAO PAULO').trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            const pad = (id, value) => id + String(value.length).padStart(2, '0') + value;
+            const merchantAccountInfo = pad('00', 'br.gov.bcb.pix') +
+                pad('01', cleanKey);
+            const payload = pad('00', '01') +
+                pad('26', merchantAccountInfo) +
+                pad('52', '0000') +
+                pad('53', '986') +
+                pad('54', amount.toFixed(2)) +
+                pad('58', 'BR') +
+                pad('59', cleanName.substring(0, 25)) +
+                pad('60', cleanCity.substring(0, 15)) +
+                pad('62', pad('05', '***'));
+            let crc = 0xFFFF;
+            const dataToCrc = payload + '6304';
+            for (let i = 0; i < dataToCrc.length; i++) {
+                let x = ((crc >> 8) ^ dataToCrc.charCodeAt(i)) & 0xFF;
+                x ^= x >> 4;
+                crc = ((crc << 8) ^ (x << 12) ^ (x << 5) ^ x) & 0xFFFF;
+            }
+            const crcString = crc.toString(16).toUpperCase().padStart(4, '0');
+            return dataToCrc + crcString;
+        }
         const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+        const parseCurrencyToNumber = (str) => {
+            if (!str)
+                return 0;
+            const clean = str.replace(/\D/g, '');
+            if (!clean)
+                return 0;
+            return parseFloat(clean) / 100;
+        };
+        const getPaymentMethodIcon = (id) => {
+            switch (id) {
+                case 'cash':
+                    return `<svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+                case 'pix':
+                    return `<svg class="w-5 h-5 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>`;
+                case 'credit':
+                case 'debit':
+                    return `<svg class="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>`;
+                case 'boleto':
+                    return `<svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>`;
+                default:
+                    return ``;
+            }
+        };
+        const getPaymentMethodName = (id) => {
+            const match = state.paymentMethodsList.find((m) => m.id === id);
+            return match ? match.name : id;
+        };
+        const getCardBrandName = (publicId) => {
+            const match = state.cardBrands.find((b) => b.public_id === publicId);
+            return match ? match.name : 'Outra';
+        };
+        const getReceivableTypeName = (publicId) => {
+            const match = state.receivableTypes.find((rt) => rt.public_id === publicId);
+            return match ? match.name : 'Outro';
+        };
         const getProductPrice = (product) => {
             if (product?.is_promotional && Number(product.promotional_price) > 0) {
                 return Number(product.promotional_price);
@@ -62,6 +136,12 @@
             const app = document.getElementById('vue-app');
             if (!app)
                 return;
+            let activeId = document.activeElement?.id;
+            const selectionStart = document.activeElement?.selectionStart;
+            const selectionEnd = document.activeElement?.selectionEnd;
+            if (!state.isCartOpen && document.activeElement?.closest('#cartSidebar')) {
+                activeId = 'btnToggleCartMobile';
+            }
             app.innerHTML = `
             <div class="flex flex-col md:flex-row flex-1 min-h-0 w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm overflow-hidden relative">
                 <!-- Catalog Section -->
@@ -132,7 +212,9 @@
 
                 <!-- Cart Section -->
                 <section id="cartSidebar" class="${getSalesLayout() === 'split'
-                ? (state.isCartOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none md:translate-x-0 md:opacity-100 md:pointer-events-auto') + ' absolute md:static inset-y-0 right-0 h-full w-[90%] sm:w-112.5 ' + getSplitCartSizeClass() + ' z-40 md:z-10 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] md:shadow-none border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform md:shrink-0'
+                ? (state.isCartOpen
+                    ? 'translate-x-0 opacity-100 pointer-events-auto md:static md:translate-x-0 md:opacity-100 md:pointer-events-auto md:shrink-0 ' + getSplitCartSizeClass()
+                    : 'translate-x-full opacity-0 pointer-events-none md:hidden') + ' absolute inset-y-0 right-0 h-full w-[90%] sm:w-112.5 z-40 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] md:shadow-none border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform'
                 : (state.isCartOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none') + ' absolute inset-y-0 right-0 h-full w-[90%] sm:w-112.5 z-40 bg-white dark:bg-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.15)] border-l border-gray-200 dark:border-slate-700 transition-all duration-300 ease-out will-change-transform'}">
                     <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700">
                         <div class="flex justify-between items-center mb-3">
@@ -196,24 +278,174 @@
                             <p class="text-sm font-medium text-brand-600 dark:text-brand-400 uppercase">Total a Pagar</p>
                             <p class="text-4xl font-black text-brand-800 dark:text-white">${formatCurrency(getCartTotal())}</p>
                         </div>
-                        <div class="space-y-3">
-                            ${state.paymentMethodsList
-                .map((method) => `
-                                <div class="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                                    <span class="font-bold dark:text-gray-200">${method.name}</span>
+                        <div class="space-y-4">
+                            <!-- Escolha da Forma de Pagamento -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold uppercase text-gray-400 dark:text-gray-500">Escolha a Forma de Pagamento</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                    ${state.receivableTypes.length > 0 ? state.receivableTypes.map(rt => {
+                const isSelected = state.currentReceivableTypeAdding === rt.public_id;
+                const nameNorm = rt.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                let iconSvg = '';
+                let colorClass = '';
+                if (nameNorm.includes('dinheiro') || nameNorm.includes('cash') || nameNorm.includes('mao')) {
+                    iconSvg = `<svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                    colorClass = 'hover:bg-emerald-50 dark:hover:bg-emerald-950/20';
+                }
+                else if (nameNorm.includes('pix')) {
+                    iconSvg = `<svg class="w-5 h-5 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>`;
+                    colorClass = 'hover:bg-cyan-50 dark:hover:bg-cyan-950/20';
+                }
+                else if (nameNorm.includes('boleto')) {
+                    iconSvg = `<svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>`;
+                    colorClass = 'hover:bg-amber-50 dark:hover:bg-amber-950/20';
+                }
+                else if (nameNorm.includes('debito') || nameNorm.includes('debit')) {
+                    iconSvg = `<svg class="w-5 h-5 text-purple-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>`;
+                    colorClass = 'hover:bg-purple-50 dark:hover:bg-purple-950/20';
+                }
+                else {
+                    iconSvg = `<svg class="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>`;
+                    colorClass = 'hover:bg-blue-50 dark:hover:bg-blue-950/20';
+                }
+                return `
+                                        <button type="button" class="btn-select-receivable-method px-2 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 ${colorClass} text-xs font-bold dark:text-white transition-all flex flex-col items-center justify-center gap-1.5 shadow-sm ${isSelected ? 'ring-2 ring-brand-500 border-brand-500' : ''}" data-receivable-type-public-id="${rt.public_id}">
+                                            ${iconSvg}
+                                            <span class="text-[10px] uppercase font-semibold text-center leading-tight">${rt.name}</span>
+                                        </button>
+                                        `;
+            }).join('') : state.paymentMethodsList.filter(m => ['cash', 'pix', 'boleto'].includes(m.id)).map(m => `
+                                        <button type="button" class="btn-select-payment-method px-2 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-brand-50 dark:hover:bg-brand-900/20 text-xs font-bold dark:text-white transition-all flex flex-col items-center justify-center gap-1.5 shadow-sm ${state.currentMethodAdding === m.id && !state.currentReceivableTypeAdding ? 'ring-2 ring-brand-500 border-brand-500' : ''}" data-method="${m.id}">
+                                            ${getPaymentMethodIcon(m.id)}
+                                            <span class="text-[10px] uppercase font-semibold">${m.name}</span>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Formulário de Lançamento de Valor -->
+                            ${state.currentMethodAdding ? `
+                            <div class="p-4 bg-gray-50 dark:bg-slate-900/40 rounded-xl border dark:border-slate-700 space-y-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-xs font-bold uppercase text-gray-400 dark:text-gray-500">
+                                        Valor em ${state.currentReceivableTypeAdding
+                ? state.receivableTypes.find(x => x.public_id === state.currentReceivableTypeAdding)?.name
+                : getPaymentMethodName(state.currentMethodAdding)}
+                                            </span>
                                     <div class="relative w-48">
                                         <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500 font-bold">R$</div>
-                                        <input id="payment-${method.id}" name="payment_${method.id}" type="number" step="0.01" value="${state.payments[method.id] || ''}" data-method="${method.id}" class="payment-input w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-right font-bold focus:ring-brand-500 dark:text-white">
+                                        <input id="paymentAddingValue" type="text" class="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-right font-bold focus:ring-brand-500 dark:text-white" value="${formatCurrency(state.currentAmountAdding)}">
                                     </div>
                                 </div>
-                            `)
-                .join('')}
-                            <div class="flex justify-end gap-2 pt-2">
-                                <button type="button" class="btn-fast-cash text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded" data-val="10">+ R$ 10</button>
-                                <button type="button" class="btn-fast-cash text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded" data-val="20">+ R$ 20</button>
-                                <button type="button" class="btn-fast-cash text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded" data-val="50">+ R$ 50</button>
-                                <button type="button" class="btn-fast-cash text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded" data-val="100">+ R$ 100</button>
+
+                                ${(state.currentMethodAdding === 'credit' || state.currentMethodAdding === 'debit') ? (() => {
+                const rt = state.receivableTypes.find(x => x.public_id === state.currentReceivableTypeAdding);
+                let allowedBrands = [];
+                if (rt) {
+                    const paymentType = state.currentMethodAdding === 'debit' ? 'debito' : 'credito';
+                    const configs = state.cardConfigurations.filter(c => c.receivable_type_id === rt.id && c.payment_type === paymentType);
+                    allowedBrands = state.cardBrands.filter(b => configs.some(c => c.card_brand_id === b.id));
+                }
+                return `
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <label class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">Bandeira</label>
+                                            <select id="paymentAddingCardBrand" class="mt-1 w-full text-xs border dark:border-slate-700 p-2.5 rounded-lg bg-white dark:bg-slate-800 dark:text-white outline-none">
+                                                ${allowedBrands.length > 0
+                    ? allowedBrands.map(b => `<option value="${b.public_id}">${b.name}</option>`).join('')
+                    : `<option value="">Nenhuma bandeira configurada</option>`}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    `;
+            })() : ''}
+
+                                <div class="flex justify-between items-center gap-2 pt-2 border-t dark:border-slate-800">
+                                    <div class="flex gap-1">
+                                        <button type="button" class="btn-fast-cash text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 px-2.5 py-1 rounded" data-val="10">+10</button>
+                                        <button type="button" class="btn-fast-cash text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 px-2.5 py-1 rounded" data-val="20">+20</button>
+                                        <button type="button" class="btn-fast-cash text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 px-2.5 py-1 rounded" data-val="50">+50</button>
+                                        <button type="button" class="btn-fast-cash text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 px-2.5 py-1 rounded" data-val="100">+100</button>
+                                    </div>
+                                    <button type="button" id="btnConfirmAddPayment" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow transition-colors">
+                                        Adicionar
+                                    </button>
+                                </div>
                             </div>
+                            ` : ''}
+
+                            <!-- Grid de Pagamentos Lançados -->
+                            ${state.addedPayments.length > 0 ? `
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold uppercase text-gray-400 dark:text-gray-500">Pagamentos Lançados</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    ${state.addedPayments.map(p => `
+                                        <div class="flex flex-col p-3 bg-gray-50 dark:bg-slate-900 border dark:border-slate-700/60 rounded-xl relative shadow-sm">
+                                            <div class="flex items-center justify-between border-b dark:border-slate-700/40 pb-1.5 mb-1.5">
+                                                <div class="flex items-center gap-1.5 flex-wrap">
+                                                    ${getPaymentMethodIcon(p.method)}
+                                                    <span class="font-bold dark:text-white text-[11px] uppercase tracking-wide">${getPaymentMethodName(p.method)}</span>
+                                                    ${p.receivableTypePublicId ? `
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-brand-100 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300 border border-brand-200 dark:border-brand-800/40 uppercase">
+                                                            ${getReceivableTypeName(p.receivableTypePublicId)}
+                                                        </span>
+                                                    ` : ''}
+                                                </div>
+                                                <button type="button" class="btn-remove-payment text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors" data-id="${p.id}" title="Remover Pagamento">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
+                                            <div class="flex flex-col gap-1 text-[11px]">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-gray-400 dark:text-gray-500 uppercase font-semibold">Valor</span>
+                                                    <span class="font-black text-brand-600 dark:text-brand-400">${formatCurrency(p.amount)}</span>
+                                                </div>
+                                                ${p.cardBrandPublicId ? `
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-gray-400 dark:text-gray-500 uppercase font-semibold">Bandeira</span>
+                                                    <span class="text-gray-600 dark:text-gray-300 font-medium">${getCardBrandName(p.cardBrandPublicId)}</span>
+                                                </div>
+                                                ` : ''}
+                                                ${p.receivableTypePublicId ? `
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-gray-400 dark:text-gray-500 uppercase font-semibold">Recebível</span>
+                                                    <span class="text-gray-600 dark:text-gray-300 font-medium">${getReceivableTypeName(p.receivableTypePublicId)}</span>
+                                                </div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            <!-- Detalhes do PIX se houver pagamento PIX ativo -->
+                            ${(() => {
+                const pixPayments = state.addedPayments.filter(p => p.method === 'pix');
+                if (pixPayments.length === 0)
+                    return '';
+                const totalPixAmt = pixPayments.reduce((sum, p) => sum + p.amount, 0);
+                const defaultBank = state.bankAccounts.find(b => b.public_id === state.defaultBankPublicId);
+                const pixKey = defaultBank?.pix_key || state.companyDetails?.cnpj || 'financeiro@keystone.local';
+                const companyName = state.companyDetails?.trade_name || state.companyDetails?.company_name || 'KEYSTONE ERP';
+                const companyCity = state.companyDetails?.city || 'SAO PAULO';
+                const pixCode = generatePixCopyPaste(pixKey, companyName, companyCity, totalPixAmt);
+                return `
+                                <div class="mt-1 p-4 border border-dashed dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900/50 flex flex-col items-center gap-3">
+                                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">Escaneie o QR Code abaixo para pagar via PIX (${formatCurrency(totalPixAmt)})</p>
+                                    <div class="bg-white p-2 rounded-lg border dark:border-slate-700">
+                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pixCode)}" class="w-36 h-36 mx-auto object-contain">
+                                    </div>
+                                    <div class="w-full">
+                                        <label class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase">Código Pix Copia e Cola</label>
+                                        <div class="flex gap-2 mt-1">
+                                            <input id="pix-copia-cola-text" type="text" readonly class="flex-1 text-[11px] border dark:border-slate-700 p-2 rounded bg-white dark:bg-slate-800 dark:text-gray-300 outline-none" value="${pixCode}">
+                                            <button type="button" id="btn-copy-pix-code" class="px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded text-xs font-bold transition-colors">Copiar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                `;
+            })()}
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30 flex flex-col justify-center ${getMissingAmount() <= 0 ? 'opacity-50' : ''}">
@@ -253,8 +485,15 @@
                         <div class="space-y-2 bg-gray-50 dark:bg-slate-900/50 p-3 rounded-xl border border-gray-100 dark:border-slate-800">
                             <label class="block text-xs font-bold uppercase text-gray-400">Link do Catálogo Digital</label>
                             <div class="flex gap-2">
-                                <input id="catalogLinkInput" type="text" readonly value="${window.location.origin}/pages/catalog.html?company=${state.companyPublicId}" class="flex-1 text-xs border p-2 rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-300 focus:outline-none">
-                                <button type="button" id="btnCopyCatalogLink" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-700 dark:hover:text-white px-3 py-2 rounded-lg font-bold transition-all">Copiar</button>
+                                ${(() => {
+                let link = `${window.location.origin}/pages/catalog.html?company=${state.companyPublicId}`;
+                if (state.cart.length > 0) {
+                    const cartData = state.cart.map(i => ({ id: i.product.public_id, qty: i.quantity }));
+                    link += `&cart=${encodeURIComponent(JSON.stringify(cartData))}`;
+                }
+                return `<input id="catalogLinkInput" type="text" readonly value="${link}" class="flex-1 text-xs border p-2 rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-gray-300 focus:outline-none">`;
+            })()}
+                                <button type="button" id="btnCopyCatalogLink" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white px-3 py-2 rounded-lg font-bold transition-all">Copiar</button>
                             </div>
                         </div>
 
@@ -276,15 +515,27 @@
             </div>
         `;
             attachEventListeners();
+            if (activeId) {
+                const activeEl = document.getElementById(activeId);
+                if (activeEl) {
+                    activeEl.focus();
+                    if (selectionStart !== null && selectionEnd !== null) {
+                        try {
+                            activeEl.setSelectionRange(selectionStart, selectionEnd);
+                        }
+                        catch (e) { }
+                    }
+                }
+            }
         }
         function getSalesLayout() {
-            const pref = localStorage.getItem('sales_layout');
+            const pref = window.CompanyStorage?.getItem('sales_layout') ?? localStorage.getItem('sales_layout');
             if (pref === 'split' || pref === 'drawer')
                 return pref;
             return 'drawer';
         }
         function getSplitCartSizeClass() {
-            const pref = localStorage.getItem('split_cart_size') || 'medium';
+            const pref = (window.CompanyStorage?.getItem('split_cart_size') ?? localStorage.getItem('split_cart_size')) || 'medium';
             if (pref === 'small')
                 return 'md:w-80 lg:w-96';
             if (pref === 'large')
@@ -292,7 +543,7 @@
             return 'md:w-96 lg:w-[26rem]'; // medium (default)
         }
         function getSalesCardsPerRowClass() {
-            const pref = localStorage.getItem('sales_cards_per_row');
+            const pref = window.CompanyStorage?.getItem('sales_cards_per_row') ?? localStorage.getItem('sales_cards_per_row');
             const valid = [
                 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3',
                 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4',
@@ -401,7 +652,6 @@
         function attachEventListeners() {
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {
-                searchInput.focus();
                 searchInput.addEventListener('input', (e) => {
                     state.searchQuery = e.target.value;
                     const grid = document.getElementById('productGrid');
@@ -459,23 +709,130 @@
             document.getElementById('deliveryAddress')?.addEventListener('input', (e) => {
                 state.saleData.deliveryAddress = e.target.value;
             });
-            document.querySelectorAll('.payment-input').forEach((input) => {
-                input.addEventListener('input', (e) => {
-                    const el = e.target;
-                    const method = el.dataset.method;
-                    if (!method)
+            // Seletor de forma de pagamento
+            document.querySelectorAll('.btn-select-payment-method').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const method = e.currentTarget.dataset.method;
+                    state.currentMethodAdding = method;
+                    state.currentReceivableTypeAdding = null;
+                    state.currentAmountAdding = Math.max(0, getMissingAmount());
+                    render();
+                    const valInput = document.getElementById('paymentAddingValue');
+                    if (valInput) {
+                        valInput.focus();
+                        valInput.select();
+                    }
+                });
+            });
+            // Seletor de Tipo de Recebível (cartão)
+            document.querySelectorAll('.btn-select-receivable-method').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const rtPublicId = e.currentTarget.dataset.receivableTypePublicId;
+                    if (!rtPublicId)
                         return;
-                    state.payments[method] = parseFloat(el.value) || 0;
+                    const rt = state.receivableTypes.find(x => x.public_id === rtPublicId);
+                    const nameNorm = (rt?.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let method = 'credit';
+                    if (nameNorm.includes('dinheiro') || nameNorm.includes('cash') || nameNorm.includes('mao')) {
+                        method = 'cash';
+                    }
+                    else if (nameNorm.includes('pix')) {
+                        method = 'pix';
+                    }
+                    else if (nameNorm.includes('boleto')) {
+                        method = 'boleto';
+                    }
+                    else if (nameNorm.includes('debito') || nameNorm.includes('debit')) {
+                        method = 'debit';
+                    }
+                    state.currentMethodAdding = method;
+                    state.currentReceivableTypeAdding = rtPublicId;
+                    state.currentAmountAdding = Math.max(0, getMissingAmount());
+                    render();
+                    const valInput = document.getElementById('paymentAddingValue');
+                    if (valInput) {
+                        valInput.focus();
+                        valInput.select();
+                    }
+                });
+            });
+            // Digitação do valor parcial
+            const valueInput = document.getElementById('paymentAddingValue');
+            if (valueInput) {
+                valueInput.addEventListener('input', (e) => {
+                    const el = e.target;
+                    const numericVal = parseCurrencyToNumber(el.value);
+                    state.currentAmountAdding = numericVal;
+                    el.value = formatCurrency(numericVal);
+                });
+            }
+            // Adição de dinheiro rápido
+            document.querySelectorAll('.btn-fast-cash').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const valStr = e.currentTarget.dataset.val || '0';
+                    const val = parseFloat(valStr);
+                    state.currentAmountAdding = (state.currentAmountAdding || 0) + val;
+                    render();
+                    const valInput = document.getElementById('paymentAddingValue');
+                    if (valInput) {
+                        valInput.focus();
+                    }
+                });
+            });
+            // Confirmação da adição do pagamento
+            document.getElementById('btnConfirmAddPayment')?.addEventListener('click', () => {
+                if (!state.currentMethodAdding)
+                    return;
+                if (state.currentAmountAdding <= 0) {
+                    alert('Por favor, informe um valor maior que zero.');
+                    return;
+                }
+                const cardBrandEl = document.getElementById('paymentAddingCardBrand');
+                state.addedPayments.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    method: state.currentMethodAdding,
+                    amount: state.currentAmountAdding,
+                    cardBrandPublicId: cardBrandEl?.value || undefined,
+                    receivableTypePublicId: state.currentReceivableTypeAdding || undefined
+                });
+                // Atualiza os totais em state.payments
+                state.payments = { cash: 0, pix: 0, credit: 0, debit: 0, boleto: 0 };
+                for (const p of state.addedPayments) {
+                    state.payments[p.method] = (state.payments[p.method] || 0) + p.amount;
+                }
+                state.currentMethodAdding = null;
+                state.currentReceivableTypeAdding = null;
+                state.currentAmountAdding = 0;
+                render();
+            });
+            // Remoção de pagamentos lançados
+            document.querySelectorAll('.btn-remove-payment').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    state.addedPayments = state.addedPayments.filter(p => p.id !== id);
+                    // Atualiza os totais em state.payments
+                    state.payments = { cash: 0, pix: 0, credit: 0, debit: 0, boleto: 0 };
+                    for (const p of state.addedPayments) {
+                        state.payments[p.method] = (state.payments[p.method] || 0) + p.amount;
+                    }
                     render();
                 });
             });
-            document.querySelectorAll('.btn-fast-cash').forEach((btn) => {
-                btn.addEventListener('click', (e) => {
-                    const valStr = e.currentTarget?.dataset?.val || '0';
-                    const val = parseFloat(valStr);
-                    state.payments.cash = (Number(state.payments.cash) || 0) + (Number(val) || 0);
-                    render();
-                });
+            // Copiar código PIX
+            document.getElementById('btn-copy-pix-code')?.addEventListener('click', () => {
+                const input = document.getElementById('pix-copia-cola-text');
+                if (input) {
+                    navigator.clipboard.writeText(input.value);
+                    const btn = document.getElementById('btn-copy-pix-code');
+                    if (btn) {
+                        btn.textContent = 'Copiado!';
+                        setTimeout(() => {
+                            const b = document.getElementById('btn-copy-pix-code');
+                            if (b)
+                                b.textContent = 'Copiar';
+                        }, 2000);
+                    }
+                }
             });
             document.getElementById('btnConfirmSale')?.addEventListener('click', confirmSale);
             // Catalog WhatsApp Events
@@ -642,6 +999,10 @@
             if (state.cart.length === 0)
                 return void alert('Carrinho vazio.');
             state.payments = { cash: 0, pix: 0, credit: 0, debit: 0, boleto: 0 };
+            state.addedPayments = [];
+            state.currentMethodAdding = null;
+            state.currentReceivableTypeAdding = null;
+            state.currentAmountAdding = 0;
             state.isPaymentModalOpen = true;
             render();
         }
@@ -663,9 +1024,14 @@
                 return void alert(`Falta pagar ${formatCurrency(getMissingAmount())}`);
             if (!state.defaultBankPublicId || !state.defaultCategoryPublicId)
                 return void alert('Configure o banco/categoria padrão.');
-            const payments = state.paymentMethodsList
-                .map((m) => ({ method: m.id, amount: Number(state.payments[m.id]) || 0 }))
-                .filter((p) => p.amount > 0);
+            const payments = state.addedPayments.map((p) => {
+                return {
+                    method: p.method,
+                    amount: p.amount,
+                    card_brand_public_id: p.cardBrandPublicId || null,
+                    receivable_type_public_id: p.receivableTypePublicId || null
+                };
+            });
             const payload = {
                 customer_public_id: state.saleData.customerId || null,
                 delivery_address: state.saleData.deliveryAddress || null,
@@ -706,12 +1072,15 @@
             state.sendingCatalog = true;
             render();
             try {
+                const cartData = state.cart.map(i => ({ id: i.product.public_id, qty: i.quantity }));
+                const cartJson = state.cart.length > 0 ? JSON.stringify(cartData) : null;
                 await api('/products/send-catalog', {
                     method: 'POST',
                     body: JSON.stringify({
                         phone: state.catalogPhone,
                         type: type,
-                        origin: window.location.origin
+                        origin: window.location.origin,
+                        cart: cartJson
                     }),
                 });
                 alert('Catálogo enviado com sucesso via WhatsApp!');
@@ -725,19 +1094,34 @@
                 render();
             }
         }
-        // --- Init ---
         try {
-            const [pRes, cRes, cuRes, bRes, fRes, _aRes] = await Promise.all([
+            const [pRes, cRes, cuRes, bRes, fRes, _aRes, recRes, brandRes, ccRes] = await Promise.all([
                 api('/products'),
                 api('/estoque/categories'),
                 api('/entities/customers'),
                 api('/bank-accounts'),
                 api('/finance/categories?type=income'),
                 api('/auth/me'),
+                api('/receivable-types'),
+                api('/card-brands'),
+                api('/card-configurations'),
             ]);
             state.products = pRes.data || [];
             state.categories = cRes.data || [];
             state.customers = cuRes.data || [];
+            state.bankAccounts = bRes.data || [];
+            state.receivableTypes = recRes.data || [];
+            state.cardBrands = brandRes.data || [];
+            state.cardConfigurations = ccRes.data || [];
+            state.companyDetails = _aRes.data?.company || null;
+            if (state.cardBrands.length > 0) {
+                state.selectedCreditCardBrandPublicId = state.cardBrands[0].public_id;
+                state.selectedDebitCardBrandPublicId = state.cardBrands[0].public_id;
+            }
+            if (state.receivableTypes.length > 0) {
+                state.selectedCreditReceivableTypePublicId = state.receivableTypes[0].public_id;
+                state.selectedDebitReceivableTypePublicId = state.receivableTypes[0].public_id;
+            }
             if (bRes.data?.length > 0)
                 state.defaultBankPublicId = bRes.data[0].public_id;
             const salesCat = fRes.data?.find((c) => String(c.name || '').toLowerCase().includes('venda')) || fRes.data?.[0];

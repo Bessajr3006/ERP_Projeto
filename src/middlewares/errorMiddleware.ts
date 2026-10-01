@@ -23,6 +23,16 @@ export const errorMiddleware = (
         return;
     }
 
+    // 1.1 JSON parsing errors from body-parser
+    if (err instanceof SyntaxError && (err as any).status === 400 && 'body' in err) {
+        logger.warn({ err }, 'Invalid JSON payload received');
+        res.status(400).json({
+            status: 'error',
+            message: 'Formato de dados inválido (JSON mal formatado).'
+        });
+        return;
+    }
+
     // 2. Operational AppErrors (throw new AppError)
     if (err instanceof AppError) {
         logger.warn({ err }, 'Operational Error');

@@ -1,0 +1,271 @@
+import { Request, Response } from 'express';
+import { z } from 'zod';
+import { FechamentoService } from '../services/fechamentoService';
+import { AppError } from '../errors/AppError';
+
+const currencyField = z.preprocess(
+    (val) => {
+        if (val === '' || val === null || val === undefined) return 0;
+        const parsed = Number(val);
+        return isNaN(parsed) ? 0 : parsed;
+    },
+    z.number().nonnegative()
+);
+
+const fechamentoCreateSchema = z.object({
+    customerId: z.preprocess(
+        (val) => {
+            if (val === '' || val === null || val === undefined) return undefined;
+            const parsed = Number(val);
+            return isNaN(parsed) ? undefined : parsed;
+        },
+        z.number({ required_error: 'Cliente é obrigatório' }).int()
+    ),
+    competencia: z.string().trim().regex(/^\d{4}-\d{2}$/, 'Competência inválida (formato YYYY-MM)'),
+    compra: z.object({
+        valor: currencyField.optional().default(0),
+        bs_icms: currencyField.optional().default(0),
+        isento: currencyField.optional().default(0),
+        outros: currencyField.optional().default(0),
+        pis: currencyField.optional().default(0),
+        cofins: currencyField.optional().default(0),
+    }).optional().default({}),
+    venda: z.object({
+        valor: currencyField.optional().default(0),
+        bs_icms: currencyField.optional().default(0),
+        isento: currencyField.optional().default(0),
+        outros: currencyField.optional().default(0),
+        pis: currencyField.optional().default(0),
+        cofins: currencyField.optional().default(0),
+    }).optional().default({}),
+    apuracao: z.object({
+        icms: currencyField.optional().default(0),
+        fecp: currencyField.optional().default(0),
+        pis: currencyField.optional().default(0),
+        cofins: currencyField.optional().default(0),
+        aj_icms: currencyField.optional().default(0),
+        aj_fecp: currencyField.optional().default(0),
+        aj_pis: currencyField.optional().default(0),
+        aj_cofins: currencyField.optional().default(0),
+    }).optional().default({}),
+    despesa: z.object({
+        adm: currencyField.optional().default(0),
+        operacional: currencyField.optional().default(0),
+        folha: currencyField.optional().default(0),
+        cmv: currencyField.optional().default(0),
+        ir_aluguel: currencyField.optional().default(0),
+    }).optional().default({}),
+    imposto_federal: z.object({
+        irpj: currencyField.optional().default(0),
+        csll: currencyField.optional().default(0),
+    }).optional().default({}),
+    simples: z.object({
+        faturamento: currencyField.optional().default(0),
+        aliquota: currencyField.optional().default(0),
+        das: currencyField.optional().default(0),
+        cpp: currencyField.optional().default(0),
+        icms: currencyField.optional().default(0),
+        ipi: currencyField.optional().default(0),
+        iss: currencyField.optional().default(0),
+        pis: currencyField.optional().default(0),
+        cofins: currencyField.optional().default(0),
+        irpj: currencyField.optional().default(0),
+        csll: currencyField.optional().default(0),
+        faturamento_acumulado_12m: currencyField.optional().default(0),
+        faturamento_acumulado_ano_anterior: currencyField.optional().default(0),
+        valor_tributado: currencyField.optional().default(0),
+        valor_nao_tributado: currencyField.optional().default(0),
+    }).optional().default({}),
+    observacao: z.string().nullable().optional(),
+});
+
+const fechamentoUpdateSchema = fechamentoCreateSchema.partial();
+
+export class FechamentoController {
+    static async create(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const validatedData = fechamentoCreateSchema.parse(req.body);
+
+        const result = await FechamentoService.create(companyId, validatedData);
+
+        return res.status(201).json({
+            status: 'success',
+            data: result
+        });
+    }
+
+    static async importSalesXml(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const userPublicId = req.user!.id;
+        
+        const customerId = Number(req.body.customerId);
+        const xmls = req.body.xmls;
+        
+        if (!customerId) {
+            return res.status(400).json({ status: 'error', message: 'Cliente não informado.' });
+        }
+        if (!Array.isArray(xmls) || xmls.length === 0) {
+            return res.status(400).json({ status: 'error', message: 'Nenhum XML enviado.' });
+        }
+        
+        const result = await FechamentoService.importSalesXml(companyId, userPublicId, customerId, xmls);
+        
+        return res.status(200).json({
+            status: 'success',
+            data: result
+        });
+    }
+
+    static async importSpedFiscal(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const userPublicId = req.user!.id;
+        
+        const customerId = req.body.customerId ? Number(req.body.customerId) : null;
+        const fileContent = req.body.fileContent;
+        
+        if (!fileContent) {
+            return res.status(400).json({ status: 'error', message: 'Conteúdo do arquivo SPED não enviado.' });
+        }
+        
+        const result = await FechamentoService.importSpedFiscal(companyId, userPublicId, customerId, fileContent);
+        
+        return res.status(200).json({
+            status: 'success',
+            data: result
+        });
+    }
+
+    static async getFaturamentoAcumulado(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const customerId = Number(req.query.customerId);
+        const competencia = String(req.query.competencia || '').trim();
+
+        if (!customerId) {
+            return res.status(400).json({ status: 'error', message: 'Cliente não informado.' });
+        }
+        if (!competencia || !/^\d{4}-\d{2}$/.test(competencia)) {
+            return res.status(400).json({ status: 'error', message: 'Competência inválida (formato YYYY-MM).' });
+        }
+
+        const data = await FechamentoService.getFaturamentoAcumulado(companyId, customerId, competencia);
+        return res.status(200).json({
+            status: 'success',
+            data
+        });
+    }
+
+    static async list(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        
+        const filters: { customerId?: number; competencia?: string; customerGroupId?: number } = {};
+        if (req.query.customerId) {
+            filters.customerId = Number(req.query.customerId);
+        }
+        if (req.query.competencia) {
+            filters.competencia = String(req.query.competencia);
+        }
+        if (req.query.customerGroupId) {
+            filters.customerGroupId = Number(req.query.customerGroupId);
+        }
+
+        const result = await FechamentoService.list(companyId, filters);
+
+        return res.status(200).json({
+            status: 'success',
+            data: result
+        });
+    }
+
+    static async getByPublicId(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const publicId = req.params.id;
+
+        if (!publicId) {
+            throw new AppError('O ID público é obrigatório', 400);
+        }
+
+        const result = await FechamentoService.getByPublicId(publicId, companyId);
+
+        return res.status(200).json({
+            status: 'success',
+            data: result
+        });
+    }
+
+    static async update(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const publicId = req.params.id;
+        const validatedData = fechamentoUpdateSchema.parse(req.body);
+
+        if (!publicId) {
+            throw new AppError('O ID público é obrigatório', 400);
+        }
+
+        const result = await FechamentoService.update(publicId, companyId, validatedData);
+
+        return res.status(200).json({
+            status: 'success',
+            message: 'Fechamento atualizado com sucesso',
+            data: result
+        });
+    }
+
+    static async delete(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const publicId = req.params.id;
+
+        if (!publicId) {
+            throw new AppError('O ID público é obrigatório', 400);
+        }
+
+        await FechamentoService.delete(publicId, companyId);
+
+        return res.status(200).json({
+            status: 'success',
+            message: 'Fechamento excluído com sucesso'
+        });
+    }
+
+    static async getSpedVision(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const rawCust = req.query.customerId;
+        const customerId = rawCust !== undefined && rawCust !== '' ? Number(rawCust) : 0;
+        const competencia = String(req.query.competencia || '').trim();
+
+        if (isNaN(customerId)) {
+            throw new AppError('O ID do cliente/empresa é inválido.', 400);
+        }
+        if (!competencia || !/^\d{4}-\d{2}$/.test(competencia)) {
+            throw new AppError('A competência é obrigatória no formato YYYY-MM (ex: 2026-03).', 400);
+        }
+
+        const result = await FechamentoService.getSpedVision(companyId, customerId, competencia);
+
+        return res.status(200).json({
+            status: 'success',
+            data: result
+        });
+    }
+
+    static async deleteImportedSpedMovement(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const rawCust = req.body?.customerId ?? req.query?.customerId;
+        const customerId = rawCust !== undefined && rawCust !== '' ? Number(rawCust) : 0;
+        const competencia = String(req.body?.competencia || req.query?.competencia || '').trim();
+
+        if (isNaN(customerId)) {
+            throw new AppError('O ID do cliente/empresa é inválido.', 400);
+        }
+        if (!competencia || !/^\d{4}-\d{2}$/.test(competencia)) {
+            throw new AppError('A competência é obrigatória no formato YYYY-MM (ex: 2026-03).', 400);
+        }
+
+        const result = await FechamentoService.deleteImportedSpedMovement(companyId, customerId, competencia);
+
+        return res.status(200).json({
+            status: 'success',
+            message: result.message,
+            data: result
+        });
+    }
+}

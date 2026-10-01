@@ -6,6 +6,9 @@
  * Os testes importam `app.ts` diretamente — sem abrir porta.
  */
 import './config/runtimeEnv';
+import { patchWhatsAppWebJs } from './utils/patchWhatsAppWebJs';
+patchWhatsAppWebJs();
+
 import app from './app';
 import logger from './config/logger';
 import { WhatsAppBusinessService } from './services/whatsappBusinessService';
@@ -105,11 +108,21 @@ if (useHttps) {
     server = https.createServer(httpsOptions, app).listen(HTTPS_PORT, '0.0.0.0', () => {
         console.log(`[BOOT] Servidor subiu via HTTPS na porta ${HTTPS_PORT}`);
         logger.info({ port: HTTPS_PORT, protocol: 'https' }, `Servidor Bessa ERP iniciado em https://0.0.0.0:${HTTPS_PORT}`);
+        
+        // Auto-start persisted WhatsApp sessions
+        void WhatsAppBusinessService.startAllPersistedSessions().catch((err) => {
+            logger.error({ err }, '[server] Falha ao auto-iniciar sessoes do WhatsApp');
+        });
     });
 } else {
     server = app.listen(PORT, '0.0.0.0', () => {
         console.log(`[BOOT] Servidor subiu via HTTP na porta ${PORT}`);
         logger.info({ port: PORT }, `Servidor Bessa ERP iniciado na porta ${PORT}`);
+
+        // Auto-start persisted WhatsApp sessions
+        void WhatsAppBusinessService.startAllPersistedSessions().catch((err) => {
+            logger.error({ err }, '[server] Falha ao auto-iniciar sessoes do WhatsApp');
+        });
     });
 }
 

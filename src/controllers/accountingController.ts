@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { AccountingService } from '../services/accountingService';
+import { SolidconConfigService } from '../services/solidconConfigService';
+import { ExternalDbService } from '../services/externalDbService';
+import pool from '../config/db';
 
 const accountSchema = z.object({
     code: z.string().min(1, 'Código é obrigatório'),
@@ -117,4 +120,122 @@ export class AccountingController {
             throw error;
         }
     }
+
+    static async listSolidconConnections(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { SolidconConfigService } = await import('../services/solidconConfigService');
+            const configs = await SolidconConfigService.list(companyId);
+            res.status(200).json({ status: 'success', data: configs });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error?.message || 'Erro ao listar conexões Solidcon' });
+        }
+    }
+
+    static async getSolidconChartOfAccounts(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { connectionId, cdPlanoContas } = req.query;
+            let solidconConfig: any = null;
+
+            if (connectionId) {
+                const cleanId = parseInt(String(connectionId).replace('solidcon_', ''), 10);
+                if (!isNaN(cleanId)) {
+                    solidconConfig = await SolidconConfigService.getById(cleanId, companyId);
+                }
+            }
+
+            if (!solidconConfig) {
+                const configs = await SolidconConfigService.list(companyId);
+                solidconConfig = configs.find(c => c.is_default) || configs[0] || null;
+            }
+
+            if (!solidconConfig) {
+                // Check company table legacy fields
+                const [compRows]: any = await pool.query('SELECT serv_solidcon, bd_solidcon, login_solidcon, senha_solidcon, trade_name, company_name FROM companies WHERE id = ?', [companyId]);
+                const comp = compRows?.[0];
+                if (comp && comp.serv_solidcon) {
+                    solidconConfig = {
+                        name: comp.trade_name || comp.company_name || 'Padrão da Empresa',
+                        serv_solidcon: comp.serv_solidcon,
+                        bd_solidcon: comp.bd_solidcon || 'solidcon',
+                        login_solidcon: comp.login_solidcon,
+                        senha_solidcon: comp.senha_solidcon
+                    };
+                }
+            }
+
+            let host = (solidconConfig?.serv_solidcon || '').trim();
+            if (host.includes('190.107.93.66')) {
+                host = host.replace('190.107.93.66', 'n13884.ddns.net');
+            }
+            if (!host) {
+                host = 'n13884.ddns.net,1433';
+            }
+
+            const database = (solidconConfig?.bd_solidcon || 'solidcon').trim();
+            const user = (solidconConfig?.login_solidcon || 'aporttec').trim();
+            const password = solidconConfig?.senha_solidcon || '30mariafn@';
+
+            const planId = cdPlanoContas ? parseInt(String(cdPlanoContas), 10) : undefined;
+            const accounts = await ExternalDbService.getSolidconChartOfAccounts({
+                host: host,
+                database: database === 'dorsal' ? 'solidcon' : database,
+                user: user,
+                password: password
+            }, planId);
+
+            res.status(200).json({
+                status: 'success',
+                data: accounts,
+                connection: {
+                    id: solidconConfig?.id || null,
+                    name: solidconConfig?.name || 'Solidcon Principal',
+                    host: host,
+                    database: database === 'dorsal' ? 'solidcon' : database
+                }
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                status: 'error',
+                message: `Falha ao conectar com banco Solidcon: ${error?.message || error}`
+            });
+        }
+    }
+
+    static async importFromSolidcon(req: Request, res: Response): Promise<void> {
+        try {
+            const companyId = req.user!.company_id;
+            const { accounts } = req.body;
+
+            if (!Array.isArray(accounts) || accounts.length === 0) {
+                res.status(400).json({ status: 'error', message: 'Nenhuma conta informada para importação.' });
+                return;
+            }
+
+            // Normaliza o payload para o formato esperado pelo AccountingService
+            const normalizedAccounts = accounts.map((acc: any) => ({
+                code: String(acc.code || acc.Codigo || '').trim(),
+                easy_code: acc.easy_code !== undefined && acc.easy_code !== null ? String(acc.easy_code).trim() : (acc.CodigoRapido !== undefined && acc.CodigoRapido !== null ? String(acc.CodigoRapido).trim() : undefined),
+                name: String(acc.name || acc.Nome || '').trim(),
+                type: (acc.type === 'synthetic' || acc.inAnalitica === false || acc.inAnalitica === 0) ? 'synthetic' : 'analytic',
+                nature: (acc.nature === 'credit' || acc.cdNaturezaDaConta === '02') ? 'credit' : 'debit',
+                status: (acc.status === 'inactive') ? 'inactive' : 'active'
+            })).filter(a => a.code && a.name);
+
+            const result = await AccountingService.batchUpsertAccounts(companyId, normalizedAccounts as any);
+
+            res.status(200).json({
+                status: 'success',
+                data: result,
+                message: `Importação do Solidcon concluída com sucesso! ${result.success} conta(s) processada(s).`
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                status: 'error',
+                message: `Erro ao importar contas do Solidcon: ${error?.message || error}`
+            });
+        }
+    }
 }
+

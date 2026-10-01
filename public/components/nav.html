@@ -31,7 +31,7 @@
                             class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 text-sm font-medium focus:outline-none"
                             aria-haspopup="true" aria-expanded="false" id="desktopOperationsDropdownBtn" title="Operação">
                             <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                             <svg class="ml-1 h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -65,7 +65,7 @@
                                         role="menuitem">
                                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                d="M9 12h6m-6 4h3M7 3h8l4 4v14H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
                                         </svg>
                                         Orçamentos
                                     </a>
@@ -75,7 +75,7 @@
                                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 3h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z" />
                                         </svg>
-                                        Lançamento de Serviço
+                                        Serviço
                                     </a>
                                     <a href="/pages/restaurant.html"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
@@ -84,6 +84,14 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                         </svg>
                                         Restaurante
+                                    </a>
+                                    <a href="/pages/gera-pix.html" data-module="gera_pix"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 12l10 10 10-10L12 2z" />
+                                        </svg>
+                                        Gera PIX
                                     </a>
                                 </div>
                             </div>
@@ -216,6 +224,12 @@
                                         <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 11h10M7 15h7M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
                                         Tipo de Estoque
                                     </a>
+                                    <a href="/pages/product-types.html" data-module="product_types"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                        Tipo de Produto
+                                    </a>
                                     <a href="/pages/categories.html"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
                                         role="menuitem">
@@ -252,7 +266,44 @@
                                         <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
                                         Produto
                                     </a>
-
+                                    <!-- Cad.Serviço nested dropdown -->
+                                    <div class="relative group/sub-cadservico">
+                                        <button type="button" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                            <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3H5a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
+                                                Cad.Serviço
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-cadservico:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000">
+                                            <div class="py-1">
+                                                <a href="/pages/service_types.html" data-module="service_types"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 11h10M7 15h7M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
+                                                    Tipo de Serviço
+                                                </a>
+                                                <a href="/pages/tributacao_municipal.html" data-module="service_tax_municipal"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h3M7 3h8l4 4v14H7a2 2 0 01-2-2V5a2 2 0 012-2zM15 3v4h4"/></svg>
+                                                    Tributação Municipal
+                                                </a>
+                                                <a href="/pages/tributacao_federal.html" data-module="service_tax_federal"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1m9-5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    Tributação Federal
+                                                </a>
+                                                <a href="/pages/service.html" data-module="services"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3H5a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
+                                                    Serviço
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -302,11 +353,39 @@
                                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9l-5 5-5-5m10 8H7"/></svg>
                                         Despesa
                                     </a>
+                                    <!-- Despesa Cartão nested dropdown -->
+                                    <div class="relative group/sub-despesacartao">
+                                        <button type="button" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                            <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                                Despesa Cartão
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-despesacartao:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000">
+                                            <div class="py-1">
+                                                <a href="/pages/card-debits.html" title="Pagamento de Cartão" data-module="card_debits" class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 10v1"/></svg>
+                                                    Pagamento de Cartão
+                                                </a>
+                                                <a href="/pages/card-expenses.html" title="Despesa Cartão" data-module="card_expenses" class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                                    Despesa Cartão
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <a href="/pages/revenues.html"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
                                         role="menuitem">
                                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 15l5-5 5 5M7 7h10"/></svg>
                                         Receita
+                                    </a>
+                                    <a href="/pages/card-statements.html" data-module="card_statements"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                        Extrato Cartão
                                     </a>
                                     <a href="/pages/banks.html"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
@@ -314,128 +393,73 @@
                                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-6 9 6M5 10v8m4-8v8m4-8v8m4-8v8M3 20h18"/></svg>
                                         Banco
                                     </a>
-                                    <a href="/pages/receivable-types.html" data-module="receivable_types"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                                        Tipo de Recebível
-                                    </a>
                                     <a href="/pages/statements.html"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
                                         role="menuitem">
                                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm2 4h6m-6 4h6m-6 4h4"/></svg>
-                                        Extrato
+                                        Extrato Banco
                                     </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="relative group h-full flex items-center">
-                        <button type="button"
-                            class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 text-sm font-medium focus:outline-none"
-                            aria-haspopup="true" aria-expanded="false" id="desktopServiceDropdownBtn" title="Serviço">
-                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
-                            </svg>
-                            <svg class="ml-1 h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd"
-                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div class="absolute left-0 top-full pt-1 w-48 hidden group-hover:block transition-all z-10000 transform origin-top"
-                            id="desktopServiceDropdownWrapper">
-                            <div class="rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700"
-                                id="desktopServiceDropdown">
-                                <div class="py-1" role="menu" aria-orientation="vertical"
-                                    aria-labelledby="desktopServiceDropdownBtn">
-                                    <div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
-                                        <span class="mr-2 inline-block w-2 h-2 rounded-full bg-violet-500"></span>
-                                        Serviço
+                                    <a href="/pages/finance_poscontrol.html" data-module="finance_poscontrol"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Fin. Pos-Controll
+                                    </a>
+                                    <!-- Forma de Pagamento nested dropdown -->
+                                    <div class="relative group/sub-formapagamento">
+                                        <button type="button" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                                           <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                                Pagamento
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-formapagamento:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000">
+                                            <div class="py-1">
+                                                <a href="/pages/payment-types.html" title="Tipo de Pagamento" data-module="payment_types" class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                                    Tipo de Pagamento
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <a href="/pages/service_types.html" data-module="service_types"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 11h10M7 15h7M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
-                                        Tipo de Serviço
-                                    </a>
-                                    <a href="/pages/tributacao_municipal.html" data-module="service_tax_municipal"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h3M7 3h8l4 4v14H7a2 2 0 01-2-2V5a2 2 0 012-2zM15 3v4h4"/></svg>
-                                        Tributação Municipal
-                                    </a>
-                                    <a href="/pages/tributacao_federal.html" data-module="service_tax_federal"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1m9-5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Tributação Federal
-                                    </a>
-                                    <a href="/pages/service.html" data-module="services"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3H5a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
-                                        Serviço
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="relative group h-full flex items-center">
-                        <button type="button"
-                            class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 text-sm font-medium focus:outline-none"
-                            aria-haspopup="true" aria-expanded="false" id="desktopOverviewDropdownBtn" title="Visão">
-                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            <svg class="ml-1 h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd"
-                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div class="absolute left-0 top-full pt-1 w-48 hidden group-hover:block transition-all z-10000 transform origin-top"
-                            id="desktopOverviewDropdownWrapper">
-                            <div class="rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700"
-                                id="desktopOverviewDropdown">
-                                <div class="py-1" role="menu" aria-orientation="vertical"
-                                    aria-labelledby="desktopOverviewDropdownBtn">
-                                    <div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
-                                        <span class="mr-2 inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-                                        Visão
+                                    <!-- Forma de Recebível nested dropdown -->
+                                    <div class="relative group/sub-formarecebivel">
+                                        <button type="button" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                            <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                Recebível
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-formarecebivel:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000">
+                                            <div class="py-1">
+                                                <a href="/pages/receivable-types.html" data-module="receivable_types" class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                                    Tipo de Recebível
+                                                </a>
+                                                <a href="/pages/card-brands.html" title="Bandeiras de Cartão" data-module="card_brands" class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138z"/></svg>
+                                                    Bandeiras de Cartão
+                                                </a>
+                                                <a href="/pages/card-configurations.html" title="Config. de Cartão" data-module="card_configurations" class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                                                    Config. de Cartão
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <a href="/pages/dashboard.html" title="Visão Geral" data-module="dashboard"
+                                    <a href="/pages/cost-centers.html" data-module="cost_centers"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
                                         role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                                        Visão Geral
-                                    </a>
-                                    <a href="/pages/finance-vision.html" title="Visão Financeiro" data-module="finance_vision"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 10v1m9-6a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Visão Financeiro
-                                    </a>
-                                    <a href="/pages/stock-vision.html" title="Visão Estoque" data-module="stock_vision"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
-                                        Visão Estoque
-                                    </a>
-                                    <a href="/pages/whatsapp-info.html" title="Visão Whatsapp" data-module="whatsapp-info"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z"/></svg>
-                                        Visão Whatsapp
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-10V4m-5 4V4m1 8h1m4 4h1m-5 4h1"></path></svg>
+                                        Centro de Custo
                                     </a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="relative group h-full flex items-center">
+                     <div class="relative group h-full flex items-center">
                         <button
                             class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 text-sm font-medium focus:outline-none"
                             aria-haspopup="true" aria-expanded="false" id="desktopCustomersDropdownBtn" title="Pessoas">
@@ -461,6 +485,18 @@
                                         <span class="mr-2 inline-block w-2 h-2 rounded-full bg-sky-500"></span>
                                         Pessoas
                                     </div>
+                                    <a href="/pages/customer-groups.html" data-module="customer_groups"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                        Grupos de Clientes
+                                    </a>
+                                    <a href="/pages/activity-groups.html" data-module="activity_groups"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                        Grupo de Atividade
+                                    </a>
                                     <a href="/pages/customers.html"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
                                         role="menuitem">
@@ -508,6 +544,13 @@
                                         <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zM8 8h8m-8 4h2m4 0h2M8 16h8"/></svg>
                                         Contador
                                     </a>
+                                    <a href="/pages/socio.html"
+                                        data-module="socio"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                        Sócio
+                                    </a>
 
                                     <a href="/pages/company.html"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
@@ -552,52 +595,129 @@
                                         Contabilidade
                                     </div>
 
-                                    <a href="/pages/plan_of_accounts.html"
-                                        data-module="accounting"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/></svg>
-                                        Plano de Contas
-                                    </a>
-                                    <a href="/pages/accounting_entries.html"
-                                        data-module="accounting"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m3 6V7m3 10v-3m4 6H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z"/></svg>
-                                        Lançamentos
-                                    </a>
-                                    <a href="/pages/accounting_auto_entries.html"
-                                        data-module="accounting_auto_entries"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                        Lançamento Automático
-                                    </a>
-                                    <a href="/pages/accounting_auto_history.html"
-                                        data-module="accounting_auto_history"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Histórico Automático
-                                    </a>
-                                    <a href="/pages/declaration_registration.html"
-                                        data-module="declaration_registration"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                        Cadastro de Declaração
-                                    </a>
-                                    <a href="/pages/declaration_control.html"
-                                        data-module="declaration_control"
-                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                                        role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                        Controle de Declaração
-                                    </a>
-                                    <a href="/pages/fechamento.html" data-module="fechamento" class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
-                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Fechamento
-                                    </a>
+                                    <!-- Contábil nested dropdown -->
+                                    <div class="relative group/sub-contabil">
+                                        <button type="button" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                            <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                                                Contábil
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-contabil:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000">
+                                            <div class="py-1">
+                                                <a href="/pages/plan_of_accounts.html"
+                                                    data-module="accounting"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/></svg>
+                                                    Plano de Conta
+                                                </a>
+                                                <a href="/pages/accounting_entries.html"
+                                                    data-module="accounting"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m3 6V7m3 10v-3m4 6H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z"/></svg>
+                                                    Lançamento
+                                                </a>
+                                                <a href="/pages/accounting_auto_entries.html"
+                                                    data-module="accounting_auto_entries"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                    Lançamento Automático
+                                                </a>
+                                                <a href="/pages/accounting_auto_history.html"
+                                                    data-module="accounting_auto_history"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    Histórico Automático
+                                                </a>
+                                                <a href="/pages/accounting_closing.html"
+                                                    data-module="accounting_closing"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    Fechamento
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Fiscal nested dropdown -->
+                                    <div class="relative group/sub-fiscal">
+                                        <button type="button" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                            <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14.125V21h6v-6.875M9 14.125h6m-6 0V11m6 3.125V11M9 11V3h6v8M9 11h6m-6 0h6"/></svg>
+                                                Fiscal
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-fiscal:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000">
+                                            <div class="py-1">
+                                                <a href="/pages/declaration_registration.html"
+                                                    data-module="declaration_registration"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                    Cadastro de Declaração
+                                                </a>
+                                                <a href="/pages/declaration_control.html"
+                                                    data-module="declaration_control"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                    Controle de Declaração
+                                                </a>
+                                                <a href="/pages/fechamento.html" data-module="fechamento" class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    Fechamento
+                                                </a>
+                                                <!-- Sped Fiscal nested dropdown -->
+                                                <div class="relative group/sub-sped">
+                                                    <button type="button" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                                        <span class="flex items-center">
+                                                            <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                            Sped Fiscal
+                                                        </span>
+                                                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                                    </button>
+                                                    <div class="absolute left-full top-0 w-48 hidden group-hover/sub-sped:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000">
+                                                        <div class="py-1">
+                                                            <a href="/pages/sped_fiscal.html"
+                                                                data-module="sped_fiscal"
+                                                                class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                                role="menuitem">
+                                                                <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                                                Importar Arquivo
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- D.Pessoal nested dropdown -->
+                                    <div class="relative group/sub-dpessoal">
+                                        <button type="button" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                            <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                D.Pessoal
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-dpessoal:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000">
+                                            <div class="py-1">
+                                                <a href="/pages/employees.html"
+                                                    data-module="employees"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                                    Colaboradores
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -648,6 +768,27 @@
                                         <svg class="mr-2 w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 11h6m-6 4h4"/></svg>
                                         Balancete
                                     </a>
+                                    <a href="/pages/rel-rafael.html"
+                                        data-module="rel_rafael"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 00-3-3.87m-3-1.87A9 9 0 1118 9m-9 9l3-3m0 0l3 3m-3-3V9"/></svg>
+                                        Rel. Rafael
+                                    </a>
+                                    <a href="/pages/rel-pedido-dorsal.html"
+                                        data-module="rel_pedido_dorsal"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                        Rel. Pedido (Dorsal)
+                                    </a>
+                                    <a href="/pages/rel-saldo-banco.html"
+                                        data-module="rel_saldo_banco"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-6 9 6M5 10v8m4-8v8m4-8v8m4-8v8M3 20h18"/></svg>
+                                        Saldo Banco
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -676,6 +817,100 @@
                                 id="desktopConfigDropdown">
                                 <div class="py-1" role="menu" aria-orientation="vertical"
                                     aria-labelledby="desktopConfigDropdownBtn">
+
+                                    <!-- Visão nested dropdown -->
+                                    <div class="relative group/sub-visao" id="desktopOverviewDropdownWrapper">
+                                        <button type="button" id="desktopOverviewDropdownBtn" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                            <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                                Visão
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-visao:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000" id="desktopOverviewDropdown">
+                                            <div class="py-1">
+                                                <div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
+                                                    <span class="mr-2 inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                                                    Visão
+                                                </div>
+                                                <a href="/pages/dashboard.html" title="Visão Geral" data-module="dashboard"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                                    Visão Geral
+                                                </a>
+                                                <a href="/pages/finance-vision.html" title="Visão Financeiro" data-module="finance_vision"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 10v1m9-6a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    Visão Financeiro
+                                                </a>
+                                                <a href="/pages/stock-vision.html" title="Visão Estoque" data-module="stock_vision"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
+                                                    Visão Estoque
+                                                </a>
+                                                <a href="/pages/whatsapp-info.html" title="Visão Whatsapp" data-module="whatsapp-info"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z"/></svg>
+                                                    Visão Whatsapp
+                                                </a>
+                                                <div class="border-t border-gray-100 dark:border-slate-700 my-1"></div>
+                                                <a href="/pages/census-vision.html" title="Visão Censo" data-module="census-vision"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                                    Visão Censo
+                                                </a>
+                                                <a href="/pages/mec-vision.html" title="Visão MEC" data-module="mec-vision"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.168.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                                    Visão MEC
+                                                </a>
+                                                <a href="/pages/mec-vision.html?tab=sisu_professions" title="Visão Vagas SISU" data-module="sisu-professions"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                                    Visão Vagas SISU
+                                                </a>
+                                                <a href="/pages/popular-vision.html" title="Visão Popular" data-module="mec-vision"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                                                    Visão Popular
+                                                </a>
+                                                <a href="/pages/income-vision.html" title="Visão Renda" data-module="income-vision"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    Visão Renda
+                                                </a>
+                                                <a href="/pages/sped_fiscal_vision.html" title="Visão Sped Fiscal" data-module="sped_fiscal_vision"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                    Visão Sped Fiscal
+                                                </a>
+                                                <a href="/pages/fin_solidcon_vision.html" title="Visão Fin_Solidcon" data-module="fin_solidcon_vision"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                                                    Visão Fin_Solidcon
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <a href="/pages/maintenance.html"
+                                        data-module="maintenance"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                        Manutenção
+                                    </a>
                                     <a href="/pages/roles.html"
                                         data-module="roles"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
@@ -716,6 +951,30 @@
                                         <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 20l1.3-4.7A8 8 0 1112 20a7.95 7.95 0 01-3.7-.9L3 20z"/></svg>
                                         WhatsApp
                                     </a>
+                                    <!-- A.WhatsApp nested dropdown -->
+                                    <div class="relative group/sub-whatsapp" id="desktopWhatsappDropdownWrapper">
+                                        <button type="button" id="desktopWhatsappDropdownBtn" class="w-full group flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white" role="menuitem">
+                                            <span class="flex items-center">
+                                                <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                A.WhatsApp
+                                            </span>
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                        <div class="absolute left-full top-0 w-48 hidden group-hover/sub-whatsapp:block bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700 transform origin-top-left z-100000" id="desktopWhatsappDropdown">
+                                            <div class="py-1">
+                                                <div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
+                                                    <span class="mr-2 inline-block w-2 h-2 rounded-full bg-teal-500"></span>
+                                                    A.WhatsApp
+                                                </div>
+
+                                                <a href="/pages/whatsapp-automation.html" title="Automação" data-module="whatsapp"
+                                                    class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                                    role="menuitem">
+                                                    Automação
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <a href="/pages/swagger.html" title="Swagger" data-module="swagger"
                                         class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
                                         role="menuitem">
@@ -748,12 +1007,66 @@
                                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 12h.01M9 15h.01M12 9h.01M12 12h.01M12 15h.01M15 9h.01M15 12h.01M15 15h.01"/></svg>
                                         Empresas
                                     </a>
+                                    <a href="/pages/company-groups.html"
+                                        data-module="company_group"
+                                        data-super-admin-only="true"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                        Grupo de Empresa
+                                    </a>
                                     <button type="button" 
                                         class="pwaInstallBtn hidden w-full text-left group items-center px-4 py-3 text-sm text-brand-600 dark:text-brand-400 hover:bg-gray-100 dark:hover:bg-slate-700 font-bold"
                                         role="menuitem">
                                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                         Instalar App
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative group h-full flex items-center">
+                        <button type="button"
+                            class="nav-link border-transparent text-gray-300 hover:border-gray-300 dark:border-slate-600 hover:text-white inline-flex items-center px-2 pt-1 text-sm font-medium focus:outline-none"
+                            aria-haspopup="true" aria-expanded="false" id="desktopInfoDropdownBtn"
+                            title="Info">
+                            <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <svg class="ml-1 h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div class="absolute left-0 top-full pt-1 w-64 hidden group-hover:block transition-all z-10000 transform origin-top"
+                            id="desktopInfoDropdownWrapper">
+                            <div class="rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-slate-700"
+                                id="desktopInfoDropdown">
+                                <div class="py-1" role="menu" aria-orientation="vertical"
+                                    aria-labelledby="desktopInfoDropdownBtn">
+                                    <div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
+                                        <span class="mr-2 inline-block w-2 h-2 rounded-full bg-sky-500"></span>
+                                        Informações & Legislação
+                                    </div>
+                                    <a href="/pages/nova_reforma_simples.html" data-no-perm-check="true"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-sky-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        Nova Reforma para Simples
+                                    </a>
+                                    <a href="/pages/declaracao_faturamento.html" data-no-perm-check="true"
+                                        class="group flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                                        role="menuitem">
+                                        <svg class="mr-2 w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        D. Faturamento
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -781,29 +1094,44 @@
                                             <p class="text-xs text-gray-500 dark:text-gray-400">Logado como</p>
                                             <p class="text-sm font-semibold text-gray-900 dark:text-white truncate" id="userGreeting">Usuário</p>
                                         </div>
-                                        <div class="pt-1.5 border-t border-gray-100 dark:border-slate-700">
-                                            <span class="inline-flex items-center gap-1.5 py-0.5 px-2 rounded bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-[10px] text-gray-700 dark:text-gray-200 font-medium max-w-full">
-                                                <svg class="w-3 h-3 text-brand-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="pt-2 border-t border-gray-100 dark:border-slate-700 space-y-1.5 flex flex-col">
+                                            <!-- Company Name Badge -->
+                                            <span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded bg-brand-50/50 dark:bg-brand-950/30 border border-brand-100 dark:border-brand-900/30 text-[10px] text-gray-800 dark:text-gray-200 font-semibold w-full shadow-sm">
+                                                <svg class="w-3.5 h-3.5 text-brand-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-10V4m-5 4V4m1 8h1m4 4h1m-5 4h1"></path>
                                                 </svg>
-                                                <span class="truncate" id="userGreetingCompany">BESSA SISTEMA - CNPJ: 48.214.136/0001-20</span>
+                                                <span class="truncate font-bold" id="navbarCompanyName">BESSA SISTEMA</span>
+                                            </span>
+                                            <!-- CNPJ Badge -->
+                                            <span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded bg-sky-50/50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/30 text-[10px] text-gray-800 dark:text-gray-200 font-semibold w-full shadow-sm">
+                                                <svg class="w-3.5 h-3.5 text-sky-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                </svg>
+                                                <span class="truncate font-semibold" id="navbarCompanyCNPJ">CNPJ: 48.214.136/0001-20</span>
+                                            </span>
+                                            <!-- ID Badge -->
+                                            <span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/30 text-[10px] text-gray-800 dark:text-gray-200 font-semibold w-full shadow-sm">
+                                                <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m-2-2v2m0-2a2 2 0 00-2 2v2m2-4a2 2 0 012 2M15 15h.01M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                                                </svg>
+                                                <span class="truncate font-mono" id="navbarCompanyID">ID: f4725bb4-942f-4558-96c4-efc9048f87c4</span>
                                             </span>
                                         </div>
                                     </div>
                                     <div class="py-1">
-                                        <button type="button" id="navOpenWaConfigModalBtn" class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors" role="menuitem">
+                                        <button type="button" id="navOpenWaConfigModalBtn" class="w-full text-left flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" role="menuitem">
                                             <svg class="mr-2 h-4 w-4 shrink-0 text-green-500" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                                             </svg>
                                             Configurar Whatsapp
                                         </button>
-                                        <button type="button" id="navOpenChangePasswordModalBtn" class="w-full text-left flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors" role="menuitem">
+                                        <button type="button" id="navOpenChangePasswordModalBtn" class="w-full text-left flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" role="menuitem">
                                             <svg class="mr-2 h-4 w-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                             </svg>
                                             Troca de Senha
                                         </button>
-                                        <button type="button" id="logoutBtn" class="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                                        <button type="button" id="logoutBtn" class="w-full text-left flex items-center px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" role="menuitem">
                                             <svg class="mr-2 h-4 w-4 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" />
                                             </svg>
@@ -878,7 +1206,7 @@
                     aria-controls="mobileOperationsDropdown" aria-expanded="false" id="mobileOperationsDropdownBtn">
                     <div class="flex-1 flex justify-start">
                         <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg> <span class="ml-3">Operação</span>
                     </div>
                     <svg class="h-5 w-5 shrink-0 transform transition-transform duration-200"
@@ -906,16 +1234,16 @@
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                d="M9 12h6m-6 4h3M7 3h8l4 4v14H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
                         </svg>
                         Orçamentos
                     </a>
-                    <a href="/pages/lancamento_servico.html" title="Lançamento de Serviço" data-module="service_launches"
+                    <a href="/pages/lancamento_servico.html" title="Serviço" data-module="service_launches"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M7 3h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z" />
                         </svg>
-                        Lançamento de Serviço
+                        Serviço
                     </a>
                     <a href="/pages/restaurant.html" title="Restaurante"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
@@ -923,6 +1251,13 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
                         Restaurante
+                    </a>
+                    <a href="/pages/gera-pix.html" title="Gera PIX" data-module="gera_pix"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 12l10 10 10-10L12 2z" />
+                        </svg>
+                        Gera PIX
                     </a>
                 </div>
             </div>
@@ -1036,6 +1371,11 @@
                         <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 11h10M7 15h7M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
                         Tipo de Estoque
                     </a>
+                    <a href="/pages/product-types.html" title="Tipo de Produto" data-module="product_types"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        Tipo de Produto
+                    </a>
                     <a href="/pages/categories.html" title="Categoria"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M3 11l8-8h6l4 4v6l-8 8-10-10z"/></svg>
@@ -1066,7 +1406,38 @@
                         <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
                         Produto
                     </a>
-
+                    <!-- Cad.Serviço mobile sub-dropdown -->
+                    <div class="space-y-1">
+                        <button type="button" title="Cad.Serviço"
+                            class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none"
+                            aria-controls="mobileCadServicoDropdown" aria-expanded="false" id="mobileCadServicoDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3H5a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
+                                Cad.Serviço
+                            </span>
+                            <svg class="h-4 w-4 transform transition-transform duration-200" id="mobileCadServicoDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobileCadServicoDropdown">
+                            <a href="/pages/service_types.html" title="Tipo de Serviço" data-module="service_types"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Tipo de Serviço
+                            </a>
+                            <a href="/pages/tributacao_municipal.html" title="Tributação Municipal" data-module="service_tax_municipal"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Tributação Municipal
+                            </a>
+                            <a href="/pages/tributacao_federal.html" title="Tributação Federal" data-module="service_tax_federal"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Tributação Federal
+                            </a>
+                            <a href="/pages/service.html" title="Serviço" data-module="services"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Serviço
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- Financeiro Dropdown on Mobile -->
@@ -1108,70 +1479,108 @@
                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9l-5 5-5-5m10 8H7"/></svg>
                         Despesa
                     </a>
+                    <!-- Despesa Cartão mobile sub-dropdown -->
+                    <div class="space-y-1">
+                        <button type="button" title="Despesa Cartão"
+                            class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none"
+                            aria-controls="mobileCardExpensesDropdown" aria-expanded="false" id="mobileCardExpensesDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                Despesa Cartão
+                            </span>
+                            <svg class="h-4 w-4 transform transition-transform duration-200" id="mobileCardExpensesDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobileCardExpensesDropdown">
+                            <a href="/pages/card-debits.html" title="Pagamento de Cartão" data-module="card_debits"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Pagamento de Cartão
+                            </a>
+                            <a href="/pages/card-expenses.html" title="Despesa Cartão" data-module="card_expenses"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Despesa Cartão
+                            </a>
+                        </div>
+                    </div>
                     <a href="/pages/revenues.html" title="Receita"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 15l5-5 5 5M7 7h10"/></svg>
                         Receita
+                    </a>
+                    <a href="/pages/card-statements.html" title="Extrato Cartão" data-module="card_statements"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                        Extrato Cartão
                     </a>
                     <a href="/pages/banks.html" title="Banco"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-6 9 6M5 10v8m4-8v8m4-8v8m4-8v8M3 20h18"/></svg>
                         Banco
                     </a>
-                    <a href="/pages/receivable-types.html" title="Tipo de Recebível" data-module="receivable_types"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                        Tipo de Recebível
-                    </a>
-                    <a href="/pages/statements.html" title="Extrato"
+                    <a href="/pages/statements.html" title="Extrato Banco"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm2 4h6m-6 4h6m-6 4h4"/></svg>
-                        Extrato
+                        Extrato Banco
                     </a>
-                </div>
-            </div>
-            <!-- Serviço Dropdown on Mobile -->
-            <div class="space-y-1">
-                <button type="button" title="Serviço"
-                    class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white w-full flex items-center justify-between pl-3 pr-4 py-3 border-l-4 text-base font-medium focus:outline-none"
-                    aria-controls="mobileServiceDropdown" aria-expanded="false" id="mobileServiceDropdownBtn">
-                    <div class="flex-1 flex justify-start">
-                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
-                        </svg> <span class="ml-3">Serviço</span>
+                    <a href="/pages/finance_poscontrol.html" title="Fin. Pos-Controll" data-module="finance_poscontrol"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Fin. Pos-Controll
+                    </a>
+                    <div class="border-t border-slate-700/50 my-1 font-sans"></div>
+                    <!-- Forma de Pagamento mobile sub-dropdown -->
+                    <div class="space-y-1">
+                        <button type="button" title="Forma de Pagamento"
+                            class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none"
+                            aria-controls="mobilePaymentDropdown" aria-expanded="false" id="mobilePaymentDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                Pagamento
+                            </span>
+                            <svg class="h-4 w-4 transform transition-transform duration-200" id="mobilePaymentDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobilePaymentDropdown">
+                            <a href="/pages/payment-types.html" title="Tipo de Pagamento" data-module="payment_types"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Tipo de Pagamento
+                            </a>
+                        </div>
                     </div>
-                    <svg class="h-5 w-5 shrink-0 transform transition-transform duration-200"
-                        id="mobileServiceDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                        fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd"
-                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                            clip-rule="evenodd" />
-                    </svg>
-                </button>
-                <div class="hidden space-y-1" id="mobileServiceDropdown">
-                    <div class="px-3 pr-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
-                        <span class="mr-2 inline-block w-2 h-2 rounded-full bg-violet-500"></span>
-                        Serviço
+                    <!-- Forma de Recebível mobile sub-dropdown -->
+                    <div class="space-y-1">
+                        <button type="button" title="Forma de Recebível"
+                            class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none"
+                            aria-controls="mobileFormaRecebivelDropdown" aria-expanded="false" id="mobileFormaRecebivelDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Recebível
+                            </span>
+                            <svg class="h-4 w-4 transform transition-transform duration-200" id="mobileFormaRecebivelDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobileFormaRecebivelDropdown">
+                            <a href="/pages/receivable-types.html" title="Tipo de Recebível" data-module="receivable_types"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Tipo de Recebível
+                            </a>
+                            <a href="/pages/card-brands.html" title="Bandeiras de Cartão" data-module="card_brands"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Bandeiras de Cartão
+                            </a>
+                            <a href="/pages/card-configurations.html" title="Config. de Cartão" data-module="card_configurations"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Config. de Cartão
+                            </a>
+                        </div>
                     </div>
-                    <a href="/pages/service_types.html" title="Tipo de Serviço" data-module="service_types"
+                    <a href="/pages/cost-centers.html" title="Centro de Custo" data-module="cost_centers"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 11h10M7 15h7M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
-                        Tipo de Serviço
-                    </a>
-                    <a href="/pages/tributacao_municipal.html" title="Tributação Municipal" data-module="service_tax_municipal"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h3M7 3h8l4 4v14H7a2 2 0 01-2-2V5a2 2 0 012-2zM15 3v4h4"/></svg>
-                        Tributação Municipal
-                    </a>
-                    <a href="/pages/tributacao_federal.html" title="Tributação Federal" data-module="service_tax_federal"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1m9-5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        Tributação Federal
-                    </a>
-                    <a href="/pages/service.html" title="Serviço" data-module="services"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3H5a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
-                        Serviço
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-10V4m-5 4V4m1 8h1m4 4h1m-5 4h1"></path></svg>
+                        Centro de Custo
                     </a>
                 </div>
             </div>
@@ -1199,6 +1608,16 @@
                         <span class="mr-2 inline-block w-2 h-2 rounded-full bg-sky-500"></span>
                         Pessoas
                     </div>
+                    <a href="/pages/customer-groups.html" title="Grupos de Clientes" data-module="customer_groups"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        Grupos de Clientes
+                    </a>
+                    <a href="/pages/activity-groups.html" title="Grupo de Atividade" data-module="activity_groups"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Grupo de Atividade
+                    </a>
                     <a href="/pages/customers.html" title="Clientes"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a5 5 0 00-10 0v2M9 10a3 3 0 116 0 3 3 0 01-6 0z"/></svg>
@@ -1233,6 +1652,11 @@
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zM8 8h8m-8 4h2m4 0h2M8 16h8"/></svg>
                         Contador
+                    </a>
+                    <a href="/pages/socio.html" title="Sócio" data-module="socio"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        Sócio
                     </a>
 
                     <a href="/pages/company.html" title="Empresas"
@@ -1272,87 +1696,113 @@
                         Contabilidade
                     </div>
 
-                    <a href="/pages/plan_of_accounts.html" title="Plano de Contas" data-module="accounting"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/></svg>
-                        Plano de Contas
-                    </a>
-                    <a href="/pages/accounting_entries.html" title="Lançamentos" data-module="accounting"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m3 6V7m3 10v-3m4 6H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z"/></svg>
-                        Lançamentos
-                    </a>
-                    <a href="/pages/accounting_auto_entries.html" title="Lançamento Automático" data-module="accounting_auto_entries"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        Lançamento Automático
-                    </a>
-                    <a href="/pages/accounting_auto_history.html" title="Histórico Automático" data-module="accounting_auto_history"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        Histórico Automático
-                    </a>
-                    <a href="/pages/declaration_registration.html" title="Cadastro de Declaração" data-module="declaration_registration"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Cadastro de Declaração
-                    </a>
-                    <a href="/pages/declaration_control.html" title="Controle de Declaração" data-module="declaration_control"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Controle de Declaração
-                    </a>
-                    <a href="/pages/fechamento.html" title="Fechamento" data-module="fechamento" class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        Fechamento
-                    </a>
+                    <!-- Contábil mobile sub-dropdown -->
+                    <div class="space-y-1">
+                        <button type="button" title="Contábil"
+                            class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none"
+                            aria-controls="mobileContabilDropdown" aria-expanded="false" id="mobileContabilDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                                Contábil
+                            </span>
+                            <svg class="h-4 w-4 transform transition-transform duration-200" id="mobileContabilDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobileContabilDropdown">
+                            <a href="/pages/plan_of_accounts.html" title="Plano de Conta" data-module="accounting"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Plano de Conta
+                            </a>
+                            <a href="/pages/accounting_entries.html" title="Lançamento" data-module="accounting"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Lançamento
+                            </a>
+                            <a href="/pages/accounting_auto_entries.html" title="Lançamento Automático" data-module="accounting_auto_entries"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Lançamento Automático
+                            </a>
+                            <a href="/pages/accounting_auto_history.html" title="Histórico Automático" data-module="accounting_auto_history"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Histórico Automático
+                            </a>
+                            <a href="/pages/accounting_closing.html" title="Fechamento" data-module="accounting_closing"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Fechamento
+                            </a>
+                        </div>
+                    </div>
+                    <!-- Fiscal mobile sub-dropdown -->
+                    <div class="space-y-1">
+                        <button type="button" title="Fiscal"
+                            class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none"
+                            aria-controls="mobileFiscalDropdown" aria-expanded="false" id="mobileFiscalDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14.125V21h6v-6.875M9 14.125h6m-6 0V11m6 3.125V11M9 11V3h6v8M9 11h6m-6 0h6"/></svg>
+                                Fiscal
+                            </span>
+                            <svg class="h-4 w-4 transform transition-transform duration-200" id="mobileFiscalDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobileFiscalDropdown">
+                            <a href="/pages/declaration_registration.html" title="Cadastro de Declaração" data-module="declaration_registration"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Cadastro de Declaração
+                            </a>
+                            <a href="/pages/declaration_control.html" title="Controle de Declaração" data-module="declaration_control"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Controle de Declaração
+                            </a>
+                            <a href="/pages/fechamento.html" title="Fechamento" data-module="fechamento"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Fechamento
+                            </a>
+                            <!-- Sped Fiscal mobile sub-dropdown -->
+                            <div class="space-y-1">
+                                <button type="button" title="Sped Fiscal"
+                                    class="w-full flex items-center justify-between pl-9 pr-4 py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none"
+                                    aria-controls="mobileSpedDropdown" aria-expanded="false" id="mobileSpedDropdownBtn">
+                                    <span class="flex items-center">
+                                        <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        Sped Fiscal
+                                    </span>
+                                    <svg class="h-4 w-4 transform transition-transform duration-200" id="mobileSpedDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <div class="hidden space-y-1" id="mobileSpedDropdown">
+                                    <a href="/pages/sped_fiscal.html" title="Importar Arquivo" data-module="sped_fiscal"
+                                        class="flex pl-12 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                        Importar Arquivo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- D.Pessoal mobile sub-dropdown -->
+                    <div class="space-y-1">
+                        <button type="button" title="D.Pessoal"
+                            class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none"
+                            aria-controls="mobileDpDropdown" aria-expanded="false" id="mobileDpDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                D.Pessoal
+                            </span>
+                            <svg class="h-4 w-4 transform transition-transform duration-200" id="mobileDpDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobileDpDropdown">
+                            <a href="/pages/employees.html" title="Colaboradores" data-module="employees"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Colaboradores
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="space-y-1">
-                <button type="button" title="Visão"
-                    class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white w-full flex items-center justify-between pl-3 pr-4 py-3 border-l-4 text-base font-medium focus:outline-none"
-                    aria-controls="mobileOverviewDropdown" aria-expanded="false" id="mobileOverviewDropdownBtn">
-                    <div class="flex-1 flex justify-start">
-                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg> <span class="ml-3">Visão</span>
-                    </div>
-                    <svg class="h-5 w-5 shrink-0 transform transition-transform duration-200"
-                        id="mobileOverviewDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                        fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd"
-                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                            clip-rule="evenodd" />
-                    </svg>
-                </button>
-                <div class="hidden space-y-1" id="mobileOverviewDropdown">
-                    <div class="px-3 pr-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
-                        <span class="mr-2 inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-                        Visão
-                    </div>
-                    <a href="/pages/dashboard.html" title="Visão Geral" data-module="dashboard"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                        Visão Geral
-                    </a>
-                    <a href="/pages/finance-vision.html" title="Visão Financeiro" data-module="finance_vision"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 10v1m9-6a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        Visão Financeiro
-                    </a>
-                    <a href="/pages/stock-vision.html" title="Visão Estoque" data-module="stock_vision"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
-                        Visão Estoque
-                    </a>
-                    <a href="/pages/whatsapp-info.html" title="Visão Whatsapp" data-module="whatsapp-info"
-                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
-                        <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z"/></svg>
-                        Visão Whatsapp
-                    </a>
-                </div>
-            </div>
+             <div class="space-y-1">
             <div class="space-y-1">
                 <button type="button" title="Relatório"
                     class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white w-full flex items-center justify-between pl-3 pr-4 py-3 border-l-4 text-base font-medium focus:outline-none"
@@ -1391,8 +1841,24 @@
                         <svg class="mr-2 w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 11h6m-6 4h4"/></svg>
                         Balancete
                     </a>
+                    <a href="/pages/rel-rafael.html" title="Rel. Rafael" data-module="rel_rafael"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 00-3-3.87m-3-1.87A9 9 0 1118 9m-9 9l3-3m0 0l3 3m-3-3V9"/></svg>
+                        Rel. Rafael
+                    </a>
+                    <a href="/pages/rel-pedido-dorsal.html" title="Rel. Pedido (Dorsal)" data-module="rel_pedido_dorsal"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        Rel. Pedido (Dorsal)
+                    </a>
+                    <a href="/pages/rel-saldo-banco.html" title="Saldo Banco" data-module="rel_saldo_banco"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-6 9 6M5 10v8m4-8v8m4-8v8m4-8v8M3 20h18"/></svg>
+                        Saldo Banco
+                    </a>
                 </div>
             </div>
+            <!-- Configuração Dropdown on Mobile -->
             <div class="space-y-1">
                 <button type="button" title="Configuração"
                     class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white w-full flex items-center justify-between pl-3 pr-4 py-3 border-l-4 text-base font-medium focus:outline-none"
@@ -1414,6 +1880,84 @@
                     </svg>
                 </button>
                 <div class="hidden space-y-1" id="mobileConfigDropdown">
+                    <!-- Visão mobile group -->
+                    <div class="space-y-1">
+                        <button type="button" class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none" aria-controls="mobileOverviewDropdown" aria-expanded="false" id="mobileOverviewDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                Visão
+                            </span>
+                            <svg class="h-4 w-4 text-gray-400 transform transition-transform duration-200" id="mobileOverviewDropdownIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobileOverviewDropdown">
+                            <div class="px-3 pr-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
+                                <span class="mr-2 inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                                Visão
+                            </div>
+                            <a href="/pages/dashboard.html" title="Visão Geral" data-module="dashboard"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                Visão Geral
+                            </a>
+                            <a href="/pages/finance-vision.html" title="Visão Financeiro" data-module="finance_vision"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 10v1m9-6a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Visão Financeiro
+                            </a>
+                            <a href="/pages/stock-vision.html" title="Visão Estoque" data-module="stock_vision"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
+                                Visão Estoque
+                            </a>
+                            <a href="/pages/whatsapp-info.html" title="Visão Whatsapp" data-module="whatsapp-info"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z"/></svg>
+                                Visão Whatsapp
+                            </a>
+                            <a href="/pages/census-vision.html" title="Visão Censo" data-module="census-vision"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                Visão Censo
+                            </a>
+                            <a href="/pages/mec-vision.html" title="Visão MEC" data-module="mec-vision"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.168.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                Visão MEC
+                            </a>
+                            <a href="/pages/mec-vision.html?tab=sisu_professions" title="Visão Vagas SISU" data-module="sisu-professions"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                Visão Vagas SISU
+                            </a>
+                            <a href="/pages/popular-vision.html" title="Visão Popular" data-module="mec-vision"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                                Visão Popular
+                            </a>
+                            <a href="/pages/income-vision.html" title="Visão Renda" data-module="income-vision"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Visão Renda
+                            </a>
+                            <a href="/pages/sped_fiscal_vision.html" title="Visão Sped Fiscal" data-module="sped_fiscal_vision"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                Visão Sped Fiscal
+                            </a>
+                            <a href="/pages/fin_solidcon_vision.html" title="Visão Fin_Solidcon" data-module="fin_solidcon_vision"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                <svg class="mr-2 w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                                Visão Fin_Solidcon
+                            </a>
+                        </div>
+                    </div>
+
+                    <a href="/pages/maintenance.html"
+                        data-module="maintenance"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Manutenção
+                    </a>
                     <a href="/pages/roles.html" title="Cadastro de Perfis" data-module="roles"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
@@ -1444,6 +1988,26 @@
                         <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 20l1.3-4.7A8 8 0 1112 20a7.95 7.95 0 01-3.7-.9L3 20z"/></svg>
                         WhatsApp
                     </a>
+                    <!-- A.WhatsApp mobile group -->
+                    <div class="space-y-1">
+                        <button type="button" class="w-full flex items-center justify-between pl-6 pr-4 py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white focus:outline-none" aria-controls="mobileWhatsappDropdown" aria-expanded="false" id="mobileWhatsappDropdownBtn">
+                            <span class="flex items-center">
+                                <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                A.WhatsApp
+                            </span>
+                            <svg class="h-4 w-4 text-gray-400 transform transition-transform duration-200" id="mobileWhatsappDropdownIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                        <div class="hidden space-y-1" id="mobileWhatsappDropdown">
+                            <div class="px-3 pr-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
+                                <span class="mr-2 inline-block w-2 h-2 rounded-full bg-teal-500"></span>
+                                A.WhatsApp
+                            </div>
+                            <a href="/pages/whatsapp-automation.html" title="Automação" data-module="whatsapp"
+                                class="flex pl-9 pr-4 items-center justify-start py-2 text-sm font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                                Automação
+                            </a>
+                        </div>
+                    </div>
                     <a href="/pages/swagger.html" title="Swagger" data-module="swagger"
                         class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
                         <svg class="mr-2 w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3-3 3 3m0 6l-3 3-3-3M4 15V9a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2z"/></svg>
@@ -1477,6 +2041,11 @@
                         <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 12h.01M9 15h.01M12 9h.01M12 12h.01M12 15h.01M15 9h.01M15 12h.01M15 15h.01"/></svg>
                         Empresas
                     </a>
+                    <a href="/pages/company-groups.html" title="Grupo de Empresa" data-module="company_group" data-super-admin-only="true"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        Grupo de Empresa
+                    </a>
                     <button type="button"
                         class="pwaInstallBtn hidden w-full text-left pl-3 pr-4 items-center justify-start py-2 text-base font-bold text-brand-400 hover:bg-brand-800 hover:text-white">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -1485,6 +2054,45 @@
                 </div>
 
 
+            </div>
+            <!-- Info Dropdown on Mobile -->
+            <div class="space-y-1">
+                <button type="button" title="Info"
+                    class="mobile-nav-link border-transparent text-gray-300 hover:bg-brand-800 hover:border-gray-300 dark:border-slate-600 hover:text-white w-full flex items-center justify-between pl-3 pr-4 py-3 border-l-4 text-base font-medium focus:outline-none"
+                    aria-controls="mobileInfoDropdown" aria-expanded="false" id="mobileInfoDropdownBtn">
+                    <div class="flex-1 flex justify-start">
+                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg> <span class="ml-3">Info</span>
+                    </div>
+                    <svg class="h-5 w-5 shrink-0 transform transition-transform duration-200"
+                        id="mobileInfoDropdownIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                        fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <div class="hidden space-y-1" id="mobileInfoDropdown">
+                    <div class="px-3 pr-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center">
+                        <span class="mr-2 inline-block w-2 h-2 rounded-full bg-sky-500"></span>
+                        Informações & Legislação
+                    </div>
+                    <a href="/pages/nova_reforma_simples.html" title="Nova Reforma para Simples" data-no-perm-check="true"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-sky-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Nova Reforma para Simples
+                    </a>
+                    <a href="/pages/declaracao_faturamento.html" title="D. Faturamento" data-no-perm-check="true"
+                        class="flex pl-3 pr-4 items-center justify-start py-2 text-base font-medium text-gray-400 hover:bg-brand-800 hover:text-white">
+                        <svg class="mr-2 w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        D. Faturamento
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -1580,7 +2188,7 @@
                 <!-- Modal Footer -->
                 <div class="px-6 py-4 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3 bg-gray-50 dark:bg-slate-800/50 rounded-b-xl">
                     <button type="button" id="closeNavChangePasswordFooterBtn" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors shadow-sm">Cancelar</button>
-                    <button type="submit" form="navChangePasswordForm" id="saveNavChangePasswordBtn" class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm flex items-center justify-center min-w-[100px]">
+                    <button type="submit" form="navChangePasswordForm" id="saveNavChangePasswordBtn" class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm flex items-center justify-center min-w-25">
                         <span id="navChangePasswordSaveText">Alterar Senha</span>
                         <span id="navChangePasswordSpinner" class="hidden animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent ml-2"></span>
                     </button>

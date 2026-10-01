@@ -4,7 +4,7 @@
         const state = {
             sales: [],
             filteredSales: [],
-            viewMode: localStorage.getItem('nota_view') || 'grid',
+            viewMode: window.CompanyStorage?.getItem('nota_view') || localStorage.getItem('nota_view') || 'grid',
             selectedBatchSaleIds: new Set(),
             loading: true,
             generatingId: null,
@@ -419,7 +419,12 @@
             els.viewModeBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     state.viewMode = btn.dataset.view;
-                    localStorage.setItem('nota_view', state.viewMode);
+                    if (window.CompanyStorage) {
+                        window.CompanyStorage.setItem('nota_view', state.viewMode);
+                    }
+                    else {
+                        localStorage.setItem('nota_view', state.viewMode);
+                    }
                     renderViewToggles();
                 });
             });

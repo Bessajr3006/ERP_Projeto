@@ -24,6 +24,32 @@ export interface BankAccount {
     webhook_event_account?: number;
     webhook_event_status_sync?: number;
     webhook_event_boleto?: number;
+    billet_fine?: number | null;
+    billet_interest?: number | null;
+    billet_validity?: number | null;
+    pix_fine?: number | null;
+    pix_interest?: number | null;
+    pix_validity?: number | null;
+    solidcon_bank_id?: string | null;
+    // Asaas Integration
+    asaas_environment?: string;
+    asaas_api_key?: string | null;
+    asaas_wallet_id?: string | null;
+    asaas_fine?: number | null;
+    asaas_interest?: number | null;
+    asaas_discount_value?: number | null;
+    asaas_discount_days?: number | null;
+    asaas_webhook_url?: string | null;
+    asaas_webhook_email?: string | null;
+    asaas_webhook_token?: string | null;
+    asaas_webhook_event_payment_created?: number;
+    asaas_webhook_event_payment_updated?: number;
+    asaas_webhook_event_payment_confirmed?: number;
+    asaas_webhook_event_payment_received?: number;
+    asaas_webhook_event_payment_overdue?: number;
+    asaas_webhook_event_payment_deleted?: number;
+    asaas_webhook_event_payment_restored?: number;
+    asaas_webhook_event_payment_refunded?: number;
     created_at: Date;
     updated_at: Date;
 }
@@ -48,6 +74,32 @@ export interface CreateBankAccountData {
     webhook_event_account?: number | undefined;
     webhook_event_status_sync?: number | undefined;
     webhook_event_boleto?: number | undefined;
+    billet_fine?: number | null | undefined;
+    billet_interest?: number | null | undefined;
+    billet_validity?: number | null | undefined;
+    pix_fine?: number | null | undefined;
+    pix_interest?: number | null | undefined;
+    pix_validity?: number | null | undefined;
+    solidcon_bank_id?: string | null | undefined;
+    // Asaas Integration
+    asaas_environment?: string | undefined;
+    asaas_api_key?: string | null | undefined;
+    asaas_wallet_id?: string | null | undefined;
+    asaas_fine?: number | null | undefined;
+    asaas_interest?: number | null | undefined;
+    asaas_discount_value?: number | null | undefined;
+    asaas_discount_days?: number | null | undefined;
+    asaas_webhook_url?: string | null | undefined;
+    asaas_webhook_email?: string | null | undefined;
+    asaas_webhook_token?: string | null | undefined;
+    asaas_webhook_event_payment_created?: number | undefined;
+    asaas_webhook_event_payment_updated?: number | undefined;
+    asaas_webhook_event_payment_confirmed?: number | undefined;
+    asaas_webhook_event_payment_received?: number | undefined;
+    asaas_webhook_event_payment_overdue?: number | undefined;
+    asaas_webhook_event_payment_deleted?: number | undefined;
+    asaas_webhook_event_payment_restored?: number | undefined;
+    asaas_webhook_event_payment_refunded?: number | undefined;
 }
 
 export interface UpdateBankAccountData {
@@ -70,4 +122,30 @@ export interface UpdateBankAccountData {
     webhook_event_account?: number | undefined;
     webhook_event_status_sync?: number | undefined;
     webhook_event_boleto?: number | undefined;
+    billet_fine?: number | null | undefined;
+    billet_interest?: number | null | undefined;
+    billet_validity?: number | null | undefined;
+    pix_fine?: number | null | undefined;
+    pix_interest?: number | null | undefined;
+    pix_validity?: number | null | undefined;
+    solidcon_bank_id?: string | null | undefined;
+    // Asaas Integration
+    asaas_environment?: string | undefined;
+    asaas_api_key?: string | null | undefined;
+    asaas_wallet_id?: string | null | undefined;
+    asaas_fine?: number | null | undefined;
+    asaas_interest?: number | null | undefined;
+    asaas_discount_value?: number | null | undefined;
+    asaas_discount_days?: number | null | undefined;
+    asaas_webhook_url?: string | null | undefined;
+    asaas_webhook_email?: string | null | undefined;
+    asaas_webhook_token?: string | null | undefined;
+    asaas_webhook_event_payment_created?: number | undefined;
+    asaas_webhook_event_payment_updated?: number | undefined;
+    asaas_webhook_event_payment_confirmed?: number | undefined;
+    asaas_webhook_event_payment_received?: number | undefined;
+    asaas_webhook_event_payment_overdue?: number | undefined;
+    asaas_webhook_event_payment_deleted?: number | undefined;
+    asaas_webhook_event_payment_restored?: number | undefined;
+    asaas_webhook_event_payment_refunded?: number | undefined;
 }

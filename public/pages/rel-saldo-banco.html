@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Saldo Bancário em Tempo Real</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+    <style>
+        @media print {
+            #app-navbar, #app-footer, .no-print, #toolbar-actions, #filter-bar {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            main {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+            }
+            .print-table {
+                display: block !important;
+            }
+            .print-cards {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body data-required-module="rel_saldo_banco" class="bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-gray-200 font-sans flex flex-col h-dvh overflow-hidden">
+    <!-- Main App Navigation -->
+    <div id="app-navbar" class="h-16 shrink-0"></div>
+
+    <!-- Main Container -->
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+        
+        <!-- ── HEADER ────────────────────────────────────────────── -->
+        <div class="px-4 sm:px-0 mb-4 flex flex-wrap justify-between items-center gap-3 shrink-0 no-print">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-6 9 6M5 10v8m4-8v8m4-8v8m4-8v8M3 20h18" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight">Saldo Bancário</h1>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300/50 dark:border-emerald-700/50">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Tempo Real
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Consulta direta via API das instituições financeiras integradas e saldos do sistema</p>
+                </div>
+            </div>
+
+            <!-- Header Action Buttons -->
+            <div id="toolbar-actions" class="flex items-center gap-2">
+                <!-- Auto Refresh Selector -->
+                <div class="hidden sm:flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 shadow-sm text-xs text-gray-600 dark:text-gray-300">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Auto:</span>
+                    <select id="selectAutoRefresh" class="bg-transparent border-0 text-xs font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer p-0">
+                        <option value="0" class="bg-white dark:bg-slate-800">Desativado</option>
+                        <option value="30" class="bg-white dark:bg-slate-800">30 seg</option>
+                        <option value="60" class="bg-white dark:bg-slate-800">1 min</option>
+                        <option value="300" class="bg-white dark:bg-slate-800">5 min</option>
+                    </select>
+                </div>
+
+                <!-- View Mode Switcher -->
+                <div class="flex rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-0.5 shadow-sm">
+                    <button type="button" id="btnViewCards" title="Visualização em Cartões"
+                        class="p-1.5 rounded-md text-sm font-medium transition-colors bg-brand-500 text-white shadow-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                    </button>
+                    <button type="button" id="btnViewTable" title="Visualização em Tabela"
+                        class="p-1.5 rounded-md text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Print Button -->
+                <button type="button" id="btnPrint" title="Imprimir Relatório"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-800 text-xs font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m10 0v4H7v-4m10 0H7m10-8V3H7v6" />
+                    </svg>
+                    <span class="hidden sm:inline">Imprimir</span>
+                </button>
+
+                <!-- Refresh All Button -->
+                <button type="button" id="btnRefreshAll"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-3.5 py-2 text-xs font-semibold shadow-sm transition-colors cursor-pointer">
+                    <svg id="iconRefreshAll" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Atualizar Todos</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ── KPI SUMMARY CARDS ──────────────────────────────────── -->
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 px-4 sm:px-0 mb-4 shrink-0">
+            <!-- Total Disponível -->
+            <div class="col-span-2 sm:col-span-1 p-3.5 rounded-2xl bg-linear-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-950/40 dark:via-slate-800 dark:to-slate-800 border border-emerald-200/80 dark:border-emerald-800/50 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold tracking-wider text-emerald-700 dark:text-emerald-400 uppercase">Saldo Disponível</span>
+                    <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </span>
+                </div>
+                <div id="kpiTotalDisponivel" class="text-xl sm:text-2xl font-extrabold text-emerald-700 dark:text-emerald-300 mt-1 font-mono">
+                    R$ 0,00
+                </div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Livre para movimentação</div>
+            </div>
+
+            <!-- Total Bloqueado -->
+            <div class="p-3.5 rounded-2xl bg-linear-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/40 dark:via-slate-800 dark:to-slate-800 border border-amber-200/80 dark:border-amber-800/50 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold tracking-wider text-amber-700 dark:text-amber-400 uppercase">Saldo Bloqueado</span>
+                    <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </span>
+                </div>
+                <div id="kpiTotalBloqueado" class="text-lg sm:text-xl font-extrabold text-amber-700 dark:text-amber-300 mt-1 font-mono">
+                    R$ 0,00
+                </div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5" id="kpiTotalBloqueadoSub">Judicial, cheque e admin</div>
+            </div>
+
+            <!-- Total Limites -->
+            <div class="p-3.5 rounded-2xl bg-linear-to-br from-indigo-500/10 via-indigo-500/5 to-transparent dark:from-indigo-950/40 dark:via-slate-800 dark:to-slate-800 border border-indigo-200/80 dark:border-indigo-800/50 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold tracking-wider text-indigo-700 dark:text-indigo-400 uppercase">Limite Crédito</span>
+                    <span class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    </span>
+                </div>
+                <div id="kpiTotalLimite" class="text-lg sm:text-xl font-extrabold text-indigo-700 dark:text-indigo-300 mt-1 font-mono">
+                    R$ 0,00
+                </div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Cheque especial / rotativo</div>
+            </div>
+
+            <!-- Total Geral / Liquidez -->
+            <div class="p-3.5 rounded-2xl bg-linear-to-br from-sky-500/10 via-sky-500/5 to-transparent dark:from-sky-950/40 dark:via-slate-800 dark:to-slate-800 border border-sky-200/80 dark:border-sky-800/50 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold tracking-wider text-sky-700 dark:text-sky-400 uppercase">Posição Geral</span>
+                    <span class="p-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </span>
+                </div>
+                <div id="kpiTotalGeral" class="text-lg sm:text-xl font-extrabold text-sky-700 dark:text-sky-300 mt-1 font-mono">
+                    R$ 0,00
+                </div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Disponível + Limite</div>
+            </div>
+
+            <!-- Contas Integradas -->
+            <div class="col-span-2 sm:col-span-1 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold tracking-wider text-gray-600 dark:text-gray-400 uppercase">Contas / APIs</span>
+                    <span class="p-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </span>
+                </div>
+                <div id="kpiTotalIntegradas" class="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-gray-100 mt-1">
+                    0 / 0
+                </div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5" id="kpiTotalIntegradasSub">Contas conectadas à API</div>
+            </div>
+        </div>
+
+        <!-- ── FILTER / SEARCH BAR ────────────────────────────────── -->
+        <div id="filter-bar" class="px-4 sm:px-0 mb-4 shrink-0 no-print">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-xs">
+                <div class="flex-1 flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input type="text" id="filterSearch" placeholder="Buscar por banco, agência, conta ou tipo..."
+                            class="block w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- Filter Type -->
+                    <select id="filterType"
+                        class="px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="">Todos os Tipos</option>
+                        <option value="checking">Conta Corrente</option>
+                        <option value="savings">Poupança</option>
+                        <option value="investment">Investimento</option>
+                        <option value="cash">Caixa Físico</option>
+                    </select>
+
+                    <!-- Filter API Status -->
+                    <select id="filterApiStatus"
+                        class="px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="">Todos os Status</option>
+                        <option value="api">Integrado (API Banco)</option>
+                        <option value="manual">Manual (Saldo ERP)</option>
+                        <option value="error">Com Erro de API</option>
+                    </select>
+
+                    <!-- Reset Filters -->
+                    <button type="button" id="btnResetFilters" title="Limpar Filtros"
+                        class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MAIN CONTENT AREA (CARDS & TABLE) ──────────────────── -->
+        <div class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-0 space-y-4">
+            
+            <!-- Loading Skeleton -->
+            <div id="loadingState" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="animate-pulse p-5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 h-64"></div>
+                    <div class="animate-pulse p-5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 h-64"></div>
+                    <div class="animate-pulse p-5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 h-64"></div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden">
+                <div class="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+                    <div class="p-3 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 mb-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-6 9 6M5 10v8m4-8v8m4-8v8M3 20h18" />
+                        </svg>
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">Nenhuma conta bancária encontrada</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm">Verifique os filtros selecionados ou cadastre novas contas em Financeiro > Banco.</p>
+                    <a href="/pages/banks.html" class="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs">
+                        Ir para Cadastro de Bancos
+                    </a>
+                </div>
+            </div>
+
+            <!-- CARDS GRID VIEW -->
+            <div id="cardsView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6 print-cards">
+                <!-- Dynamic cards populated by TS -->
+            </div>
+
+            <!-- DATA TABLE VIEW -->
+            <div id="tableView" class="hidden rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-xs overflow-hidden pb-4 print-table">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700 text-xs">
+                        <thead class="bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Banco / Nome</th>
+                                <th class="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Agência / Conta</th>
+                                <th class="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Tipo</th>
+                                <th class="px-4 py-3 text-right font-semibold text-emerald-700 dark:text-emerald-400">Saldo Disponível (Real)</th>
+                                <th class="px-3 py-3 text-right font-semibold text-amber-700 dark:text-amber-400">Bloqueado</th>
+                                <th class="px-3 py-3 text-right font-semibold text-indigo-700 dark:text-indigo-400">Limite</th>
+                                <th class="px-3 py-3 text-right font-semibold text-gray-600 dark:text-gray-300">Saldo ERP</th>
+                                <th class="px-3 py-3 text-right font-semibold text-gray-600 dark:text-gray-300">Divergência</th>
+                                <th class="px-3 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">Status</th>
+                                <th class="px-3 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Última Consulta</th>
+                                <th class="px-3 py-3 text-center font-semibold text-gray-600 dark:text-gray-300 no-print">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-100 dark:divide-slate-700/50">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── FOOTER STATUS BAR ──────────────────────────────────── -->
+        <div class="px-4 sm:px-0 pt-2 shrink-0 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+                <span id="statusBarLastUpdate">Atualizado em: --:--:--</span>
+                <span class="text-gray-300 dark:text-slate-600">•</span>
+                <span id="statusBarCount">0 contas listadas</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> API Realtime</span>
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gray-400"></span> Saldo ERP</span>
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Erro de Conexão</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- App Footer -->
+    <div id="app-footer" class="shrink-0"></div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/utils.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+    <script src="/js/rel-saldo-banco.js?v=20261001145619"></script>
+</body>
+</html>

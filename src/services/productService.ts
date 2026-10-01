@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import pool from '../config/db';
 import { Product, CreateProductData } from '../types/Product';
 import { EstoqueService } from './estoqueService';
 import { ProductRepository } from '../repositories/productRepository';
@@ -49,6 +50,7 @@ export class ProductService {
         productIds: string[],
         category_id?: number | null | undefined,
         stock_type_id?: number | null | undefined,
+        product_type_id?: number | null | undefined,
         manufacturer_id?: number | null | undefined,
         tax_rule_id?: number | null | undefined,
         measure_id?: number | null | undefined,
@@ -57,7 +59,9 @@ export class ProductService {
         min_stock?: number | undefined,
         max_stock?: number | undefined,
         is_promotional?: boolean | undefined,
-        promotional_price?: number | undefined
+        promotional_price?: number | undefined,
+        active?: boolean | undefined,
+        ncm?: string | null | undefined
     }): Promise<number> {
         return ProductRepository.bulkUpdate(companyId, data);
     }
@@ -223,7 +227,32 @@ export class ProductService {
         return result;
     }
 
-    static async sendCatalog(companyId: number, userId: number, phone: string, type: 'pdf' | 'link' = 'pdf', origin?: string): Promise<any> {
+    static async sendCatalog(companyId: number, userIdOrPublicId: string | number, phone: string, type: 'pdf' | 'link' = 'pdf', origin?: string, cartJson?: string | null): Promise<any> {
+        let userQuery = 'SELECT id, role, full_name, whatsapp_enable_manual_billing FROM users WHERE company_id = ? AND ';
+        let queryParams: any[] = [companyId];
+
+        const parsedId = Number(userIdOrPublicId);
+        if (Number.isInteger(parsedId) && !Number.isNaN(parsedId)) {
+            userQuery += 'id = ? LIMIT 1';
+            queryParams.push(parsedId);
+        } else {
+            userQuery += 'public_id = ? LIMIT 1';
+            queryParams.push(String(userIdOrPublicId));
+        }
+
+        const [userRows] = await pool.query<any[]>(userQuery, queryParams);
+        const targetUser = userRows[0];
+        if (!targetUser) {
+            throw new Error('Usuário não encontrado.');
+        }
+
+        const isAdminOrSuper = targetUser.role === 'admin' || targetUser.role === 'super_admin';
+        if (!isAdminOrSuper && Number(targetUser.whatsapp_enable_manual_billing) === 0) {
+            throw new Error('Você não tem permissão para realizar disparos rápidos de cobrança (ações manuais).');
+        }
+
+        const userId = targetUser.id;
+
         const normalizedPhone = WhatsAppBusinessMessageService.normalizeContactPhone(phone);
         if (!normalizedPhone) {
             throw new Error('Telefone do destinatário inválido ou não informado. Use DDD + número.');
@@ -232,19 +261,29 @@ export class ProductService {
         const company = await CompanyService.getById(companyId);
 
         if (type === 'link') {
-            const catalogUrl = `${origin || 'http://localhost:8085'}/pages/catalog.html?company=${company.public_id}`;
+            let catalogUrl = `${origin || 'http://localhost:8025'}/pages/catalog.html?company=${company.public_id}`;
+            if (cartJson) {
+                catalogUrl += `&cart=${encodeURIComponent(cartJson)}`;
+            }
             const messageBody = `Olá!\n\nConfira o nosso catálogo de produtos digital sempre atualizado:\n\n${catalogUrl}\n\nFicamos à disposição para qualquer dúvida ou pedido!`;
             
-            const useCompanyScope = (company.whatsapp_business_scope || 'company') === 'company';
+            const allowAllUsersActiveSender = company.whatsapp_allow_all_users_active_sender !== undefined 
+                ? Number(company.whatsapp_allow_all_users_active_sender) !== 0 
+                : true;
             const messageInput = {
                 to: normalizedPhone,
                 messageBody: messageBody.trim(),
             };
 
-            if (useCompanyScope) {
-                return await WhatsAppBusinessService.sendMessage(companyId, messageInput);
+            if (allowAllUsersActiveSender) {
+                return await WhatsAppBusinessService.sendBestAvailableSessionMessage(companyId, userId, messageInput, company);
             } else {
-                return await WhatsAppBusinessService.sendUserMessage(companyId, userId, messageInput);
+                const useCompanyScope = (company.whatsapp_business_scope || 'company') === 'company';
+                if (useCompanyScope) {
+                    return await WhatsAppBusinessService.sendMessage(companyId, messageInput);
+                } else {
+                    return await WhatsAppBusinessService.sendUserMessage(companyId, userId, messageInput);
+                }
             }
         }
 
@@ -546,7 +585,9 @@ export class ProductService {
 
         const messageBody = `Olá!\n\nSegue em anexo o nosso catálogo de produtos atualizado de *${company.trade_name || company.company_name}*.\n\nFicamos à disposição para qualquer dúvida ou pedido!`;
 
-        const useCompanyScope = (company.whatsapp_business_scope || 'company') === 'company';
+        const allowAllUsersActiveSender = company.whatsapp_allow_all_users_active_sender !== undefined 
+            ? Number(company.whatsapp_allow_all_users_active_sender) !== 0 
+            : true;
         const messageInput = {
             to: normalizedPhone,
             messageBody: messageBody.trim(),
@@ -557,10 +598,15 @@ export class ProductService {
             },
         };
 
-        if (useCompanyScope) {
-            return await WhatsAppBusinessService.sendMessage(companyId, messageInput);
+        if (allowAllUsersActiveSender) {
+            return await WhatsAppBusinessService.sendBestAvailableSessionMessage(companyId, userId, messageInput, company);
         } else {
-            return await WhatsAppBusinessService.sendUserMessage(companyId, userId, messageInput);
+            const useCompanyScope = (company.whatsapp_business_scope || 'company') === 'company';
+            if (useCompanyScope) {
+                return await WhatsAppBusinessService.sendMessage(companyId, messageInput);
+            } else {
+                return await WhatsAppBusinessService.sendUserMessage(companyId, userId, messageInput);
+            }
         }
     }
 }

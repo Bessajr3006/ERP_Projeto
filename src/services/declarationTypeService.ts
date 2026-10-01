@@ -8,7 +8,11 @@ export const declarationTypeSchema = z.object({
     description: z.string().max(255).optional().nullable(),
     frequency: z.enum(['MENSAL', 'BIMESTRAL', 'TRIMESTRAL', 'SEMESTRAL', 'ANUAL']),
     due_day: z.number().int().min(1).max(31).optional().nullable(),
-    tax_regime: z.string().max(50).optional().nullable(),
+    tax_regime: z.union([z.string(), z.array(z.string())]).optional().nullable().transform((val) => {
+        if (!val) return null;
+        if (Array.isArray(val)) return val.filter(Boolean).join(',');
+        return val.trim() || null;
+    }),
     active: z.boolean().default(true)
 });
 

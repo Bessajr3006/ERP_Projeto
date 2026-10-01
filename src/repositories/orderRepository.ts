@@ -12,35 +12,33 @@ import { EstoqueService } from '../services/estoqueService';
 export class OrderRepository {
     private static async resolveUserIdForContext(conn: any, companyId: number, userIdentifier: string): Promise<number> {
         const normalized = String(userIdentifier || '').trim();
-        if (!normalized) {
-            throw new Error('User context resolving failed inside DB logic');
-        }
-
-        const [userRowsRaw] = await conn.query(
-            'SELECT id FROM users WHERE public_id = ? AND company_id = ? LIMIT 1',
-            [normalized, companyId]
-        );
-        const userRows = userRowsRaw as RowDataPacket[];
-
-        if (Array.isArray(userRows) && userRows.length > 0) {
-            return Number(userRows[0]!.id);
-        }
-
-        // Compatibilidade com tokens legados que possam trazer id numérico em vez de public_id.
-        const legacyNumericId = Number(normalized);
-        if (Number.isInteger(legacyNumericId) && legacyNumericId > 0) {
-            const [legacyRowsRaw] = await conn.query(
-                'SELECT id FROM users WHERE id = ? AND company_id = ? LIMIT 1',
-                [legacyNumericId, companyId]
+        if (normalized && normalized !== 'undefined') {
+            const [userRowsRaw] = await conn.query(
+                'SELECT id FROM users WHERE public_id = ? AND company_id = ? LIMIT 1',
+                [normalized, companyId]
             );
-            const legacyRows = legacyRowsRaw as RowDataPacket[];
+            const userRows = userRowsRaw as RowDataPacket[];
 
-            if (Array.isArray(legacyRows) && legacyRows.length > 0) {
-                return Number(legacyRows[0]!.id);
+            if (Array.isArray(userRows) && userRows.length > 0) {
+                return Number(userRows[0]!.id);
+            }
+
+            // Compatibilidade com tokens legados que possam trazer id numérico em vez de public_id.
+            const legacyNumericId = Number(normalized);
+            if (Number.isInteger(legacyNumericId) && legacyNumericId > 0) {
+                const [legacyRowsRaw] = await conn.query(
+                    'SELECT id FROM users WHERE id = ? AND company_id = ? LIMIT 1',
+                    [legacyNumericId, companyId]
+                );
+                const legacyRows = legacyRowsRaw as RowDataPacket[];
+
+                if (Array.isArray(legacyRows) && legacyRows.length > 0) {
+                    return Number(legacyRows[0]!.id);
+                }
             }
         }
 
-        // Fallback para contextos técnicos (ex.: swagger token) sem user_id real no JWT.
+        // Fallback para contextos técnicos (ex.: swagger token ou acao por outra empresa) sem user_id correspondente.
         const [fallbackRowsRaw] = await conn.query(
             `SELECT id
              FROM users
@@ -194,11 +192,33 @@ export class OrderRepository {
 
             if (data.payments && data.payments.length > 0) {
                 for (const payment of data.payments) {
+                    let cardBrandId: number | null = null;
+                    if (payment.card_brand_public_id) {
+                        const [brandRows] = await conn.query<RowDataPacket[]>(
+                            'SELECT id FROM card_brands WHERE public_id = ? AND company_id = ? LIMIT 1',
+                            [payment.card_brand_public_id, companyId]
+                        );
+                        if (brandRows && brandRows.length > 0) {
+                            cardBrandId = brandRows[0]!.id;
+                        }
+                    }
+
+                    let txBankAccountId = bankAccount.id;
+                    if (payment.receivable_type_public_id) {
+                        const [recRows] = await conn.query<RowDataPacket[]>(
+                            'SELECT bank_account_id FROM receivable_types WHERE public_id = ? AND company_id = ? LIMIT 1',
+                            [payment.receivable_type_public_id, companyId]
+                        );
+                        if (recRows && recRows.length > 0) {
+                            txBankAccountId = recRows[0]!.bank_account_id;
+                        }
+                    }
+
                     const transactionPublicId = randomUUID();
                     const paymentDesc = `Venda #${saleId} - ${customerName} (${payment.method})`;
                     await conn.query(
-                        `INSERT INTO transactions (public_id, company_id, bank_account_id, category_id, user_id, sale_id, description, amount, type, payment_method, date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'income', ?, ?, 'progress')`,
-                        [transactionPublicId, companyId, bankAccount.id, categoryId, userId, saleId, paymentDesc, payment.amount, payment.method, orderDate]
+                        `INSERT INTO transactions (public_id, company_id, bank_account_id, category_id, user_id, sale_id, description, amount, type, payment_method, card_brand_id, date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'income', ?, ?, ?, 'progress')`,
+                        [transactionPublicId, companyId, txBankAccountId, categoryId, userId, saleId, paymentDesc, payment.amount, payment.method, cardBrandId, orderDate]
                     );
                 }
             } else {

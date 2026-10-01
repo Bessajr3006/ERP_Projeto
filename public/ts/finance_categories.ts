@@ -33,7 +33,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     void fetchCategories();
 
-    let currentView = localStorage.getItem('financeCategoriesView') || 'list';
+    let currentView = (window as any).CompanyStorage?.getItem('financeCategoriesView') || localStorage.getItem('financeCategoriesView') || 'list';
 
     function updateViewToggle(): void {
       const btnList = getEl('btnListView');
@@ -75,14 +75,22 @@
     const btnListView = getEl('btnListView');
     btnListView?.addEventListener('click', () => {
       currentView = 'list';
-      localStorage.setItem('financeCategoriesView', 'list');
+      if ((window as any).CompanyStorage) {
+        (window as any).CompanyStorage.setItem('financeCategoriesView', 'list');
+      } else {
+        localStorage.setItem('financeCategoriesView', 'list');
+      }
       updateViewToggle();
     });
 
     const btnGridView = getEl('btnGridView');
     btnGridView?.addEventListener('click', () => {
       currentView = 'grid';
-      localStorage.setItem('financeCategoriesView', 'grid');
+      if ((window as any).CompanyStorage) {
+        (window as any).CompanyStorage.setItem('financeCategoriesView', 'grid');
+      } else {
+        localStorage.setItem('financeCategoriesView', 'grid');
+      }
       updateViewToggle();
     });
 

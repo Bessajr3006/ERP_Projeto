@@ -23,9 +23,9 @@ async function customerColumnExists(connection: Connection, column: string): Pro
     const [rows] = await connection.query<RowDataPacket[]>(
         `SELECT COLUMN_NAME
          FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'customers' AND COLUMN_NAME = ?
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = ?
          LIMIT 1`,
-        [DB_NAME, column]
+        [column]
     );
 
     return rows.length > 0;
@@ -62,8 +62,16 @@ export async function runMigration25(): Promise<void> {
                 continue;
             }
 
-            await connection.query(`ALTER TABLE customers ADD COLUMN ${column} ${definition}`);
-            console.log(`[OK] customers.${column} added`);
+            try {
+                await connection.query(`ALTER TABLE customers ADD COLUMN ${column} ${definition}`);
+                console.log(`[OK] customers.${column} added`);
+            } catch (err: any) {
+                if (err?.code === 'ER_DUP_FIELDNAME' || err?.errno === 1060) {
+                    console.log(`[SKIP] customers.${column} already exists (caught duplicate)`);
+                } else {
+                    throw err;
+                }
+            }
         }
 
         console.log('[OK] Migration 25 completed successfully.');

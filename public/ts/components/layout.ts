@@ -19,15 +19,26 @@ const appLayout: AppLayoutApi = {
             console.log('[Layout] Inicializando Footer...');
         }
 
-        document.body.classList.add(
+        const bodyClasses = [
             'bg-gray-100',
             'dark:bg-slate-900',
-            'min-h-screen',
             'flex',
             'flex-col',
             'text-gray-800',
             'font-sans',
-        );
+        ];
+
+        const hasHeightLimit = document.body.classList.contains('h-dvh') || 
+                               document.body.classList.contains('h-screen') || 
+                               document.body.classList.contains('h-lvh') || 
+                               document.body.classList.contains('h-svh') || 
+                               document.body.classList.contains('overflow-hidden');
+
+        if (!hasHeightLimit) {
+            bodyClasses.push('min-h-screen');
+        }
+
+        document.body.classList.add(...bodyClasses);
 
         const main = document.querySelector('main');
         if (main) {

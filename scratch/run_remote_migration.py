@@ -4,7 +4,7 @@ import sys
 import time
 
 def run_cmd(password):
-    cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "root@187.77.24.126", "cd /opt/erp-bessa && docker compose exec -T backend node dist/scripts/run_migration_101_receivable_types.js"]
+    cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "root@187.77.24.126", "cd /opt/erp-bessa && docker compose exec -T backend node -e \"require('./dist/scripts/run_migration_227_expand_declaration_types_tax_regime').runMigration227ExpandDeclarationTypesTaxRegime().then(() => process.exit(0))\""]
     
     pid, fd = pty.fork()
     
@@ -34,6 +34,6 @@ def run_cmd(password):
         return status
 
 if __name__ == "__main__":
-    password = "30MariaClara@"
+    password = "30Simoneamor@"
     status = run_cmd(password)
     sys.exit(status)

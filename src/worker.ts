@@ -6,9 +6,13 @@
  */
 import 'dotenv/config';
 import './config/runtimeEnv';
+import { patchWhatsAppWebJs } from './utils/patchWhatsAppWebJs';
+patchWhatsAppWebJs();
+
 import logger from './config/logger';
 import { startWhatsAppWorker } from './workers/whatsappWorker';
 import { startSefazWorker } from './workers/sefazWorker';
+import { startBilletWorker } from './workers/billetWorker';
 
 // Captura erros fatias para não derrubar silenciosamente
 process.on('unhandledRejection', (reason: unknown) => {
@@ -29,3 +33,4 @@ process.on('SIGTERM', () => {
 logger.info('Iniciando Container de Background Jobs (Worker)...');
 startWhatsAppWorker();
 startSefazWorker();
+startBilletWorker();

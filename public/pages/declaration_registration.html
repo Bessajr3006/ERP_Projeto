@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Cadastro de Declaração</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body data-required-module="declaration_registration" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -128,17 +128,48 @@
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <label for="tax_regime" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Tributação</label>
-                                        <select id="tax_regime" name="tax_regime" class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
-                                            <option value="">Selecione...</option>
-                                            <option value="SIMPLES_NACIONAL">Simples Nacional</option>
-                                            <option value="LUCRO_PRESUMIDO">Lucro Presumido</option>
-                                            <option value="LUCRO_REAL">Lucro Real</option>
-                                            <option value="GERAL">Geral (Todos)</option>
-                                            <option value="MEI">MEI</option>
-                                            <option value="PF">Pessoa Física</option>
-                                        </select>
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Tipos de Tributação <span class="text-xs text-gray-400 dark:text-gray-500 font-normal">(Multi-seleção)</span>
+                                            </label>
+                                            <div class="flex items-center gap-2">
+                                                <button type="button" id="btnSelectAllTaxRegimes" class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline cursor-pointer">Marcar Todos</button>
+                                                <span class="text-xs text-gray-300 dark:text-slate-600">|</span>
+                                                <button type="button" id="btnClearAllTaxRegimes" class="text-xs font-medium text-gray-500 dark:text-gray-400 hover:underline cursor-pointer">Limpar</button>
+                                            </div>
+                                        </div>
+                                        <div id="taxRegimesContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 p-3 bg-gray-50 dark:bg-slate-900/50 rounded-lg border border-gray-200 dark:border-slate-700">
+                                            <label class="flex items-center space-x-2.5 p-2 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600 transition cursor-pointer shadow-xs">
+                                                <input type="checkbox" name="tax_regimes" value="SIMPLES_NACIONAL" class="tax-regime-cb rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                                                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Simples Nacional</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2.5 p-2 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600 transition cursor-pointer shadow-xs">
+                                                <input type="checkbox" name="tax_regimes" value="LUCRO_PRESUMIDO" class="tax-regime-cb rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                                                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Lucro Presumido</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2.5 p-2 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600 transition cursor-pointer shadow-xs">
+                                                <input type="checkbox" name="tax_regimes" value="LUCRO_REAL" class="tax-regime-cb rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                                                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Lucro Real</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2.5 p-2 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600 transition cursor-pointer shadow-xs">
+                                                <input type="checkbox" name="tax_regimes" value="MEI" class="tax-regime-cb rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                                                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">MEI</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2.5 p-2 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600 transition cursor-pointer shadow-xs">
+                                                <input type="checkbox" name="tax_regimes" value="PF" class="tax-regime-cb rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                                                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Pessoa Física</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2.5 p-2 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600 transition cursor-pointer shadow-xs">
+                                                <input type="checkbox" name="tax_regimes" value="OUTROS" class="tax-regime-cb rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                                                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Outros / Isento</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2.5 p-2 rounded-md bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600 transition cursor-pointer shadow-xs sm:col-span-2 lg:col-span-3">
+                                                <input type="checkbox" name="tax_regimes" value="GERAL" class="tax-regime-cb rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 cursor-pointer">
+                                                <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Geral (Aplica-se a todas as empresas/tributações)</span>
+                                            </label>
+                                        </div>
                                     </div>
+
     
                                     <div class="sm:col-span-2 mt-2">
                                         <label class="flex items-center">
@@ -161,14 +192,14 @@
         </div>
     </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/filter-panel.js"></script>
-    <script src="/js/components/crud-manager.js"></script>
-    <script src="/js/declaration_registration.js"></script>
-    <script src="/js/components/navbar.js"></script>
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/filter-panel.js?v=20261001145619"></script>
+    <script src="/js/components/crud-manager.js?v=20261001145619"></script>
+    <script src="/js/declaration_registration.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

@@ -9,7 +9,7 @@ import 'dotenv/config';
 import './config/runtimeEnv';
 import './config/timezone';
 import 'express-async-errors';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
@@ -20,7 +20,17 @@ import authRoutes from './routes/authRoutes';
 import companyRoutes from './routes/companyRoutes';
 import bankAccountRoutes from './routes/bankAccountRoutes';
 import receivableTypeRoutes from './routes/receivableTypeRoutes';
+import paymentTypeRoutes from './routes/paymentTypeRoutes';
+import cardConfigurationRoutes from './routes/cardConfigurationRoutes';
+import cardBrandRoutes from './routes/cardBrandRoutes';
+import cardExpenseRoutes from './routes/cardExpenseRoutes';
+import cardDebitRoutes from './routes/cardDebitRoutes';
+import customerGroupRoutes from './routes/customerGroupRoutes';
+import costCenterRoutes from './routes/costCenterRoutes';
+import activityGroupRoutes from './routes/activityGroupRoutes';
+import companyGroupRoutes from './routes/companyGroupRoutes';
 import productRoutes from './routes/productRoutes';
+import employeeRoutes from './routes/employeeRoutes';
 import entityRoutes from './routes/entityRoutes';
 import orderRoutes from './routes/orderRoutes';
 import financeRoutes from './routes/financeRoutes';
@@ -36,10 +46,14 @@ import organizerRoutes from './routes/organizerRoutes';
 import nfeRoutes from './routes/nfeRoutes';
 import manifestationRoutes from './routes/manifestationRoutes';
 import accountingRoutes from './routes/accountingRoutes';
+import fechamentoRoutes from './routes/fechamentoRoutes';
 import emailConfigRoutes from './routes/emailConfigRoutes';
 import uiPreferenceRoutes from './routes/uiPreferenceRoutes';
 import backupRoutes from './routes/backupRoutes';
 import publicRoutes from './routes/publicRoutes';
+import censusRoutes from './routes/censusRoutes';
+import mecRoutes from './routes/mecRoutes';
+import maintenanceRoutes from './routes/maintenanceRoutes';
 import { StorageService } from './utils/storageService';
 import { toBrazilIsoDateTime } from './utils/dateTime';
 import httpLogger from './middlewares/httpLogger';
@@ -49,6 +63,7 @@ import swaggerSpec from './config/swagger';
 StorageService.ensureDirectories();
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Disable ETags for API routes to prevent 304 Not Modified on dynamic data
 app.set('etag', false);
@@ -146,7 +161,10 @@ app.get('/api-docs.json', (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/json');
     res.status(200).send(swaggerSpec);
 });
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+app.use('/api-docs', (_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';");
+    next();
+}, swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     swaggerOptions: {
         persistAuthorization: true,
     },
@@ -269,6 +287,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
             stockTypeCard.className = 'bessa-swagger-category-card';
             stockTypeCard.innerHTML = '<div class="bessa-swagger-category-header"><div><h2 class="bessa-swagger-category-title">Tipo de Estoque</h2><p class="bessa-swagger-category-description">Endpoints de cadastro, listagem, edicao e remocao em /estoque/stock-types.</p></div><a href="#/Estoque" class="bessa-swagger-category-link">Ver no Swagger</a></div><div class="bessa-swagger-category-grid"><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-get">GET</span><span class="bessa-swagger-route-path">/estoque/stock-types</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-post">POST</span><span class="bessa-swagger-route-path">/estoque/stock-types</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-put">PUT</span><span class="bessa-swagger-route-path">/estoque/stock-types/{id}</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-delete">DELETE</span><span class="bessa-swagger-route-path">/estoque/stock-types/{id}</span></div></div>';
             container.insertBefore(stockTypeCard, container.firstChild);
+
+            var rafaelCard = document.createElement('div');
+            rafaelCard.id = 'bessaRafaelReportSwaggerCard';
+            rafaelCard.className = 'bessa-swagger-category-card';
+            rafaelCard.innerHTML = '<div class="bessa-swagger-category-header"><div><h2 class="bessa-swagger-category-title">Relatório Rafael (Vendas e Custos)</h2><p class="bessa-swagger-category-description">Relatórios consolidados de vendas/custos e detalhes analíticos de cupons fiscais em /finance/reports/rafael.</p></div><a href="#/Relat%C3%B3rios" class="bessa-swagger-category-link">Ver no Swagger</a></div><div class="bessa-swagger-category-grid"><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-get">GET</span><span class="bessa-swagger-route-path">/finance/reports/rafael</span></div><div class="bessa-swagger-category-route"><span class="bessa-swagger-method-get">GET</span><span class="bessa-swagger-route-path">/finance/reports/rafael/detail</span></div></div>';
+            container.insertBefore(rafaelCard, container.firstChild);
         });
     `
 } as any));
@@ -276,6 +300,16 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api/v1/bank-accounts', bankAccountRoutes);
 app.use('/api/v1/receivable-types', receivableTypeRoutes);
+app.use('/api/v1/payment-types', paymentTypeRoutes);
+app.use('/api/v1/card-configurations', cardConfigurationRoutes);
+app.use('/api/v1/card-brands', cardBrandRoutes);
+app.use('/api/v1/card-expenses', cardExpenseRoutes);
+app.use('/api/v1/card-debits', cardDebitRoutes);
+app.use('/api/v1/customer-groups', customerGroupRoutes);
+app.use('/api/v1/cost-centers', costCenterRoutes);
+app.use('/api/v1/activity-groups', activityGroupRoutes);
+app.use('/api/v1/company-groups', companyGroupRoutes);
+app.use('/api/v1/employees', employeeRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/entities', entityRoutes);
 app.use('/api/v1/finance', financeRoutes);
@@ -294,10 +328,14 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/nfe', nfeRoutes);
 app.use('/api/v1/manifestation', manifestationRoutes);
 app.use('/api/v1/accounting', accountingRoutes);
+app.use('/api/v1/fechamentos', fechamentoRoutes);
 app.use('/api/v1/email-config', emailConfigRoutes);
 app.use('/api/v1/ui-preferences', uiPreferenceRoutes);
 app.use('/api/v1/backup', backupRoutes);
 app.use('/api/v1/public', publicRoutes);
+app.use('/api/v1/census', censusRoutes);
+app.use('/api/v1/mec', mecRoutes);
+app.use('/api/v1/maintenance', maintenanceRoutes);
 
 // ── Utility Routes ────────────────────────────────────────────────────────────
 app.get('/health', (_req: Request, res: Response) => {

@@ -8,7 +8,12 @@
     }
     function setMaskedValue(maskInstance, inputId, value) {
         if (maskInstance) {
-            maskInstance.unmaskedValue = onlyDigits(value);
+            if (inputId === 'entityDocument') {
+                maskInstance.unmaskedValue = String(value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            }
+            else {
+                maskInstance.unmaskedValue = onlyDigits(value);
+            }
             return;
         }
         const input = getById(inputId);
@@ -20,7 +25,11 @@
         if (maskInstance) {
             return maskInstance.unmaskedValue || '';
         }
-        return onlyDigits(getById(inputId)?.value || '');
+        const val = getById(inputId)?.value || '';
+        if (inputId === 'entityDocument') {
+            return String(val).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        }
+        return onlyDigits(val);
     }
     function getTrimmedValue(inputId) {
         return String(getById(inputId)?.value || '').trim();
@@ -28,12 +37,12 @@
     function formatDoc(doc) {
         if (!doc)
             return '-';
-        const clean = String(doc).replace(/\D/g, '');
+        const clean = String(doc).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         if (clean.length === 11) {
-            return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            return clean.replace(/([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{2})/, '$1.$2.$3-$4');
         }
         if (clean.length === 14) {
-            return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+            return clean.replace(/([a-zA-Z0-9]{2})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{4})([a-zA-Z0-9]{2})/, '$1.$2.$3/$4-$5');
         }
         return doc;
     }
@@ -236,8 +245,14 @@
                 state.docMask = makeMask(documentInput, {
                     mask: [
                         { mask: '000.000.000-00' },
-                        { mask: '00.000.000/0000-00' },
+                        {
+                            mask: 'XX.XXX.XXX/XXXX-XX',
+                            definitions: {
+                                'X': /[a-zA-Z0-9]/
+                            }
+                        },
                     ],
+                    prepare: (str) => str.toUpperCase()
                 });
                 documentInput.addEventListener('blur', handleDocumentLookup);
             }
@@ -300,6 +315,7 @@
             }
             document.title = `KEYSTONE - ${cfg.pageTitle}`;
             setupFormEnhancements();
+            setupDetailsModalTabs();
             loadStateOptions('');
             const roleManager = new CrudManager({
                 entityName: cfg.singularLabel,
@@ -343,12 +359,15 @@
                             return false;
                         return [item.cpf_cnpj, item.phone].map(v => window.FilterPanel.onlyDigits(v)).some(v => v.includes(searchDigits));
                     });
-                    window.GridSummaryFooter?.update({
-                        footerId: cfg.resultsFooterId,
-                        anchorId: cfg.gridSectionId,
-                        count: filtered.length,
-                        label: cfg.summaryLabel,
-                    });
+                    const anchorEl = document.getElementById(cfg.gridSectionId) || document.getElementById(cfg.tableSectionId);
+                    if (anchorEl) {
+                        window.GridSummaryFooter?.update({
+                            footerId: cfg.resultsFooterId,
+                            anchorId: anchorEl.id,
+                            count: filtered.length,
+                            label: cfg.summaryLabel,
+                        });
+                    }
                     return filtered;
                 },
                 renderTable: (items) => {
@@ -378,6 +397,9 @@
                                 ${item.is_active ? '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Ativo</span>' : '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inativo</span>'}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button type="button" title="Detalhes" class="text-indigo-600 hover:text-indigo-900 dark:hover:text-indigo-400 mr-2 open-details-btn" data-id="${item.public_id}" data-name="${item.full_name}">
+                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </button>
                                 <button type="button" title="Editar" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-2 edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
                                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 </button>
@@ -436,6 +458,9 @@
                                 </div>
                             </div>
                             <div class="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-end space-x-2">
+                                <button type="button" title="Detalhes" class="text-indigo-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 open-details-btn" data-id="${item.public_id}" data-name="${item.full_name}">
+                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </button>
                                 <button type="button" title="Editar" class="text-brand-600 hover:bg-brand-50 p-1.5 rounded-full dark:hover:bg-brand-900/30 edit-btn" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
                                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 </button>
@@ -563,7 +588,17 @@
                 }
             });
             document.addEventListener('click', async (e) => {
-                const btn = e.target?.closest?.('.toggle-status-btn');
+                const target = e.target;
+                const openDetailsBtn = target?.closest?.('.open-details-btn');
+                if (openDetailsBtn) {
+                    const id = openDetailsBtn.getAttribute('data-id');
+                    const name = openDetailsBtn.getAttribute('data-name') || '';
+                    if (id) {
+                        void openViewDetailsModal(id, name);
+                    }
+                    return;
+                }
+                const btn = target?.closest?.('.toggle-status-btn');
                 if (!btn)
                     return;
                 const id = btn.getAttribute('data-id');
@@ -585,6 +620,439 @@
             });
             roleManager.init();
             applyRolePrefillFromQuery(roleManager);
+            function setupDetailsModalTabs() {
+                const modalElement = getById(cfg.role === 'buyer' ? 'viewBuyerDetailsModal' : 'viewServiceProviderDetailsModal');
+                if (!modalElement)
+                    return;
+                const tabButtons = modalElement.querySelectorAll('.details-modal-tab');
+                tabButtons.forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const targetId = btn.getAttribute('data-details-tab-target');
+                        if (!targetId)
+                            return;
+                        tabButtons.forEach((b) => {
+                            const isActive = b === btn;
+                            b.setAttribute('aria-selected', String(isActive));
+                            b.classList.toggle('border-brand-500', isActive);
+                            b.classList.toggle('text-brand-600', isActive);
+                            b.classList.toggle('dark:text-brand-300', isActive);
+                            b.classList.toggle('border-transparent', !isActive);
+                            b.classList.toggle('text-gray-500', !isActive);
+                            b.classList.toggle('dark:text-gray-400', !isActive);
+                        });
+                        modalElement.querySelectorAll('.details-modal-tab-panel').forEach((panel) => {
+                            if (panel.id === targetId) {
+                                panel.classList.remove('hidden');
+                            }
+                            else {
+                                panel.classList.add('hidden');
+                            }
+                        });
+                    });
+                });
+            }
+            function resetDetailsModalTabs() {
+                const modalElement = getById(cfg.role === 'buyer' ? 'viewBuyerDetailsModal' : 'viewServiceProviderDetailsModal');
+                if (!modalElement)
+                    return;
+                const tabButtons = Array.from(modalElement.querySelectorAll('.details-modal-tab'));
+                const visibleButtons = tabButtons.filter((btn) => !btn.classList.contains('hidden'));
+                tabButtons.forEach((btn) => {
+                    const isSelected = visibleButtons.length > 0 && btn === visibleButtons[0];
+                    btn.setAttribute('aria-selected', String(isSelected));
+                    btn.classList.toggle('border-brand-500', isSelected);
+                    btn.classList.toggle('text-brand-600', isSelected);
+                    btn.classList.toggle('dark:text-brand-300', isSelected);
+                    btn.classList.toggle('border-transparent', !isSelected);
+                    btn.classList.toggle('text-gray-500', !isSelected);
+                    btn.classList.toggle('dark:text-gray-400', !isSelected);
+                });
+                modalElement.querySelectorAll('.details-modal-tab-panel').forEach((panel) => {
+                    const panelId = panel.getAttribute('id');
+                    const correspondingBtn = tabButtons.find((btn) => btn.getAttribute('aria-controls') === panelId);
+                    const shouldBeVisible = correspondingBtn && visibleButtons.length > 0 && correspondingBtn === visibleButtons[0];
+                    if (shouldBeVisible) {
+                        panel.classList.remove('hidden');
+                    }
+                    else {
+                        panel.classList.add('hidden');
+                    }
+                });
+            }
+            async function openViewDetailsModal(entityId, entityName) {
+                const modal = getById(cfg.role === 'buyer' ? 'viewBuyerDetailsModal' : 'viewServiceProviderDetailsModal');
+                if (!modal)
+                    return;
+                const closeBtn = modal.querySelector('#btnCloseViewDetailsModal');
+                const cancelBtn = modal.querySelector('#btnCancelViewDetailsModal');
+                const backdrop = modal.querySelector('#viewDetailsModalBackdrop');
+                // Close modal actions
+                const closeModal = () => {
+                    modal.classList.add('hidden');
+                };
+                closeBtn?.addEventListener('click', closeModal, { once: true });
+                cancelBtn?.addEventListener('click', closeModal, { once: true });
+                backdrop?.addEventListener('click', closeModal, { once: true });
+                modal.classList.remove('hidden');
+                // Populate basic details
+                const item = roleManager?.data?.find((c) => c.public_id === entityId);
+                const docEl = modal.querySelector('#viewDetailsDocument');
+                const emailEl = modal.querySelector('#viewDetailsEmail');
+                const phoneEl = modal.querySelector('#viewDetailsPhone');
+                const locEl = modal.querySelector('#viewDetailsLocation');
+                const titleNameEl = modal.querySelector(cfg.role === 'buyer' ? '#viewDetailsBuyerName' : '#viewDetailsServiceProviderName');
+                if (titleNameEl)
+                    titleNameEl.textContent = entityName;
+                if (docEl)
+                    docEl.textContent = formatDoc(item?.cpf_cnpj);
+                if (emailEl) {
+                    emailEl.textContent = item?.email || 'Não informado';
+                    emailEl.title = item?.email || '';
+                }
+                if (phoneEl)
+                    phoneEl.textContent = formatPhone(item?.phone);
+                if (locEl)
+                    locEl.textContent = formatLocation(item || {});
+                // Map configuration
+                const mapBuyerAddressSpan = modal.querySelector(cfg.role === 'buyer' ? '#mapBuyerAddress' : '#mapServiceProviderAddress');
+                const googleMapsIframe = modal.querySelector('#googleMapsIframe');
+                const btnOpenWaze = modal.querySelector('#btnOpenWaze');
+                const btnOpenGoogleMaps = modal.querySelector('#btnOpenGoogleMaps');
+                if (item) {
+                    const addressParts = [
+                        item.street,
+                        item.number,
+                        item.neighborhood,
+                        item.city,
+                        item.state,
+                        item.zipcode
+                    ].filter(Boolean);
+                    const addressStr = addressParts.join(', ');
+                    if (mapBuyerAddressSpan) {
+                        mapBuyerAddressSpan.textContent = addressStr || 'Endereço não cadastrado';
+                    }
+                    const authCtx = window.gNavbarAuthContext;
+                    const company = authCtx?.company;
+                    const companyAddressParts = company ? [
+                        company.street,
+                        company.number,
+                        company.neighborhood,
+                        company.city,
+                        company.state,
+                        company.zipcode
+                    ].filter(Boolean) : [];
+                    const companyAddressStr = companyAddressParts.join(', ');
+                    if (addressStr) {
+                        let embedUrl = '';
+                        let mapsUrl = '';
+                        let wazeUrl = '';
+                        if (companyAddressStr) {
+                            embedUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(companyAddressStr)}&daddr=${encodeURIComponent(addressStr)}&output=embed`;
+                            mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(companyAddressStr)}&destination=${encodeURIComponent(addressStr)}`;
+                            wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(addressStr)}&navigate=yes`;
+                        }
+                        else {
+                            embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(addressStr)}&output=embed`;
+                            mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressStr)}`;
+                            wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(addressStr)}&navigate=yes`;
+                        }
+                        if (googleMapsIframe) {
+                            googleMapsIframe.src = embedUrl;
+                        }
+                        if (btnOpenWaze) {
+                            btnOpenWaze.href = wazeUrl;
+                            btnOpenWaze.classList.remove('hidden');
+                        }
+                        if (btnOpenGoogleMaps) {
+                            btnOpenGoogleMaps.href = mapsUrl;
+                            btnOpenGoogleMaps.classList.remove('hidden');
+                        }
+                    }
+                    else {
+                        if (googleMapsIframe)
+                            googleMapsIframe.removeAttribute('src');
+                        if (btnOpenWaze)
+                            btnOpenWaze.classList.add('hidden');
+                        if (btnOpenGoogleMaps)
+                            btnOpenGoogleMaps.classList.add('hidden');
+                    }
+                }
+                else {
+                    if (mapBuyerAddressSpan)
+                        mapBuyerAddressSpan.textContent = 'Não encontrado';
+                    if (googleMapsIframe)
+                        googleMapsIframe.removeAttribute('src');
+                    if (btnOpenWaze)
+                        btnOpenWaze.classList.add('hidden');
+                    if (btnOpenGoogleMaps)
+                        btnOpenGoogleMaps.classList.add('hidden');
+                }
+                resetDetailsModalTabs();
+                const docContainer = modal.querySelector('#viewDetailsDocumentContainer');
+                let docsList = [];
+                const parseCnpjDocuments = (val) => {
+                    if (!val)
+                        return [];
+                    let list = [];
+                    if (Array.isArray(val)) {
+                        list = val;
+                    }
+                    else {
+                        try {
+                            if (typeof val === 'string' && val.trim().startsWith('[')) {
+                                list = JSON.parse(val);
+                            }
+                            else if (typeof val === 'string' && val.trim() !== '') {
+                                list = [val];
+                            }
+                        }
+                        catch (e) { }
+                    }
+                    return list.map(item => {
+                        if (typeof item === 'string') {
+                            const fileName = item.substring(item.lastIndexOf('/') + 1);
+                            return { name: fileName, url: item, attachedAt: new Date(2026, 0, 1).toISOString() };
+                        }
+                        if (item && typeof item === 'object' && item.url) {
+                            return {
+                                name: item.name || item.url.substring(item.url.lastIndexOf('/') + 1),
+                                url: item.url,
+                                attachedAt: item.attachedAt || new Date().toISOString()
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
+                };
+                docsList = parseCnpjDocuments(item?.cnpj_document_url);
+                const getBase64 = (file) => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = error => reject(error);
+                    });
+                };
+                const renderDetailsDocsList = () => {
+                    if (!docContainer)
+                        return;
+                    docsList.sort((a, b) => new Date(b.attachedAt || 0).getTime() - new Date(a.attachedAt || 0).getTime());
+                    if (docsList.length === 0) {
+                        docContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-12 gap-2 text-gray-400 dark:text-gray-500 w-full font-sans">
+                            <svg class="w-12 h-12 text-gray-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <p class="text-sm font-medium">Nenhum documento anexado.</p>
+                        </div>
+                    `;
+                        return;
+                    }
+                    docContainer.innerHTML = docsList.map((doc, idx) => {
+                        const fileName = doc.url.substring(doc.url.lastIndexOf('/') + 1);
+                        const d = doc.attachedAt ? new Date(doc.attachedAt) : null;
+                        const dateStr = d ? `Anexado em ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '';
+                        return `
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:border-brand-300 dark:hover:border-brand-700 transition-all font-sans mb-3">
+                            <a href="${doc.url}" target="_blank" class="flex items-center gap-3 flex-1 min-w-0 mr-4 group text-left cursor-pointer decoration-none">
+                                <div class="p-2 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/60 transition-colors">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">${doc.name}</p>
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">${fileName}</p>
+                                    ${dateStr ? `
+                                        <p class="text-[10px] text-gray-400 dark:text-gray-500 font-mono mt-1 flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            ${dateStr}
+                                        </p>
+                                    ` : ''}
+                                </div>
+                            </a>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" class="btn-rename-doc p-1.5 rounded text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 transition-colors" data-index="${idx}" title="Renomear documento">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn-delete-doc p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors" data-index="${idx}" title="Excluir documento">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    }).join('');
+                };
+                renderDetailsDocsList();
+                // Bind upload input
+                const detailCnpjFileInput = modal.querySelector('#detailCnpjFile');
+                if (detailCnpjFileInput) {
+                    const newFileInput = detailCnpjFileInput.cloneNode(true);
+                    detailCnpjFileInput.parentNode?.replaceChild(newFileInput, detailCnpjFileInput);
+                    newFileInput.addEventListener('change', async (e) => {
+                        const files = Array.from(newFileInput.files || []);
+                        if (files.length === 0)
+                            return;
+                        const uploads = [];
+                        for (const file of files) {
+                            try {
+                                const b64 = (await getBase64(file));
+                                const defaultName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                                uploads.push({
+                                    name: defaultName,
+                                    base64: b64,
+                                    attachedAt: new Date().toISOString(),
+                                    filename: file.name
+                                });
+                            }
+                            catch (err) {
+                                console.error(err);
+                            }
+                        }
+                        if (uploads.length > 0) {
+                            try {
+                                newFileInput.disabled = true;
+                                if (docContainer)
+                                    docContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 animate-pulse font-sans">Enviando documentos...</p>';
+                                await api(`/users/${entityId}`, {
+                                    method: 'PUT',
+                                    body: JSON.stringify({
+                                        cnpj_document_uploads: uploads
+                                    })
+                                });
+                                window.UI.showAlert('alertMessage', 'Documentos anexados com sucesso!', 'success');
+                                await roleManager.loadData();
+                                const updatedItem = roleManager?.data?.find((c) => c.public_id === entityId);
+                                docsList = parseCnpjDocuments(updatedItem?.cnpj_document_url);
+                                renderDetailsDocsList();
+                            }
+                            catch (err) {
+                                console.error(err);
+                                window.UI.showAlert('alertMessage', err.message || 'Erro ao enviar documentos.', 'error');
+                                renderDetailsDocsList();
+                            }
+                            finally {
+                                newFileInput.disabled = false;
+                                newFileInput.value = '';
+                            }
+                        }
+                    });
+                }
+                // Bind clicks for rename and delete within document container
+                if (docContainer) {
+                    const newDocContainer = docContainer.cloneNode(true);
+                    docContainer.parentNode?.replaceChild(newDocContainer, docContainer);
+                    newDocContainer.addEventListener('click', async (e) => {
+                        const target = e.target;
+                        const renameBtn = target?.closest('.btn-rename-doc');
+                        const deleteBtn = target?.closest('.btn-delete-doc');
+                        if (renameBtn) {
+                            const idx = parseInt(renameBtn.getAttribute('data-index') || '0', 10);
+                            const doc = docsList[idx];
+                            if (doc) {
+                                const newName = prompt('Digite o novo nome para o documento:', doc.name);
+                                if (newName && newName.trim()) {
+                                    docsList[idx].name = newName.trim();
+                                    try {
+                                        await api(`/users/${entityId}`, {
+                                            method: 'PUT',
+                                            body: JSON.stringify({
+                                                cnpj_document_url: JSON.stringify(docsList)
+                                            })
+                                        });
+                                        window.UI.showAlert('alertMessage', 'Documento renomeado com sucesso!', 'success');
+                                        await roleManager.loadData();
+                                        renderDetailsDocsList();
+                                    }
+                                    catch (err) {
+                                        console.error(err);
+                                        window.UI.showAlert('alertMessage', 'Erro ao renomear documento.', 'error');
+                                    }
+                                }
+                            }
+                        }
+                        if (deleteBtn) {
+                            const idx = parseInt(deleteBtn.getAttribute('data-index') || '0', 10);
+                            if (confirm('Deseja realmente excluir este documento?')) {
+                                docsList.splice(idx, 1);
+                                try {
+                                    await api(`/users/${entityId}`, {
+                                        method: 'PUT',
+                                        body: JSON.stringify({
+                                            cnpj_document_url: JSON.stringify(docsList)
+                                        })
+                                    });
+                                    window.UI.showAlert('alertMessage', 'Documento excluído com sucesso!', 'success');
+                                    await roleManager.loadData();
+                                    renderDetailsDocsList();
+                                }
+                                catch (err) {
+                                    console.error(err);
+                                    window.UI.showAlert('alertMessage', 'Erro ao excluir documento.', 'error');
+                                }
+                            }
+                        }
+                    });
+                }
+                resetDetailsModalTabs();
+                // ── Loader / API calls ──
+                const financialsTable = modal.querySelector('#viewDetailsFinancialsTable');
+                const tasksTable = modal.querySelector('#viewDetailsTasksTable');
+                if (financialsTable)
+                    financialsTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans animate-pulse">Carregando...</td></tr>';
+                if (tasksTable)
+                    tasksTable.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans animate-pulse">Carregando...</td></tr>';
+                try {
+                    const [revenuesRes, expensesRes, tasksRes] = await Promise.all([
+                        api('/finance/revenues').catch(() => ({ data: [] })),
+                        api('/finance/expenses').catch(() => ({ data: [] })),
+                        api('/tasks').catch(() => ({ data: [] }))
+                    ]);
+                    // Filter transactions
+                    const revenues = (revenuesRes.data || []).filter((tx) => tx.related_user_public_id === entityId);
+                    const expenses = (expensesRes.data || []).filter((tx) => tx.related_user_public_id === entityId);
+                    const transactions = [...revenues, ...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    if (financialsTable) {
+                        if (transactions.length === 0) {
+                            financialsTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhum lançamento financeiro encontrado.</td></tr>';
+                        }
+                        else {
+                            financialsTable.innerHTML = transactions.map((t) => `
+                            <tr>
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-sans">${t.description}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.status === 'paid' ? 'Pago' : 'Pendente'}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-mono ${t.type === 'revenue' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                                    ${t.type === 'revenue' ? '+' : '-'}${Number(t.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </td>
+                            </tr>
+                        `).join('');
+                        }
+                    }
+                    // Filter tasks
+                    const tasks = (tasksRes.data || []).filter((t) => t.personType === cfg.role && t.personId === entityId);
+                    if (tasksTable) {
+                        if (tasks.length === 0) {
+                            tasksTable.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhuma tarefa encontrada.</td></tr>';
+                        }
+                        else {
+                            tasksTable.innerHTML = tasks.map((t) => `
+                            <tr>
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-sans">${t.title}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : '-'}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-sans">${t.status}</td>
+                            </tr>
+                        `).join('');
+                        }
+                    }
+                }
+                catch (error) {
+                    console.error('Erro ao buscar dados do comprador:', error);
+                }
+            }
         });
     };
 })();

@@ -124,7 +124,11 @@
         gridIconCheck?.classList.add('hidden');
 
         gridContainer.className = 'overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 gap-4 content-start';
-        localStorage.setItem('picking_view', 'list');
+        if ((window as any).CompanyStorage) {
+          (window as any).CompanyStorage.setItem('picking_view', 'list');
+        } else {
+          localStorage.setItem('picking_view', 'list');
+        }
       } else {
         btnGridView.className =
           'flex items-center justify-center px-3 py-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-sm transition-all focus:outline-none gap-1';
@@ -135,7 +139,11 @@
 
         gridContainer.className =
           'overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 content-start';
-        localStorage.setItem('picking_view', 'grid');
+        if ((window as any).CompanyStorage) {
+          (window as any).CompanyStorage.setItem('picking_view', 'grid');
+        } else {
+          localStorage.setItem('picking_view', 'grid');
+        }
       }
     };
 
@@ -143,7 +151,7 @@
     btnGridView.addEventListener('click', () => setView('grid'));
 
     // Apply from saved memory
-    const savedView = (localStorage.getItem('picking_view') as 'list' | 'grid' | null) || 'grid';
+    const savedView = (((window as any).CompanyStorage?.getItem('picking_view') ?? localStorage.getItem('picking_view')) as 'list' | 'grid' | null) || 'grid';
     setView(savedView);
   }
 

@@ -35,7 +35,6 @@ services:
       context: .
       dockerfile: Dockerfile.portainer
     image: ghcr.io/bessajr3006/erp-app:latest
-    pull_policy: always
     restart: unless-stopped
     depends_on:
       db:
@@ -82,7 +81,6 @@ services:
       context: .
       dockerfile: Dockerfile.portainer
     image: ghcr.io/bessajr3006/erp-app:latest
-    pull_policy: always
     restart: unless-stopped
     depends_on:
       backend:
@@ -125,7 +123,6 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     image: ghcr.io/bessajr3006/erp-frontend:latest
-    pull_policy: always
     restart: unless-stopped
     depends_on:
       backend:
@@ -138,6 +135,10 @@ services:
       - traefik.http.routers.erp-keystones.tls=true
       - traefik.http.routers.erp-keystones.tls.certresolver=${TRAEFIK_CERTRESOLVER:-myresolver}
       - traefik.http.services.erp-keystones.loadbalancer.server.port=80
+      # HTTP to HTTPS redirect
+      - traefik.http.routers.erp-keystones-http.rule=Host(`erp.keystones.dev`)
+      - traefik.http.routers.erp-keystones-http.entrypoints=web
+      - traefik.http.routers.erp-keystones-http.middlewares=https-only@file
     networks:
       - erp-internal
       - traefik-public

@@ -15,8 +15,18 @@ export class ProductRepository {
         }
     }
 
+    private static async ensureProductTypeBelongsToCompany(productTypeId: number, companyId: number): Promise<void> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT id FROM product_types WHERE id = ? AND company_id = ? LIMIT 1',
+            [productTypeId, companyId]
+        );
+        if (!rows || rows.length === 0) {
+            throw new Error('Invalid product type for this company');
+        }
+    }
+
     static async create(companyId: number, data: CreateProductData): Promise<Product> {
-        const { name, description, sku, ean, external_code, is_imported = false, cost_price = 0, selling_price = 0, is_promotional = false, promotional_price = 0, initial_stock = 0, min_stock = 0, max_stock = 0, category_id, stock_type_id, manufacturer_id, tax_rule_id, measure_id, image_base64, image_url: imageUrlParam } = data;
+        const { name, description, sku, ean, external_code, is_imported = false, cost_price = 0, selling_price = 0, is_promotional = false, promotional_price = 0, initial_stock = 0, min_stock = 0, max_stock = 0, category_id, stock_type_id, product_type_id, manufacturer_id, tax_rule_id, measure_id, image_base64, image_url: imageUrlParam, idprodutopos, status_pos_id: statusPosIdParam, active = true } = data;
 
         if (sku) {
             const [existing] = await pool.query<RowDataPacket[]>('SELECT id FROM products WHERE sku = ? AND company_id = ? LIMIT 1', [sku, companyId]);
@@ -33,15 +43,21 @@ export class ProductRepository {
             await this.ensureStockTypeBelongsToCompany(stock_type_id, companyId);
         }
 
+        if (product_type_id) {
+            await this.ensureProductTypeBelongsToCompany(product_type_id, companyId);
+        }
+
         const publicId = randomUUID();
         const conn = await pool.getConnection();
+
+        const status_pos_id = statusPosIdParam || (active ? 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1758966' : 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1457822');
 
         try {
             await conn.beginTransaction();
 
             const [result] = await conn.query<ResultSetHeader>(
-                `INSERT INTO products (public_id, company_id, name, description, sku, ean, external_code, is_imported, cost_price, selling_price, is_promotional, promotional_price, current_stock, min_stock, max_stock, category_id, stock_type_id, manufacturer_id, tax_rule_id, measure_id, image_base64, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [publicId, companyId, name, description || null, sku || null, ean || null, external_code || null, is_imported ? 1 : 0, cost_price, selling_price, is_promotional ? 1 : 0, promotional_price, min_stock, max_stock, category_id || null, stock_type_id || null, manufacturer_id || null, tax_rule_id || null, measure_id || null, image_base64 || null, resolvedImageUrl]
+                `INSERT INTO products (public_id, company_id, name, description, sku, ean, external_code, is_imported, cost_price, selling_price, is_promotional, promotional_price, current_stock, min_stock, max_stock, category_id, stock_type_id, product_type_id, manufacturer_id, tax_rule_id, measure_id, image_base64, image_url, idprodutopos, status_pos_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [publicId, companyId, name, description || null, sku || null, ean || null, external_code || null, is_imported ? 1 : 0, cost_price, selling_price, is_promotional ? 1 : 0, promotional_price, min_stock, max_stock, category_id || null, stock_type_id || null, product_type_id || null, manufacturer_id || null, tax_rule_id || null, measure_id || null, image_base64 || null, resolvedImageUrl, idprodutopos || null, status_pos_id, active ? 1 : 0]
             );
 
             const productId = result.insertId;
@@ -60,22 +76,32 @@ export class ProductRepository {
         }
     }
 
+    private static mapToProduct(row: RowDataPacket): Product {
+        return {
+            ...row,
+            is_imported: Boolean(row.is_imported),
+            is_promotional: Boolean(row.is_promotional),
+            poscontrol_synced: Boolean(row.poscontrol_synced),
+            active: Boolean(row.active ?? 1),
+        } as Product;
+    }
+
     static async getById(id: number, companyId: number): Promise<Product> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT p.*, c.name AS category_name, st.name AS stock_type_name, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.id = ? AND p.company_id = ? LIMIT 1`,
+            `SELECT p.*, c.name AS category_name, c.idgrupopos AS category_pos_id, st.name AS stock_type_name, pt.name AS product_type_name, pt.idprodutotipopos AS product_type_pos_id, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation, me.idmedidapos AS measure_pos_id FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN product_types pt ON p.product_type_id = pt.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.id = ? AND p.company_id = ? LIMIT 1`,
             [id, companyId]
         );
         if (!rows || rows.length === 0) throw new Error('Product not found');
-        return rows[0] as Product;
+        return this.mapToProduct(rows[0]!);
     }
 
     static async getByPublicId(publicId: string, companyId: number): Promise<Product> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT p.*, c.name AS category_name, st.name AS stock_type_name, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.public_id = ? AND p.company_id = ? LIMIT 1`,
+            `SELECT p.*, c.name AS category_name, c.idgrupopos AS category_pos_id, st.name AS stock_type_name, pt.name AS product_type_name, pt.idprodutotipopos AS product_type_pos_id, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation, me.idmedidapos AS measure_pos_id FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN product_types pt ON p.product_type_id = pt.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.public_id = ? AND p.company_id = ? LIMIT 1`,
             [publicId, companyId]
         );
         if (!rows || rows.length === 0) throw new Error('Product not found');
-        return rows[0] as Product;
+        return this.mapToProduct(rows[0]!);
     }
 
     static async getBySkuOrEan(companyId: number, sku?: string | null, ean?: string | null): Promise<Product | null> {
@@ -95,21 +121,30 @@ export class ProductRepository {
         }
 
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT p.*, c.name AS category_name, st.name AS stock_type_name, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.company_id = ? AND (${conditions.join(' OR ')}) LIMIT 1`,
+            `SELECT p.*, c.name AS category_name, c.idgrupopos AS category_pos_id, st.name AS stock_type_name, pt.name AS product_type_name, pt.idprodutotipopos AS product_type_pos_id, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation, me.idmedidapos AS measure_pos_id FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN product_types pt ON p.product_type_id = pt.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.company_id = ? AND (${conditions.join(' OR ')}) LIMIT 1`,
             values
         );
         if (!rows || rows.length === 0) {
             return null;
         }
-        return rows[0] as Product;
+        return this.mapToProduct(rows[0]!);
     }
 
     static async listByCompany(companyId: number): Promise<Product[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT p.*, c.name AS category_name, st.name AS stock_type_name, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.company_id = ? ORDER BY p.name ASC`,
+            `SELECT p.*, c.name AS category_name, c.idgrupopos AS category_pos_id, st.name AS stock_type_name, st.public_id AS stock_type_public_id, pt.name AS product_type_name, pt.idprodutotipopos AS product_type_pos_id, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation, me.idmedidapos AS measure_pos_id FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN product_types pt ON p.product_type_id = pt.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.company_id = ? ORDER BY p.name ASC`,
             [companyId]
         );
-        return rows as Product[];
+        return rows.map(r => this.mapToProduct(r));
+    }
+
+    static async getByPosId(companyId: number, idprodutopos: string): Promise<Product | null> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT p.*, c.name AS category_name, c.idgrupopos AS category_pos_id, st.name AS stock_type_name, pt.name AS product_type_name, pt.idprodutotipopos AS product_type_pos_id, m.name AS manufacturer_name, t.name AS tax_rule_name, me.name AS measure_name, me.abbreviation AS measure_abbreviation, me.idmedidapos AS measure_pos_id FROM products p LEFT JOIN product_categories c ON p.category_id = c.id LEFT JOIN stock_types st ON p.stock_type_id = st.id LEFT JOIN product_types pt ON p.product_type_id = pt.id LEFT JOIN manufacturers m ON p.manufacturer_id = m.id LEFT JOIN tax_rules t ON p.tax_rule_id = t.id LEFT JOIN measures me ON p.measure_id = me.id WHERE p.company_id = ? AND p.idprodutopos = ? LIMIT 1`,
+            [companyId, idprodutopos]
+        );
+        if (!rows || rows.length === 0) return null;
+        return this.mapToProduct(rows[0]!);
     }
 
     static async recordMovement(connection: any, companyId: number, productId: number, type: 'in' | 'out', quantity: number, purchaseId: number | null = null, saleId: number | null = null): Promise<void> {
@@ -119,7 +154,7 @@ export class ProductRepository {
         );
         const stockModifier = type === 'in' ? quantity : -quantity;
         const [updateResult] = await connection.query(
-            'UPDATE products SET current_stock = current_stock + ? WHERE id = ? AND company_id = ?',
+            'UPDATE products SET current_stock = current_stock + ?, poscontrol_synced = 0 WHERE id = ? AND company_id = ?',
             [stockModifier, productId, companyId]
         );
         if (updateResult.affectedRows !== 1) throw new Error(`Failed to update physical stock for product ID: ${productId}`);
@@ -155,6 +190,13 @@ export class ProductRepository {
             updates.push('stock_type_id = ?');
             values.push(data.stock_type_id || null);
         }
+        if (data.product_type_id !== undefined) {
+            if (data.product_type_id) {
+                await this.ensureProductTypeBelongsToCompany(data.product_type_id, companyId);
+            }
+            updates.push('product_type_id = ?');
+            values.push(data.product_type_id || null);
+        }
         if (data.manufacturer_id !== undefined) { updates.push('manufacturer_id = ?'); values.push(data.manufacturer_id || null); }
         if (data.tax_rule_id !== undefined) { updates.push('tax_rule_id = ?'); values.push(data.tax_rule_id || null); }
         if (data.measure_id !== undefined) { updates.push('measure_id = ?'); values.push(data.measure_id || null); }
@@ -175,6 +217,31 @@ export class ProductRepository {
         }
         if (data.min_stock !== undefined) { updates.push('min_stock = ?'); values.push(data.min_stock); }
         if (data.max_stock !== undefined) { updates.push('max_stock = ?'); values.push(data.max_stock); }
+        if (data.idprodutopos !== undefined) { updates.push('idprodutopos = ?'); values.push(data.idprodutopos || null); }
+        if (data.status_pos_id !== undefined) {
+            updates.push('status_pos_id = ?');
+            values.push(data.status_pos_id || null);
+            // Also sync active status automatically
+            if (data.status_pos_id === 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1457822') {
+                updates.push('active = ?');
+                values.push(0);
+            } else if (data.status_pos_id === 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1758966') {
+                updates.push('active = ?');
+                values.push(1);
+            }
+        } else if (data.active !== undefined) {
+            updates.push('active = ?');
+            values.push(data.active ? 1 : 0);
+            updates.push('status_pos_id = ?');
+            values.push(data.active ? 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1758966' : 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1457822');
+        }
+
+        if (data.poscontrol_synced !== undefined) {
+            updates.push('poscontrol_synced = ?');
+            values.push(data.poscontrol_synced ? 1 : 0);
+        } else {
+            updates.push('poscontrol_synced = 0');
+        }
 
         if (updates.length > 0) {
             values.push(currentId, companyId);
@@ -194,7 +261,7 @@ export class ProductRepository {
     }
 
     static async bulkUpdate(companyId: number, data: {
-        productIds: string[], category_id?: number | null | undefined, stock_type_id?: number | null | undefined, manufacturer_id?: number | null | undefined, tax_rule_id?: number | null | undefined, measure_id?: number | null | undefined, selling_price?: number | undefined, cost_price?: number | undefined, min_stock?: number | undefined, max_stock?: number | undefined, is_promotional?: boolean | undefined, promotional_price?: number | undefined
+        productIds: string[], category_id?: number | null | undefined, stock_type_id?: number | null | undefined, product_type_id?: number | null | undefined, manufacturer_id?: number | null | undefined, tax_rule_id?: number | null | undefined, measure_id?: number | null | undefined, selling_price?: number | undefined, cost_price?: number | undefined, min_stock?: number | undefined, max_stock?: number | undefined, is_promotional?: boolean | undefined, promotional_price?: number | undefined, active?: boolean | undefined, ncm?: string | null | undefined
     }): Promise<number> {
         if (!data.productIds || data.productIds.length === 0) return 0;
 
@@ -209,6 +276,13 @@ export class ProductRepository {
             updates.push('stock_type_id = ?');
             values.push(data.stock_type_id);
         }
+        if (data.product_type_id !== undefined) {
+            if (data.product_type_id) {
+                await this.ensureProductTypeBelongsToCompany(data.product_type_id, companyId);
+            }
+            updates.push('product_type_id = ?');
+            values.push(data.product_type_id);
+        }
         if (data.manufacturer_id !== undefined) { updates.push('manufacturer_id = ?'); values.push(data.manufacturer_id); }
         if (data.tax_rule_id !== undefined) { updates.push('tax_rule_id = ?'); values.push(data.tax_rule_id); }
         if (data.measure_id !== undefined) { updates.push('measure_id = ?'); values.push(data.measure_id); }
@@ -218,6 +292,17 @@ export class ProductRepository {
         if (data.promotional_price !== undefined) { updates.push('promotional_price = ?'); values.push(data.promotional_price); }
         if (data.min_stock !== undefined) { updates.push('min_stock = ?'); values.push(data.min_stock); }
         if (data.max_stock !== undefined) { updates.push('max_stock = ?'); values.push(data.max_stock); }
+        if (data.active !== undefined) {
+            updates.push('active = ?');
+            values.push(data.active ? 1 : 0);
+            updates.push('status_pos_id = ?');
+            values.push(data.active ? 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1758966' : 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1457822');
+        }
+        if (data.ncm !== undefined) { updates.push('ncm = ?'); values.push(data.ncm || null); }
+
+        if (updates.length > 0) {
+            updates.push('poscontrol_synced = 0');
+        }
 
         if (updates.length === 0) return 0;
 

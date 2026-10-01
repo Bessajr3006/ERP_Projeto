@@ -4,7 +4,7 @@
 
   let statementsData: any[] = []; // Todos os lançamentos mesclados (receitas + despesas)
   let banksData: any[] = [];
-  let currentView: string = localStorage.getItem('statementsView') || 'list';
+  let currentView: string = (window as any).CompanyStorage?.getItem('statementsView') || localStorage.getItem('statementsView') || 'list';
   let _tablePager: any = null;
   let _gridPager: any = null;
 
@@ -153,16 +153,30 @@
       if (bankFilter && t.bank_account_public_id !== bankFilter) return false;
       if (typeFilter && t.type !== typeFilter) return false;
 
-      const tDate = String(t.date).split('T')[0];
-
       // SÓ aplica filtro de data no ERP se a opção for 'both' ou 'system'
       if (applyTo === 'both' || applyTo === 'system') {
-        if (startFilter && tDate < startFilter) return false;
-        if (endFilter && tDate > endFilter) return false;
-      }
+        if (startFilter || endFilter) {
+          const tDate = t.date ? String(t.date).split('T')[0] : '';
+          const tReceived = t.received_at ? String(t.received_at).split('T')[0] : '';
+          const tScheduled = t.scheduled_at ? String(t.scheduled_at).split('T')[0] : '';
 
-      if (!FilterPanel.matchesSearch(t, ['description', 'category_name', 'bank_account_name'], searchFilter))
-        return false;
+          const matchDate = (d: string) => {
+            if (!d) return false;
+            if (startFilter && d < startFilter) return false;
+            if (endFilter && d > endFilter) return false;
+            return true;
+          };
+
+          const hasAnyDateMatch = matchDate(tDate) || matchDate(tReceived) || matchDate(tScheduled);
+          if (!hasAnyDateMatch) return false;
+        }
+      }
+      const shouldFilterSearch = applyTo === 'both' || applyTo === 'system';
+      if (shouldFilterSearch && searchFilter) {
+        if (!FilterPanel.matchesSearch(t, ['description', 'category_name', 'bank_account_name'], searchFilter)) {
+          return false;
+        }
+      }
       return true;
     });
   }
@@ -255,18 +269,30 @@
           : `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">Despesa</span>`;
 
         const statusBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusMeta.tableClasses}">${statusMeta.tableBadge}</span>`;
+        const isPaid = !!t.is_reconciled;
+        const checkboxHtml = isPaid
+          ? `<div class="w-4 h-4 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"><svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>`
+          : `<input type="checkbox" class="chk-system rounded border-gray-300 text-brand-600 focus:ring-brand-500/30 dark:bg-slate-700 dark:border-slate-600" data-id="${t.public_id}" data-amount="${t.amount}" data-type="${t.type}">`;
+        const effectiveDate = (t.status === 'paid' && t.received_at) ? t.received_at : t.date;
+        const hasDiffDueDate = t.status === 'paid' && t.received_at && String(t.received_at).split('T')[0] !== String(t.date).split('T')[0];
 
         return `
-        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+        <tr class="${isPaid ? 'opacity-60 bg-gray-50 dark:bg-slate-800/50' : 'hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors'}">
             <td class="px-3 py-4 whitespace-nowrap w-12 text-center">
-                <input type="checkbox" class="chk-system rounded border-gray-300 text-brand-600 focus:ring-brand-500/30 dark:bg-slate-700 dark:border-slate-600" data-id="${t.public_id}" data-amount="${t.amount}" data-type="${t.type}">
+                ${checkboxHtml}
             </td>
-            <td class="px-3 py-4 whitespace-nowrap text-[11px] font-medium text-gray-500 dark:text-gray-400">${formatDate(
-              t.date
-            )}</td>
+            <td class="px-3 py-4 whitespace-nowrap text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                <div class="font-medium text-gray-900 dark:text-gray-100" title="${t.status === 'paid' ? 'Data de Recebimento / Pagamento' : 'Data de Vencimento'}">${formatDate(effectiveDate)}</div>
+                ${hasDiffDueDate ? `
+                    <div class="text-[10px] text-gray-400 dark:text-gray-500" title="Vencimento original: ${formatDate(t.date)}">Venc: ${formatDate(t.date)}</div>
+                ` : ''}
+            </td>
             <td class="px-3 py-4 whitespace-nowrap">${typeBadge}</td>
             <td class="px-3 py-4 text-xs text-gray-900 dark:text-gray-100">
-                <div class="font-medium">${t.description}</div>
+                <div class="font-medium">
+                    ${t.description}
+                    ${t.entity_name ? `<span class="text-[10px] text-gray-500 dark:text-gray-400 font-normal ml-1.5">(${t.entity_name})</span>` : ''}
+                </div>
                 <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
                     ${t.category_name ? `<span class="mr-2">${t.category_name}</span>` : ''}
                     ${t.payment_method ? `<span class="text-gray-400 dark:text-gray-500">· ${paymentLabel(t.payment_method)}</span>` : ''}
@@ -305,6 +331,9 @@
           ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
           : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
 
+        const effectiveDate = (t.status === 'paid' && t.received_at) ? t.received_at : t.date;
+        const hasDiffDueDate = t.status === 'paid' && t.received_at && String(t.received_at).split('T')[0] !== String(t.date).split('T')[0];
+
         return `
         <div class="bg-white dark:bg-slate-800 shadow rounded-lg p-5 flex flex-col relative border border-gray-100 dark:border-slate-700 group">
             <div class="flex justify-between items-start mb-3">
@@ -331,10 +360,11 @@
 
                 <div class="mt-4 grid grid-cols-2 gap-4">
                     <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300">
-                        <span class="text-xs text-gray-500 dark:text-gray-400">Data:</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">${t.status === 'paid' ? 'Recebido/Pago:' : 'Data:'}</span>
                         <span class="font-medium text-gray-900 dark:text-gray-100">${
-                          DateUtilsRef?.formatDate?.(t.date) || formatDate(t.date)
+                          DateUtilsRef?.formatDate?.(effectiveDate) || formatDate(effectiveDate)
                         }</span>
+                        ${hasDiffDueDate ? `<span class="text-[10px] text-gray-400 dark:text-gray-500">Venc: ${formatDate(t.date)}</span>` : ''}
                     </div>
                     <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300">
                         <span class="text-xs text-gray-500 dark:text-gray-400">Valor:</span>
@@ -344,6 +374,12 @@
                         <span class="text-xs text-gray-500 dark:text-gray-400">Conta:</span>
                         <span class="font-medium text-gray-900 dark:text-gray-100">${t.bank_account_name || '-'}</span>
                     </div>
+                    ${t.entity_name ? `
+                    <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300 col-span-2">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">${t.type === 'revenue' ? 'Cliente' : 'Fornecedor'}:</span>
+                        <span class="font-medium text-gray-900 dark:text-gray-100">${t.entity_name}</span>
+                    </div>
+                    ` : ''}
                     <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300">
                         <span class="text-xs text-gray-500 dark:text-gray-400">Status:</span>
                         <span class="inline-flex max-w-min px-2 py-0.5 mt-0.5 rounded-md text-xs font-medium ${
@@ -368,41 +404,25 @@
   function renderAll(): void {
     const items = getFiltered();
     updateFooter(items);
-
-    if (!_tablePager) {
-      _tablePager = new Paginator({
-        containerId: 'statementsPaginationContainer',
-        pageSize: 20,
-        onChange: (pageItems: any[]) => {
-          renderTable(pageItems);
-        },
-      });
-    }
-
-    if (!_gridPager) {
-      _gridPager = new Paginator({
-        containerId: 'statementsGridPaginationContainer',
-        pageSize: 20,
-        onChange: (pageItems: any[]) => {
-          renderGrid(pageItems);
-        },
-      });
-    }
-
-    _tablePager.setData(items);
-    _gridPager.setData(items);
+    renderTable(items);
+    renderGrid(items);
     updateViewToggle();
+    renderBankStatements();
   }
 
   // ─── Carregar filtros dinâmicos ────────────────────────────────────────────────
 
   function populateBankFilter(): void {
-    const sel = getById('filterBank');
+    const sel = getById('filterBank') as HTMLSelectElement;
     if (!sel) return;
+    const previousValue = sel.value;
     sel.innerHTML = '<option value="">Todas as contas</option>';
     banksData.forEach((b: any) => {
       sel.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
     });
+    if (previousValue) {
+      sel.value = previousValue;
+    }
   }
 
   // ─── Busca de dados ───────────────────────────────────────────────────────────
@@ -421,10 +441,10 @@
       const expenses = (expRes.data || []).map((e: any) => ({ ...e, type: 'expense' }));
       const revenues = (revRes.data || []).map((r: any) => ({ ...r, type: 'revenue' }));
 
-      // Ordena cronologico decrescente (mais recente primeiro)
+      // Ordena cronologico decrescente (mais recente primeiro usando data de efetivação quando pago)
       statementsData = [...expenses, ...revenues].sort((a: any, b: any) => {
-        const da = String(a.date).split('T')[0];
-        const db = String(b.date).split('T')[0];
+        const da = String((a.status === 'paid' && a.received_at) ? a.received_at : a.date).split('T')[0];
+        const db = String((b.status === 'paid' && b.received_at) ? b.received_at : b.date).split('T')[0];
         return db.localeCompare(da);
       });
 
@@ -459,7 +479,7 @@
         },
         {
           id: 'filterApplyTo',
-          label: 'Aplicar Data em:',
+          label: 'Aplicar em:',
           type: 'select',
           options: [
             { value: 'both', label: 'Sistema + Banco' },
@@ -472,8 +492,11 @@
       gridClass: 'grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3 items-end',
     });
 
+    restoreFilters();
+
     ['filterStart', 'filterEnd', 'filterBank', 'filterType', 'filterApplyTo'].forEach((id) => {
       getById(id)?.addEventListener('change', () => {
+        saveFilters();
         renderAll();
         void loadBankStatements();
       });
@@ -484,10 +507,54 @@
         clearTimeout(searchDebounceTimer);
       }
       searchDebounceTimer = setTimeout(() => {
+        saveFilters();
         renderAll();
         searchDebounceTimer = null;
       }, 180);
     });
+  }
+
+  function saveFilters(): void {
+    const filters = {
+      filterStart: getById('filterStart')?.value || '',
+      filterEnd: getById('filterEnd')?.value || '',
+      filterBank: getById('filterBank')?.value || '',
+      filterType: getById('filterType')?.value || '',
+      filterApplyTo: getById('filterApplyTo')?.value || '',
+      filterSearch: getById('filterSearch')?.value || '',
+    };
+    if ((window as any).CompanyStorage) {
+      (window as any).CompanyStorage.setItem('statements_filter_values', JSON.stringify(filters));
+    } else {
+      localStorage.setItem('statements_filter_values', JSON.stringify(filters));
+    }
+  }
+
+  function restoreFilters(): void {
+    const saved = (window as any).CompanyStorage?.getItem('statements_filter_values') ?? localStorage.getItem('statements_filter_values');
+    if (!saved) return;
+    try {
+      const filters = JSON.parse(saved);
+      const startEl = getById('filterStart');
+      if (startEl) startEl.value = filters.filterStart || '';
+
+      const endEl = getById('filterEnd');
+      if (endEl) endEl.value = filters.filterEnd || '';
+
+      const bankEl = getById('filterBank');
+      if (bankEl) bankEl.value = filters.filterBank || '';
+
+      const typeEl = getById('filterType');
+      if (typeEl) typeEl.value = filters.filterType || '';
+
+      const applyToEl = getById('filterApplyTo');
+      if (applyToEl) applyToEl.value = filters.filterApplyTo || '';
+
+      const searchEl = getById('filterSearch');
+      if (searchEl) searchEl.value = filters.filterSearch || '';
+    } catch (e) {
+      console.error('[Statements] Erro ao restaurar filtros:', e);
+    }
   }
 
   // ─── Filtro rápido do mês corrente por default ────────────────────────────────
@@ -560,6 +627,15 @@
           const dateStr = String(s.date || '').split('T')[0];
           return dateStr <= endDate;
         });
+    }
+
+    // Filtro de Busca no Extrato do Banco
+    const searchFilter = getById('filterSearch')?.value || '';
+    const shouldFilterSearch = applyTo === 'both' || applyTo === 'bank';
+    if (shouldFilterSearch && searchFilter) {
+      finalStatements = finalStatements.filter((s: any) => {
+        return FilterPanel.matchesSearch(s, ['description'], searchFilter);
+      });
     }
 
     updateBankFooter(finalStatements);
@@ -718,13 +794,21 @@
     // Alterna view lista/cards
     getById('btnListView')?.addEventListener('click', () => {
       currentView = 'list';
-      localStorage.setItem('statementsView', 'list');
+      if ((window as any).CompanyStorage) {
+        (window as any).CompanyStorage.setItem('statementsView', 'list');
+      } else {
+        localStorage.setItem('statementsView', 'list');
+      }
       updateViewToggle();
     });
 
     getById('btnGridView')?.addEventListener('click', () => {
       currentView = 'grid';
-      localStorage.setItem('statementsView', 'grid');
+      if ((window as any).CompanyStorage) {
+        (window as any).CompanyStorage.setItem('statementsView', 'grid');
+      } else {
+        localStorage.setItem('statementsView', 'grid');
+      }
       updateViewToggle();
     });
 
@@ -789,6 +873,92 @@
           (UI as any).showAlert('alertMessage', err?.message || 'Erro ao desconciliar registro', 'error');
         }
       }
+
+      if (target?.matches?.('.btn-conciliate-single')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const public_id = target?.dataset?.id;
+
+        // Find the statement row's data
+        const stmt = bankStatementsData.find((s: any) => s.public_id === public_id);
+        if (!stmt) return;
+
+        const stmtAmount = parseFloat(stmt.amount) || 0;
+        const isExpense = stmt.type === 'expense';
+
+        const matches = statementsData.filter((t: any) => {
+          if (t.is_reconciled) return false;
+          const tAmount = parseFloat(t.amount) || 0;
+          const isTExpense = t.type === 'expense';
+          return isExpense === isTExpense && Math.abs(tAmount - stmtAmount) < 0.01;
+        });
+
+        const isIncome = stmt.type === 'income' || stmt.type === 'revenue';
+
+        if (isIncome) {
+          // Received/deposit value: do NOT auto-reconcile and do NOT auto-check system transaction checkbox.
+          // Let the user choose manually to avoid wrong reconciliation.
+          document.querySelectorAll('.chk-system, .chk-bank').forEach((chk: any) => chk.checked = false);
+
+          const bankChk: any = document.querySelector(`.chk-bank[data-id="${public_id}"]`);
+          if (bankChk) bankChk.checked = true;
+
+          if (matches.length > 0) {
+            (UI as any).showAlert('alertMessage', `${matches.length} lançamento(s) correspondente(s) encontrado(s) no ERP. Selecione o correto na tabela da esquerda para conciliar.`, 'info');
+          } else {
+            (UI as any).showAlert('alertMessage', 'Nenhum lançamento correspondente encontrado no ERP com este valor.', 'warn');
+          }
+          updateConciliationBar();
+        } else {
+          if (matches.length === 1) {
+            // Exactly one match! Let's automatically check them and reconcile
+            try {
+              target.innerHTML = 'Processando...';
+              target.disabled = true;
+
+              await (api as any)('/finance/reconcile', {
+                method: 'POST',
+                body: JSON.stringify({ system_ids: [matches[0].public_id], bank_statement_ids: [public_id] }),
+              });
+
+              (UI as any).showAlert('alertMessage', 'Conciliação realizada com sucesso!', 'success');
+
+              await fetchStatements();
+              await loadBankStatements();
+            } catch (err: any) {
+              target.innerHTML = 'Conciliar';
+              target.disabled = false;
+              (UI as any).showAlert('alertMessage', err?.message || 'Erro ao conciliar registro', 'error');
+            }
+          } else if (matches.length > 1) {
+            // Multiple matches: Check the bank statement checkbox and highlight the matching system checkboxes
+            // so the user can choose which one to reconcile.
+            (UI as any).showAlert('alertMessage', 'Múltiplos lançamentos encontrados no ERP com este valor. Selecione um deles para conciliar.', 'info');
+
+            // Uncheck everything first
+            document.querySelectorAll('.chk-system, .chk-bank').forEach((chk: any) => chk.checked = false);
+
+            // Check this bank statement checkbox
+            const bankChk: any = document.querySelector(`.chk-bank[data-id="${public_id}"]`);
+            if (bankChk) bankChk.checked = true;
+
+            // Check the first matching system checkbox to guide the user
+            const firstSysChk: any = document.querySelector(`.chk-system[data-id="${matches[0].public_id}"]`);
+            if (firstSysChk) firstSysChk.checked = true;
+
+            updateConciliationBar();
+          } else {
+            // No matches: just check the bank statement checkbox to let the user find/create a transaction manually
+            (UI as any).showAlert('alertMessage', 'Nenhum lançamento correspondente encontrado no ERP com este valor.', 'warn');
+
+            // Check this bank statement checkbox
+            const bankChk: any = document.querySelector(`.chk-bank[data-id="${public_id}"]`);
+            if (bankChk) bankChk.checked = true;
+
+            updateConciliationBar();
+          }
+        }
+      }
     });
 
     getById('btnConciliate')?.addEventListener('click', async () => {
@@ -816,10 +986,14 @@
         if (chkSys) chkSys.checked = false;
         if (chkBank) chkBank.checked = false;
 
+        document.querySelectorAll('.chk-system:checked, .chk-bank:checked').forEach((chk: any) => {
+          chk.checked = false;
+        });
+
         updateConciliationBar();
 
-        void fetchStatements();
-        void loadBankStatements();
+        await fetchStatements();
+        await loadBankStatements();
       } catch (err: any) {
         (UI as any).showAlert('alertMessage', err?.message || 'Erro ao conciliar registros', 'error');
       } finally {

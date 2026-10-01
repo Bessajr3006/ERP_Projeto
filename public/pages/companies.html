@@ -5,19 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Empresas Cadastradas</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body data-required-module="company" data-super-admin-page="true"
-    class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 font-sans flex flex-col">
+    class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
 
     <div id="app-navbar"></div>
 
-    <main class="flex-1 w-full pt-4 pb-8 max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
         <div class="px-4 sm:px-0 mb-6 flex flex-wrap justify-between items-center gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Empresas Cadastradas</h1>
@@ -131,6 +131,54 @@
                                 </div>
                             </div>
 
+                            <!-- Card: Grupo de Empresas & Empresa Principal -->
+                            <div class="rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/20 p-4 space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                    </svg>
+                                    <div>
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-900 dark:text-indigo-300">Grupo de Empresas / Filiais</h4>
+                                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Agrupamento corporativo para compartilhamento de gestão entre empresas do mesmo grupo.</p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-1">
+                                    <div>
+                                        <label for="companyGroup" class="block text-xs font-medium text-gray-700 dark:text-gray-300">Selecionar Grupo</label>
+                                        <select id="companyGroup" name="companyGroup"
+                                            class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-xs" data-bwignore="true" data-lpignore="true">
+                                            <option value="">Nenhum grupo (Empresa Independente)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div id="companyGroupMasterContainer" class="flex items-start gap-2 pt-1">
+                                    <input type="checkbox" id="companyIsGroupMaster" name="companyIsGroupMaster"
+                                        class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                    <label for="companyIsGroupMaster" class="cursor-pointer select-none">
+                                        <span class="block text-xs font-semibold text-gray-800 dark:text-gray-200">Empresa Principal do Grupo (Matriz)</span>
+                                        <span class="block text-[11px] text-gray-500 dark:text-gray-400">Esta empresa será a principal do grupo e terá acesso e gestão sobre as demais empresas filiais deste grupo.</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Card: Empresa Administradora Geral (Super Admin) -->
+                            <div id="companyGeneralAdminContainer" class="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20 p-4 space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-200 text-amber-900 dark:bg-amber-900/60 dark:text-amber-300">Super Admin</span>
+                                    <h4 class="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">Administração Geral do Sistema (SaaS)</h4>
+                                </div>
+                                <div class="flex items-start gap-2 pt-1">
+                                    <input type="checkbox" id="companyIsGeneralAdmin" name="companyIsGeneralAdmin"
+                                        class="mt-0.5 h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500 dark:border-slate-600 dark:bg-slate-800 cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                    <label for="companyIsGeneralAdmin" class="cursor-pointer select-none">
+                                        <span class="block text-xs font-semibold text-gray-800 dark:text-gray-200">Empresa Padrão Administradora Geral</span>
+                                        <span class="block text-[11px] text-gray-500 dark:text-gray-400">Empresa com privilégios globais em todo o sistema. Clientes cadastrados nela são convertidos automaticamente em empresas no ERP.</span>
+                                    </label>
+                                </div>
+                            </div>
+
                             <!-- Seção Primeiro Usuário — visível apenas na criação -->
                             <div id="initialUserSection" class="border-t border-brand-200 pt-4 dark:border-brand-800">
                                 <h4 class="text-sm font-semibold text-brand-700 dark:text-brand-300">Primeiro Usuário da Empresa</h4>
@@ -155,6 +203,7 @@
                                         <label for="initialUserRole" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Perfil do usuário <span class="text-red-500">*</span></label>
                                         <select id="initialUserRole" name="initialUserRole"
                                             class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                            <option value="supervisor" selected>Supervisor Completo</option>
                                             <option value="admin">Administrador</option>
                                             <option value="manager">Gerente</option>
                                             <option value="financial">Financeiro</option>
@@ -229,13 +278,132 @@
         </div>
     </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/filter-panel.js"></script>
-    <script src="/js/companies.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+    <!-- Modal de Detalhes da Empresa (Olho) -->
+    <div id="viewCompanyDetailsModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="view-details-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen p-4 sm:p-6 sm:pt-8">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="viewDetailsModalBackdrop"></div>
+            <div class="relative z-10 w-full max-w-5xl h-[90vh] bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all flex flex-col">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 flex-1 overflow-y-auto">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                            <h3 id="view-details-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Detalhes da Empresa: <span id="viewDetailsCompanyTradeName" class="font-semibold text-brand-600 dark:text-brand-400"></span></h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Dados cadastrais, localização geográfica e documentos arquivados.</p>
+                        </div>
+                        <button type="button" id="btnCloseViewDetailsModal" title="Fechar"
+                            class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                            <span class="sr-only">Fechar</span>
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Abas -->
+                    <div class="border-b border-gray-200 dark:border-slate-700">
+                        <nav class="-mb-px flex gap-4" role="tablist" aria-label="Abas de detalhes">
+                            <button type="button" id="tabButtonDados"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-brand-500 px-1 pb-2 text-sm font-medium text-brand-600 dark:text-brand-300"
+                                role="tab"
+                                data-details-tab-target="tabPanelDados" aria-controls="tabPanelDados" aria-selected="true">
+                                Dados da Empresa
+                            </button>
+                            <button type="button" id="tabButtonMapa"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelMapa" aria-controls="tabPanelMapa" aria-selected="false">
+                                Mapa/Localização
+                            </button>
+                            <button type="button" id="tabButtonDocumento"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelDocumento" aria-controls="tabPanelDocumento" aria-selected="false">
+                                Documentos
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Conteúdo das Abas -->
+                    <div class="mt-4">
+                        <!-- Aba Dados -->
+                        <div id="tabPanelDados" class="details-modal-tab-panel space-y-6 font-sans text-gray-700 dark:text-gray-300" role="tabpanel" aria-labelledby="tabButtonDados">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 dark:bg-slate-900/20 p-4 rounded-xl border border-gray-100 dark:border-slate-700/50">
+                                    <h4 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Informações Gerais</h4>
+                                    <div class="space-y-2">
+                                        <p class="text-sm"><span class="font-semibold text-gray-900 dark:text-gray-100">Razão Social:</span> <span id="viewDetailsCompanyName">-</span></p>
+                                        <p class="text-sm"><span class="font-semibold text-gray-900 dark:text-gray-100">CNPJ:</span> <span id="viewDetailsCnpj" class="font-mono">-</span></p>
+                                        <p class="text-sm"><span class="font-semibold text-gray-900 dark:text-gray-100">Regime Tributário:</span> <span id="viewDetailsTaxRegime">-</span></p>
+                                        <p class="text-sm"><span class="font-semibold text-gray-900 dark:text-gray-100">Grupo de Empresa:</span> <span id="viewDetailsCompanyGroup">-</span></p>
+                                        <p class="text-sm"><span class="font-semibold text-gray-900 dark:text-gray-100">Status:</span> <span id="viewDetailsActiveStatus">-</span></p>
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-50 dark:bg-slate-900/20 p-4 rounded-xl border border-gray-100 dark:border-slate-700/50">
+                                    <h4 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Contato & Endereço</h4>
+                                    <div class="space-y-2">
+                                        <p class="text-sm"><span class="font-semibold text-gray-900 dark:text-gray-100">Email:</span> <span id="viewDetailsEmail">-</span></p>
+                                        <p class="text-sm"><span class="font-semibold text-gray-900 dark:text-gray-100">Telefone:</span> <span id="viewDetailsPhone">-</span></p>
+                                        <p class="text-sm"><span class="font-semibold text-gray-900 dark:text-gray-100">Endereço:</span> <span id="viewDetailsLocation">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba Mapa -->
+                        <div id="tabPanelMapa" class="details-modal-tab-panel hidden space-y-4 font-sans" role="tabpanel" aria-labelledby="tabButtonMapa">
+                            <div class="bg-gray-50 dark:bg-slate-900/20 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
+                                <p class="text-sm text-gray-600 dark:text-gray-300">
+                                    <span class="font-semibold">Localização Cadastrada:</span>
+                                    <span id="mapCompanyAddress" class="text-gray-900 dark:text-white">Carregando endereço...</span>
+                                </p>
+                            </div>
+                            <div class="relative w-full h-[40vh] bg-gray-100 dark:bg-slate-900 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 shadow-inner">
+                                <iframe id="googleMapsIframe" class="absolute inset-0 w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                            </div>
+                             <div class="flex flex-wrap gap-3">
+                                <a id="btnOpenGoogleMaps" target="_blank" class="hidden items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm decoration-none">
+                                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                    Ver no Google Maps
+                                </a>
+                                <a id="btnOpenWaze" target="_blank" class="hidden items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm decoration-none">
+                                    <svg class="w-5 h-5 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12.3 2a10 10 0 0 1 7.6 16.5c-.2.2-.5.3-.8.3h-2.5c-.7 0-1.3-.4-1.6-1a3 3 0 0 0-5.3 0c-.3.6-.9 1-1.6 1H5.6c-.3 0-.6-.1-.8-.3A10 10 0 0 1 12.3 2zm0 3a7 7 0 0 0-4.6 12.2h.5c.2 0 .4-.2.5-.4a5 5 0 0 1 9.2 0c.1.2.3.4.5.4h.5A7 7 0 0 0 12.3 5z"/></svg>
+                                    Navegar com Waze
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Aba Documento -->
+                        <div id="tabPanelDocumento" class="details-modal-tab-panel hidden space-y-4 font-sans" role="tabpanel" aria-labelledby="tabButtonDocumento">
+                            <div class="flex items-center justify-between gap-3 border-b border-gray-200 dark:border-slate-700 pb-4">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Documentos da Empresa</h4>
+                                <label class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-sm font-medium text-white shadow-sm transition-colors cursor-pointer select-none">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    Anexar Documento
+                                    <input type="file" id="detailCnpjFile" class="hidden" multiple>
+                                </label>
+                            </div>
+                            <div id="viewDetailsDocumentContainer" class="max-h-[45vh] overflow-y-auto pr-1">
+                                <!-- Cards dinâmicos -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-700/30 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200 dark:border-slate-700">
+                    <button type="button" id="btnCancelViewDetailsModal" class="w-full inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-100 dark:hover:bg-slate-700 sm:w-auto sm:text-sm">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/filter-panel.js?v=20261001145619"></script>
+    <script src="/js/companies.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
 </body>
 
 </html>

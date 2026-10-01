@@ -14,6 +14,16 @@
             return String(dateStr);
         }
     };
+    const escapeHtml = (val) => {
+        if (val === null || val === undefined)
+            return '';
+        return String(val)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
     document.addEventListener('DOMContentLoaded', () => {
         void main();
     });
@@ -173,10 +183,18 @@
                     <td class="px-3 py-4"><input type="checkbox" class="row-checkbox rounded border-gray-300 dark:border-slate-600 dark:bg-slate-800 focus:ring-brand-500" value="${entry.public_id}" ${selectedIds.has(entry.public_id) ? 'checked' : ''}></td>
                     <td class="px-2 py-3 text-xs text-gray-500 dark:text-gray-400">${formatDate(entry.entry_date)}</td>
                     <td class="px-2 py-3 text-sm font-mono truncate text-gray-900 dark:text-gray-200">${entry.document_ref || '-'}</td>
-                    <td class="px-2 py-3 text-sm">
-                        <div class="flex flex-col">
-                            <span class="text-blue-600 dark:text-blue-400 font-medium text-xs">D: ${entry.debit_account_code}</span>
-                            <span class="text-orange-600 dark:text-orange-400 font-medium text-xs">C: ${entry.credit_account_code}</span>
+                    <td class="px-2 py-2.5 text-xs">
+                        <div class="flex flex-col gap-1 max-w-sm">
+                            <div class="flex items-center gap-1.5 truncate" title="Débito: ${escapeHtml(entry.debit_account_code)} - ${escapeHtml(entry.debit_account_name || '')}">
+                                <span class="inline-flex items-center px-1.5 py-0.2 rounded font-mono font-bold text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 shrink-0">D</span>
+                                <span class="font-mono font-semibold text-blue-700 dark:text-blue-400 shrink-0">${escapeHtml(entry.debit_account_code)}</span>
+                                <span class="text-gray-600 dark:text-gray-300 text-[11px] truncate font-medium">${escapeHtml(entry.debit_account_name || '')}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 truncate" title="Crédito: ${escapeHtml(entry.credit_account_code)} - ${escapeHtml(entry.credit_account_name || '')}">
+                                <span class="inline-flex items-center px-1.5 py-0.2 rounded font-mono font-bold text-[10px] bg-orange-100 text-orange-800 dark:bg-orange-950/70 dark:text-orange-300 shrink-0">C</span>
+                                <span class="font-mono font-semibold text-orange-700 dark:text-orange-400 shrink-0">${escapeHtml(entry.credit_account_code)}</span>
+                                <span class="text-gray-600 dark:text-gray-300 text-[11px] truncate font-medium">${escapeHtml(entry.credit_account_name || '')}</span>
+                            </div>
                         </div>
                     </td>
                     <td class="px-2 py-3 text-sm font-bold text-right text-gray-900 dark:text-gray-100">${formatCurrency(entry.amount)}</td>
@@ -699,5 +717,683 @@
                     txt.textContent = `Erro: (API) ${e?.message || String(e)}`;
             }
         }
+        // ==========================================
+        // SOLIDCON ENTRIES INTEGRATION LOGIC
+        // ==========================================
+        const solidconEls = {
+            btnModal: getEl('btnSolidconEntriesModal'),
+            modal: getEl('solidconEntriesModal'),
+            backdrop: getEl('solidconEntriesModalBackdrop'),
+            btnCloseIcon: getEl('btnCloseSolidconEntriesModalIcon'),
+            btnClose: getEl('btnCloseSolidconEntriesModal'),
+            connSelect: getEl('solidconEntriesConnSelect'),
+            sourceSelect: getEl('solidconEntriesSourceSelect'),
+            startDate: getEl('solidconEntriesStartDate'),
+            endDate: getEl('solidconEntriesEndDate'),
+            filialInput: getEl('solidconEntriesFilialInput'),
+            statusBadge: getEl('solidconEntriesStatusBadge'),
+            btnReload: getEl('btnReloadSolidconEntries'),
+            reloadIcon: getEl('solidconEntriesReloadIcon'),
+            btnVerify: getEl('btnVerifySolidconEntries'),
+            verifyIcon: getEl('solidconEntriesVerifyIcon'),
+            defaultDebit: getEl('solidconDefaultDebitSelect'),
+            defaultCredit: getEl('solidconDefaultCreditSelect'),
+            btnApplyDefaults: getEl('btnApplyDefaultAccounts'),
+            alertBox: getEl('solidconEntriesAlertBox'),
+            searchInput: getEl('solidconEntriesSearchInput'),
+            opFilter: getEl('solidconEntriesOpFilter'),
+            validationFilter: getEl('solidconEntriesValidationFilter'),
+            btnSelectOnlyValid: getEl('btnSelectOnlyValidSolidcon'),
+            selectionCount: getEl('solidconEntriesSelectionCount'),
+            selectAll: getEl('solidconEntriesSelectAll'),
+            table: getEl('solidconEntriesTable'),
+            totalCountBadge: getEl('solidconEntriesTotalCountBadge'),
+            totalAmountBadge: getEl('solidconEntriesTotalAmountBadge'),
+            btnImportSelected: getEl('btnImportSelectedSolidconEntries'),
+            btnImportSelectedText: getEl('btnImportSelectedSolidconEntriesText'),
+            btnImportAll: getEl('btnImportAllSolidconEntries'),
+        };
+        let solidconRawEntries = [];
+        let filteredSolidconEntries = [];
+        const selectedSolidconEntryIds = new Set();
+        const solidconVerificationMap = new Map();
+        let isSolidconLoading = false;
+        let isSolidconVerifying = false;
+        let hasSearchedSolidcon = false;
+        const showSolidconAlert = (message, type = 'info') => {
+            if (!solidconEls.alertBox)
+                return;
+            solidconEls.alertBox.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'dark:bg-green-950/40', 'dark:text-green-300', 'border-green-200', 'dark:border-green-800', 'bg-red-50', 'text-red-800', 'dark:bg-red-950/40', 'dark:text-red-300', 'border-red-200', 'dark:border-red-800', 'bg-blue-50', 'text-blue-800', 'dark:bg-blue-950/40', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-800');
+            if (type === 'success') {
+                solidconEls.alertBox.classList.add('bg-green-50', 'text-green-800', 'dark:bg-green-950/40', 'dark:text-green-300', 'border', 'border-green-200', 'dark:border-green-800');
+            }
+            else if (type === 'error') {
+                solidconEls.alertBox.classList.add('bg-red-50', 'text-red-800', 'dark:bg-red-950/40', 'dark:text-red-300', 'border', 'border-red-200', 'dark:border-red-800');
+            }
+            else {
+                solidconEls.alertBox.classList.add('bg-blue-50', 'text-blue-800', 'dark:bg-blue-950/40', 'dark:text-blue-300', 'border', 'border-blue-200', 'dark:border-blue-800');
+            }
+            solidconEls.alertBox.innerHTML = message;
+        };
+        const hideSolidconAlert = () => {
+            if (solidconEls.alertBox)
+                solidconEls.alertBox.classList.add('hidden');
+        };
+        const updateSolidconStatusBadge = (status, text) => {
+            if (!solidconEls.statusBadge)
+                return;
+            if (status === 'loading') {
+                solidconEls.statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+                solidconEls.statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span> ' + (text || 'Consultando...');
+            }
+            else if (status === 'connected') {
+                solidconEls.statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+                solidconEls.statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ' + (text || 'Conectado');
+            }
+            else if (status === 'error') {
+                solidconEls.statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800';
+                solidconEls.statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500"></span> ' + (text || 'Falha');
+            }
+            else {
+                solidconEls.statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700';
+                solidconEls.statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-400"></span> ' + (text || 'Aguardando');
+            }
+        };
+        const populateSolidconDefaultAccountDropdowns = () => {
+            const optionsHtml = '<option value="">-- Selecionar Conta Analítica --</option>' +
+                accountsList.map((a) => `<option value="${a.code}">${a.code} - ${a.name}</option>`).join('');
+            if (solidconEls.defaultDebit) {
+                solidconEls.defaultDebit.innerHTML = '<option value="">Manter / Selecionar Débito...</option>' +
+                    accountsList.map((a) => `<option value="${a.code}">${a.code} - ${a.name}</option>`).join('');
+            }
+            if (solidconEls.defaultCredit) {
+                solidconEls.defaultCredit.innerHTML = '<option value="">Manter / Selecionar Crédito...</option>' +
+                    accountsList.map((a) => `<option value="${a.code}">${a.code} - ${a.name}</option>`).join('');
+            }
+        };
+        const loadSolidconConnections = async () => {
+            if (!solidconEls.connSelect)
+                return;
+            try {
+                const response = await api('/accounting/solidcon-connections');
+                const connections = response?.data || [];
+                solidconEls.connSelect.innerHTML = '';
+                if (connections.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = 'Padrão da Empresa (solidcon)';
+                    solidconEls.connSelect.appendChild(opt);
+                }
+                else {
+                    connections.forEach((conn) => {
+                        const opt = document.createElement('option');
+                        opt.value = String(conn.id);
+                        opt.textContent = `${conn.name || 'Conexão'} (${conn.serv_solidcon || ''}/${conn.bd_solidcon || 'solidcon'})`;
+                        solidconEls.connSelect.appendChild(opt);
+                    });
+                }
+            }
+            catch (err) {
+                console.warn('Erro ao listar conexões Solidcon:', err);
+                solidconEls.connSelect.innerHTML = '<option value="">Padrão da Empresa (solidcon)</option>';
+            }
+        };
+        const renderSolidconEntriesTable = () => {
+            if (!solidconEls.table)
+                return;
+            if (isSolidconLoading) {
+                solidconEls.table.innerHTML = `
+          <tr>
+            <td colspan="9" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+              <div class="inline-flex items-center gap-2">
+                <svg class="animate-spin h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>Consultando banco de dados Solidcon...</span>
+              </div>
+            </td>
+          </tr>
+        `;
+                return;
+            }
+            if (filteredSolidconEntries.length === 0) {
+                const emptyMsg = !hasSearchedSolidcon
+                    ? 'Selecione o período e clique em "Consultar" para buscar movimentações no Solidcon.'
+                    : (solidconRawEntries.length === 0
+                        ? 'Nenhum movimento encontrado no Solidcon para o período selecionado.'
+                        : 'Nenhum movimento corresponde ao filtro de busca.');
+                solidconEls.table.innerHTML = `
+          <tr>
+            <td colspan="9" class="px-4 py-12 text-center text-gray-400 dark:text-gray-500">
+              ${emptyMsg}
+            </td>
+          </tr>
+        `;
+                updateSolidconEntriesSelectionSummary();
+                return;
+            }
+            solidconEls.table.innerHTML = filteredSolidconEntries
+                .map((entry) => {
+                const id = String(entry.id);
+                const isSelected = selectedSolidconEntryIds.has(id);
+                const dateStr = formatDate(entry.entry_date);
+                const amtFormatted = formatCurrency(entry.amount);
+                const isDebit = entry.bank_operation === 'debit';
+                const isCredit = entry.bank_operation === 'credit';
+                const verif = solidconVerificationMap.get(id);
+                let sourceBadge = '';
+                if (entry.source === 'cnt_lancamento') {
+                    sourceBadge = '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">Contábil</span>';
+                }
+                else if (entry.source === 'banco_movimento') {
+                    sourceBadge = '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300">Bancário</span>';
+                }
+                else {
+                    sourceBadge = '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300">Baixa</span>';
+                }
+                let rowClasses = 'transition-colors';
+                let statusCellHtml = '';
+                if (verif) {
+                    if (verif.isValid) {
+                        // MARCA DE VERDE: Lançamento Correto
+                        rowClasses = 'bg-emerald-50/70 dark:bg-emerald-950/30 border-l-4 border-l-emerald-500 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40';
+                        statusCellHtml = `
+                <div class="flex flex-col items-center">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                    <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    Correto
+                  </span>
+                  ${verif.warnings.length > 0 ? `<span class="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5" title="${escapeHtml(verif.warnings.join('; '))}">${escapeHtml(verif.warnings[0])}</span>` : ''}
+                </div>
+              `;
+                    }
+                    else if (verif.isDuplicate) {
+                        // MARCA DE VERMELHO: Lançamento Duplicado
+                        rowClasses = 'bg-red-50/70 dark:bg-red-950/30 border-l-4 border-l-red-500 hover:bg-red-100/70 dark:hover:bg-red-900/40';
+                        statusCellHtml = `
+                <div class="flex flex-col items-center max-w-44 text-center">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300">
+                    <svg class="w-3 h-3 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Duplicado
+                  </span>
+                  <span class="text-[10px] text-red-700 dark:text-red-300 mt-0.5 leading-tight font-medium" title="${escapeHtml(verif.duplicateReason)}">${escapeHtml(verif.duplicateReason)}</span>
+                </div>
+              `;
+                    }
+                    else {
+                        // MARCA DE VERMELHO: Conta Errada / Inconsistência
+                        rowClasses = 'bg-red-50/70 dark:bg-red-950/30 border-l-4 border-l-red-500 hover:bg-red-100/70 dark:hover:bg-red-900/40';
+                        const errDetail = verif.errors.join('; ');
+                        statusCellHtml = `
+                <div class="flex flex-col items-center max-w-44 text-center">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300">
+                    <svg class="w-3 h-3 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Conta Inválida
+                  </span>
+                  <span class="text-[10px] text-red-700 dark:text-red-300 mt-0.5 leading-tight font-medium" title="${escapeHtml(errDetail)}">${escapeHtml(verif.errors[0] || 'Inconsistência')}</span>
+                </div>
+              `;
+                    }
+                }
+                else {
+                    statusCellHtml = `<span class="text-gray-400 dark:text-gray-500 text-[11px] italic">Não verificado</span>`;
+                    rowClasses = `hover:bg-emerald-50/40 dark:hover:bg-slate-700/50 ${isSelected ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : ''}`;
+                }
+                const debitDisplay = entry.debit_account_code
+                    ? `<span class="font-mono font-medium text-emerald-700 dark:text-emerald-400">${escapeHtml(entry.debit_account_code)}</span> <span class="text-gray-500 dark:text-gray-400 text-[11px]">${escapeHtml(entry.debit_account_name || '')}</span>`
+                    : '<span class="text-amber-600 dark:text-amber-400 italic text-[11px]">Pendente (selecione)</span>';
+                const creditDisplay = entry.credit_account_code
+                    ? `<span class="font-mono font-medium text-blue-700 dark:text-blue-400">${escapeHtml(entry.credit_account_code)}</span> <span class="text-gray-500 dark:text-gray-400 text-[11px]">${escapeHtml(entry.credit_account_name || '')}</span>`
+                    : '<span class="text-amber-600 dark:text-amber-400 italic text-[11px]">Pendente (selecione)</span>';
+                return `
+            <tr class="${rowClasses}">
+              <td class="px-3 py-2.5 whitespace-nowrap">
+                <input type="checkbox" class="solidcon-entry-checkbox h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer"
+                  data-id="${id}" ${isSelected ? 'checked' : ''}>
+              </td>
+              <td class="px-3 py-2.5 whitespace-nowrap font-mono text-gray-700 dark:text-gray-300">
+                ${dateStr}
+              </td>
+              <td class="px-3 py-2.5 whitespace-nowrap text-center">
+                ${sourceBadge}
+              </td>
+              <td class="px-3 py-2.5 whitespace-nowrap font-mono text-gray-500 dark:text-gray-400">
+                ${escapeHtml(entry.document_ref || '-')}
+              </td>
+              <td class="px-3 py-2.5 text-left text-xs">
+                ${debitDisplay}
+              </td>
+              <td class="px-3 py-2.5 text-left text-xs">
+                ${creditDisplay}
+              </td>
+              <td class="px-3 py-2.5 whitespace-nowrap text-right font-mono font-bold ${isDebit ? 'text-blue-700 dark:text-blue-400' : (isCredit ? 'text-orange-700 dark:text-orange-400' : 'text-gray-900 dark:text-gray-100')}">
+                ${amtFormatted}
+              </td>
+              <td class="px-3 py-2.5 text-left text-gray-700 dark:text-gray-300 max-w-xs truncate" title="${escapeHtml(entry.history || '')}">
+                ${escapeHtml(entry.history || '-')}
+              </td>
+              <td class="px-3 py-2.5 whitespace-nowrap text-center">
+                ${statusCellHtml}
+              </td>
+            </tr>
+          `;
+            })
+                .join('');
+            updateSolidconEntriesSelectionSummary();
+        };
+        const applySolidconEntriesFilters = () => {
+            const searchTerm = (solidconEls.searchInput?.value || '').trim().toLowerCase();
+            const opFilter = solidconEls.opFilter?.value || 'all';
+            const valFilter = solidconEls.validationFilter?.value || 'all';
+            filteredSolidconEntries = solidconRawEntries.filter((entry) => {
+                const id = String(entry.id);
+                const doc = String(entry.document_ref || '').toLowerCase();
+                const hist = String(entry.history || '').toLowerCase();
+                const bank = String(entry.bank_name || '').toLowerCase();
+                const debCode = String(entry.debit_account_code || '').toLowerCase();
+                const debName = String(entry.debit_account_name || '').toLowerCase();
+                const credCode = String(entry.credit_account_code || '').toLowerCase();
+                const credName = String(entry.credit_account_name || '').toLowerCase();
+                if (searchTerm) {
+                    const match = doc.includes(searchTerm) || hist.includes(searchTerm) || bank.includes(searchTerm) ||
+                        debCode.includes(searchTerm) || debName.includes(searchTerm) || credCode.includes(searchTerm) || credName.includes(searchTerm);
+                    if (!match)
+                        return false;
+                }
+                if (opFilter === 'debit' && entry.bank_operation !== 'debit')
+                    return false;
+                if (opFilter === 'credit' && entry.bank_operation !== 'credit')
+                    return false;
+                if (valFilter === 'valid') {
+                    const v = solidconVerificationMap.get(id);
+                    if (!v || !v.isValid)
+                        return false;
+                }
+                else if (valFilter === 'invalid') {
+                    const v = solidconVerificationMap.get(id);
+                    if (!v || v.isValid)
+                        return false;
+                }
+                return true;
+            });
+            renderSolidconEntriesTable();
+        };
+        const updateSolidconEntriesSelectionSummary = () => {
+            const totalFiltered = filteredSolidconEntries.length;
+            const count = selectedSolidconEntryIds.size;
+            let sumTotal = 0;
+            filteredSolidconEntries.forEach((e) => {
+                if (selectedSolidconEntryIds.has(String(e.id))) {
+                    sumTotal += Number(e.amount) || 0;
+                }
+            });
+            if (solidconEls.selectionCount) {
+                solidconEls.selectionCount.textContent = `${count} de ${totalFiltered} selecionado(s)`;
+            }
+            if (solidconEls.totalCountBadge) {
+                solidconEls.totalCountBadge.textContent = String(totalFiltered);
+            }
+            if (solidconEls.totalAmountBadge) {
+                solidconEls.totalAmountBadge.textContent = formatCurrency(sumTotal);
+            }
+            if (solidconEls.btnImportSelected) {
+                solidconEls.btnImportSelected.disabled = count === 0 || isSolidconLoading || isSolidconVerifying;
+            }
+            if (solidconEls.btnImportSelectedText) {
+                solidconEls.btnImportSelectedText.textContent = count > 0 ? `Importar Selecionados (${count})` : 'Importar Selecionados';
+            }
+            if (solidconEls.btnImportAll) {
+                solidconEls.btnImportAll.disabled = totalFiltered === 0 || isSolidconLoading || isSolidconVerifying;
+            }
+            if (solidconEls.btnVerify) {
+                solidconEls.btnVerify.disabled = solidconRawEntries.length === 0 || isSolidconLoading || isSolidconVerifying;
+            }
+            if (solidconEls.selectAll) {
+                const allVisibleSelected = totalFiltered > 0 && filteredSolidconEntries.every((e) => selectedSolidconEntryIds.has(String(e.id)));
+                solidconEls.selectAll.checked = allVisibleSelected;
+            }
+        };
+        const loadSolidconEntries = async () => {
+            const start = solidconEls.startDate?.value || '';
+            const end = solidconEls.endDate?.value || '';
+            if (!start || !end) {
+                showSolidconAlert('Por favor, informe a Data Início e a Data Fim.', 'error');
+                return;
+            }
+            hasSearchedSolidcon = true;
+            isSolidconLoading = true;
+            solidconVerificationMap.clear();
+            if (solidconEls.btnSelectOnlyValid)
+                solidconEls.btnSelectOnlyValid.classList.add('hidden');
+            if (solidconEls.validationFilter)
+                solidconEls.validationFilter.value = 'all';
+            hideSolidconAlert();
+            updateSolidconStatusBadge('loading', 'Consultando...');
+            if (solidconEls.reloadIcon)
+                solidconEls.reloadIcon.classList.add('animate-spin');
+            if (solidconEls.btnReload)
+                solidconEls.btnReload.disabled = true;
+            renderSolidconEntriesTable();
+            try {
+                const connId = solidconEls.connSelect?.value || '';
+                const source = solidconEls.sourceSelect?.value || 'all';
+                const filial = solidconEls.filialInput?.value || '';
+                let url = `/accounting/solidcon-entries?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}&source=${encodeURIComponent(source)}`;
+                if (connId)
+                    url += `&connectionId=${encodeURIComponent(connId)}`;
+                if (filial)
+                    url += `&cdFilial=${encodeURIComponent(filial)}`;
+                const response = await api(url);
+                solidconRawEntries = response?.data || [];
+                updateSolidconStatusBadge('connected', `Conectado (${solidconRawEntries.length} movimentos)`);
+                showSolidconAlert(`Consulta realizada com sucesso! <strong>${solidconRawEntries.length}</strong> movimentos retornados do Solidcon. Clique em <strong>"Verificar Lançamentos"</strong> para auditar contas e duplicidades.`, 'success');
+                selectedSolidconEntryIds.clear();
+                // Select all by default
+                solidconRawEntries.forEach((e) => selectedSolidconEntryIds.add(String(e.id)));
+                isSolidconLoading = false;
+                applySolidconEntriesFilters();
+            }
+            catch (error) {
+                isSolidconLoading = false;
+                const msg = error?.message || String(error);
+                updateSolidconStatusBadge('error', 'Falha ao Consultar');
+                showSolidconAlert(`Erro ao consultar Solidcon: ${msg}`, 'error');
+                solidconRawEntries = [];
+                filteredSolidconEntries = [];
+                renderSolidconEntriesTable();
+            }
+            finally {
+                isSolidconLoading = false;
+                if (solidconEls.reloadIcon)
+                    solidconEls.reloadIcon.classList.remove('animate-spin');
+                if (solidconEls.btnReload)
+                    solidconEls.btnReload.disabled = false;
+                updateSolidconEntriesSelectionSummary();
+            }
+        };
+        const verifySolidconEntries = async () => {
+            if (solidconRawEntries.length === 0) {
+                showSolidconAlert('Consulte primeiro os movimentos do Solidcon antes de verificar.', 'error');
+                return;
+            }
+            isSolidconVerifying = true;
+            if (solidconEls.verifyIcon)
+                solidconEls.verifyIcon.classList.add('animate-spin');
+            if (solidconEls.btnVerify)
+                solidconEls.btnVerify.disabled = true;
+            showSolidconAlert('Verificando duplicidades e contas contábeis no Keystone... Aguarde.', 'info');
+            try {
+                const response = await api('/accounting/solidcon-entries/verify', {
+                    method: 'POST',
+                    body: JSON.stringify({ entries: solidconRawEntries }),
+                });
+                const data = response?.data;
+                const results = data?.results || [];
+                const summary = data?.summary || { total: 0, validCount: 0, errorCount: 0, duplicateCount: 0 };
+                solidconVerificationMap.clear();
+                results.forEach((r) => {
+                    solidconVerificationMap.set(String(r.id), r);
+                });
+                // Automatically update selection: check only valid entries, uncheck duplicates and errors
+                selectedSolidconEntryIds.clear();
+                solidconRawEntries.forEach((entry) => {
+                    const id = String(entry.id);
+                    const v = solidconVerificationMap.get(id);
+                    if (v && v.isValid) {
+                        selectedSolidconEntryIds.add(id);
+                    }
+                });
+                if (solidconEls.btnSelectOnlyValid) {
+                    solidconEls.btnSelectOnlyValid.classList.remove('hidden');
+                }
+                const validPart = `<span class="text-emerald-700 dark:text-emerald-300 font-bold">${summary.validCount} correto(s) (Verde)</span>`;
+                const dupPart = summary.duplicateCount > 0 ? `<span class="text-red-700 dark:text-red-300 font-bold">${summary.duplicateCount} duplicado(s) (Vermelho)</span>` : '';
+                const errPart = summary.errorCount > 0 ? `<span class="text-red-700 dark:text-red-300 font-bold">${summary.errorCount} conta(s) incorreta(s) (Vermelho)</span>` : '';
+                const summaryText = [validPart, dupPart, errPart].filter(Boolean).join(' | ');
+                if (summary.errorCount === 0 && summary.duplicateCount === 0) {
+                    showSolidconAlert(`<strong>Auditoria Concluída!</strong> Todos os <strong>${summary.validCount}</strong> lançamentos estão corretos e prontos para importação (marcados em verde).`, 'success');
+                }
+                else {
+                    showSolidconAlert(`<strong>Auditoria Concluída:</strong> ${summaryText}.<br><span class="text-[11px] font-normal">Lançamentos corretos estão em <strong>verde</strong> (selecionados). Lançamentos duplicados ou com contas erradas estão em <strong>vermelho</strong> (desmarcados).</span>`, 'info');
+                }
+                applySolidconEntriesFilters();
+            }
+            catch (error) {
+                showSolidconAlert(`Erro ao verificar lançamentos: ${error?.message || error}`, 'error');
+            }
+            finally {
+                isSolidconVerifying = false;
+                if (solidconEls.verifyIcon)
+                    solidconEls.verifyIcon.classList.remove('animate-spin');
+                if (solidconEls.btnVerify)
+                    solidconEls.btnVerify.disabled = false;
+                updateSolidconEntriesSelectionSummary();
+            }
+        };
+        const applyDefaultAccountsToSelected = () => {
+            const selectedDebit = solidconEls.defaultDebit?.value || '';
+            const selectedCredit = solidconEls.defaultCredit?.value || '';
+            if (!selectedDebit && !selectedCredit) {
+                alert('Selecione pelo menos uma conta de débito ou crédito no preenchimento rápido.');
+                return;
+            }
+            const debitAcc = accountsList.find((a) => a.code === selectedDebit);
+            const creditAcc = accountsList.find((a) => a.code === selectedCredit);
+            let updatedCount = 0;
+            solidconRawEntries.forEach((entry) => {
+                if (selectedSolidconEntryIds.has(String(entry.id))) {
+                    if (selectedDebit && debitAcc) {
+                        entry.debit_account_code = debitAcc.code;
+                        entry.debit_account_name = debitAcc.name;
+                    }
+                    if (selectedCredit && creditAcc) {
+                        entry.credit_account_code = creditAcc.code;
+                        entry.credit_account_name = creditAcc.name;
+                    }
+                    updatedCount++;
+                }
+            });
+            if (updatedCount === 0) {
+                alert('Nenhum movimento selecionado para aplicar as contas padrão.');
+                return;
+            }
+            showSolidconAlert(`Contas padrão aplicadas em <strong>${updatedCount}</strong> movimentos selecionados. Clique em "Verificar Lançamentos" para reavaliar a auditoria.`, 'info');
+            // Re-verify automatically if already verified
+            if (solidconVerificationMap.size > 0) {
+                verifySolidconEntries();
+            }
+            else {
+                renderSolidconEntriesTable();
+            }
+        };
+        const formatLocalYmd = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const setSolidconQuickPeriod = (period) => {
+            const now = new Date();
+            let start = new Date();
+            let end = new Date();
+            if (period === 'today') {
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            }
+            else if (period === 'yesterday') {
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+            }
+            else if (period === 'this_month') {
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            }
+            else if (period === 'last_month') {
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                end = new Date(now.getFullYear(), now.getMonth(), 0);
+            }
+            else if (period === 'last_30') {
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            }
+            else if (period === 'last_90') {
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90);
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            }
+            else if (period === 'this_year') {
+                start = new Date(now.getFullYear(), 0, 1);
+                end = new Date(now.getFullYear(), 11, 31);
+            }
+            if (solidconEls.startDate)
+                solidconEls.startDate.value = formatLocalYmd(start);
+            if (solidconEls.endDate)
+                solidconEls.endDate.value = formatLocalYmd(end);
+        };
+        const openSolidconEntriesModal = async () => {
+            if (!solidconEls.modal)
+                return;
+            solidconEls.modal.classList.remove('hidden');
+            // Set default dates to current month if empty
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            if (solidconEls.startDate && !solidconEls.startDate.value) {
+                solidconEls.startDate.value = formatLocalYmd(firstDay);
+            }
+            if (solidconEls.endDate && !solidconEls.endDate.value) {
+                solidconEls.endDate.value = formatLocalYmd(today);
+            }
+            populateSolidconDefaultAccountDropdowns();
+            await loadSolidconConnections();
+            if (!hasSearchedSolidcon) {
+                updateSolidconStatusBadge('idle', 'Aguardando');
+                renderSolidconEntriesTable();
+            }
+        };
+        const closeSolidconEntriesModal = () => {
+            if (!solidconEls.modal)
+                return;
+            solidconEls.modal.classList.add('hidden');
+            hideSolidconAlert();
+        };
+        // Modal triggers & handlers
+        solidconEls.btnModal?.addEventListener('click', openSolidconEntriesModal);
+        solidconEls.btnClose?.addEventListener('click', closeSolidconEntriesModal);
+        solidconEls.btnCloseIcon?.addEventListener('click', closeSolidconEntriesModal);
+        solidconEls.backdrop?.addEventListener('click', closeSolidconEntriesModal);
+        // Period shortcuts listener
+        document.querySelectorAll('.solidcon-period-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const p = btn.getAttribute('data-period');
+                if (p) {
+                    setSolidconQuickPeriod(p);
+                    // Trigger search automatically on period click for convenience
+                    loadSolidconEntries();
+                }
+            });
+        });
+        solidconEls.btnReload?.addEventListener('click', loadSolidconEntries);
+        solidconEls.btnVerify?.addEventListener('click', verifySolidconEntries);
+        solidconEls.searchInput?.addEventListener('input', applySolidconEntriesFilters);
+        solidconEls.opFilter?.addEventListener('change', applySolidconEntriesFilters);
+        solidconEls.validationFilter?.addEventListener('change', applySolidconEntriesFilters);
+        solidconEls.btnSelectOnlyValid?.addEventListener('click', () => {
+            selectedSolidconEntryIds.clear();
+            filteredSolidconEntries.forEach((entry) => {
+                const id = String(entry.id);
+                const v = solidconVerificationMap.get(id);
+                if (v && v.isValid) {
+                    selectedSolidconEntryIds.add(id);
+                }
+            });
+            renderSolidconEntriesTable();
+        });
+        solidconEls.btnApplyDefaults?.addEventListener('click', applyDefaultAccountsToSelected);
+        solidconEls.selectAll?.addEventListener('change', () => {
+            const isChecked = !!solidconEls.selectAll?.checked;
+            filteredSolidconEntries.forEach((entry) => {
+                const id = String(entry.id);
+                if (isChecked)
+                    selectedSolidconEntryIds.add(id);
+                else
+                    selectedSolidconEntryIds.delete(id);
+            });
+            renderSolidconEntriesTable();
+        });
+        solidconEls.table?.addEventListener('change', (e) => {
+            const target = e.target;
+            if (!target || !target.classList.contains('solidcon-entry-checkbox'))
+                return;
+            const id = target.getAttribute('data-id');
+            if (!id)
+                return;
+            if (target.checked)
+                selectedSolidconEntryIds.add(id);
+            else
+                selectedSolidconEntryIds.delete(id);
+            updateSolidconEntriesSelectionSummary();
+            const tr = target.closest('tr');
+            if (tr) {
+                if (target.checked)
+                    tr.classList.add('bg-emerald-50/60', 'dark:bg-emerald-950/20');
+                else
+                    tr.classList.remove('bg-emerald-50/60', 'dark:bg-emerald-950/20');
+            }
+        });
+        const executeSolidconEntriesImport = async (entriesToImport) => {
+            if (entriesToImport.length === 0) {
+                alert('Nenhum lançamento selecionado para importação.');
+                return;
+            }
+            // Check if any entries are missing accounts
+            const unmapped = entriesToImport.filter((e) => !e.debit_account_code || !e.credit_account_code);
+            if (unmapped.length > 0) {
+                const proceed = confirm(`Atenção: ${unmapped.length} de ${entriesToImport.length} lançamentos não possuem Conta Débito ou Conta Crédito preenchidas e serão ignorados.\n\nDica: Use o "Preenchimento Rápido de Contas" acima para definir as contas.\n\nDeseja importar os ${entriesToImport.length - unmapped.length} lançamentos válidos restantes?`);
+                if (!proceed)
+                    return;
+            }
+            const validEntries = entriesToImport.filter((e) => e.debit_account_code && e.credit_account_code);
+            if (validEntries.length === 0) {
+                alert('Nenhum lançamento possui ambas as contas (Débito e Crédito) preenchidas para importação.');
+                return;
+            }
+            if (solidconEls.btnImportSelected)
+                solidconEls.btnImportSelected.disabled = true;
+            if (solidconEls.btnImportAll)
+                solidconEls.btnImportAll.disabled = true;
+            if (solidconEls.btnReload)
+                solidconEls.btnReload.disabled = true;
+            showSolidconAlert(`Importando ${validEntries.length} lançamentos contábeis no Keystone... Aguarde.`, 'info');
+            try {
+                const response = await api('/accounting/solidcon-entries/import', {
+                    method: 'POST',
+                    body: JSON.stringify({ entries: validEntries }),
+                });
+                const successCount = response?.data?.success ?? validEntries.length;
+                const errors = response?.data?.errors || [];
+                let msg = `Importação concluída com sucesso! <strong>${successCount}</strong> lançamento(s) importado(s) no Keystone.`;
+                if (errors.length > 0) {
+                    msg += `<br><span class="text-xs text-red-600 dark:text-red-400 font-normal">Falhas: ${errors.join(', ')}</span>`;
+                }
+                showSolidconAlert(msg, errors.length > 0 ? 'info' : 'success');
+                // Reload Keystone data in background
+                await loadData();
+            }
+            catch (error) {
+                showSolidconAlert(`Erro na importação: ${error?.message || String(error)}`, 'error');
+            }
+            finally {
+                if (solidconEls.btnReload)
+                    solidconEls.btnReload.disabled = false;
+                updateSolidconEntriesSelectionSummary();
+            }
+        };
+        solidconEls.btnImportSelected?.addEventListener('click', () => {
+            const selected = solidconRawEntries.filter((e) => selectedSolidconEntryIds.has(String(e.id)));
+            executeSolidconEntriesImport(selected);
+        });
+        solidconEls.btnImportAll?.addEventListener('click', () => {
+            executeSolidconEntriesImport(filteredSolidconEntries);
+        });
     }
 })();

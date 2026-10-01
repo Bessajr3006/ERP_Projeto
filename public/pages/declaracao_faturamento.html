@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Declaração de Faturamento</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+    <style>
+        /* --- ESTILOS DE TELA E FOLHA A4 --- */
+        .doc-page-container {
+            width: 100%;
+            max-width: 820px;
+            background: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 48px 56px;
+            box-sizing: border-box;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            margin-bottom: 40px;
+        }
+
+        .dark .doc-page-container {
+            background: #ffffff;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        /* Cabeçalho da Empresa */
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .doc-company-info {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #334155;
+        }
+
+        .doc-empresa-nome {
+            font-size: 1.18rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 3px;
+        }
+
+        .doc-periodo-info {
+            margin-top: 10px;
+            font-size: 0.88rem;
+            background: #f8fafc;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border-left: 3px solid #2563eb;
+            display: inline-block;
+            color: #1e293b;
+        }
+
+        /* Título do Documento */
+        .doc-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #0f172a;
+            margin: 26px 0;
+        }
+
+        /* Corpo do Texto */
+        .doc-text-body {
+            font-size: 0.95rem;
+            line-height: 1.75;
+            text-align: justify;
+            color: #1e293b;
+            margin-bottom: 22px;
+        }
+
+        /* Tabela de Competências */
+        .doc-billing-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 22px 0;
+            font-size: 0.9rem;
+        }
+
+        .doc-billing-table th, 
+        .doc-billing-table td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 14px;
+        }
+
+        .doc-billing-table thead th {
+            background-color: #f8fafc;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.03em;
+        }
+
+        .doc-th-mes {
+            width: 60%;
+            text-align: left;
+        }
+
+        .doc-th-valor {
+            width: 40%;
+            text-align: right;
+        }
+
+        .doc-billing-table tbody tr:nth-child(even) {
+            background-color: #fbfcfe;
+        }
+
+        .doc-billing-table tbody td:nth-child(2) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .doc-total-row {
+            background-color: #f1f5f9;
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: #0f172a;
+        }
+
+        .doc-total-cell {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: #0f172a;
+        }
+
+        .doc-note {
+            font-size: 0.78rem;
+            color: #64748b;
+            line-height: 1.45;
+            font-style: italic;
+            margin-top: 8px;
+            margin-bottom: 18px;
+        }
+
+        /* Selo Oficial Gov.br (Assinatura Avançada - Lei 14.063/2020) */
+        .doc-govbr-stamp {
+            width: 100%;
+            border: 1.5px solid #1351b4;
+            border-radius: 8px;
+            padding: 12px 18px;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            page-break-inside: avoid;
+            margin-top: 30px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .doc-govbr-stamp-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+        }
+
+        .govbr-logo-badge {
+            background-color: #1351b4;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 1.15rem;
+            letter-spacing: -0.05em;
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+            box-shadow: 0 1px 3px rgba(19, 81, 180, 0.3);
+        }
+
+        .govbr-logo-badge span {
+            color: #ffcd00;
+        }
+
+        .govbr-info-content {
+            font-size: 0.76rem;
+            line-height: 1.48;
+            color: #334155;
+        }
+
+        .govbr-info-title {
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: #1351b4;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin-bottom: 3px;
+        }
+
+        .govbr-info-legal {
+            font-size: 0.68rem;
+            color: #64748b;
+            margin-top: 4px;
+            line-height: 1.35;
+        }
+
+        .doc-govbr-stamp-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-width: 135px;
+            max-width: 150px;
+            padding: 8px 10px;
+            background-color: #ffffff;
+            border: 1.5px solid #1351b4;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(19, 81, 180, 0.08);
+            box-sizing: border-box;
+            shrink: 0;
+        }
+
+        .govbr-validation-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            color: #1351b4;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .govbr-qr-code {
+            width: 66px;
+            height: 66px;
+            display: block;
+            margin: 0 auto 4px auto;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            padding: 2px;
+            background: #ffffff;
+        }
+
+        .govbr-qr-label {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #1351b4;
+            line-height: 1.2;
+            text-decoration: none;
+            display: block;
+        }
+
+        .govbr-qr-subtext {
+            font-size: 0.55rem;
+            color: #64748b;
+            line-height: 1.2;
+            margin-top: 2px;
+        }
+
+        .govbr-validation-btn {
+            margin-top: 5px;
+            font-size: 0.58rem;
+            font-weight: 700;
+            color: #ffffff;
+            background-color: #1351b4;
+            padding: 2.5px 7px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            transition: background 0.15s ease;
+        }
+
+        .govbr-validation-btn:hover {
+            background-color: #0c326f;
+        }
+
+        /* Destaque para campos editáveis na tela */
+        [contenteditable="true"] {
+            outline: none;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
+            border-radius: 3px;
+            padding: 1px 4px;
+        }
+
+        [contenteditable="true"]:hover {
+            background-color: #fef08a44;
+            box-shadow: 0 0 0 1px #facc15;
+            cursor: text;
+        }
+
+        [contenteditable="true"]:focus {
+            background-color: #fef9c3;
+            box-shadow: 0 0 0 2px #eab308;
+        }
+
+        /* --- REGRAS DE IMPRESSÃO (A4) --- */
+        @media print {
+            #globalNavRoot, #app-navbar, #app-footer, .no-print, header, nav, #modalGovBr {
+                display: none !important;
+            }
+
+            body, main, #content {
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                color: #000000 !important;
+                overflow: visible !important;
+                height: auto !important;
+            }
+
+            .doc-page-container {
+                max-width: 100% !important;
+                width: 100% !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 12mm 15mm !important;
+                margin: 0 !important;
+            }
+
+            [contenteditable="true"] {
+                background: transparent !important;
+                box-shadow: none !important;
+            }
+
+            .doc-billing-table th, .doc-billing-table td {
+                border-color: #000000 !important;
+            }
+
+            .doc-total-row {
+                background-color: #f3f4f6 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .doc-digital-stamp {
+                background-color: #fcfcfc !important;
+                border: 1px solid #666666 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .doc-govbr-stamp {
+                background-color: #ffffff !important;
+                border: 1.5px solid #1351b4 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .doc-govbr-stamp-right {
+                background-color: #ffffff !important;
+                border: 1.5px solid #1351b4 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .govbr-validation-btn {
+                display: none !important;
+            }
+
+            .govbr-logo-badge {
+                background-color: #1351b4 !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 8mm;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-gray-100 font-sans flex flex-col h-dvh overflow-hidden">
+    <div id="app-navbar"></div>
+
+    <main class="flex-1 min-h-0 overflow-y-auto w-full pt-4 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+        
+        <!-- TOP TOOLBAR & ACTIONS (No-Print) -->
+        <div class="w-full max-w-205 mb-4 no-print flex flex-col gap-3">
+            
+            <!-- Breadcrumb -->
+            <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                <a href="/pages/dashboard.html" class="hover:text-brand-500 transition-colors">Início</a>
+                <span>/</span>
+                <span class="text-gray-400 dark:text-gray-500">Informações & Legislação</span>
+                <span>/</span>
+                <span class="text-emerald-600 dark:text-emerald-400 font-medium">Declaração de Faturamento</span>
+            </div>
+
+            <!-- Toolbar Card -->
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white leading-none">Declaração de Faturamento</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Geração de comprovação de faturamento com preenchimento dinâmico e assinatura digital Gov.br</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="btnPreset12Meses" class="px-2.5 py-1.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition-colors">
+                        📅 12 Meses
+                    </button>
+                    <button type="button" id="btnPresetAnoAtual" class="px-2.5 py-1.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition-colors">
+                        📅 Ano Atual
+                    </button>
+                    <button type="button" id="btnBuscarEmpresaAtiva" title="Preencher dados da empresa ativa logada" class="px-2.5 py-1.5 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1">
+                        🏢 Empresa Ativa
+                    </button>
+                    <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" title="Validar autenticidade do documento no validador oficial do ITI (validar.iti.br)" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1">
+                        <span>🛡️</span>
+                        <span>Validador ITI</span>
+                    </a>
+                    <button type="button" id="btnAbrirModalGovBr" class="px-3.5 py-1.5 bg-[#1351b4] hover:bg-[#0c326f] text-white rounded-lg text-xs font-bold transition-all shadow-sm inline-flex items-center gap-1.5 ring-1 ring-[#1351b4]/30 hover:ring-[#1351b4]">
+                        <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white text-[#1351b4] font-black text-[9px] leading-none">gov</span>
+                        <span>Assinar com gov.br</span>
+                    </button>
+                    <button type="button" onclick="window.print()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-sm">
+                        🖨️ Imprimir / PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Signature Display Selector (No-Print) -->
+            <div class="bg-gray-50 dark:bg-slate-800/80 px-3.5 py-2 rounded-lg border border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-gray-600 dark:text-gray-300">Modo de Assinatura no Documento:</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button type="button" id="btnModoGovBr" class="px-2.5 py-1 rounded-md font-medium text-xs transition-colors bg-[#1351b4] text-white shadow-xs">
+                        🇧🇷 Selo Oficial gov.br
+                    </button>
+                    <button type="button" id="btnModoIcp" class="px-2.5 py-1 rounded-md font-medium text-xs transition-colors bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:bg-gray-100">
+                        💼 ICP-Brasil (Empresa / Contador)
+                    </button>
+                    <button type="button" id="btnModoAmbos" class="px-2.5 py-1 rounded-md font-medium text-xs transition-colors bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:bg-gray-100">
+                        📑 Ambos os Selos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- A4 DOCUMENT CONTAINER -->
+        <div class="doc-page-container" id="content">
+            
+            <!-- Cabeçalho da Empresa -->
+            <div class="doc-header">
+                <div class="doc-company-info">
+                    <div class="doc-empresa-nome sync-empresa" contenteditable="true" title="Clique para editar o nome da empresa">[NOME DA SUA EMPRESA LTDA]</div>
+                    <div>CNPJ: <span contenteditable="true" class="sync-cnpj" title="Digite o CNPJ e clique fora para consultar na Receita">00.000.000/0001-00</span></div>
+                    <div contenteditable="true" class="sync-endereco-linha1">Rua Exemplo, 100 - Centro</div>
+                    <div contenteditable="true" class="sync-endereco-linha2">Niterói - RJ, CEP: 24000-000</div>
+                    <div class="doc-periodo-info">
+                        <strong>Período de Referência:</strong> 
+                        <span contenteditable="true" class="sync-mes-inicio">Junho</span>/<span contenteditable="true" class="sync-ano-inicio">2025</span> a 
+                        <span contenteditable="true" class="sync-mes-fim">Fevereiro</span>/<span contenteditable="true" class="sync-ano-fim">2026</span>
+                    </div>
+                </div>
+                <div class="no-print">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Editável
+                    </span>
+                </div>
+            </div>
+
+            <!-- Título Central -->
+            <h1 class="doc-title">Declaração de Faturamento</h1>
+
+            <!-- Corpo da Declaração -->
+            <div class="doc-text-body">
+                Declaramos para os devidos fins de comprovação de renda e análise de crédito que a empresa <strong contenteditable="true" class="sync-empresa">[NOME DA SUA EMPRESA LTDA]</strong>, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº <strong contenteditable="true" class="sync-cnpj">00.000.000/0001-00</strong>, auferiu o seguinte faturamento bruto, sem deduções, no período de <span class="sync-mes-inicio">Junho</span>/<span class="sync-ano-inicio">2025</span> a <span class="sync-mes-fim">Fevereiro</span>/<span class="sync-ano-fim">2026</span>:
+            </div>
+
+            <!-- Tabela de Competências e Valores -->
+            <table class="doc-billing-table">
+                <thead>
+                    <tr>
+                        <th class="doc-th-mes">Mês / Ano de Competência</th>
+                        <th class="doc-th-valor">Faturamento Bruto (R$)</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-meses">
+                    <!-- Linhas geradas dinamicamente via JS -->
+                </tbody>
+                <tfoot>
+                    <tr class="doc-total-row">
+                        <td>TOTAL DO PERÍODO</td>
+                        <td class="doc-total-cell">R$ <span id="total-anual">0,00</span></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!-- Nota Explicativa -->
+            <div class="doc-note">
+                * <strong>Nota:</strong> Os valores expressos acima correspondem fielmente às receitas operacionais brutas da empresa no período informado, sujeitas à verificação pelas demonstrações contábeis e fiscais pertinentes.
+            </div>
+
+            <!-- Data por Extenso -->
+            <div class="doc-text-body" style="margin-top: 24px;">
+                Por ser expressão da verdade e assumindo total responsabilidade pelas informações aqui prestadas, firmamos o presente documento.
+                <br><br>
+                <span id="campo-data-extenso" contenteditable="true">Niterói - RJ, 12 de Março de 2026.</span>
+            </div>
+
+            <!-- SELO OFICIAL GOV.BR (Assinatura Eletrônica Avançada) -->
+            <div id="secao-assinatura-govbr" class="doc-govbr-stamp">
+                <div class="doc-govbr-stamp-left">
+                    <div class="govbr-logo-badge">
+                        gov<span>.br</span>
+                    </div>
+                    <div class="govbr-info-content">
+                        <div class="govbr-info-title">Documento Assinado Digitalmente com gov.br</div>
+                        <div><strong>Assinante:</strong> <span class="sync-govbr-nome" contenteditable="true">[NOME DO RESPONSÁVEL LEGAL / SÓCIO / CONTADOR]</span></div>
+                        <div><strong>CPF / Identificação:</strong> <span class="sync-govbr-cpf" contenteditable="true">***.000.000-**</span> &bull; <strong>Cargo:</strong> <span id="stamp-govbr-cargo" contenteditable="true">Responsável Legal</span></div>
+                        <div><strong>Data e Hora:</strong> <span id="stamp-time-govbr" contenteditable="true">12/03/2026 15:30:00 -03:00</span></div>
+                        <div><strong>Código de Autenticidade:</strong> <span id="stamp-govbr-hash" class="font-mono" contenteditable="true">B8F4-2A9C-E137-98DF-45E2-671A</span></div>
+                        <div class="govbr-info-legal">Conforme Medida Provisória nº 2.200-2/2001 e Lei Federal nº 14.063/2020 (Assinatura Eletrônica Avançada). Verifique a conformidade em <strong>https://validar.iti.br</strong></div>
+                    </div>
+                </div>
+                <!-- QUADRO QUADRADO DE VALIDAÇÃO GOV.BR -->
+                <div class="doc-govbr-stamp-right" id="quadro-validacao-govbr" title="Campo de Validação Gov.br">
+                    <div class="govbr-validation-header">
+                        <svg class="w-3.5 h-3.5 text-[#1351b4]" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Validação Gov.br</span>
+                    </div>
+                    <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" title="Validar autenticidade no ITI" class="block">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Fvalidar.iti.br" alt="QR Code Validação ITI Gov.br" class="govbr-qr-code" id="govbr-qr-image">
+                    </a>
+                    <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" class="govbr-qr-label hover:underline">validar.iti.br</a>
+                    <span class="govbr-qr-subtext">Aponte a câmera para conferir</span>
+                    <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" class="govbr-validation-btn no-print" title="Abrir validador oficial do ITI em nova aba">
+                        <span>Validar</span>
+                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- SELOS DIGITAIS ICP-BRASIL (Empresa + Contador) -->
+            <div id="secao-assinaturas-icp" class="doc-signatures" style="display: none;">
+                <div class="doc-digital-stamp">
+                    <div class="doc-stamp-header">
+                        <svg class="doc-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span>ASSINATURA DIGITAL DA EMPRESA</span>
+                    </div>
+                    <div class="doc-stamp-text">
+                        <strong>ASSINADO DIGITALMENTE POR:</strong>
+                        <div class="info-nome sync-empresa" contenteditable="true">[NOME DA SUA EMPRESA LTDA]</div>
+                        <div>CNPJ: <span class="sync-cnpj">00.000.000/0001-00</span></div>
+                        <div class="timestamp" contenteditable="true" id="stamp-time-empresa">Data: 12/03/2026 15:30:00 -03:00</div>
+                    </div>
+                </div>
+                
+                <div class="doc-digital-stamp">
+                    <div class="doc-stamp-header">
+                        <svg class="doc-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span>ASSINATURA DIGITAL RESPONSÁVEL</span>
+                    </div>
+                    <div class="doc-stamp-text">
+                        <strong>ASSINADO DIGITALMENTE POR:</strong>
+                        <div class="info-nome" id="stamp-contador-nome" contenteditable="true">[NOME DO CONTADOR / DIRETOR]</div>
+                        <div>CRC / Cargo: <span id="stamp-contador-crc" contenteditable="true">000000/O-0</span></div>
+                        <div class="timestamp" contenteditable="true" id="stamp-time-contador">Data: 12/03/2026 15:30:00 -03:00</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MODAL ASSINATURA GOV.BR -->
+    <div id="modalGovBr" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200 dark:border-slate-700 relative flex flex-col gap-5 animate-in fade-in zoom-in duration-150">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-[#1351b4] text-white font-black px-2.5 py-1 rounded-md text-sm tracking-tight shadow-xs">
+                        gov<span class="text-amber-300">.br</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Assinar com gov.br</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Assinatura Eletrônica Avançada &bull; Lei Federal nº 14.063/2020</p>
+                    </div>
+                </div>
+                <button type="button" id="btnFecharModalGovBr" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body: Opções de Assinatura -->
+            <div class="flex flex-col gap-4 text-xs">
+                
+                <!-- Opção 1: Assinar no Assinador Oficial do ITI -->
+                <div class="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex flex-col gap-2.5">
+                    <div class="flex items-center gap-2 text-blue-900 dark:text-blue-300 font-bold text-sm">
+                        <span>🏛️</span>
+                        <span>Opção 1: Assinar no Portal Oficial ITI (assinador.iti.br)</span>
+                    </div>
+                    <p class="text-blue-800 dark:text-blue-300/90 leading-relaxed">
+                        Para obter uma assinatura com certificado digital Gov.br (nível Prata ou Ouro), salve esta declaração em PDF e envie ao assinador do Governo Federal:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1 text-blue-950 dark:text-blue-200/80 font-medium pl-1">
+                        <li>Gere o PDF clicando no botão abaixo.</li>
+                        <li>Faça login no <strong>assinador.iti.br</strong> com sua conta Gov.br.</li>
+                        <li>Envie o arquivo PDF e posicione a sua assinatura digital.</li>
+                    </ol>
+                    <div class="pt-1 flex flex-wrap gap-2">
+                        <button type="button" id="btnExportarPdfEAbrirIti" class="px-3.5 py-2 bg-[#1351b4] hover:bg-[#0c326f] text-white rounded-lg font-bold transition-colors inline-flex items-center gap-1.5 shadow-sm">
+                            <span>📄 Salvar PDF e Abrir assinador.iti.br</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Opção 2: Selo Direto no Documento -->
+                <div class="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex flex-col gap-2.5">
+                    <div class="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold text-sm">
+                        <span>🛡️</span>
+                        <span>Opção 2: Inserir Selo de Assinatura gov.br no Documento</span>
+                    </div>
+                    <p class="text-emerald-800 dark:text-emerald-300/90 leading-relaxed">
+                        Exiba o carimbo oficial de Assinatura Eletrônica Avançada diretamente no rodapé da folha A4 com QR Code de verificação em <span class="font-mono font-semibold">validar.iti.br</span> e Hash de integridade.
+                    </p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                        <div>
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Nome do Assinante:</label>
+                            <input type="text" id="modalInputGovBrNome" class="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-gray-100 text-xs focus:ring-1 focus:ring-brand-500" placeholder="Nome Completo">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">CPF do Assinante:</label>
+                            <input type="text" id="modalInputGovBrCpf" class="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-gray-100 text-xs focus:ring-1 focus:ring-brand-500" placeholder="000.000.000-00">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Preencher com:</span>
+                        <button type="button" id="btnPreencherGovBrEmpresa" class="px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-700 dark:text-gray-200 text-[11px] font-semibold transition-colors">
+                            🏢 Responsável Empresa
+                        </button>
+                        <button type="button" id="btnPreencherGovBrContador" class="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 hover:bg-emerald-200 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold transition-colors">
+                            📊 Contador Cadastrado
+                        </button>
+                    </div>
+
+                    <div class="pt-2 flex items-center justify-between">
+                        <button type="button" id="btnAplicarSeloGovBrModal" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors inline-flex items-center gap-1.5 shadow-sm">
+                            <span>✅ Aplicar Selo gov.br na Declaração</span>
+                        </button>
+                        <button type="button" id="btnRegenerarHashGovBr" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline text-[11px]">
+                            Gerar novo Hash
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-700 text-[11px] text-gray-500 dark:text-gray-400">
+                <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" class="text-[#1351b4] dark:text-sky-400 hover:underline inline-flex items-center gap-1">
+                    <span>Validador ITI Oficial (validar.iti.br)</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                <button type="button" id="btnFecharModalGovBrSecundario" class="px-3 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-md font-semibold transition-colors">
+                    Fechar
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="app-footer" class="shrink-0"></div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001145619"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+</body>
+
+</html>

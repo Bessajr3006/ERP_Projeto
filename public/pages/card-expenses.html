@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Despesa Cartão</title>
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261001145619"></script>
+</head>
+
+<body data-required-module="card_expenses" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <!-- Navbar -->
+    <div id="app-navbar"></div>
+
+    <!-- Main Content -->
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
+            <!-- Action Header Row -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Despesa Cartão</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Controle e gerenciamento de despesas vinculadas a cartões</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="btnBulkDelete" title="Excluir em Lote" disabled
+                        class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-300 dark:border-red-600 px-3 py-2 bg-red-50 dark:bg-red-900/30 text-sm font-medium text-red-700 dark:text-red-300 shadow-sm hover:enabled:bg-red-100 dark:hover:enabled:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:border-gray-200 dark:disabled:border-slate-700 disabled:bg-gray-50 dark:disabled:bg-slate-800 disabled:text-gray-400 dark:disabled:text-gray-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Excluir em Lote (<span id="bulkDeleteCount">0</span>)</span>
+                    </button>
+                    <input type="file" id="btnImportPdfFile" accept="application/pdf" class="hidden" title="Selecionar fatura PDF para importação" aria-label="Selecionar fatura PDF para importação" data-bwignore="true" data-lpignore="true">
+                    <div class="relative inline-block text-left" id="importPdfDropdownContainer">
+                        <button type="button" id="btnImportPdf" title="Importar Extrato PDF"
+                            class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors gap-1 cursor-pointer">
+                            <svg class="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2zM11 5H6v14h12V10h-6a1 1 0 01-1-1V5z"/></svg>
+                            <span>Importar PDF</span>
+                            <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="importPdfDropdownMenu" class="hidden absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black/5 dark:ring-slate-700 divide-y divide-gray-100 dark:divide-slate-700 focus:outline-none z-50">
+                            <div class="py-1 text-left">
+                                <button type="button" id="btnImportBradesco" class="group flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:text-brand-700 dark:hover:text-brand-400 transition-colors cursor-pointer gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                                    Bradesco
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="btnOpenModal" title="Nova Despesa"
+                        class="inline-flex items-center justify-center rounded-lg border border-transparent p-2 bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center gap-3 shrink-0">
+                <div class="flex-1 min-w-50">
+                    <input type="text" id="filterSearch" placeholder="Pesquisar por descrição..." 
+                        class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                </div>
+                <div class="w-40">
+                    <input type="month" id="filterPeriod" title="Filtrar por período"
+                        class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                </div>
+                <div class="w-64">
+                    <select id="filterCardDebit" title="Filtrar por Pagamento de Cartão"
+                        class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                        <option value="">Todos os Cartões...</option>
+                    </select>
+                </div>
+                <button type="button" id="btnClearFilters" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all font-medium cursor-pointer">
+                    Limpar
+                </button>
+            </div>
+
+            <!-- Table Section -->
+            <div id="listSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="sticky top-0 z-10 shadow-[0_1px_0_rgba(229,231,235,1)] dark:shadow-[0_1px_0_rgba(51,65,85,1)] bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left w-12 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <input type="checkbox" id="selectAll" name="selectAll" title="Selecionar todas as despesas" aria-label="Selecionar todas as despesas"
+                                        class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descrição</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cartão</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoria</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Período</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tempo</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Observação</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cardExpensesTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">Carregando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <!-- Footer Summary -->
+            <div id="resultsFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4" role="status" aria-live="polite">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+                        </svg>
+                        <span data-grid-footer-count="" class="font-semibold text-gray-700 dark:text-gray-200">0</span>
+                        <span data-grid-footer-label="">despesa(s) exibida(s)</span>
+                    </span>
+                    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Soma das Parcelas:</span>
+                            <span id="totalInstallmentsSum" class="font-bold text-gray-950 dark:text-white">R$ 0,00</span>
+                        </div>
+                        <div class="flex items-center gap-2 border-l border-gray-200 dark:border-slate-700 pl-6">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Soma Parcelas (Tempo):</span>
+                            <span id="totalParcelasTempo" class="font-bold text-gray-900 dark:text-gray-100">R$ 0,00</span>
+                        </div>
+                        <div class="flex items-center gap-2 border-l border-gray-200 dark:border-slate-700 pl-6">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Soma sem Tempo:</span>
+                            <span id="totalSemTempo" class="font-bold text-gray-900 dark:text-gray-100">R$ 0,00</span>
+                        </div>
+                        <div class="flex items-center gap-2 border-l border-gray-200 dark:border-slate-700 pl-6">
+                            <span class="text-xs text-gray-500 dark:text-gray-400" title="Soma do valor total das compras parceladas (Valor da parcela x Total de parcelas)">Valor Total (Tempo):</span>
+                            <span id="totalTimeValueSum" class="font-bold text-brand-600 dark:text-brand-400">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="expenseModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="modalTitle" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="modalBackdrop"></div>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                <form id="expenseForm" action="#" method="POST">
+                    <input type="hidden" id="expenseId" name="expenseId" data-bwignore="true" data-lpignore="true">
+                    <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modalTitle">Cadastrar Despesa</h3>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="expenseDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data</label>
+                                <input type="date" id="expenseDate" name="date" required
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                            </div>
+                            <div>
+                                <label for="expenseDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
+                                <input type="text" id="expenseDescription" name="description" required placeholder="Ex: Assinatura de Ferramenta"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                            </div>
+                             <div>
+                                <label for="expensePeriod" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Período</label>
+                                <input type="month" id="expensePeriod" name="period" required
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                            </div>
+                            <div>
+                                <label for="expenseTempo" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tempo (Parcela)</label>
+                                <input type="text" id="expenseTempo" name="tempo" placeholder="Ex: 09/12"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                            </div>
+                            <div>
+                                <label for="expenseCategory" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria Financeira</label>
+                                <select id="expenseCategory" name="category_public_id"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                             <div>
+                                 <label for="expenseCardDebit" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pagamento de Cartão (Fatura)</label>
+                                 <select id="expenseCardDebit" name="card_debit_public_id" required
+                                     class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                     <option value="">Selecione o Cartão/Fatura...</option>
+                                 </select>
+                             </div>
+                            <div>
+                                <label for="expenseValue" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor</label>
+                                <input type="text" id="expenseValue" name="value" required placeholder="R$ 0,00"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                            </div>
+                            <div>
+                                <label for="expenseObservation" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Observação</label>
+                                <textarea id="expenseObservation" name="observation" rows="3" placeholder="Observações adicionais..."
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-row-reverse dark:border-t dark:border-slate-700">
+                        <button type="submit" id="saveBtn"
+                            class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:ml-3 sm:w-auto sm:text-sm">
+                            Gravar
+                        </button>
+                        <button type="button" id="btnCancelModal"
+                            class="mt-3 w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Import Preview -->
+    <div id="importPreviewModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="importModalTitle" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="importModalBackdrop"></div>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 flex flex-col h-[70vh]">
+                    <div class="flex items-center justify-between mb-4 shrink-0">
+                        <h3 class="text-lg leading-6 font-bold text-gray-900 dark:text-gray-100" id="importModalTitle">Importar Lançamentos do Extrato</h3>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <label for="importCardDebit" class="text-xs font-medium text-gray-500 dark:text-gray-400">Pagamento de Cartão:</label>
+                                <select id="importCardDebit" title="Selecionar cartão/pagamento para a importação"
+                                    class="bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md py-1 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500" data-bwignore="true" data-lpignore="true">
+                                    <option value="">Selecione o Cartão...</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label for="importDefaultPeriod" class="text-xs font-medium text-gray-500 dark:text-gray-400">Período da Fatura:</label>
+                                <input type="month" id="importDefaultPeriod" title="Definir período geral dos lançamentos"
+                                    class="bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md py-1 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500" data-bwignore="true" data-lpignore="true">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 border border-gray-200 dark:border-slate-700 rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                            <thead class="bg-gray-50 dark:bg-slate-900/50 sticky top-0 z-10">
+                                <tr>
+                                    <th scope="col" class="px-4 py-2.5 text-left w-10">
+                                        <input type="checkbox" id="selectAllImport" checked title="Selecionar todos os lançamentos" aria-label="Selecionar todos os lançamentos"
+                                            class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded cursor-pointer" data-bwignore="true" data-lpignore="true">
+                                    </th>
+                                    <th scope="col" class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Data</th>
+                                    <th scope="col" class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descrição</th>
+                                    <th scope="col" class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-40">Categoria</th>
+                                    <th scope="col" class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">Tempo</th>
+                                    <th scope="col" class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36">Valor (R$)</th>
+                                    <th scope="col" class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Observação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="importPreviewTableBody" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                <!-- Dinâmico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex flex-col sm:flex-row items-center justify-between dark:border-t dark:border-slate-700 gap-3 shrink-0">
+                    <div class="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 flex flex-wrap gap-x-3 gap-y-1 items-center" id="importTotalsWrapper">
+                        <div>Total Geral: <span id="importTotalValue" class="text-brand-600 dark:text-brand-400 font-bold">R$ 0,00</span> (<span id="importCheckedCount">0</span> itens)</div>
+                        <div class="text-gray-300 dark:text-slate-600">|</div>
+                        <div>Com Parcela: <span id="importTotalWithTempo" class="text-emerald-600 dark:text-emerald-400 font-bold">R$ 0,00</span> (<span id="importCheckedWithTempo">0</span>)</div>
+                        <div class="text-gray-300 dark:text-slate-600">|</div>
+                        <div>Sem Parcela: <span id="importTotalWithoutTempo" class="text-amber-600 dark:text-amber-400 font-bold">R$ 0,00</span> (<span id="importCheckedWithoutTempo">0</span>)</div>
+                    </div>
+                    <div class="flex flex-row-reverse w-full sm:w-auto gap-2">
+                        <button type="button" id="btnConfirmImport"
+                            class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:text-sm cursor-pointer">
+                            Confirmar Importação
+                        </button>
+                        <button type="button" id="btnCancelImport"
+                            class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:text-sm cursor-pointer">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/filter-panel.js?v=20261001145619"></script>
+    <script src="/js/components/crud-manager.js?v=20261001145619"></script>
+    <script src="/js/card-expenses.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+</body>
+
+</html>

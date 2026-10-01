@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Contatos</title>
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/style.css?v=20261001145619" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js"></script>
+    <script src="/js/pwa.js?v=20261001145619"></script>
 </head>
 
 <body data-required-module="contacts" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -49,6 +49,9 @@
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Contato</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Documentos</th>
                                 <th scope="col"
                                     class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Ações</th>
@@ -210,15 +213,387 @@
             </div>
         </div>
     </div>
+    <!-- ── MODAL: Detalhes do Contato ────────────────────────────────────── -->
+    <div id="viewContactDetailsModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" aria-labelledby="view-details-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-start justify-center min-h-screen p-4 sm:p-6 sm:pt-8">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="viewDetailsModalBackdrop"></div>
+            <div class="relative z-10 w-full max-w-6xl h-[90vh] bg-white dark:bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all flex flex-col">
+                <div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 flex-1 overflow-y-auto">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                            <h3 id="view-details-modal-title" class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Detalhes do Contato: <span id="viewDetailsContactName" class="font-semibold text-brand-600 dark:text-brand-400"></span></h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Histórico de lançamentos financeiros, tarefas vinculadas, documentos e anotações.</p>
+                        </div>
+                        <button type="button" id="btnCloseViewDetailsModal" title="Fechar"
+                            class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                            <span class="sr-only">Fechar</span>
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/filter-panel.js"></script>
-    <script src="/js/components/crud-manager.js"></script>
-    <script src="/js/contacts.js"></script>
-    <script src="/js/components/navbar.js?v=20260614201900"></script>
+                    <!-- Resumo Comercial/Pessoal -->
+                    <div class="mb-6 grid grid-cols-1 sm:grid-cols-5 gap-4 p-4 rounded-lg bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-700 font-sans">
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">CPF</span>
+                            <span id="viewDetailsDocument" class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Email</span>
+                            <span id="viewDetailsEmail" class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Telefone</span>
+                            <span id="viewDetailsPhone" class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Cidade / Estado</span>
+                            <span id="viewDetailsLocation" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Validade Certificado</span>
+                            <span id="viewDetailsCertExpiration" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                        </div>
+                    </div>
 
+                    <!-- Abas -->
+                    <div class="border-b border-gray-200 dark:border-slate-700">
+                        <nav class="-mb-px flex gap-4" role="tablist" aria-label="Abas de detalhes">
+                            <button type="button" id="tabButtonFinanceiro"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-brand-500 px-1 pb-2 text-sm font-medium text-brand-600 dark:text-brand-300"
+                                role="tab"
+                                data-details-tab-target="tabPanelFinanceiro" aria-controls="tabPanelFinanceiro" aria-selected="true">
+                                Financeiro
+                            </button>
+                            <button type="button" id="tabButtonDocumento"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelDocumento" aria-controls="tabPanelDocumento" aria-selected="false">
+                                Documento
+                            </button>
+                            <button type="button" id="tabButtonTarefas"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelTarefas" aria-controls="tabPanelTarefas" aria-selected="false">
+                                Tarefas
+                            </button>
+                            <button type="button" id="tabButtonAnotacoes"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelAnotacoes" aria-controls="tabPanelAnotacoes" aria-selected="false">
+                                Anotações
+                            </button>
+                            <button type="button" id="tabButtonCertificado"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelCertificado" aria-controls="tabPanelCertificado" aria-selected="false">
+                                Certificado
+                            </button>
+                            <button type="button" id="tabButtonMapa"
+                                class="details-modal-tab whitespace-nowrap border-b-2 border-transparent px-1 pb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                                role="tab"
+                                data-details-tab-target="tabPanelMapa" aria-controls="tabPanelMapa" aria-selected="false">
+                                Mapa
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Conteúdo das Abas -->
+                    <div class="mt-4 flex-1">
+                        <!-- Aba Financeiro -->
+                        <div id="tabPanelFinanceiro" class="details-modal-tab-panel space-y-4" role="tabpanel" aria-labelledby="tabButtonFinanceiro">
+                            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                    <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descrição</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vencimento</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="viewDetailsFinancialsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                        <tr>
+                                            <td colspan="5" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhum lançamento financeiro encontrado.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Aba Documento -->
+                        <div id="tabPanelDocumento" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonDocumento">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-gray-200 dark:border-slate-700">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Documentos do Contato</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Gerencie e anexe novos arquivos organizados por data.</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm cursor-pointer transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        Anexar Documento
+                                        <input type="file" id="detailCnpjFile" class="hidden" multiple />
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="viewDetailsDocumentContainer" class="w-full">
+                                <p class="text-sm text-gray-500 dark:text-gray-400 font-sans">Carregando documentos...</p>
+                            </div>
+                        </div>
+
+                        <!-- Aba Tarefas -->
+                        <div id="tabPanelTarefas" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonTarefas">
+                            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                                    <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tarefa</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vencimento</th>
+                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="viewDetailsTasksTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                        <tr>
+                                            <td colspan="3" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhuma tarefa encontrada.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Aba Anotações -->
+                        <div id="tabPanelAnotacoes" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonAnotacoes">
+                            <form id="viewDetailsNotesForm" class="space-y-3 font-sans">
+                                <div>
+                                    <label for="detailNoteText" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Nova Anotação</label>
+                                    <textarea id="detailNoteText" rows="3" placeholder="Digite uma anotação sobre o contato..."
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors"></textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" id="btnSubmitDetailNote"
+                                        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm cursor-pointer transition-colors">
+                                        Adicionar Anotação
+                                    </button>
+                                </div>
+                            </form>
+                            <div class="border-t border-gray-100 dark:border-slate-700/80 pt-4">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 font-sans mb-3">Histórico de Anotações</h4>
+                                <div id="viewDetailsNotesList" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhuma anotação registrada.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba Mapa -->
+                        <div id="tabPanelMapa" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonMapa">
+                            <div class="p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/30 min-h-[500px] font-sans">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Localização do Contato</h4>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Rota do endereço da empresa até o endereço do contato.</p>
+                                
+                                <div id="mapAddressInfo" class="mb-4 text-sm text-gray-700 dark:text-gray-300">
+                                    <strong>Endereço do Contato:</strong> <span id="mapContactAddress">Carregando...</span>
+                                </div>
+                                
+                                <div class="flex gap-3 mb-4">
+                                    <a id="btnOpenWaze" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-lg shadow-sm transition-colors">
+                                        Abrir no Waze
+                                    </a>
+                                    <a id="btnOpenGoogleMaps" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors">
+                                        Abrir no Google Maps
+                                    </a>
+                                </div>
+
+                                <div class="w-full h-[400px] rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center">
+                                    <iframe id="googleMapsIframe" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba Certificado -->
+                        <div id="tabPanelCertificado" class="details-modal-tab-panel hidden space-y-4" role="tabpanel" aria-labelledby="tabButtonCertificado">
+                            <div class="p-6 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/30 font-sans">
+                                <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 pb-3 mb-4">
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 font-sans">Certificado Digital A1</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 font-sans">Informações do certificado digital cadastrado para este contato.</p>
+                                    </div>
+                                    <div id="detailCertStatusBadge">
+                                        <!-- Preenchido via JS -->
+                                    </div>
+                                </div>
+
+                                <div id="detailCertHasContent" class="hidden space-y-4">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div class="p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700">
+                                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Nome do Arquivo</span>
+                                            <span id="detailCertFilenameText" class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block" title="-">-</span>
+                                        </div>
+                                        <div class="p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700">
+                                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Validade</span>
+                                            <span id="detailCertExpirationText" class="text-sm font-medium text-gray-900 dark:text-gray-100">-</span>
+                                        </div>
+                                        <div class="p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700">
+                                            <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Senha do Certificado</span>
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span id="detailCertPasswordText" class="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">••••••••</span>
+                                                <button type="button" id="btnToggleDetailCertPassword" class="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 font-semibold cursor-pointer">Mostrar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-2 flex justify-between items-center gap-3">
+                                        <a id="btnDownloadDetailCert" href="#" download class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm transition-colors cursor-pointer">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                            Baixar Certificado (.pfx)
+                                        </a>
+                                        <button type="button" id="btnEditDetailCert" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-250 bg-white dark:bg-slate-850 hover:bg-gray-50 dark:hover:bg-slate-750 border border-gray-300 dark:border-slate-700 rounded-lg shadow-sm transition-colors cursor-pointer">
+                                            Alterar Certificado
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="detailCertNoContent" class="hidden py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                    <p class="mb-4">Nenhum certificado digital cadastrado para este contato.</p>
+                                    <button type="button" id="btnCreateDetailCert" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm transition-colors cursor-pointer">
+                                        Incluir Certificado
+                                    </button>
+                                </div>
+
+                                <div id="detailCertEditFormContainer" class="hidden pt-4 mt-4 border-t border-gray-200 dark:border-slate-700 space-y-4">
+                                    <h5 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Incluir / Alterar Certificado</h5>
+                                    
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label for="detailCertFileInput" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Arquivo do Certificado (.pfx, .p12)</label>
+                                            <input type="file" id="detailCertFileInput" name="detailCertFileInput" accept=".pfx,.p12" title="Selecionar certificado digital"
+                                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-brand-900/40 dark:file:text-brand-300 dark:text-gray-400" data-bwignore="true" data-lpignore="true">
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="detailCertPasswordInput" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Senha do Certificado</label>
+                                                <input type="password" id="detailCertPasswordInput" autocomplete="new-password"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true" placeholder="Senha do certificado">
+                                            </div>
+                                            <div>
+                                                <label for="detailCertExpirationInput" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Data de Validade</label>
+                                                <input type="date" id="detailCertExpirationInput"
+                                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm" data-bwignore="true" data-lpignore="true">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-slate-700/60 mt-4">
+                                        <button type="button" id="btnCancelDetailCertSave" class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors cursor-pointer">Cancelar</button>
+                                        <button type="button" id="btnSaveDetailCert" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors cursor-pointer">Salvar Certificado</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-slate-800/80 px-4 py-3 sm:px-6 flex justify-end dark:border-t dark:border-slate-700">
+                    <button type="button" id="btnCancelViewDetailsModal" class="w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:w-auto sm:text-sm">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Visualização de PDF/Imagem -->
+    <div id="pdfViewerModal" class="hidden fixed inset-0 z-10001 overflow-y-auto" aria-labelledby="pdf-viewer-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" aria-hidden="true" id="pdfViewerModalBackdrop"></div>
+            <div class="relative z-10 w-full max-w-5xl h-[85vh] bg-white dark:bg-slate-800 rounded-lg shadow-xl flex flex-col overflow-hidden">
+                <div class="px-4 py-3 bg-gray-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between shrink-0 font-sans">
+                    <h3 id="pdfViewerModalTitle" class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[70%]">Visualizar Documento</h3>
+                    <div class="flex items-center gap-2">
+                        <a id="downloadPdfModal" href="#" download
+                            class="inline-flex items-center justify-center rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200" title="Baixar Arquivo">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                        </a>
+                        <button type="button" id="closePdfModal" title="Fechar"
+                            class="inline-flex items-center justify-center rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 bg-gray-100 dark:bg-slate-900 relative">
+                    <iframe id="pdfIframe" src="" class="w-full h-full border-0 absolute inset-0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Renomear Documento -->
+    <div id="renameDocumentModal" class="hidden fixed inset-0 z-10002 overflow-y-auto font-sans" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="renameDocumentModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md flex flex-col overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700">
+                <div class="flex justify-between items-center p-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <h3 class="font-semibold text-base text-gray-800 dark:text-gray-100">Renomear Documento</h3>
+                    <button type="button" id="closeRenameDocumentModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer" title="Fechar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form id="renameDocumentForm" class="p-4 space-y-4">
+                    <div>
+                        <label for="renameDocumentInput" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Nome do Arquivo</label>
+                        <input type="text" id="renameDocumentInput" required class="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 text-sm" placeholder="Digite o novo nome..." />
+                    </div>
+                    <div class="flex justify-end gap-2.5 pt-2">
+                        <button type="button" id="btnCancelRenameDocument" class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors cursor-pointer">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors cursor-pointer">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirmar Exclusão de Documento -->
+    <div id="deleteDocumentModal" class="hidden fixed inset-0 z-10003 overflow-y-auto font-sans" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="deleteDocumentModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md flex flex-col overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700 p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-base text-gray-800 dark:text-gray-100">Excluir Documento</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Esta ação não pode ser desfeita.</p>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Deseja realmente excluir o documento <strong id="deleteDocumentName" class="text-gray-900 dark:text-gray-100 font-semibold"></strong>?</p>
+                </div>
+                <div class="flex justify-end gap-2.5">
+                    <button type="button" id="btnCancelDeleteDocument" class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors cursor-pointer">Cancelar</button>
+                    <button type="button" id="btnConfirmDeleteDocument" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors cursor-pointer">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js?v=20261001145619"></script>
+    <script src="/js/filter-panel.js?v=20261001145619"></script>
+    <script src="/js/components/crud-manager.js?v=20261001145619"></script>
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js"></script>
+    <script src="/js/components/footer.js?v=20261001145619"></script>
+    <script src="/js/contacts.js?v=20261001145619"></script>
+    <script src="/js/components/navbar.js?v=20261001145619"></script>
 </body>
 
 </html>

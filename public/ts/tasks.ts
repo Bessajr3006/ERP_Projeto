@@ -45,12 +45,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let users = [];
     let currentFilter = 'pending';
     let currentViewMode = 'list';
-    let currentColumns = parseInt(localStorage.getItem('tasksColumns') || '3', 10);
+    let currentColumns = parseInt(((window as any).CompanyStorage?.getItem('tasksColumns') ?? localStorage.getItem('tasksColumns')) || '3', 10);
     let calendarDate = new Date(); // Start at current month
     let agendaDayDate = new Date();
     
     let customersList = [];
     let suppliersList = [];
+    let contactsList = [];
     let companiesList = [];
 
     // 1. Carregar Usuários Reais
@@ -71,13 +72,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1b. Carregar Entidades Vinculáveis
     async function loadLinkableEntities() {
         try {
-            const [custRes, suppRes, authRes] = await Promise.all([
+            const [custRes, suppRes, contactRes, authRes] = await Promise.all([
                 api('/entities/customers').catch(() => ({ data: [] })),
                 api('/entities/suppliers').catch(() => ({ data: [] })),
+                api('/entities/contacts').catch(() => ({ data: [] })),
                 api('/auth/me').catch(() => (null))
             ]);
             customersList = custRes.data || [];
             suppliersList = suppRes.data || [];
+            contactsList = contactRes.data || [];
             
             if (authRes && authRes.data) {
                 if (authRes.data.companies && authRes.data.companies.length > 0) {
@@ -97,12 +100,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (type === 'customer') {
             const p = customersList.find(x => x.public_id === id);
             return p ? p.name : 'Desconhecido';
+        } else if (type === 'contact') {
+            const p = contactsList.find(x => x.public_id === id);
+            return p ? p.name : 'Desconhecido';
         } else if (type === 'supplier') {
             const p = suppliersList.find(x => x.public_id === id);
             return p ? p.name : 'Desconhecido';
         } else if (type === 'company') {
             const p = companiesList.find(x => (x.public_id || x.id) === id);
-            return p ? (p.legal_name || p.name || 'Empresa') : 'Desconhecido';
+            return p ? (p.trade_name || p.company_name || p.legal_name || p.name || 'Empresa') : 'Desconhecido';
         } else if (['seller', 'buyer', 'service_provider', 'user'].includes(type)) {
             const p = users.find(x => (x.public_id || x.id) === id);
             return p ? (p.full_name || p.name || 'Usuário') : 'Desconhecido';
@@ -125,10 +131,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (type === 'customer') {
                 customersList.forEach(c => options += `<option value="${c.public_id}">${c.name}</option>`);
+            } else if (type === 'contact') {
+                contactsList.forEach(c => options += `<option value="${c.public_id}">${c.name}</option>`);
             } else if (type === 'supplier') {
                 suppliersList.forEach(s => options += `<option value="${s.public_id}">${s.name}</option>`);
             } else if (type === 'company') {
-                companiesList.forEach(c => options += `<option value="${c.public_id || c.id}">${c.legal_name || c.name || 'Empresa'}</option>`);
+                companiesList.forEach(c => options += `<option value="${c.public_id || c.id}">${c.trade_name || c.company_name || c.legal_name || c.name || 'Empresa'}</option>`);
             } else if (['seller', 'buyer', 'service_provider'].includes(type)) {
                 users.filter(u => u.role === type).forEach(u => options += `<option value="${u.public_id || u.id}">${u.full_name || u.name}</option>`);
             } else {
@@ -354,6 +362,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (currentColumns === 4) {
             colsClass = 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
             colSpanClass = 'sm:col-span-2 md:col-span-3 lg:col-span-4';
+        } else if (currentColumns === 6) {
+            colsClass = 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6';
+            colSpanClass = 'sm:col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-6';
         }
 
         // If list is completely empty AND mode is not calendar
@@ -665,24 +676,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (t.personType && t.personId) {
                 let personName = resolvePersonName(t.personType, t.personId);
                 linkHtml = `
-                <div class="mt-3 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 gap-1.5 bg-gray-50 dark:bg-slate-900/40 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-slate-700 w-fit shrink-0">
-                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                    Pessoa Vinculada: <span class="text-brand-700 dark:text-brand-400 uppercase tracking-tight ml-1 font-bold">${personName}</span>
+                <div class="mt-3 flex items-start text-xs font-semibold text-gray-700 dark:text-gray-300 gap-1.5 bg-gray-50 dark:bg-slate-900/40 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-slate-700 w-full min-w-0">
+                    <svg class="h-3.5 w-3.5 text-gray-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    <div class="wrap-break-word min-w-0 flex-1">
+                        Pessoa Vinculada: <span class="text-brand-700 dark:text-brand-400 uppercase tracking-tight font-bold">${personName}</span>
+                    </div>
                 </div>`;
             }
 
             return `
-                <li class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group flex flex-col sm:flex-row gap-4 items-start">
+                <li class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group relative flex flex-col gap-4 w-full min-w-0">
                     
-                    <div class="flex items-center gap-4 w-full">
+                    <div class="flex items-start gap-3.5 w-full min-w-0">
                         <!-- Checkbox Circular (Clickable) -->
-                        <button type="button" data-action="toggle" data-id="${t.id}" class="mt-1 sm:mt-0 shrink-0 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 dark:border-slate-500 bg-transparent text-transparent hover:border-emerald-400 dark:hover:border-emerald-500'}">
+                        <button type="button" data-action="toggle" data-id="${t.id}" class="mt-0.5 shrink-0 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 dark:border-slate-500 bg-transparent text-transparent hover:border-emerald-400 dark:hover:border-emerald-500'}">
                             <svg class="h-4 w-4 pointer-events-none" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
                         </button>
 
                         <!-- Content -->
                         <div class="flex-1 min-w-0">
-                            <p class="text-base font-medium transition-all ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'} cursor-pointer" data-action="edit" data-id="${t.id}">${t.title}</p>
+                            <p class="text-base font-medium transition-all ${isDone ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100'} cursor-pointer pr-12" data-action="edit" data-id="${t.id}">${t.title}</p>
                             <div class="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
                                 ${statusBadge}
                                 ${dueBadge}
@@ -696,17 +709,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${attachmentsHtml}
                             ${linkHtml}
                         </div>
+                    </div>
 
-                        <!-- Actions -->
-                        <div class="flex flex-col sm:flex-row items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button type="button" data-action="edit" data-id="${t.id}" class="text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors" title="Editar">
-                            <svg class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    <!-- Actions (Absolutely Positioned top-right) -->
+                    <div class="absolute top-4 right-4 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-slate-800/90 pl-1.5 py-0.5 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700/50 z-10">
+                        <button type="button" data-action="edit" data-id="${t.id}" class="text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-1" title="Editar">
+                            <svg class="h-4.5 w-4.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                         </button>
-                        <button type="button" data-action="delete" data-id="${t.id}" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Excluir">
-                            <svg class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        <button type="button" data-action="delete" data-id="${t.id}" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1" title="Excluir">
+                            <svg class="h-4.5 w-4.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                     </div>
-                    </div>
+                </li>
             `;
     }
 
@@ -906,7 +920,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const btnTgt = e.target.closest('.col-btn');
             if(!btnTgt) return;
             currentColumns = parseInt(btnTgt.dataset.cols || '3', 10);
-            localStorage.setItem('tasksColumns', currentColumns.toString());
+            if ((window as any).CompanyStorage) {
+                (window as any).CompanyStorage.setItem('tasksColumns', currentColumns.toString());
+            } else {
+                localStorage.setItem('tasksColumns', currentColumns.toString());
+            }
             updateColButtonsUI();
             renderTasks();
         });

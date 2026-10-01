@@ -8,22 +8,29 @@ export class DeclarationControlController {
     static async list(req: Request, res: Response): Promise<void> {
         try {
             const companyId = req.user!.company_id;
-            const monthStr = req.query.month as string;
-            const month = monthStr === 'todos' ? 0 : parseInt(monthStr);
-            const year = parseInt(req.query.year as string);
-            const type = req.query.type as string;
+            const monthStr = (req.query.month as string) || '';
+            const month = monthStr === 'todos' ? 0 : parseInt(monthStr, 10);
+            const year = parseInt(req.query.year as string, 10) || new Date().getFullYear();
+            const type = (req.query.type as string) || null;
+            const taxRegime = (req.query.tax_regime as string) || null;
+            const customer = (req.query.customer as string) || null;
 
-            if (isNaN(month) || isNaN(year) || !type) {
-                res.status(400).json({ status: 'error', message: 'Mês, Ano e Tipo são obrigatórios.' });
-                return;
-            }
+            const resolvedMonth = isNaN(month) ? (new Date().getMonth() + 1) : month;
 
-            const declarations = await DeclarationControlService.getDeclarations(companyId, month, year, type);
+            const declarations = await DeclarationControlService.getDeclarations(
+                companyId,
+                resolvedMonth,
+                year,
+                type,
+                taxRegime,
+                customer
+            );
             res.status(200).json({ status: 'success', data: declarations });
         } catch (error: any) {
-            res.status(500).json({ status: 'error', message: error.message || 'Erro ao processar arquivo.' });
+            res.status(500).json({ status: 'error', message: error.message || 'Erro ao carregar declarações.' });
         }
     }
+
 
     static async deleteDeclaration(req: Request, res: Response) {
         try {

@@ -10,6 +10,8 @@ router.use(protectRoute, requireTenantContext);
 
 router.post('/import-sales-xml', (req, res, next) => FechamentoController.importSalesXml(req, res).catch(next));
 router.post('/import-sped-fiscal', (req, res, next) => FechamentoController.importSpedFiscal(req, res).catch(next));
+router.post('/parse-pgdas', (req, res, next) => FechamentoController.parsePgdas(req, res).catch(next));
+router.post('/batch-import-pgdas', (req, res, next) => FechamentoController.batchImportPgdas(req, res).catch(next));
 router.post('/', (req, res, next) => FechamentoController.create(req, res).catch(next));
 router.get('/', (req, res, next) => FechamentoController.list(req, res).catch(next));
 router.get('/faturamento-acumulado', (req, res, next) => FechamentoController.getFaturamentoAcumulado(req, res).catch(next));

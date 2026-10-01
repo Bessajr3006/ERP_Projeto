@@ -2510,6 +2510,80 @@ export class FechamentoService {
         };
     }
 
+    static async batchImportPgdasRevenues(
+        companyId: number,
+        customerId: number,
+        items: Array<{ competencia: string; valor: number }>
+    ): Promise<{
+        createdCount: number;
+        updatedCount: number;
+        totalProcessed: number;
+        results: Array<{ competencia: string; action: 'created' | 'updated'; valor: number }>;
+    }> {
+        await this.validateCustomer(customerId, companyId);
+
+        let createdCount = 0;
+        let updatedCount = 0;
+        const results: Array<{ competencia: string; action: 'created' | 'updated'; valor: number }> = [];
+
+        for (const item of items) {
+            const competencia = String(item.competencia || '').trim();
+            const valor = Number(item.valor) || 0;
+            if (!/^\d{4}-\d{2}$/.test(competencia)) continue;
+
+            const [existing] = await pool.query<RowDataPacket[]>(
+                `SELECT id, venda_valor, simples_faturamento FROM fechamentos 
+                 WHERE company_id = ? AND customer_id = ? AND competencia = ? LIMIT 1`,
+                [companyId, customerId, competencia]
+            );
+
+            if (existing && existing.length > 0 && existing[0]) {
+                const current = existing[0];
+                const currentVenda = Number(current.venda_valor) || 0;
+                const newVenda = currentVenda > 0 ? currentVenda : valor;
+
+                await pool.query(
+                    `UPDATE fechamentos 
+                     SET simples_faturamento = ?,
+                         simples_valor_tributado = CASE WHEN simples_valor_tributado = 0 THEN ? ELSE simples_valor_tributado END,
+                         venda_valor = ?
+                     WHERE id = ?`,
+                    [valor, valor, newVenda, current.id]
+                );
+                updatedCount++;
+                results.push({ competencia, action: 'updated', valor });
+            } else {
+                const publicId = randomUUID();
+                await pool.query(
+                    `INSERT INTO fechamentos (
+                        public_id, company_id, customer_id, competencia,
+                        venda_valor, simples_faturamento, simples_valor_tributado,
+                        observacao
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        publicId,
+                        companyId,
+                        customerId,
+                        competencia,
+                        valor,
+                        valor,
+                        valor,
+                        'Importado via PGDAS (PDF) - Histórico'
+                    ]
+                );
+                createdCount++;
+                results.push({ competencia, action: 'created', valor });
+            }
+        }
+
+        return {
+            createdCount,
+            updatedCount,
+            totalProcessed: items.length,
+            results
+        };
+    }
+
     private static getTagText(parent: any, tagName: string): string {
         if (!parent) return '';
         let node = parent.getElementsByTagName(tagName)[0];

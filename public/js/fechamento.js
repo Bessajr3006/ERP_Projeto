@@ -354,28 +354,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+    function populateFilterCustomersSelect(customersToRender, selectedCustomerId) {
+        if (!filterCompanyParam)
+            return;
+        const currentVal = selectedCustomerId !== undefined ? selectedCustomerId : filterCompanyParam.value;
+        filterCompanyParam.innerHTML = '<option value="">Todas as empresas</option>';
+        customersToRender.forEach((customer) => {
+            const option = document.createElement('option');
+            option.value = customer.id;
+            option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
+            filterCompanyParam.appendChild(option);
+        });
+        if (currentVal && customersToRender.some((c) => String(c.id) === String(currentVal))) {
+            filterCompanyParam.value = currentVal;
+        }
+        else {
+            filterCompanyParam.value = '';
+        }
+    }
+    function updateFilterCustomersByGroup(selectedCustomerId) {
+        const groupId = filterCustomerGroup ? filterCustomerGroup.value : '';
+        if (!groupId) {
+            populateFilterCustomersSelect(allCustomers, selectedCustomerId);
+        }
+        else {
+            const filtered = allCustomers.filter((c) => String(c.customer_group_id) === String(groupId));
+            populateFilterCustomersSelect(filtered, selectedCustomerId);
+        }
+    }
     // Load Customers for the select
     async function loadCustomers(savedCustomerId) {
         try {
             const response = await api('/entities/customers');
             allCustomers = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
             populateCustomersSelect(allCustomers);
-            if (filterCompanyParam) {
-                filterCompanyParam.innerHTML = '<option value="">Todas as empresas</option>';
-                allCustomers.forEach((customer) => {
-                    const option = document.createElement('option');
-                    option.value = customer.id;
-                    option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
-                    filterCompanyParam.appendChild(option);
-                });
-                if (savedCustomerId) {
-                    filterCompanyParam.value = savedCustomerId;
-                }
-            }
+            updateFilterCustomersByGroup(savedCustomerId);
         }
         catch (error) {
             console.error('Erro ao carregar clientes:', error);
-            companyParam.innerHTML = '<option value="">Erro ao carregar clientes</option>';
+            if (companyParam)
+                companyParam.innerHTML = '<option value="">Erro ao carregar clientes</option>';
+            if (filterCompanyParam)
+                filterCompanyParam.innerHTML = '<option value="">Erro ao carregar clientes</option>';
         }
     }
     // Load Customer Groups for the filter select
@@ -1079,6 +1099,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (filterCustomerGroup) {
         filterCustomerGroup.addEventListener('change', () => {
+            updateFilterCustomersByGroup();
             saveFilters();
         });
     }
@@ -1098,6 +1119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnClearFilters.addEventListener('click', () => {
             if (filterForm)
                 filterForm.reset();
+            updateFilterCustomersByGroup();
             saveFilters();
             loadFechamentos();
         });
@@ -1494,6 +1516,259 @@ document.addEventListener('DOMContentLoaded', async () => {
             showImportFeedback('Movimento importado apagado com sucesso!', 'success');
         });
     }
+    // PGDAS-D PDF Import Handling
+    let currentPgdasParsedData = null;
+    const pgdasFileInput = document.getElementById('pgdasFileInput');
+    const btnTopImportPgdasPdf = document.getElementById('btnTopImportPgdasPdf');
+    const pgdasPastMonthsModal = document.getElementById('pgdasPastMonthsModal');
+    const btnClosePgdasModal = document.getElementById('btnClosePgdasModal');
+    const btnCancelPgdasModal = document.getElementById('btnCancelPgdasModal');
+    const pgdasModalBackdrop = document.getElementById('pgdasModalBackdrop');
+    const btnFillCurrentMonthOnly = document.getElementById('btnFillCurrentMonthOnly');
+    const btnConfirmBatchPgdasImport = document.getElementById('btnConfirmBatchPgdasImport');
+    const pgdasSelectAllMonths = document.getElementById('pgdasSelectAllMonths');
+    if (btnTopImportPgdasPdf && pgdasFileInput) {
+        btnTopImportPgdasPdf.addEventListener('click', () => {
+            pgdasFileInput.click();
+        });
+    }
+    const closePgdasPastMonthsModal = () => {
+        if (pgdasPastMonthsModal) {
+            pgdasPastMonthsModal.classList.add('hidden');
+        }
+    };
+    if (btnClosePgdasModal)
+        btnClosePgdasModal.addEventListener('click', closePgdasPastMonthsModal);
+    if (btnCancelPgdasModal)
+        btnCancelPgdasModal.addEventListener('click', closePgdasPastMonthsModal);
+    if (pgdasModalBackdrop)
+        pgdasModalBackdrop.addEventListener('click', closePgdasPastMonthsModal);
+    if (btnFillCurrentMonthOnly)
+        btnFillCurrentMonthOnly.addEventListener('click', closePgdasPastMonthsModal);
+    if (pgdasSelectAllMonths) {
+        pgdasSelectAllMonths.addEventListener('change', () => {
+            const checkboxes = document.querySelectorAll('.pgdas-month-check');
+            checkboxes.forEach(cb => cb.checked = pgdasSelectAllMonths.checked);
+        });
+    }
+    if (pgdasFileInput) {
+        pgdasFileInput.addEventListener('change', async () => {
+            const file = pgdasFileInput.files?.[0];
+            if (!file)
+                return;
+            const progressOverlay = document.createElement('div');
+            progressOverlay.id = 'importProgressModal';
+            progressOverlay.className = 'fixed inset-0 z-[100000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm';
+            progressOverlay.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md border border-gray-100 dark:border-slate-700">
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Processando Declaração PGDAS-D</h3>
+                    <p id="importProgressText" class="text-sm text-gray-500 dark:text-gray-400 mb-4">Lendo arquivo PDF...</p>
+                    <div class="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2.5 mb-2 overflow-hidden">
+                        <div id="importProgressBar" class="bg-red-600 h-2.5 rounded-full transition-all duration-300" style="width: 50%"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(progressOverlay);
+            try {
+                const base64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const result = reader.result;
+                        const base64Clean = result.split(',')[1] || result;
+                        resolve(base64Clean);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                const progressText = document.getElementById('importProgressText');
+                if (progressText)
+                    progressText.textContent = 'Analisando dados e apuração do Simples Nacional...';
+                const progressBar = document.getElementById('importProgressBar');
+                if (progressBar)
+                    progressBar.style.width = '85%';
+                const response = await api('/fechamentos/parse-pgdas', {
+                    method: 'POST',
+                    body: JSON.stringify({ pdfBase64: base64 })
+                });
+                if (response && response.status === 'success' && response.data) {
+                    const data = response.data;
+                    currentPgdasParsedData = data;
+                    // Open modal if closed
+                    if (fechamentoModal.classList.contains('hidden')) {
+                        currentFechamentoPublicId = null;
+                        const modalTitle = document.getElementById('modalTitle');
+                        if (modalTitle)
+                            modalTitle.textContent = 'Lançar Fechamento';
+                        openModal();
+                    }
+                    // Match customer
+                    if (data.customerFound && data.customer) {
+                        companyParam.value = String(data.customer.id);
+                        updateCustomerTypeIndicator(String(data.customer.id));
+                    }
+                    else if (data.cnpj) {
+                        showAlert(`Cliente com CNPJ ${data.cnpj} (${data.razaoSocial || ''}) não foi encontrado automaticamente. Por favor, selecione-o na lista.`, false);
+                    }
+                    // Set competencia
+                    if (data.competencia) {
+                        const competenciaEl = document.getElementById('competencia');
+                        if (competenciaEl)
+                            competenciaEl.value = data.competencia;
+                    }
+                    // Formatters
+                    const formatBRL = (val) => {
+                        if (val === null || val === undefined || isNaN(val) || val === 0)
+                            return '';
+                        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+                    };
+                    const setVal = (id, formattedStr) => {
+                        const el = document.getElementById(id);
+                        if (el)
+                            el.value = formattedStr;
+                    };
+                    // Fill modal inputs
+                    setVal('simples_valor_tributado', formatBRL(data.simples_valor_tributado));
+                    setVal('simples_valor_nao_tributado', formatBRL(data.simples_valor_nao_tributado || 0));
+                    setVal('simples_faturamento', formatBRL(data.simples_faturamento));
+                    setVal('venda_valor', formatBRL(data.venda_valor || data.simples_faturamento));
+                    setVal('simples_aliquota', data.simples_aliquota ? `${data.simples_aliquota.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} %` : '');
+                    setVal('simples_das', formatBRL(data.simples_das));
+                    setVal('simples_cpp', formatBRL(data.simples_cpp));
+                    setVal('simples_icms', formatBRL(data.simples_icms));
+                    setVal('simples_ipi', formatBRL(data.simples_ipi || 0));
+                    setVal('simples_iss', formatBRL(data.simples_iss || 0));
+                    setVal('simples_pis', formatBRL(data.simples_pis));
+                    setVal('simples_cofins', formatBRL(data.simples_cofins));
+                    setVal('simples_irpj', formatBRL(data.simples_irpj));
+                    setVal('simples_csll', formatBRL(data.simples_csll));
+                    setVal('simples_faturamento_acumulado_12m', formatBRL(data.simples_faturamento_acumulado_12m));
+                    if (data.simples_faturamento_acumulado_ano_anterior) {
+                        setVal('simples_faturamento_acumulado_ano_anterior', formatBRL(data.simples_faturamento_acumulado_ano_anterior));
+                    }
+                    const obsEl = document.getElementById('observacao');
+                    if (obsEl) {
+                        obsEl.value = `Importado via Declaração PGDAS-D (${data.competencia || ''})`;
+                    }
+                    // Switch to Simples tab
+                    switchTab('simples');
+                    calculateSimples();
+                    showImportFeedback(`Declaração PGDAS-D (${data.competencia || ''}) carregada no formulário com sucesso!`, 'success');
+                    // If past months exist, open past months modal
+                    if (data.pastMonths && data.pastMonths.length > 0 && pgdasPastMonthsModal) {
+                        const empresaEl = document.getElementById('pgdasModalEmpresa');
+                        if (empresaEl)
+                            empresaEl.textContent = `${data.razaoSocial || (data.customer ? data.customer.name : 'Não identificado')} (${data.cnpj || ''})`;
+                        const compEl = document.getElementById('pgdasModalCompetencia');
+                        if (compEl)
+                            compEl.textContent = data.competencia || '-';
+                        const fatEl = document.getElementById('pgdasModalFatMes');
+                        if (fatEl)
+                            fatEl.textContent = formatBRL(data.simples_faturamento) || 'R$ 0,00';
+                        const aliqEl = document.getElementById('pgdasModalAliquota');
+                        if (aliqEl)
+                            aliqEl.textContent = data.simples_aliquota ? `${data.simples_aliquota.toFixed(2)}%` : '0,00%';
+                        const dasEl = document.getElementById('pgdasModalDasTotal');
+                        if (dasEl)
+                            dasEl.textContent = formatBRL(data.simples_das) || 'R$ 0,00';
+                        const tbody = document.getElementById('pgdasMonthsTableBody');
+                        if (tbody) {
+                            tbody.innerHTML = '';
+                            data.pastMonths.forEach((m) => {
+                                const tr = document.createElement('tr');
+                                tr.className = 'hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors';
+                                const statusBadge = m.exists
+                                    ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60">Já existe (Atualizar)</span>`
+                                    : `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">Novo (Cadastrar)</span>`;
+                                tr.innerHTML = `
+                                    <td class="w-10 px-3 py-2 text-center">
+                                        <input type="checkbox" class="pgdas-month-check rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800" data-competencia="${m.competencia}" data-revenue="${m.revenue}" checked>
+                                    </td>
+                                    <td class="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">${m.competenciaFormatted || m.competencia}</td>
+                                    <td class="px-3 py-2 text-right font-bold text-gray-900 dark:text-gray-100">${formatBRL(m.revenue) || 'R$ 0,00'}</td>
+                                    <td class="px-3 py-2 text-center">${statusBadge}</td>
+                                `;
+                                tbody.appendChild(tr);
+                            });
+                        }
+                        if (pgdasSelectAllMonths)
+                            pgdasSelectAllMonths.checked = true;
+                        pgdasPastMonthsModal.classList.remove('hidden');
+                    }
+                }
+                else {
+                    throw new Error(response?.message || 'Falha ao processar arquivo PGDAS-D');
+                }
+            }
+            catch (err) {
+                console.error('Erro na importação PGDAS-D:', err);
+                showAlert(err.message || 'Erro ao processar arquivo PGDAS-D.', true);
+                showImportFeedback(err.message || 'Erro ao processar arquivo PGDAS-D.', 'error');
+            }
+            finally {
+                if (document.body.contains(progressOverlay)) {
+                    document.body.removeChild(progressOverlay);
+                }
+                pgdasFileInput.value = '';
+            }
+        });
+    }
+    if (btnConfirmBatchPgdasImport) {
+        btnConfirmBatchPgdasImport.addEventListener('click', async () => {
+            if (!currentPgdasParsedData) {
+                showAlert('Nenhum dado PGDAS para importar.', true);
+                return;
+            }
+            const customerId = currentPgdasParsedData.customer?.id || Number(companyParam.value);
+            if (!customerId) {
+                showAlert('Por favor, selecione um cliente no formulário antes de lançar os meses.', true);
+                return;
+            }
+            const checkedBoxes = document.querySelectorAll('.pgdas-month-check:checked');
+            if (checkedBoxes.length === 0) {
+                showAlert('Selecione ao menos um mês para lançar.', true);
+                return;
+            }
+            const monthsToImport = Array.from(checkedBoxes).map(cb => ({
+                competencia: cb.getAttribute('data-competencia'),
+                revenue: parseFloat(cb.getAttribute('data-revenue') || '0')
+            }));
+            btnConfirmBatchPgdasImport.disabled = true;
+            const originalContent = btnConfirmBatchPgdasImport.innerHTML;
+            btnConfirmBatchPgdasImport.innerHTML = `
+                <svg class="animate-spin h-4 w-4 mr-1.5" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Importando...
+            `;
+            try {
+                const res = await api('/fechamentos/batch-import-pgdas', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        customerId,
+                        months: monthsToImport,
+                        overwriteExisting: true
+                    })
+                });
+                if (res && res.status === 'success') {
+                    showAlert(`Lançamento concluído com sucesso! ${res.data?.createdCount || 0} cadastrado(s), ${res.data?.updatedCount || 0} atualizado(s).`);
+                    closePgdasPastMonthsModal();
+                    await loadFechamentos();
+                }
+                else {
+                    throw new Error(res?.message || 'Erro ao lançar meses.');
+                }
+            }
+            catch (err) {
+                console.error('Erro no batch import PGDAS:', err);
+                showAlert(err.message || 'Erro ao realizar importação em lote.', true);
+            }
+            finally {
+                btnConfirmBatchPgdasImport.disabled = false;
+                btnConfirmBatchPgdasImport.innerHTML = originalContent;
+            }
+        });
+    }
     const columnCheckboxes = document.querySelectorAll('input[data-column-target]');
     const btnToggleColumns = document.getElementById('btnToggleColumns');
     const columnsDropdownMenu = document.getElementById('columnsDropdownMenu');
@@ -1721,8 +1996,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     await Promise.all([
-        loadCustomers(savedFilters?.customerId),
-        loadCustomerGroups(savedFilters?.customerGroupId)
+        loadCustomerGroups(savedFilters?.customerGroupId),
+        loadCustomers(savedFilters?.customerId)
     ]);
+    if (savedFilters?.customerGroupId) {
+        updateFilterCustomersByGroup(savedFilters?.customerId);
+    }
     await loadFechamentos();
 });

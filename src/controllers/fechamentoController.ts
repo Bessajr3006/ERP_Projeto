@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { FechamentoService } from '../services/fechamentoService';
 import { AppError } from '../errors/AppError';
+import pool from '../config/db';
+import { RowDataPacket } from 'mysql2/promise';
 
 const currencyField = z.preprocess(
     (val) => {
@@ -265,6 +267,100 @@ export class FechamentoController {
         return res.status(200).json({
             status: 'success',
             message: result.message,
+            data: result
+        });
+    }
+
+    static async parsePgdas(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const pdfBase64 = req.body.pdfBase64 || req.body.fileContent;
+        
+        if (!pdfBase64) {
+            return res.status(400).json({ status: 'error', message: 'Arquivo PDF não informado.' });
+        }
+
+        const { PgdasPdfParser } = await import('../services/pgdasPdfParser');
+        const { EntityRepository } = await import('../repositories/entityRepository');
+
+        const extracted = await PgdasPdfParser.parseBase64(pdfBase64);
+
+        let customer: any = null;
+        if (extracted.cnpj_limpo) {
+            customer = await EntityRepository.getCustomerByDocument(companyId, extracted.cnpj_limpo);
+        }
+        if (!customer && extracted.cnpj) {
+            customer = await EntityRepository.getCustomerByDocument(companyId, extracted.cnpj);
+        }
+        if (!customer && extracted.razao_social) {
+            customer = await EntityRepository.getCustomerByName(companyId, extracted.razao_social);
+        }
+
+        let existingFechamento: any = null;
+        let existingMonthsMap: Record<string, { id: number; valor_faturamento: number }> = {};
+
+        if (customer && customer.id) {
+            if (extracted.competencia) {
+                const [rows] = await pool.query<RowDataPacket[]>(
+                    `SELECT id, public_id, competencia, simples_faturamento, simples_das FROM fechamentos
+                     WHERE company_id = ? AND customer_id = ? AND competencia = ? LIMIT 1`,
+                    [companyId, customer.id, extracted.competencia]
+                );
+                if (rows && rows.length > 0) {
+                    existingFechamento = rows[0];
+                }
+            }
+
+            // Check which of the past months already exist in ERP
+            if (extracted.receitas_anteriores && extracted.receitas_anteriores.length > 0) {
+                const comps = extracted.receitas_anteriores.map(r => r.competencia);
+                const [monthRows] = await pool.query<RowDataPacket[]>(
+                    `SELECT id, competencia, simples_faturamento, venda_valor FROM fechamentos
+                     WHERE company_id = ? AND customer_id = ? AND competencia IN (?)`,
+                    [companyId, customer.id, comps]
+                );
+                for (const mRow of monthRows) {
+                    existingMonthsMap[mRow.competencia] = {
+                        id: mRow.id,
+                        valor_faturamento: Number(mRow.simples_faturamento || mRow.venda_valor || 0)
+                    };
+                }
+            }
+        }
+
+        return res.status(200).json({
+            status: 'success',
+            data: {
+                extracted,
+                customer: customer ? {
+                    id: customer.id,
+                    public_id: customer.public_id,
+                    name: customer.name,
+                    trade_name: customer.trade_name,
+                    cnpj_cpf: customer.cnpj_cpf,
+                    customer_group_id: customer.customer_group_id
+                } : null,
+                existingFechamento,
+                existingMonthsMap
+            }
+        });
+    }
+
+    static async batchImportPgdas(req: Request, res: Response): Promise<any> {
+        const companyId = req.user!.company_id;
+        const customerId = Number(req.body.customerId);
+        const items = req.body.items;
+
+        if (!customerId) {
+            return res.status(400).json({ status: 'error', message: 'Cliente não informado.' });
+        }
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ status: 'error', message: 'Nenhum mês para importar.' });
+        }
+
+        const result = await FechamentoService.batchImportPgdasRevenues(companyId, customerId, items);
+
+        return res.status(200).json({
+            status: 'success',
             data: result
         });
     }

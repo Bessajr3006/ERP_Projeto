@@ -550,41 +550,82 @@ export class EntityRepository {
                 const registerAsCompany = (data as any).register_as_company;
                 const shouldRegisterAsCompany = registerAsCompany === true || registerAsCompany === 1 || registerAsCompany === 'true' || registerAsCompany === '1';
 
-                if (generalAdminCompanyId && companyId === generalAdminCompanyId && shouldRegisterAsCompany) {
-                    const companyPublicId = randomUUID();
+                if (generalAdminCompanyId && companyId === generalAdminCompanyId) {
+                    const cnpj = data.cnpj_cpf || null;
                     const inputTradeName = (data as any).trade_name || '';
                     const inputName = data.name || '';
                     const trade_name = inputTradeName || inputName || 'Empresa Sem Nome';
                     const company_name = inputName || trade_name;
-                    const cnpj = data.cnpj_cpf || null;
-
-                    const columns = ['public_id', 'trade_name', 'company_name', 'cnpj', 'is_active', 'is_system', 'is_general_admin'];
-                    const placeholders = ['?', '?', '?', '?', 'true', 'false', 'false'];
-                    const values: any[] = [companyPublicId, trade_name, company_name, cnpj];
-
-                    const extraFields = ['email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state'];
-                    for (const field of extraFields) {
-                        if ((data as any)[field] !== undefined) {
-                            columns.push(field);
-                            placeholders.push('?');
-                            values.push((data as any)[field] || null);
-                        }
-                    }
 
                     const { CompanyRepository } = await import('./companyRepository');
                     const { RoleService } = await import('../services/roleService');
                     const { UserService } = await import('../services/userService');
 
-                    // Check if company with same CNPJ already exists
-                    let skipCompanyCreation = false;
-                    if (cnpj) {
-                        const existingComp = await CompanyRepository.getByCnpj(cnpj);
-                        if (existingComp && existingComp.length > 0) {
-                            skipCompanyCreation = true;
-                        }
-                    }
+                    let existingComp = cnpj ? await CompanyRepository.getByCnpj(cnpj) : [];
+                    if (existingComp && existingComp.length > 0) {
+                        const comp = existingComp[0];
+                        if (comp) {
+                            const updateFields: string[] = [];
+                            const updateVals: any[] = [];
+                            if (trade_name) { updateFields.push('trade_name = ?'); updateVals.push(trade_name); }
+                            if (company_name) { updateFields.push('company_name = ?'); updateVals.push(company_name); }
+                            if (data.email !== undefined) { updateFields.push('email = ?'); updateVals.push(data.email || null); }
+                            if (data.phone !== undefined) { updateFields.push('phone = ?'); updateVals.push(data.phone || null); }
+                            if (data.zipcode !== undefined) { updateFields.push('zipcode = ?'); updateVals.push(data.zipcode || null); }
+                            if (data.street !== undefined) { updateFields.push('street = ?'); updateVals.push(data.street || null); }
+                            if (data.number !== undefined) { updateFields.push('number = ?'); updateVals.push(data.number || null); }
+                            if (data.complement !== undefined) { updateFields.push('complement = ?'); updateVals.push(data.complement || null); }
+                            if (data.neighborhood !== undefined) { updateFields.push('neighborhood = ?'); updateVals.push(data.neighborhood || null); }
+                            if (data.city !== undefined) { updateFields.push('city = ?'); updateVals.push(data.city || null); }
+                            if (data.state !== undefined) { updateFields.push('state = ?'); updateVals.push(data.state || null); }
+                            if ((data as any).tax_regime !== undefined) { updateFields.push('tax_regime = ?'); updateVals.push((data as any).tax_regime || null); }
+                            if ((data as any).cnae_principal !== undefined) { updateFields.push('cnae_principal = ?'); updateVals.push((data as any).cnae_principal || null); }
+                            if ((data as any).inscricao_estadual !== undefined) { updateFields.push('ie = ?'); updateVals.push((data as any).inscricao_estadual || null); }
+                            if ((data as any).inscricao_municipal !== undefined) { updateFields.push('im = ?'); updateVals.push((data as any).inscricao_municipal || null); }
+                            if ((data as any).cnpj_document_url !== undefined && (data as any).cnpj_document_url !== null) {
+                                updateFields.push('cnpj_document_url = ?');
+                                updateVals.push((data as any).cnpj_document_url);
+                            }
+                            if ((data as any).certificate_url !== undefined) { updateFields.push('certificate_url = ?'); updateVals.push((data as any).certificate_url || null); }
+                            if ((data as any).certificate_password !== undefined) { updateFields.push('certificate_password = ?'); updateVals.push((data as any).certificate_password || null); }
+                            if ((data as any).certificate_expiration !== undefined) { updateFields.push('certificate_expiration = ?'); updateVals.push((data as any).certificate_expiration || null); }
+                            if ((data as any).certificate_name !== undefined) { updateFields.push('certificate_name = ?'); updateVals.push((data as any).certificate_name || null); }
 
-                    if (!skipCompanyCreation) {
+                            if (updateFields.length > 0) {
+                                updateVals.push(comp.id);
+                                await pool.query(`UPDATE companies SET ${updateFields.join(', ')} WHERE id = ?`, updateVals);
+                            }
+                        }
+                    } else if (shouldRegisterAsCompany) {
+                        const companyPublicId = randomUUID();
+                        const columns = ['public_id', 'trade_name', 'company_name', 'cnpj', 'is_active', 'is_system', 'is_general_admin'];
+                        const placeholders = ['?', '?', '?', '?', 'true', 'false', 'false'];
+                        const values: any[] = [companyPublicId, trade_name, company_name, cnpj];
+
+                        const extraFields = [
+                            'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state',
+                            'tax_regime', 'cnae_principal', 'cnpj_document_url', 'certificate_url', 'certificate_password',
+                            'certificate_expiration', 'certificate_name'
+                        ];
+                        for (const field of extraFields) {
+                            if ((data as any)[field] !== undefined && (data as any)[field] !== null) {
+                                columns.push(field);
+                                placeholders.push('?');
+                                values.push((data as any)[field] || null);
+                            }
+                        }
+
+                        if ((data as any).inscricao_estadual !== undefined) {
+                            columns.push('ie');
+                            placeholders.push('?');
+                            values.push((data as any).inscricao_estadual || null);
+                        }
+                        if ((data as any).inscricao_municipal !== undefined) {
+                            columns.push('im');
+                            placeholders.push('?');
+                            values.push((data as any).inscricao_municipal || null);
+                        }
+
                         const newCompanyId = await CompanyRepository.create(columns, placeholders, values);
                         await RoleService.ensureDefaultRoles(newCompanyId);
 
@@ -865,8 +906,7 @@ export class EntityRepository {
                 const registerAsCompany = (data as any).register_as_company;
                 const shouldRegisterAsCompany = registerAsCompany === true || registerAsCompany === 1 || registerAsCompany === 'true' || registerAsCompany === '1';
 
-                if (generalAdminCompanyId && companyId === generalAdminCompanyId && shouldRegisterAsCompany) {
-                    const companyPublicId = randomUUID();
+                if (generalAdminCompanyId && companyId === generalAdminCompanyId) {
                     const inputTradeName = data.trade_name !== undefined ? data.trade_name : currentEnt.trade_name;
                     const inputName = data.name !== undefined ? data.name : currentEnt.name;
                     const trade_name = inputTradeName || inputName || 'Empresa Sem Nome';
@@ -874,34 +914,124 @@ export class EntityRepository {
                     const cnpj = data.cnpj_cpf !== undefined ? data.cnpj_cpf : currentEnt.cnpj_cpf;
                     const email = data.email !== undefined ? data.email : currentEnt.email;
 
-                    const columns = ['public_id', 'trade_name', 'company_name', 'cnpj', 'is_active', 'is_system', 'is_general_admin'];
-                    const placeholders = ['?', '?', '?', '?', 'true', 'false', 'false'];
-                    const insertValues: any[] = [companyPublicId, trade_name, company_name, cnpj];
-
-                    const extraFields = ['email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state'];
-                    for (const field of extraFields) {
-                        const val = (data as any)[field] !== undefined ? (data as any)[field] : currentEnt[field];
-                        if (val !== undefined) {
-                            columns.push(field);
-                            placeholders.push('?');
-                            insertValues.push(val || null);
-                        }
-                    }
-
                     const { CompanyRepository } = await import('./companyRepository');
                     const { RoleService } = await import('../services/roleService');
                     const { UserService } = await import('../services/userService');
 
-                    // Check if company with same CNPJ already exists
-                    let skipCompanyCreation = false;
-                    if (cnpj) {
-                        const existingComp = await CompanyRepository.getByCnpj(cnpj);
-                        if (existingComp && existingComp.length > 0) {
-                            skipCompanyCreation = true;
-                        }
-                    }
+                    let existingComp = cnpj ? await CompanyRepository.getByCnpj(cnpj) : [];
+                    if (existingComp && existingComp.length > 0) {
+                        const comp = existingComp[0];
+                        if (comp) {
+                            const updateFields: string[] = [];
+                            const updateVals: any[] = [];
+                            if (trade_name) { updateFields.push('trade_name = ?'); updateVals.push(trade_name); }
+                            if (company_name) { updateFields.push('company_name = ?'); updateVals.push(company_name); }
+                            if (cnpj) { updateFields.push('cnpj = ?'); updateVals.push(cnpj); }
+                            if (email !== undefined) { updateFields.push('email = ?'); updateVals.push(email || null); }
+                            if (data.phone !== undefined || currentEnt.phone !== undefined) {
+                                updateFields.push('phone = ?');
+                                updateVals.push(data.phone !== undefined ? (data.phone || null) : (currentEnt.phone || null));
+                            }
+                            if (data.zipcode !== undefined || currentEnt.zipcode !== undefined) {
+                                updateFields.push('zipcode = ?');
+                                updateVals.push(data.zipcode !== undefined ? (data.zipcode || null) : (currentEnt.zipcode || null));
+                            }
+                            if (data.street !== undefined || currentEnt.street !== undefined) {
+                                updateFields.push('street = ?');
+                                updateVals.push(data.street !== undefined ? (data.street || null) : (currentEnt.street || null));
+                            }
+                            if (data.number !== undefined || currentEnt.number !== undefined) {
+                                updateFields.push('number = ?');
+                                updateVals.push(data.number !== undefined ? (data.number || null) : (currentEnt.number || null));
+                            }
+                            if (data.complement !== undefined || currentEnt.complement !== undefined) {
+                                updateFields.push('complement = ?');
+                                updateVals.push(data.complement !== undefined ? (data.complement || null) : (currentEnt.complement || null));
+                            }
+                            if (data.neighborhood !== undefined || currentEnt.neighborhood !== undefined) {
+                                updateFields.push('neighborhood = ?');
+                                updateVals.push(data.neighborhood !== undefined ? (data.neighborhood || null) : (currentEnt.neighborhood || null));
+                            }
+                            if (data.city !== undefined || currentEnt.city !== undefined) {
+                                updateFields.push('city = ?');
+                                updateVals.push(data.city !== undefined ? (data.city || null) : (currentEnt.city || null));
+                            }
+                            if (data.state !== undefined || currentEnt.state !== undefined) {
+                                updateFields.push('state = ?');
+                                updateVals.push(data.state !== undefined ? (data.state || null) : (currentEnt.state || null));
+                            }
+                            const taxRegimeVal = (data as any).tax_regime !== undefined ? (data as any).tax_regime : currentEnt.tax_regime;
+                            if (taxRegimeVal !== undefined) {
+                                updateFields.push('tax_regime = ?');
+                                updateVals.push(taxRegimeVal || null);
+                            }
+                            const cnaeVal = (data as any).cnae_principal !== undefined ? (data as any).cnae_principal : currentEnt.cnae_principal;
+                            if (cnaeVal !== undefined) {
+                                updateFields.push('cnae_principal = ?');
+                                updateVals.push(cnaeVal || null);
+                            }
+                            const ieVal = (data as any).inscricao_estadual !== undefined ? (data as any).inscricao_estadual : currentEnt.inscricao_estadual;
+                            if (ieVal !== undefined) {
+                                updateFields.push('ie = ?');
+                                updateVals.push(ieVal || null);
+                            }
+                            const imVal = (data as any).inscricao_municipal !== undefined ? (data as any).inscricao_municipal : currentEnt.inscricao_municipal;
+                            if (imVal !== undefined) {
+                                updateFields.push('im = ?');
+                                updateVals.push(imVal || null);
+                            }
+                            const docUrlVal = (data as any).cnpj_document_url !== undefined ? (data as any).cnpj_document_url : currentEnt.cnpj_document_url;
+                            if (docUrlVal !== undefined && docUrlVal !== null) {
+                                updateFields.push('cnpj_document_url = ?');
+                                updateVals.push(docUrlVal);
+                            }
+                            const certUrl = (data as any).certificate_url !== undefined ? (data as any).certificate_url : currentEnt.certificate_url;
+                            if (certUrl !== undefined) { updateFields.push('certificate_url = ?'); updateVals.push(certUrl || null); }
+                            const certPwd = (data as any).certificate_password !== undefined ? (data as any).certificate_password : currentEnt.certificate_password;
+                            if (certPwd !== undefined) { updateFields.push('certificate_password = ?'); updateVals.push(certPwd || null); }
+                            const certExp = (data as any).certificate_expiration !== undefined ? (data as any).certificate_expiration : currentEnt.certificate_expiration;
+                            if (certExp !== undefined) { updateFields.push('certificate_expiration = ?'); updateVals.push(certExp || null); }
+                            const certName = (data as any).certificate_name !== undefined ? (data as any).certificate_name : currentEnt.certificate_name;
+                            if (certName !== undefined) { updateFields.push('certificate_name = ?'); updateVals.push(certName || null); }
 
-                    if (!skipCompanyCreation) {
+                            if (updateFields.length > 0) {
+                                updateVals.push(comp.id);
+                                await pool.query(`UPDATE companies SET ${updateFields.join(', ')} WHERE id = ?`, updateVals);
+                            }
+                        }
+                    } else if (shouldRegisterAsCompany) {
+                        const companyPublicId = randomUUID();
+                        const columns = ['public_id', 'trade_name', 'company_name', 'cnpj', 'is_active', 'is_system', 'is_general_admin'];
+                        const placeholders = ['?', '?', '?', '?', 'true', 'false', 'false'];
+                        const insertValues: any[] = [companyPublicId, trade_name, company_name, cnpj];
+
+                        const extraFields = [
+                            'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state',
+                            'tax_regime', 'cnae_principal', 'cnpj_document_url', 'certificate_url', 'certificate_password',
+                            'certificate_expiration', 'certificate_name'
+                        ];
+                        for (const field of extraFields) {
+                            const val = (data as any)[field] !== undefined ? (data as any)[field] : currentEnt[field];
+                            if (val !== undefined && val !== null) {
+                                columns.push(field);
+                                placeholders.push('?');
+                                insertValues.push(val || null);
+                            }
+                        }
+
+                        const ieVal = (data as any).inscricao_estadual !== undefined ? (data as any).inscricao_estadual : currentEnt.inscricao_estadual;
+                        if (ieVal !== undefined && ieVal !== null) {
+                            columns.push('ie');
+                            placeholders.push('?');
+                            insertValues.push(ieVal || null);
+                        }
+                        const imVal = (data as any).inscricao_municipal !== undefined ? (data as any).inscricao_municipal : currentEnt.inscricao_municipal;
+                        if (imVal !== undefined && imVal !== null) {
+                            columns.push('im');
+                            placeholders.push('?');
+                            insertValues.push(imVal || null);
+                        }
+
                         const newCompanyId = await CompanyRepository.create(columns, placeholders, insertValues);
                         await RoleService.ensureDefaultRoles(newCompanyId);
 

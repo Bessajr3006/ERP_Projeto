@@ -373,6 +373,23 @@ export class CompanyService {
             await CompanyRepository.update(publicId, updates, values);
         }
 
+        if (typedData.cnpj_document_url !== undefined) {
+            try {
+                const targetCnpj = (data as any).cnpj || current.cnpj;
+                if (targetCnpj) {
+                    const cleanCnpj = String(targetCnpj).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    await pool.query(
+                        `UPDATE customers SET cnpj_document_url = ? 
+                         WHERE REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?
+                           AND company_id IN (SELECT id FROM companies WHERE is_general_admin = 1)`,
+                        [typedData.cnpj_document_url, cleanCnpj]
+                    );
+                }
+            } catch (err) {
+                console.error('[CompanyService.update] Error syncing cnpj_document_url to customer:', err);
+            }
+        }
+
         return this.getByPublicId(publicId);
     }
 

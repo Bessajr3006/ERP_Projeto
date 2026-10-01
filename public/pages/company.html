@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Minha Empresa</title>
-    <link href="/css/style.css?v=20261001180903" rel="stylesheet">
+    <link href="/css/style.css?v=20261001194849" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001180903"></script>
+    <script src="/js/pwa.js?v=20261001194849"></script>
     <script src="/vendor/forge.min.js"></script>
 </head>
 
@@ -29,6 +29,48 @@
                     <button type="button" id="tabBtn-data"
                         class="tab-btn inline-block p-4 border-b-2 rounded-t-lg active text-brand-600 border-brand-600 dark:text-brand-500 dark:border-brand-500">
                         Dados da Empresa
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-pedido"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Pedido
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-servico"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Serviço
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-financeiro"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Financeiro
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-document"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Documento
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-notas-cliente"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Notas
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-tarefas"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Tarefas
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button type="button" id="tabBtn-mapa"
+                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
+                        Mapa
                     </button>
                 </li>
                 <li class="mr-2">
@@ -77,18 +119,6 @@
                     <button type="button" id="tabBtn-swagger"
                         class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
                         Swagger
-                    </button>
-                </li>
-                <li class="mr-2">
-                    <button type="button" id="tabBtn-waze"
-                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
-                        Waze
-                    </button>
-                </li>
-                <li class="mr-2">
-                    <button type="button" id="tabBtn-document"
-                        class="tab-btn inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 text-gray-500 dark:text-gray-400">
-                        Documento
                     </button>
                 </li>
             </ul>
@@ -246,6 +276,215 @@
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- Tab Content: Pedido -->
+        <div id="tabContent-pedido"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col font-sans">
+            <div class="shrink-0 bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Pedidos e Vendas</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Histórico de vendas e pedidos da empresa / cliente.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nº Pedido</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companyOrdersTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum pedido encontrado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Serviço -->
+        <div id="tabContent-servico"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col font-sans">
+            <div class="shrink-0 bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Ordens de Serviço</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Lançamentos e ordens de serviços prestados.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nº Serviço</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descrição / Equipamento</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companyServicesTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento de serviço encontrado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Financeiro -->
+        <div id="tabContent-financeiro"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col font-sans">
+            <div class="shrink-0 bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Lançamentos Financeiros</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Títulos a receber, receitas e comprovantes de pagamento.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead class="bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descrição</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vencimento</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documentos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companyFinancialsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tr>
+                                <td colspan="5" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento financeiro encontrado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Notas -->
+        <div id="tabContent-notas-cliente"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col font-sans">
+            <div class="shrink-0 bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Anotações Internas</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Histórico de observações e anotações.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                <div class="flex flex-col gap-4">
+                    <div class="bg-gray-50 dark:bg-slate-900/30 p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Adicionar Nova Anotação</h4>
+                        <textarea id="txtNewCompanyNote" rows="3" class="w-full rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-brand-500 focus:border-brand-500 placeholder-gray-400" placeholder="Digite sua anotação aqui..."></textarea>
+                        <div class="mt-2 flex justify-end">
+                            <button type="button" id="btnSaveCompanyNote" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm cursor-pointer transition-colors">
+                                Salvar Anotação
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Histórico de Anotações</h4>
+                        <div id="companyNotesList" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                            <!-- Anotações dinâmicas aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Tarefas -->
+        <div id="tabContent-tarefas"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col font-sans">
+            <div class="shrink-0 bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Tarefas Relacionadas</h3>
+                        <div class="flex items-center bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-x-auto">
+                            <button type="button" class="company-view-mode-btn active relative flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-brand-700 dark:text-brand-300 bg-white dark:bg-slate-700 shadow-sm transition-all whitespace-nowrap" data-view="list" title="Lista" aria-label="Visualização em Lista">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                            </button>
+                            <button type="button" class="company-view-mode-btn relative flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all whitespace-nowrap" data-view="day" title="Dia" aria-label="Visualização do Dia">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                            <button type="button" class="company-view-mode-btn relative flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all whitespace-nowrap" data-view="calendar" title="Mês" aria-label="Visualização Mensal">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center bg-white dark:bg-slate-800 px-1 py-1 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-x-auto">
+                            <button type="button" class="company-task-filter-btn flex items-center justify-center p-2 rounded-lg hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors text-gray-500" data-filter="all" title="Todas as Tarefas">
+                                <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                            </button>
+                            <button type="button" class="company-task-filter-btn flex items-center justify-center p-2 rounded-lg transition-colors text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30" data-filter="pending" title="A Fazer">
+                                <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            </button>
+                            <button type="button" class="company-task-filter-btn flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" data-filter="progress" title="Em Andamento">
+                                <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                            <button type="button" class="company-task-filter-btn flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" data-filter="completed" title="Concluídas">
+                                <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <a href="/pages/tasks.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm cursor-pointer transition-colors self-start lg:self-auto">
+                        Gerenciar na Agenda
+                    </a>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                <div id="companyTasksList" class="space-y-3 pr-2">
+                    <!-- Tarefas dinâmicas aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Mapa -->
+        <div id="tabContent-mapa"
+            class="tab-content hidden bg-white dark:bg-slate-800 shadow rounded-xl border border-gray-200 dark:border-slate-700 flex-1 min-h-0 overflow-hidden flex-col font-sans">
+            <div class="shrink-0 bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Localização no Mapa</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Rota do endereço da empresa principal até a localização desta empresa.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                <div class="p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/30">
+                    <div id="mapCompanyAddressInfo" class="mb-4 text-sm text-gray-700 dark:text-gray-300">
+                        <strong>Endereço da Empresa:</strong> <span id="mapCompanyAddress">Carregando...</span>
+                    </div>
+                    
+                    <div class="flex gap-3 mb-4">
+                        <a id="btnCompanyOpenWaze" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-lg shadow-sm transition-colors decoration-none">
+                            Abrir no Waze
+                        </a>
+                        <a id="btnCompanyOpenGoogleMaps" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors decoration-none">
+                            Abrir no Google Maps
+                        </a>
+                    </div>
+
+                    <div class="w-full h-100 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center">
+                        <iframe id="companyGoogleMapsIframe" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Tab Content: Parâmetro -->
@@ -1121,9 +1360,89 @@
                     <a id="btnDownloadCompanyDoc" href="#" download="" class="w-full inline-flex items-center justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto sm:text-sm decoration-none">
                         Baixar Arquivo
                     </a>
+                    <button type="button" id="btnOpenDocInNewTab" class="w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:w-auto sm:text-sm cursor-pointer gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        Abrir em Nova Aba
+                    </button>
                     <button type="button" class="btn-close-doc-preview w-full inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors sm:mt-0 sm:w-auto sm:text-sm">
                         Fechar
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Document Viewer Modal -->
+    <div id="pdfViewerModal" class="hidden fixed inset-0 z-10001 overflow-y-auto font-sans" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="pdfViewerModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700">
+                <div class="flex justify-between items-center p-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-100" id="pdfViewerModalTitle">Visualizar Documento</h3>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="openExternalPdfModal" class="text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer mr-1" title="Abrir em Nova Aba">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </button>
+                        <a id="downloadPdfModal" href="" download class="text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer mr-2" title="Baixar Arquivo">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </a>
+                        <button type="button" id="closePdfModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer" title="Fechar">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 bg-gray-100 dark:bg-slate-900 overflow-hidden relative">
+                    <iframe id="pdfIframe" src="" title="Visualização do documento em PDF" class="w-full h-full border-0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Renomear Documento -->
+    <div id="renameDocumentModal" class="hidden fixed inset-0 z-10002 overflow-y-auto font-sans" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="renameDocumentModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md flex flex-col overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700">
+                <div class="flex justify-between items-center p-4 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    <h3 class="font-semibold text-base text-gray-800 dark:text-gray-100">Renomear Documento</h3>
+                    <button type="button" id="closeRenameDocumentModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer" title="Fechar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form id="renameDocumentForm" class="p-4 space-y-4">
+                    <div>
+                        <label for="renameDocumentInput" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Nome do Arquivo</label>
+                        <input type="text" id="renameDocumentInput" required class="w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 text-sm" placeholder="Digite o novo nome..." />
+                    </div>
+                    <div class="flex justify-end gap-2.5 pt-2">
+                        <button type="button" id="btnCancelRenameDocument" class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors cursor-pointer">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors cursor-pointer">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirmar Exclusão de Documento -->
+    <div id="deleteDocumentModal" class="hidden fixed inset-0 z-10003 overflow-y-auto font-sans" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 sm:p-6">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80 transition-opacity" id="deleteDocumentModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md flex flex-col overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700 p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-base text-gray-800 dark:text-gray-100">Excluir Documento</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Esta ação não pode ser desfeita.</p>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Deseja realmente excluir o documento <strong id="deleteDocumentName" class="text-gray-900 dark:text-gray-100 font-semibold"></strong>?</p>
+                </div>
+                <div class="flex justify-end gap-2.5">
+                    <button type="button" id="btnCancelDeleteDocument" class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors cursor-pointer">Cancelar</button>
+                    <button type="button" id="btnConfirmDeleteDocument" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors cursor-pointer">Excluir</button>
                 </div>
             </div>
         </div>
@@ -1509,12 +1828,12 @@
     </div>
 
     <!-- App Scripts -->
-    <script src="/js/api.js?v=20261001180903"></script>
-    <script src="/js/company-v2.js?v=20261001180903"></script>
-    <script src="/js/components/navbar.js?v=20261001180903"></script>
+    <script src="/js/api.js?v=20261001194849"></script>
+    <script src="/js/company-v2.js?v=20261001194849"></script>
+    <script src="/js/components/navbar.js?v=20261001194849"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261001180903"></script>
+    <script src="/js/components/footer.js?v=20261001194849"></script>
 </body>
 
 </html>

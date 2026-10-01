@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Declaração de Faturamento</title>
-    <link href="/css/style.css?v=20261001181840" rel="stylesheet">
+    <link href="/css/style.css?v=20261001194849" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001181840"></script>
+    <script src="/js/pwa.js?v=20261001194849"></script>
     <style>
         /* Destaque sutil para campos editáveis na tela */
         [contenteditable="true"] {
@@ -19,24 +19,32 @@
         }
 
         [contenteditable="true"]:hover {
-            background-color: rgba(254, 240, 138, 0.35);
+            background-color: rgba(254, 240, 138, 0.45);
             box-shadow: 0 0 0 1px #eab308;
             cursor: text;
         }
 
-        .dark [contenteditable="true"]:hover {
-            background-color: rgba(234, 179, 8, 0.2);
-            box-shadow: 0 0 0 1px #eab308;
-        }
-
         [contenteditable="true"]:focus {
-            background-color: rgba(254, 249, 195, 0.5);
+            background-color: rgba(254, 249, 195, 0.7);
             box-shadow: 0 0 0 2px #eab308;
         }
 
-        .dark [contenteditable="true"]:focus {
-            background-color: rgba(234, 179, 8, 0.3);
-            box-shadow: 0 0 0 2px #eab308;
+        /* O documento #content é sempre folha branca com texto preto (mesmo no modo escuro) */
+        #content {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+        }
+
+        #content [contenteditable="true"]:hover {
+            background-color: rgba(254, 240, 138, 0.45) !important;
+            box-shadow: 0 0 0 1px #eab308 !important;
+            color: #111827 !important;
+        }
+
+        #content [contenteditable="true"]:focus {
+            background-color: rgba(254, 249, 195, 0.7) !important;
+            box-shadow: 0 0 0 2px #eab308 !important;
+            color: #111827 !important;
         }
 
         /* --- REGRAS DE IMPRESSÃO EM FOLHA A4 --- */
@@ -241,23 +249,23 @@
 
             <!-- DOCUMENTO: CARD PRINCIPAL (Padrão ERP Keystone) -->
             <div class="w-full flex-1 flex justify-center pb-12">
-                <div id="content" class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 p-6 sm:p-10 w-full max-w-4xl flex flex-col gap-6 text-gray-800 dark:text-gray-100">
+                <div id="content" class="bg-white shadow-md rounded-xl border border-gray-300 p-6 sm:p-10 w-full max-w-4xl flex flex-col gap-6 text-gray-900">
             
                     <!-- Cabeçalho da Empresa -->
-                    <div class="border-b-2 border-gray-200 dark:border-slate-700 pb-4 flex justify-between items-start flex-wrap gap-4">
-                        <div class="flex flex-col gap-1 text-sm text-gray-600 dark:text-gray-300">
-                            <div class="text-xl font-bold text-gray-900 dark:text-white sync-empresa" contenteditable="true" title="Clique para editar o nome da empresa">[NOME DA SUA EMPRESA LTDA]</div>
-                            <div>CNPJ: <span contenteditable="true" class="sync-cnpj font-semibold text-gray-900 dark:text-gray-100" title="Digite o CNPJ e clique fora para consultar na Receita">00.000.000/0001-00</span></div>
+                    <div class="border-b-2 border-gray-200 pb-4 flex justify-between items-start flex-wrap gap-4">
+                        <div class="flex flex-col gap-1 text-sm text-gray-700">
+                            <div class="text-xl font-bold text-gray-900 sync-empresa" contenteditable="true" title="Clique para editar o nome da empresa">[NOME DA SUA EMPRESA LTDA]</div>
+                            <div>CNPJ: <span contenteditable="true" class="sync-cnpj font-semibold text-gray-900" title="Digite o CNPJ e clique fora para consultar na Receita">00.000.000/0001-00</span></div>
                             <div contenteditable="true" class="sync-endereco-linha1">Rua Exemplo, 100 - Centro</div>
                             <div contenteditable="true" class="sync-endereco-linha2">Niterói - RJ, CEP: 24000-000</div>
-                            <div class="mt-2 text-xs font-semibold bg-gray-50 dark:bg-slate-900/60 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 border-l-4 border-l-brand-500 inline-block w-fit">
+                            <div class="mt-2 text-xs font-semibold bg-gray-50 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 border-l-4 border-l-brand-500 inline-block w-fit">
                                 <strong>Período de Referência:</strong> 
                                 <span contenteditable="true" class="sync-mes-inicio">Outubro</span>/<span contenteditable="true" class="sync-ano-inicio">2025</span> a 
                                 <span contenteditable="true" class="sync-mes-fim">Setembro</span>/<span contenteditable="true" class="sync-ano-fim">2026</span>
                             </div>
                         </div>
                         <div class="no-print">
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                                 Documento Editável
                             </span>
@@ -265,74 +273,74 @@
                     </div>
 
                     <!-- Título Central -->
-                    <h1 class="text-center text-xl sm:text-2xl font-extrabold uppercase tracking-wider text-gray-900 dark:text-white my-1">Declaração de Faturamento</h1>
+                    <h1 class="text-center text-xl sm:text-2xl font-extrabold uppercase tracking-wider text-gray-900 my-1">Declaração de Faturamento</h1>
 
                     <!-- Corpo da Declaração -->
-                    <div class="text-sm sm:text-base leading-relaxed text-gray-700 dark:text-gray-300 text-justify">
-                        Declaramos para os devidos fins de comprovação de renda e análise de crédito que a empresa <strong contenteditable="true" class="sync-empresa font-bold text-gray-900 dark:text-white">[NOME DA SUA EMPRESA LTDA]</strong>, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº <strong contenteditable="true" class="sync-cnpj font-bold text-gray-900 dark:text-white">00.000.000/0001-00</strong>, auferiu o seguinte faturamento bruto, sem deduções, no período de <span class="sync-mes-inicio font-semibold text-gray-900 dark:text-white">Outubro</span>/<span class="sync-ano-inicio font-semibold text-gray-900 dark:text-white">2025</span> a <span class="sync-mes-fim font-semibold text-gray-900 dark:text-white">Setembro</span>/<span class="sync-ano-fim font-semibold text-gray-900 dark:text-white">2026</span>:
+                    <div class="text-sm sm:text-base leading-relaxed text-gray-800 text-justify">
+                        Declaramos para os devidos fins de comprovação de renda e análise de crédito que a empresa <strong contenteditable="true" class="sync-empresa font-bold text-gray-900">[NOME DA SUA EMPRESA LTDA]</strong>, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº <strong contenteditable="true" class="sync-cnpj font-bold text-gray-900">00.000.000/0001-00</strong>, auferiu o seguinte faturamento bruto, sem deduções, no período de <span class="sync-mes-inicio font-semibold text-gray-900">Outubro</span>/<span class="sync-ano-inicio font-semibold text-gray-900">2025</span> a <span class="sync-mes-fim font-semibold text-gray-900">Setembro</span>/<span class="sync-ano-fim font-semibold text-gray-900">2026</span>:
                     </div>
 
                     <!-- Tabela de Competências e Valores (Padrão ERP) -->
-                    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 shadow-xs my-2">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700 text-sm">
-                            <thead class="bg-gray-50 dark:bg-slate-900/60">
+                    <div class="overflow-x-auto rounded-xl border border-gray-300 shadow-xs my-2">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-3/5">Mês / Ano de Competência</th>
-                                    <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-2/5">Faturamento Bruto (R$)</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-3/5">Mês / Ano de Competência</th>
+                                    <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider w-2/5">Faturamento Bruto (R$)</th>
                                 </tr>
                             </thead>
-                            <tbody id="tbody-meses" class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                            <tbody id="tbody-meses" class="bg-white divide-y divide-gray-200">
                                 <!-- Linhas geradas dinamicamente via JS -->
                             </tbody>
-                            <tfoot class="bg-gray-50 dark:bg-slate-900/60 border-t-2 border-gray-200 dark:border-slate-700 print-total-row">
+                            <tfoot class="bg-gray-50 border-t-2 border-gray-300 print-total-row">
                                 <tr>
-                                    <td class="px-4 py-3 text-xs sm:text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">TOTAL DO PERÍODO</td>
-                                    <td class="px-4 py-3 text-right font-mono text-base font-extrabold text-brand-600 dark:text-brand-400">R$ <span id="total-anual">0,00</span></td>
+                                    <td class="px-4 py-3 text-xs sm:text-sm font-extrabold text-gray-900 uppercase tracking-wider">TOTAL DO PERÍODO</td>
+                                    <td class="px-4 py-3 text-right font-mono text-base font-extrabold text-brand-600">R$ <span id="total-anual">0,00</span></td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
 
                     <!-- Nota Explicativa -->
-                    <div class="text-xs italic text-gray-500 dark:text-gray-400">
+                    <div class="text-xs italic text-gray-600">
                         * <strong>Nota:</strong> Os valores expressos acima correspondem fielmente às receitas operacionais brutas da empresa no período informado, sujeitas à verificação pelas demonstrações contábeis e fiscais pertinentes.
                     </div>
 
                     <!-- Data por Extenso -->
-                    <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed pt-2">
+                    <div class="text-sm text-gray-800 leading-relaxed pt-2">
                         Por ser expressão da verdade e assumindo total responsabilidade pelas informações aqui prestadas, firmamos o presente documento.
                         <br><br>
-                        <span id="campo-data-extenso" contenteditable="true" class="font-semibold text-gray-900 dark:text-white">Niterói - RJ, 01 de Outubro de 2026.</span>
+                        <span id="campo-data-extenso" contenteditable="true" class="font-semibold text-gray-900">Niterói - RJ, 01 de Outubro de 2026.</span>
                     </div>
 
                     <!-- SELO OFICIAL GOV.BR (Assinatura Eletrônica Avançada) -->
-                    <div id="secao-assinatura-govbr" class="rounded-xl border-2 border-[#1351b4] dark:border-blue-500 bg-blue-50/40 dark:bg-slate-900/60 p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xs">
+                    <div id="secao-assinatura-govbr" class="rounded-xl border-2 border-[#1351b4] bg-blue-50/50 p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xs">
                         <div class="flex items-start gap-3.5 flex-1">
                             <div class="bg-[#1351b4] text-white font-black text-sm px-3 py-1.5 rounded-lg shadow-xs shrink-0 tracking-tight leading-none">
                                 gov<span class="text-amber-300">.br</span>
                             </div>
-                            <div class="text-xs leading-relaxed text-gray-700 dark:text-gray-300 flex flex-col gap-0.5">
-                                <div class="text-xs font-extrabold uppercase text-[#1351b4] dark:text-blue-400 tracking-wide mb-0.5">Documento Assinado Digitalmente com gov.br</div>
-                                <div><strong>Assinante:</strong> <span class="sync-govbr-nome font-semibold text-gray-900 dark:text-white" contenteditable="true">[NOME DO RESPONSÁVEL LEGAL / SÓCIO / CONTADOR]</span></div>
+                            <div class="text-xs leading-relaxed text-gray-800 flex flex-col gap-0.5">
+                                <div class="text-xs font-extrabold uppercase text-[#1351b4] tracking-wide mb-0.5">Documento Assinado Digitalmente com gov.br</div>
+                                <div><strong>Assinante:</strong> <span class="sync-govbr-nome font-semibold text-gray-900" contenteditable="true">[NOME DO RESPONSÁVEL LEGAL / SÓCIO / CONTADOR]</span></div>
                                 <div><strong>CPF / Identificação:</strong> <span class="sync-govbr-cpf" contenteditable="true">***.000.000-**</span> &bull; <strong>Cargo:</strong> <span id="stamp-govbr-cargo" contenteditable="true">Responsável Legal</span></div>
                                 <div><strong>Data e Hora:</strong> <span id="stamp-time-govbr" contenteditable="true">01/10/2026 18:00:00 -03:00</span></div>
-                                <div><strong>Código de Autenticidade:</strong> <span id="stamp-govbr-hash" class="font-mono text-[11px] font-bold text-gray-900 dark:text-gray-100" contenteditable="true">B8F4-2A9C-E137-98DF-45E2-671A</span></div>
-                                <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Conforme Medida Provisória nº 2.200-2/2001 e Lei Federal nº 14.063/2020 (Assinatura Eletrônica Avançada). Verifique a conformidade em <strong>https://validar.iti.br</strong></div>
+                                <div><strong>Código de Autenticidade:</strong> <span id="stamp-govbr-hash" class="font-mono text-[11px] font-bold text-gray-900" contenteditable="true">B8F4-2A9C-E137-98DF-45E2-671A</span></div>
+                                <div class="text-[11px] text-gray-600 mt-1">Conforme Medida Provisória nº 2.200-2/2001 e Lei Federal nº 14.063/2020 (Assinatura Eletrônica Avançada). Verifique a conformidade em <strong>https://validar.iti.br</strong></div>
                             </div>
                         </div>
                         <!-- QUADRO QUADRADO DE VALIDAÇÃO GOV.BR -->
-                        <div class="flex flex-col items-center justify-center text-center p-3 rounded-xl bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-700 shadow-xs shrink-0 min-w-36" id="quadro-validacao-govbr" title="Campo de Validação Gov.br">
-                            <div class="flex items-center justify-center gap-1 text-[11px] font-extrabold uppercase text-[#1351b4] dark:text-blue-400 mb-2 leading-none">
-                                <svg class="w-3.5 h-3.5 text-[#1351b4] dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                        <div class="flex flex-col items-center justify-center text-center p-3 rounded-xl bg-white border border-blue-200 shadow-xs shrink-0 min-w-36" id="quadro-validacao-govbr" title="Campo de Validação Gov.br">
+                            <div class="flex items-center justify-center gap-1 text-[11px] font-extrabold uppercase text-[#1351b4] mb-2 leading-none">
+                                <svg class="w-3.5 h-3.5 text-[#1351b4]" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd" />
                                 </svg>
                                 <span>Validação</span>
                             </div>
                             <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" title="Validar autenticidade no ITI" class="block">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Fvalidar.iti.br" alt="QR Code Validação ITI Gov.br" class="w-16 h-16 rounded border border-gray-200 dark:border-slate-600 p-1 bg-white mx-auto mb-1.5" id="govbr-qr-image">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Fvalidar.iti.br" alt="QR Code Validação ITI Gov.br" class="w-16 h-16 rounded border border-gray-200 p-1 bg-white mx-auto mb-1.5" id="govbr-qr-image">
                             </a>
-                            <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-[#1351b4] dark:text-blue-400 hover:underline leading-tight">validar.iti.br</a>
-                            <span class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">Aponte a câmera</span>
+                            <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-[#1351b4] hover:underline leading-tight">validar.iti.br</a>
+                            <span class="text-[10px] text-gray-500 leading-tight">Aponte a câmera</span>
                             <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" class="mt-2 text-[10px] font-bold text-white bg-[#1351b4] hover:bg-[#0c326f] px-2.5 py-1 rounded-md inline-flex items-center gap-1 transition-colors no-print" title="Abrir validador oficial do ITI em nova aba">
                                 <span>Validar</span>
                                 <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -343,46 +351,46 @@
                     <!-- SELOS DIGITAIS ICP-BRASIL (Empresa + Contador / Responsável) -->
                     <div id="secao-assinaturas-icp" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2" style="display: none;">
                         <!-- Carimbo Digital Empresa (e-CNPJ) -->
-                        <div class="rounded-xl border-2 border-emerald-500/80 dark:border-emerald-500/60 bg-emerald-50/40 dark:bg-slate-900/60 p-4 flex flex-col gap-2.5 shadow-xs">
-                            <div class="flex items-center gap-2 border-b border-emerald-200 dark:border-emerald-800/60 pb-2">
+                        <div class="rounded-xl border-2 border-emerald-600 bg-emerald-50/50 p-4 flex flex-col gap-2.5 shadow-xs">
+                            <div class="flex items-center gap-2 border-b border-emerald-200 pb-2">
                                 <div class="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 icp-stamp-badge">
                                     <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                     </svg>
                                     <span>ICP-Brasil</span>
                                 </div>
-                                <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Assinatura Digital Empresa (e-CNPJ)</span>
+                                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wide">Assinatura Digital Empresa (e-CNPJ)</span>
                             </div>
-                            <div class="text-xs text-gray-700 dark:text-gray-300 flex flex-col gap-1 leading-relaxed">
+                            <div class="text-xs text-gray-800 flex flex-col gap-1 leading-relaxed">
                                 <div><strong>Assinado digitalmente por:</strong></div>
-                                <div class="info-nome sync-empresa font-bold text-gray-900 dark:text-white uppercase" contenteditable="true">[NOME DA SUA EMPRESA LTDA]</div>
+                                <div class="info-nome sync-empresa font-bold text-gray-900 uppercase" contenteditable="true">[NOME DA SUA EMPRESA LTDA]</div>
                                 <div><strong>CNPJ:</strong> <span class="sync-cnpj font-semibold" contenteditable="true">00.000.000/0001-00</span></div>
                                 <div><strong>Certificado / AC:</strong> <span id="stamp-icp-empresa-ac" contenteditable="true">AC SERASA RFB v5 &bull; e-CNPJ A1</span></div>
                                 <div><strong>Serial / ID:</strong> <span id="stamp-icp-empresa-serial" class="font-mono text-[11px]" contenteditable="true">4A82-C1F9-038D-91E2</span></div>
-                                <div class="timestamp text-gray-500 dark:text-gray-400" contenteditable="true" id="stamp-time-empresa">Data e Hora: 01/10/2026 18:00:00 -03:00</div>
-                                <div class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 border-t border-emerald-100 dark:border-emerald-900/40 pt-1">Assinatura Digital qualificada conforme MP nº 2.200-2/2001 e validade jurídica plena ICP-Brasil.</div>
+                                <div class="timestamp text-gray-600" contenteditable="true" id="stamp-time-empresa">Data e Hora: 01/10/2026 18:00:00 -03:00</div>
+                                <div class="text-[11px] text-emerald-800 mt-1 border-t border-emerald-200 pt-1">Assinatura Digital qualificada conforme MP nº 2.200-2/2001 e validade jurídica plena ICP-Brasil.</div>
                             </div>
                         </div>
                         
                         <!-- Carimbo Digital Contador / Responsável Legal (e-CPF / CRC) -->
-                        <div class="rounded-xl border-2 border-emerald-500/80 dark:border-emerald-500/60 bg-emerald-50/40 dark:bg-slate-900/60 p-4 flex flex-col gap-2.5 shadow-xs">
-                            <div class="flex items-center gap-2 border-b border-emerald-200 dark:border-emerald-800/60 pb-2">
+                        <div class="rounded-xl border-2 border-emerald-600 bg-emerald-50/50 p-4 flex flex-col gap-2.5 shadow-xs">
+                            <div class="flex items-center gap-2 border-b border-emerald-200 pb-2">
                                 <div class="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 icp-stamp-badge">
                                     <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                     </svg>
                                     <span>ICP-Brasil</span>
                                 </div>
-                                <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Assinatura Digital Contador / Sócio</span>
+                                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wide">Assinatura Digital Contador / Sócio</span>
                             </div>
-                            <div class="text-xs text-gray-700 dark:text-gray-300 flex flex-col gap-1 leading-relaxed">
+                            <div class="text-xs text-gray-800 flex flex-col gap-1 leading-relaxed">
                                 <div><strong>Assinado digitalmente por:</strong></div>
-                                <div class="info-nome font-bold text-gray-900 dark:text-white uppercase" id="stamp-contador-nome" contenteditable="true">[NOME DO CONTADOR / SÓCIO RESPONSÁVEL]</div>
+                                <div class="info-nome font-bold text-gray-900 uppercase" id="stamp-contador-nome" contenteditable="true">[NOME DO CONTADOR / SÓCIO RESPONSÁVEL]</div>
                                 <div><strong>Registro / Documento:</strong> <span id="stamp-contador-crc" contenteditable="true">CRC: 000000/O-0 &bull; Contador</span></div>
                                 <div><strong>Certificado / AC:</strong> <span id="stamp-icp-contador-ac" contenteditable="true">AC CERTISIGN MULTIPLA v5 &bull; e-CPF A1</span></div>
                                 <div><strong>Serial / ID:</strong> <span id="stamp-icp-contador-serial" class="font-mono text-[11px]" contenteditable="true">7F3B-E291-56A0-18CD</span></div>
-                                <div class="timestamp text-gray-500 dark:text-gray-400" contenteditable="true" id="stamp-time-contador">Data e Hora: 01/10/2026 18:00:00 -03:00</div>
-                                <div class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 border-t border-emerald-100 dark:border-emerald-900/40 pt-1">Assinatura Digital qualificada conforme MP nº 2.200-2/2001 e validade jurídica plena ICP-Brasil.</div>
+                                <div class="timestamp text-gray-600" contenteditable="true" id="stamp-time-contador">Data e Hora: 01/10/2026 18:00:00 -03:00</div>
+                                <div class="text-[11px] text-emerald-800 mt-1 border-t border-emerald-200 pt-1">Assinatura Digital qualificada conforme MP nº 2.200-2/2001 e validade jurídica plena ICP-Brasil.</div>
                             </div>
                         </div>
                     </div>
@@ -496,10 +504,10 @@
 
     <div id="app-footer" class="shrink-0"></div>
 
-    <script src="/js/api.js?v=20261001181840"></script>
-    <script src="/js/components/navbar.js?v=20261001181840"></script>
-    <script src="/js/declaracao_faturamento.js?v=20261001181840"></script>
-    <script src="/js/components/footer.js?v=20261001181840"></script>
+    <script src="/js/api.js?v=20261001194849"></script>
+    <script src="/js/components/navbar.js?v=20261001194849"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001194849"></script>
+    <script src="/js/components/footer.js?v=20261001194849"></script>
 </body>
 
 </html>

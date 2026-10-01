@@ -286,9 +286,9 @@
             const valorAtual = memoriaValores[key] || '0,00';
 
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50/70 dark:hover:bg-slate-700/40 transition-colors';
-            tr.innerHTML = `<td class="px-4 py-2.5 text-gray-900 dark:text-gray-100 font-medium">${mesNomeFormatado} / ${currentAno}</td>
-                            <td class="px-4 py-2.5 text-right font-mono font-bold text-gray-900 dark:text-gray-100">R$ <span contenteditable="true" class="valor-mes outline-none px-1.5 py-0.5 rounded hover:bg-yellow-100/50 dark:hover:bg-yellow-900/30 focus:ring-1 focus:ring-brand-500" data-key="${key}">${valorAtual}</span></td>`;
+            tr.className = 'hover:bg-gray-50/70 transition-colors';
+            tr.innerHTML = `<td class="px-4 py-2.5 text-gray-900 font-medium">${mesNomeFormatado} / ${currentAno}</td>
+                            <td class="px-4 py-2.5 text-right font-mono font-bold text-gray-900">R$ <span contenteditable="true" class="valor-mes outline-none px-1.5 py-0.5 rounded hover:bg-yellow-100/50 focus:ring-1 focus:ring-brand-500" data-key="${key}">${valorAtual}</span></td>`;
             tbody.appendChild(tr);
 
             if (currentMes === endMes && currentAno === txtAnoFim) break;

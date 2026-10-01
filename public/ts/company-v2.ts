@@ -9,6 +9,16 @@ const COMPANY_LOGO_MAX_BYTES = 2 * 1024 * 1024;
 const COMPANY_LOGO_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 let g_companyLogoPreviewVersion = 0;
 let companyDocsList: { name: string; url: string; attachedAt?: string }[] = [];
+let renameDocIdx: number | null = null;
+let deleteDocIdx: number | null = null;
+
+let g_parentCustomer: any = null;
+let g_companySales: any[] = [];
+let g_companyServices: any[] = [];
+let g_companyRevenues: any[] = [];
+let g_companyTasks: any[] = [];
+let g_currentCompanyTaskFilter = 'pending';
+let g_currentCompanyViewMode = 'list';
 
 const parseCnpjDocuments = (val: any): { name: string; url: string; attachedAt?: string }[] => {
     if (!val) return [];
@@ -40,6 +50,77 @@ const parseCnpjDocuments = (val: any): { name: string; url: string; attachedAt?:
     }).filter(Boolean) as { name: string; url: string; attachedAt: string }[];
 };
 
+let g_currentViewingDocUrl: string = '';
+let g_currentViewingDocTitle: string = '';
+
+function openDocumentInNewTab(url: string, title?: string) {
+    if (!url) return;
+    try {
+        if (url.startsWith('data:')) {
+            const arr = url.split(',');
+            const mimeMatch = arr[0]?.match(/:(.*?);/);
+            const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+            const bstr = atob(arr[1] || '');
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            const blob = new Blob([u8arr], { type: mime });
+            const blobUrl = URL.createObjectURL(blob);
+            const newWin = window.open(blobUrl, '_blank');
+            if (!newWin) {
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+            return;
+        }
+        const newWin = window.open(url, '_blank');
+        if (!newWin) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    } catch (err) {
+        console.error('Erro ao abrir documento em nova aba:', err);
+        window.open(url, '_blank');
+    }
+}
+
+function openPdfViewerModal(url: string, titleText: string) {
+    g_currentViewingDocUrl = url;
+    g_currentViewingDocTitle = titleText;
+    const modal = document.getElementById('pdfViewerModal');
+    const iframe = document.getElementById('pdfIframe') as HTMLIFrameElement | null;
+    const title = document.getElementById('pdfViewerModalTitle');
+    const download = document.getElementById('downloadPdfModal') as HTMLAnchorElement | null;
+
+    if (!modal) return;
+    if (title) title.textContent = titleText || 'Visualizar Documento';
+    if (iframe) iframe.src = url;
+    if (download) {
+        download.href = url;
+        download.download = titleText || 'documento.pdf';
+    }
+    modal.classList.remove('hidden');
+}
+
+function closePdfViewerModal() {
+    const modal = document.getElementById('pdfViewerModal');
+    const iframe = document.getElementById('pdfIframe') as HTMLIFrameElement | null;
+    if (iframe) iframe.src = '';
+    modal?.classList.add('hidden');
+}
+
 function renderCompanyDocsList() {
     const docContainer = document.getElementById('companyDocumentContainer');
     if (!docContainer) return;
@@ -48,7 +129,7 @@ function renderCompanyDocsList() {
     
     if (companyDocsList.length === 0) {
         docContainer.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 gap-2 text-gray-400 dark:text-gray-500 w-full">
+            <div class="flex flex-col items-center justify-center py-12 gap-2 text-gray-400 dark:text-gray-500 w-full font-sans">
                 <svg class="w-12 h-12 text-gray-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -58,10 +139,10 @@ function renderCompanyDocsList() {
         return;
     }
     
-    docContainer.innerHTML = companyDocsList.map((doc, idx) => {
+    const cardsHtml = companyDocsList.map((doc, idx) => {
         const fileName = doc.url.substring(doc.url.lastIndexOf('/') + 1);
         const d = doc.attachedAt ? new Date(doc.attachedAt) : null;
-        const dateStr = d ? `Anexado em ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '';
+        const dateStr = d && !isNaN(d.getTime()) ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
         const dateHtml = dateStr ? `
             <p class="text-[10px] text-gray-400 dark:text-gray-500 font-mono mt-1 flex items-center gap-1">
                 <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -71,19 +152,24 @@ function renderCompanyDocsList() {
 
         return `
             <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:border-brand-300 dark:hover:border-brand-700 transition-all font-sans mb-3">
-                <a href="${doc.url}" class="btn-preview-company-doc flex items-center gap-3 flex-1 min-w-0 mr-4 group text-left cursor-pointer decoration-none" data-index="${idx}">
+                <button type="button" class="btn-preview-company-doc flex items-center gap-3 flex-1 min-w-0 mr-4 group text-left cursor-pointer" data-index="${idx}">
                     <div class="p-2 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/60 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">${doc.name}</p>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">${fileName}</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">${escapeHtml(doc.name)}</p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">${escapeHtml(fileName)}</p>
                         ${dateHtml}
                     </div>
-                </a>
+                </button>
                 <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" class="btn-open-tab-company-doc p-1.5 rounded text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 transition-colors cursor-pointer" data-index="${idx}" title="Abrir em nova aba">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </button>
                     <button type="button" class="btn-rename-company-doc p-1.5 rounded text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 transition-colors" data-index="${idx}" title="Renomear documento">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
@@ -98,6 +184,12 @@ function renderCompanyDocsList() {
             </div>
         `;
     }).join('');
+
+    docContainer.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full font-sans">
+            ${cardsHtml}
+        </div>
+    `;
 }
 
 function onlyDigits(value) {
@@ -427,6 +519,8 @@ function setConsultaJson(value) {
 }
 
 function openCompanyDocPreview(doc: any) {
+    g_currentViewingDocUrl = doc?.url || '';
+    g_currentViewingDocTitle = doc?.name || '';
     const modal = document.getElementById('companyDocPreviewModal');
     const title = document.getElementById('companyDocPreviewModalTitle');
     const content = document.getElementById('companyDocPreviewContent');
@@ -480,6 +574,412 @@ function openConsultaModal(value = '') {
 
 function closeConsultaModal() {
     document.getElementById('consultaModal')?.classList.add('hidden');
+}
+
+function openRenameDocumentModal(idx: number) {
+    if (idx < 0 || idx >= companyDocsList.length) return;
+    renameDocIdx = idx;
+    const modal = document.getElementById('renameDocumentModal');
+    const input = document.getElementById('renameDocumentInput') as HTMLInputElement | null;
+    if (input) input.value = companyDocsList[idx].name || '';
+    modal?.classList.remove('hidden');
+    input?.focus();
+}
+
+function closeRenameDocumentModal() {
+    const modal = document.getElementById('renameDocumentModal');
+    modal?.classList.add('hidden');
+    renameDocIdx = null;
+}
+
+function openDeleteDocumentModal(idx: number) {
+    if (idx < 0 || idx >= companyDocsList.length) return;
+    deleteDocIdx = idx;
+    const modal = document.getElementById('deleteDocumentModal');
+    const nameSpan = document.getElementById('deleteDocumentName');
+    if (nameSpan) nameSpan.textContent = companyDocsList[idx].name || '';
+    modal?.classList.remove('hidden');
+}
+
+function closeDeleteDocumentModal() {
+    const modal = document.getElementById('deleteDocumentModal');
+    modal?.classList.add('hidden');
+    deleteDocIdx = null;
+}
+
+async function fetchAndRenderCompanyNotes(customerId: string) {
+    const list = document.getElementById('companyNotesList');
+    if (!list) return;
+    try {
+        const res = await api(`/entities/customers/${customerId}/notes`);
+        const notes = res.data || [];
+        if (notes.length === 0) {
+            list.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 font-sans py-2">Nenhuma anotação cadastrada.</p>';
+            return;
+        }
+        list.innerHTML = notes.map((n: any) => {
+            const dateStr = n.created_at ? new Date(n.created_at).toLocaleString('pt-BR') : '';
+            return `
+                <div class="p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm font-sans mb-2 flex justify-between items-start gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-semibold text-brand-600 dark:text-brand-400">${escapeHtml(n.user_name || 'Usuário')}</span>
+                            <span class="text-[11px] text-gray-400 font-mono">${dateStr}</span>
+                        </div>
+                        <p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">${escapeHtml(n.note)}</p>
+                    </div>
+                    <button type="button" class="btn-delete-company-note text-gray-400 hover:text-red-500 p-1 rounded transition-colors" data-id="${n.public_id}" title="Excluir anotação">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        list.querySelectorAll('.btn-delete-company-note').forEach((btn: any) => {
+            btn.addEventListener('click', async () => {
+                const noteId = btn.dataset.id;
+                if (!noteId) return;
+                if (!confirm('Deseja realmente excluir esta anotação?')) return;
+                try {
+                    btn.disabled = true;
+                    await api(`/entities/customers/${customerId}/notes/${noteId}`, {
+                        method: 'DELETE'
+                    });
+                    UI.showAlert('alertMessage', 'Anotação excluída com sucesso!', 'success');
+                    fetchAndRenderCompanyNotes(customerId);
+                } catch (err: any) {
+                    alert(err.message || 'Erro ao excluir anotação.');
+                    btn.disabled = false;
+                }
+            });
+        });
+    } catch (e: any) {
+        console.error('Erro ao buscar anotações:', e);
+        list.innerHTML = '<p class="text-sm text-red-500 font-sans">Erro ao carregar anotações.</p>';
+    }
+}
+
+function renderCompanyTasks() {
+    const tasksList = document.getElementById('companyTasksList');
+    if (!tasksList) return;
+
+    const filtered = g_companyTasks.filter((t: any) => {
+        const status = t.status || 'pending';
+        if (g_currentCompanyTaskFilter === 'all') return true;
+        return status === g_currentCompanyTaskFilter;
+    });
+
+    if (filtered.length === 0) {
+        tasksList.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 font-sans py-4 text-center">Nenhuma tarefa encontrada.</p>';
+        return;
+    }
+
+    tasksList.innerHTML = filtered.map((task: any) => {
+        const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR') : '-';
+        const statusColors: any = {
+            completed: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+            progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+            pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+        };
+        const statusLabels: any = {
+            completed: 'Concluída',
+            progress: 'Em Andamento',
+            pending: 'A Fazer'
+        };
+        const status = task.status || 'pending';
+        const colorClass = statusColors[status] || statusColors.pending;
+        const label = statusLabels[status] || 'Pendente';
+
+        return `
+            <div class="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:border-brand-300 dark:hover:border-brand-700 transition-all font-sans mb-2">
+                <div class="flex-1 min-w-0 pr-4">
+                    <h5 class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">${escapeHtml(task.title || 'Tarefa sem título')}</h5>
+                    ${task.description ? `<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">${escapeHtml(task.description)}</p>` : ''}
+                    <div class="flex items-center gap-3 mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+                        <span class="flex items-center gap-1 font-mono">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            ${dueDate}
+                        </span>
+                        ${task.assigned_to_name ? `<span>Resp: ${escapeHtml(task.assigned_to_name)}</span>` : ''}
+                    </div>
+                </div>
+                <div class="shrink-0">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}">
+                        ${label}
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function setupCompanyMap(company: any) {
+    const addressSpan = document.getElementById('mapCompanyAddress');
+    const iframe = document.getElementById('companyGoogleMapsIframe') as HTMLIFrameElement | null;
+    const btnWaze = document.getElementById('btnCompanyOpenWaze') as HTMLAnchorElement | null;
+    const btnMaps = document.getElementById('btnCompanyOpenGoogleMaps') as HTMLAnchorElement | null;
+
+    const companyAddressParts = [
+        company.street,
+        company.number,
+        company.neighborhood,
+        company.city,
+        company.state,
+        company.zipcode
+    ].filter(Boolean);
+    const companyAddressStr = companyAddressParts.join(', ');
+
+    if (addressSpan) {
+        addressSpan.textContent = companyAddressStr || 'Endereço não cadastrado';
+    }
+
+    const authCtx = (window as any).gNavbarAuthContext;
+    const authCompany = authCtx?.company;
+    const authCompanyAddressParts = authCompany ? [
+        authCompany.street,
+        authCompany.number,
+        authCompany.neighborhood,
+        authCompany.city,
+        authCompany.state,
+        authCompany.zipcode
+    ].filter(Boolean) : [];
+    const authCompanyAddressStr = authCompanyAddressParts.join(', ');
+
+    if (companyAddressStr) {
+        let embedUrl = '';
+        let mapsUrl = '';
+        let wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(companyAddressStr)}&navigate=yes`;
+
+        if (authCompanyAddressStr && authCompanyAddressStr !== companyAddressStr) {
+            embedUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(authCompanyAddressStr)}&daddr=${encodeURIComponent(companyAddressStr)}&output=embed`;
+            mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(authCompanyAddressStr)}&destination=${encodeURIComponent(companyAddressStr)}`;
+        } else {
+            embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(companyAddressStr)}&output=embed`;
+            mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(companyAddressStr)}`;
+        }
+
+        if (iframe) iframe.src = embedUrl;
+        if (btnWaze) {
+            btnWaze.href = wazeUrl;
+            btnWaze.classList.remove('hidden');
+        }
+        if (btnMaps) {
+            btnMaps.href = mapsUrl;
+            btnMaps.classList.remove('hidden');
+        }
+    } else {
+        if (iframe) iframe.removeAttribute('src');
+        if (btnWaze) btnWaze.classList.add('hidden');
+        if (btnMaps) btnMaps.classList.add('hidden');
+    }
+}
+
+async function loadCompanyCustomerData(company: any) {
+    if (!company) return;
+
+    const ordersTable = document.getElementById('companyOrdersTable');
+    const servicesTable = document.getElementById('companyServicesTable');
+    const financialsTable = document.getElementById('companyFinancialsTable');
+    const notesList = document.getElementById('companyNotesList');
+    const tasksList = document.getElementById('companyTasksList');
+
+    if (ordersTable) ordersTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Carregando pedidos...</td></tr>';
+    if (servicesTable) servicesTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Carregando serviços...</td></tr>';
+    if (financialsTable) financialsTable.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Carregando financeiro...</td></tr>';
+    if (notesList) notesList.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 font-sans">Carregando anotações...</p>';
+    if (tasksList) tasksList.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 font-sans">Carregando tarefas...</p>';
+
+    // Find parent customer if not present
+    let parentCustomer = company.parent_customer;
+    if (!parentCustomer && company.public_id) {
+        try {
+            const compRes = await api(`/companies/${company.public_id}`);
+            if (compRes?.data?.parent_customer) {
+                parentCustomer = compRes.data.parent_customer;
+                company.parent_customer = parentCustomer;
+            }
+        } catch (e) {}
+    }
+
+    if (!parentCustomer && company.cnpj) {
+        try {
+            const custRes = await api('/customers');
+            const cleanCompanyCnpj = String(company.cnpj).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            const matchingCust = (custRes?.data || []).find((c: any) => {
+                const cleanCustCnpj = String(c.cnpj_cpf || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                return cleanCustCnpj && cleanCustCnpj === cleanCompanyCnpj;
+            });
+            if (matchingCust) {
+                parentCustomer = {
+                    id: matchingCust.id,
+                    public_id: matchingCust.public_id,
+                    name: matchingCust.name,
+                    trade_name: matchingCust.trade_name,
+                    cnpj_cpf: matchingCust.cnpj_cpf
+                };
+                company.parent_customer = parentCustomer;
+            }
+        } catch (e) {}
+    }
+
+    g_parentCustomer = parentCustomer;
+    const parentCustomerPublicId = parentCustomer?.public_id;
+
+    // Load in parallel
+    try {
+        const [salesRes, servicesRes, revenuesRes, tasksRes] = await Promise.all([
+            parentCustomerPublicId ? api(`/orders/customers/${parentCustomerPublicId}/sales`).catch(() => api('/sales').catch(() => ({ data: [] }))) : api('/sales').catch(() => ({ data: [] })),
+            api('/estoque/service-launches').catch(() => ({ data: [] })),
+            api('/finance/revenues').catch(() => ({ data: [] })),
+            api('/tasks').catch(() => ({ data: [] }))
+        ]);
+
+        const sales = salesRes.data || [];
+        g_companySales = sales;
+
+        const allServices = servicesRes.data || [];
+        g_companyServices = allServices.filter((item: any) => 
+            (parentCustomerPublicId && item.customer_public_id === parentCustomerPublicId) ||
+            item.company_id === company.id
+        );
+
+        const allRevenues = revenuesRes.data || [];
+        g_companyRevenues = allRevenues.filter((item: any) => 
+            (parentCustomerPublicId && (item.customer_public_id === parentCustomerPublicId || item.entity_public_id === parentCustomerPublicId)) ||
+            item.company_id === company.id
+        );
+
+        const allTasks = tasksRes.data || [];
+        g_companyTasks = allTasks.filter((item: any) => 
+            (parentCustomerPublicId && item.personType === 'customer' && item.personId === parentCustomerPublicId) ||
+            item.company_id === company.id
+        );
+
+        // Render Pedidos
+        if (ordersTable) {
+            if (g_companySales.length === 0) {
+                ordersTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhum pedido encontrado.</td></tr>';
+            } else {
+                ordersTable.innerHTML = g_companySales.map((sale: any) => {
+                    const date = sale.created_at ? new Date(sale.created_at).toLocaleDateString('pt-BR') : '-';
+                    const formattedVal = Number(sale.total_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const saleId = sale.public_id ? sale.public_id.slice(-6).toUpperCase() : (sale.id || '-');
+                    return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors font-sans">
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">#${saleId}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${date}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">${sale.status || 'Pendente'}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right font-mono">${formattedVal}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Render Serviços
+        if (servicesTable) {
+            if (g_companyServices.length === 0) {
+                servicesTable.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhum lançamento de serviço encontrado.</td></tr>';
+            } else {
+                servicesTable.innerHTML = g_companyServices.map((srv: any) => {
+                    const formattedVal = Number(srv.total_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const srvId = srv.public_id ? srv.public_id.slice(-6).toUpperCase() : (srv.id || '-');
+                    return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors font-sans">
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">#${srvId}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${srv.service_name || srv.description || '-'}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200">${srv.nfse_status || srv.status || 'Pendente'}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right font-mono">${formattedVal}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Render Financeiro
+        if (financialsTable) {
+            if (g_companyRevenues.length === 0) {
+                financialsTable.innerHTML = '<tr><td colspan="5" class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhum lançamento financeiro encontrado.</td></tr>';
+            } else {
+                financialsTable.innerHTML = g_companyRevenues.map((rev: any) => {
+                    let date = '-';
+                    if (rev.date) {
+                        try {
+                            const d = new Date(rev.date);
+                            if (!isNaN(d.getTime())) {
+                                const str = typeof rev.date === 'string' ? rev.date : d.toISOString();
+                                const matches = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                                if (matches) {
+                                    date = `${matches[3]}/${matches[2]}/${matches[1]}`;
+                                } else {
+                                    date = d.toLocaleDateString('pt-BR');
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                    const formattedVal = Number(rev.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const statusColor = rev.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+                    const statusText = rev.status === 'paid' ? 'Pago' : 'Pendente';
+                    
+                    const escapeAttr = (str: string) => String(str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    const jwtToken = (window as any).Auth?.getToken?.() || localStorage.getItem('erp_token') || sessionStorage.getItem('erp_token') || '';
+                    const tokenParam = jwtToken ? `?token=${encodeURIComponent(jwtToken)}` : '';
+                    const receiptUrl = `/api/v1/finance/revenues/${rev.public_id}/receipt${tokenParam}`;
+                    
+                    const hasBoleto = rev.payment_method === 'boleto' && rev.billet_url;
+                    const delim = tokenParam ? '&' : '?';
+                    const boletoUrl = hasBoleto ? `/api/v1/finance/revenues/${rev.public_id}/boleto-pdf${tokenParam}${delim}nossoNumero=${encodeURIComponent(rev.billet_url)}` : '';
+
+                    return `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors font-sans">
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${rev.description || '-'}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${date}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${statusText}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right font-mono">${formattedVal}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <button type="button" class="btn-view-pdf-modal inline-flex items-center gap-1 px-2 py-1 rounded bg-brand-50 hover:bg-brand-100 text-brand-700 dark:bg-brand-950/40 dark:hover:bg-brand-900/60 dark:text-brand-300 text-[11px] font-medium transition-colors cursor-pointer" data-url="${receiptUrl}" data-name="Recibo: ${escapeAttr(rev.description)}" title="Visualizar Recibo de Cobrança">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Recibo</span>
+                                    </button>
+                                    ${hasBoleto ? `
+                                        <button type="button" class="btn-view-pdf-modal inline-flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 dark:text-indigo-300 text-[11px] font-medium transition-colors cursor-pointer" data-url="${boletoUrl}" data-name="Boleto: ${escapeAttr(rev.description)}" title="Visualizar Boleto PDF">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2zM9 16h6"/></svg>
+                                            <span>Boleto</span>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Render Notas
+        if (parentCustomerPublicId) {
+            fetchAndRenderCompanyNotes(parentCustomerPublicId);
+        } else {
+            if (notesList) notesList.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 font-sans">Nenhuma anotação vinculada a esta empresa.</p>';
+        }
+
+        // Render Tasks
+        renderCompanyTasks();
+
+        // Render Map
+        setupCompanyMap(company);
+
+    } catch (err) {
+        console.error('Erro ao carregar dados operacionais da empresa:', err);
+    }
 }
 
 async function consultSolidconUrl(inputId) {
@@ -725,6 +1225,16 @@ async function initCompanyPage() {
         const userInfo = await api('/auth/me');
         if (userInfo && userInfo.data && userInfo.data.company) {
             let company = userInfo.data.company;
+            if (company.public_id) {
+                try {
+                    const compDetailRes = await api(`/companies/${company.public_id}`);
+                    if (compDetailRes && compDetailRes.data) {
+                        company = { ...company, ...compDetailRes.data };
+                    }
+                } catch (e) {
+                    console.warn('Erro ao carregar detalhes completos da empresa via /companies/:id', e);
+                }
+            }
             g_companySnapshot = { ...company };
             g_companyPublicId = company.public_id;
 
@@ -920,6 +1430,7 @@ async function initCompanyPage() {
 
             companyDocsList = parseCnpjDocuments(company.cnpj_document_url);
             renderCompanyDocsList();
+            await loadCompanyCustomerData(company);
             await loadPosControlConfigs();
             await loadSolidconConfigs();
             await loadDorsalConfigs();
@@ -1678,49 +2189,33 @@ async function initCompanyPage() {
 
     // Tab buttons event listeners to replace inline onclick (CSP policy stringency)
     const tabBtnData = document.getElementById('tabBtn-data');
-    if (tabBtnData) {
-        tabBtnData.addEventListener('click', () => switchTab('data'));
-    }
-    const tabBtnParam = document.getElementById('tabBtn-param');
-    if (tabBtnParam) {
-        tabBtnParam.addEventListener('click', () => switchTab('param'));
-    }
-    const tabBtnCert = document.getElementById('tabBtn-cert');
-    if (tabBtnCert) {
-        tabBtnCert.addEventListener('click', () => switchTab('cert'));
-    }
-    const tabBtnLogo = document.getElementById('tabBtn-logo');
-    if (tabBtnLogo) {
-        tabBtnLogo.addEventListener('click', () => switchTab('logo'));
-    }
-    const tabBtnNotas = document.getElementById('tabBtn-notas');
-    if (tabBtnNotas) {
-        tabBtnNotas.addEventListener('click', () => switchTab('notas'));
-    }
-    const tabBtnApi = document.getElementById('tabBtn-api');
-    if (tabBtnApi) {
-        tabBtnApi.addEventListener('click', () => switchTab('api'));
-    }
-    const tabBtnSolidcon = document.getElementById('tabBtn-solidcon');
-    if (tabBtnSolidcon) {
-        tabBtnSolidcon.addEventListener('click', () => switchTab('solidcon'));
-    }
-    const tabBtnAlterdata = document.getElementById('tabBtn-alterdata');
-    if (tabBtnAlterdata) {
-        tabBtnAlterdata.addEventListener('click', () => switchTab('alterdata'));
-    }
-    const tabBtnSwagger = document.getElementById('tabBtn-swagger');
-    if (tabBtnSwagger) {
-        tabBtnSwagger.addEventListener('click', () => switchTab('swagger'));
-    }
-    const tabBtnWaze = document.getElementById('tabBtn-waze');
-    if (tabBtnWaze) {
-        tabBtnWaze.addEventListener('click', () => switchTab('waze'));
-    }
-    const tabBtnDocument = document.getElementById('tabBtn-document');
-    if (tabBtnDocument) {
-        tabBtnDocument.addEventListener('click', () => switchTab('document'));
-    }
+    // Tab buttons event listeners
+    const tabBindings: [string, string][] = [
+        ['tabBtn-data', 'data'],
+        ['tabBtn-pedido', 'pedido'],
+        ['tabBtn-servico', 'servico'],
+        ['tabBtn-financeiro', 'financeiro'],
+        ['tabBtn-document', 'document'],
+        ['tabBtn-notas-cliente', 'notas-cliente'],
+        ['tabBtn-tarefas', 'tarefas'],
+        ['tabBtn-mapa', 'mapa'],
+        ['tabBtn-param', 'param'],
+        ['tabBtn-cert', 'cert'],
+        ['tabBtn-logo', 'logo'],
+        ['tabBtn-notas', 'notas'],
+        ['tabBtn-api', 'api'],
+        ['tabBtn-solidcon', 'solidcon'],
+        ['tabBtn-alterdata', 'alterdata'],
+        ['tabBtn-swagger', 'swagger'],
+        ['tabBtn-waze', 'waze'],
+    ];
+
+    tabBindings.forEach(([btnId, tabName]) => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', () => switchTab(tabName));
+        }
+    });
 
     const getBase64 = (file: File) => {
         return new Promise((resolve, reject) => {
@@ -1762,6 +2257,7 @@ async function initCompanyPage() {
                     const response = await api(`/companies/${g_companyPublicId}`, {
                         method: 'PUT',
                         body: JSON.stringify({
+                            cnpj_document_url: JSON.stringify(companyDocsList),
                             cnpj_document_uploads: uploads
                         })
                     });
@@ -1786,64 +2282,201 @@ async function initCompanyPage() {
         companyDocContainer.addEventListener('click', async (e: Event) => {
             const target = e.target as HTMLElement | null;
             const previewBtn = target?.closest('.btn-preview-company-doc');
-            const renameBtn = target?.closest('.btn-rename-company-doc');
-            const deleteBtn = target?.closest('.btn-delete-company-doc');
+            const openTabBtn = target?.closest('.btn-open-tab-company-doc');
             
+            if (openTabBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const idx = parseInt(openTabBtn.getAttribute('data-index') || '0', 10);
+                const doc = companyDocsList[idx];
+                if (doc) {
+                    openDocumentInNewTab(doc.url, doc.name);
+                }
+                return;
+            }
+
             if (previewBtn) {
                 e.preventDefault();
                 const idx = parseInt(previewBtn.getAttribute('data-index') || '0', 10);
                 const doc = companyDocsList[idx];
                 if (doc) {
-                    openCompanyDocPreview(doc);
+                    const fileUrlLower = (doc.url || '').toLowerCase();
+                    if (fileUrlLower.endsWith('.pdf')) {
+                        openPdfViewerModal(doc.url, doc.name);
+                    } else {
+                        openCompanyDocPreview(doc);
+                    }
                 }
                 return;
             }
             
             if (renameBtn) {
+                e.preventDefault();
+                e.stopPropagation();
                 const idx = parseInt(renameBtn.getAttribute('data-index') || '0', 10);
-                const doc = companyDocsList[idx];
-                if (doc) {
-                    const newName = prompt('Digite o novo nome para o documento:', doc.name);
-                    if (newName && newName.trim()) {
-                        companyDocsList[idx].name = newName.trim();
-                        try {
-                            const response = await api(`/companies/${g_companyPublicId}`, {
-                                method: 'PUT',
-                                body: JSON.stringify({
-                                    cnpj_document_url: JSON.stringify(companyDocsList)
-                                })
-                            });
-                            UI.showAlert('alertMessage', 'Documento renomeado com sucesso!', 'success');
-                            renderCompanyDocsList();
-                        } catch (err: any) {
-                            console.error(err);
-                            UI.showAlert('alertMessage', 'Erro ao renomear documento.', 'error');
-                        }
-                    }
-                }
+                openRenameDocumentModal(idx);
+                return;
             }
             
             if (deleteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
                 const idx = parseInt(deleteBtn.getAttribute('data-index') || '0', 10);
-                if (confirm('Deseja realmente excluir este documento?')) {
-                    companyDocsList.splice(idx, 1);
-                    try {
-                        const response = await api(`/companies/${g_companyPublicId}`, {
-                            method: 'PUT',
-                            body: JSON.stringify({
-                                    cnpj_document_url: JSON.stringify(companyDocsList)
-                                })
-                            });
-                            UI.showAlert('alertMessage', 'Documento excluído com sucesso!', 'success');
-                            renderCompanyDocsList();
-                        } catch (err: any) {
-                            console.error(err);
-                            UI.showAlert('alertMessage', 'Erro ao excluir documento.', 'error');
-                        }
-                    }
+                openDeleteDocumentModal(idx);
+                return;
+            }
+        });
+    }
+
+    // Modal listeners: PDF Viewer
+    document.getElementById('openExternalPdfModal')?.addEventListener('click', () => {
+        if (g_currentViewingDocUrl) {
+            openDocumentInNewTab(g_currentViewingDocUrl, g_currentViewingDocTitle);
+        }
+    });
+    document.getElementById('btnOpenDocInNewTab')?.addEventListener('click', () => {
+        if (g_currentViewingDocUrl) {
+            openDocumentInNewTab(g_currentViewingDocUrl, g_currentViewingDocTitle);
+        }
+    });
+    document.getElementById('closePdfModal')?.addEventListener('click', closePdfViewerModal);
+    document.getElementById('pdfViewerModalBackdrop')?.addEventListener('click', closePdfViewerModal);
+
+    // Modal listeners: Rename Document
+    document.getElementById('closeRenameDocumentModal')?.addEventListener('click', closeRenameDocumentModal);
+    document.getElementById('btnCancelRenameDocument')?.addEventListener('click', closeRenameDocumentModal);
+    document.getElementById('renameDocumentModalBackdrop')?.addEventListener('click', closeRenameDocumentModal);
+
+    const renameDocForm = document.getElementById('renameDocumentForm');
+    if (renameDocForm) {
+        renameDocForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (renameDocIdx === null || renameDocIdx < 0 || renameDocIdx >= companyDocsList.length) return;
+            const input = document.getElementById('renameDocumentInput') as HTMLInputElement | null;
+            const newName = input?.value?.trim();
+            if (!newName) return;
+
+            try {
+                companyDocsList[renameDocIdx].name = newName;
+                const response = await api(`/companies/${g_companyPublicId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        cnpj_document_url: JSON.stringify(companyDocsList)
+                    })
+                });
+                companyDocsList = parseCnpjDocuments(response.data?.cnpj_document_url);
+                renderCompanyDocsList();
+                closeRenameDocumentModal();
+                UI.showAlert('alertMessage', 'Documento renomeado com sucesso!', 'success');
+            } catch (err: any) {
+                console.error(err);
+                UI.showAlert('alertMessage', err.message || 'Erro ao renomear documento.', 'error');
+            }
+        });
+    }
+
+    // Modal listeners: Delete Document
+    document.getElementById('btnCancelDeleteDocument')?.addEventListener('click', closeDeleteDocumentModal);
+    document.getElementById('deleteDocumentModalBackdrop')?.addEventListener('click', closeDeleteDocumentModal);
+    document.getElementById('btnConfirmDeleteDocument')?.addEventListener('click', async () => {
+        if (deleteDocIdx === null || deleteDocIdx < 0 || deleteDocIdx >= companyDocsList.length) return;
+        try {
+            companyDocsList.splice(deleteDocIdx, 1);
+            const response = await api(`/companies/${g_companyPublicId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    cnpj_document_url: JSON.stringify(companyDocsList)
+                })
+            });
+            companyDocsList = parseCnpjDocuments(response.data?.cnpj_document_url);
+            renderCompanyDocsList();
+            closeDeleteDocumentModal();
+            UI.showAlert('alertMessage', 'Documento excluído com sucesso!', 'success');
+        } catch (err: any) {
+            console.error(err);
+            UI.showAlert('alertMessage', err.message || 'Erro ao excluir documento.', 'error');
+        }
+    });
+
+    // Save Note Button
+    document.getElementById('btnSaveCompanyNote')?.addEventListener('click', async () => {
+        const txtArea = document.getElementById('txtNewCompanyNote') as HTMLTextAreaElement | null;
+        const noteText = txtArea?.value || '';
+        if (!noteText.trim()) {
+            alert('A anotação não pode estar vazia.');
+            return;
+        }
+        if (!g_parentCustomer?.public_id) {
+            UI.showAlert('alertMessage', 'Nenhum cliente matriz vinculado a esta empresa para salvar a anotação.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('btnSaveCompanyNote') as HTMLButtonElement | null;
+        try {
+            if (btn) btn.disabled = true;
+            await api(`/entities/customers/${g_parentCustomer.public_id}/notes`, {
+                method: 'POST',
+                body: JSON.stringify({ note: noteText })
+            });
+            if (txtArea) txtArea.value = '';
+            UI.showAlert('alertMessage', 'Anotação salva com sucesso!', 'success');
+            fetchAndRenderCompanyNotes(g_parentCustomer.public_id);
+        } catch (err: any) {
+            console.error(err);
+            UI.showAlert('alertMessage', err.message || 'Erro ao salvar anotação.', 'error');
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    });
+
+    // Task Filter Buttons
+    document.querySelectorAll('.company-task-filter-btn').forEach((btn: any) => {
+        btn.addEventListener('click', () => {
+            g_currentCompanyTaskFilter = btn.getAttribute('data-filter') || 'all';
+            document.querySelectorAll('.company-task-filter-btn').forEach((b: any) => {
+                const isCurrent = b.getAttribute('data-filter') === g_currentCompanyTaskFilter;
+                if (isCurrent) {
+                    b.className = 'company-task-filter-btn flex items-center justify-center p-2 rounded-lg transition-colors text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30';
+                } else {
+                    b.className = 'company-task-filter-btn flex items-center justify-center p-2 rounded-lg hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors text-gray-500';
                 }
             });
+            renderCompanyTasks();
+        });
+    });
+
+    // Task View Mode Buttons
+    document.querySelectorAll('.company-view-mode-btn').forEach((btn: any) => {
+        btn.addEventListener('click', () => {
+            g_currentCompanyViewMode = btn.getAttribute('data-view') || 'list';
+            document.querySelectorAll('.company-view-mode-btn').forEach((b: any) => {
+                const isCurrent = b.getAttribute('data-view') === g_currentCompanyViewMode;
+                b.classList.toggle('active', isCurrent);
+                b.classList.toggle('text-brand-700', isCurrent);
+                b.classList.toggle('dark:text-brand-300', isCurrent);
+                b.classList.toggle('bg-white', isCurrent);
+                b.classList.toggle('dark:bg-slate-700', isCurrent);
+                b.classList.toggle('shadow-sm', isCurrent);
+                b.classList.toggle('text-gray-500', !isCurrent);
+                b.classList.toggle('dark:text-gray-400', !isCurrent);
+            });
+            renderCompanyTasks();
+        });
+    });
+
+    // Financial Table receipt/boleto PDF Preview clicks
+    document.getElementById('companyFinancialsTable')?.addEventListener('click', (e: Event) => {
+        const target = e.target as HTMLElement | null;
+        const pdfBtn = target?.closest('.btn-view-pdf-modal');
+        if (pdfBtn) {
+            e.preventDefault();
+            const url = pdfBtn.getAttribute('data-url') || '';
+            const name = pdfBtn.getAttribute('data-name') || 'Documento';
+            if (url) {
+                openPdfViewerModal(url, name);
+            }
         }
+    });
 
     const companyActive = document.getElementById('companyActive');
     if (companyActive) {
@@ -2079,7 +2712,7 @@ if (document.readyState === 'loading') {
 
 // UI function to toggle tabs
 window.switchTab = function (tabName) {
-    const tabs = ['data', 'param', 'cert', 'logo', 'notas', 'api', 'solidcon', 'alterdata', 'swagger', 'waze', 'document'];
+    const tabs = ['data', 'pedido', 'servico', 'financeiro', 'document', 'notas-cliente', 'tarefas', 'mapa', 'param', 'cert', 'logo', 'notas', 'api', 'solidcon', 'alterdata', 'swagger', 'waze'];
 
     tabs.forEach(tab => {
         const btn = document.getElementById(`tabBtn-${tab}`);

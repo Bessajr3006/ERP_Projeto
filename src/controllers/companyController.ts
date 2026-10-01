@@ -486,10 +486,150 @@ export class CompanyController {
                 [company.id]
             );
 
+            let parentCustomer: any = null;
+            if (company.cnpj) {
+                const cleanCnpj = String(company.cnpj).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                if (cleanCnpj) {
+                    const [customerRows] = await pool.query<RowDataPacket[]>(
+                        `SELECT c.* 
+                         FROM customers c 
+                         JOIN companies comp ON c.company_id = comp.id 
+                         WHERE comp.is_general_admin = 1 
+                           AND REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?
+                         LIMIT 1`,
+                        [cleanCnpj]
+                    );
+                    if (customerRows && customerRows.length > 0) {
+                        const matchedCust = customerRows[0]!;
+                        parentCustomer = {
+                            id: matchedCust.id,
+                            public_id: matchedCust.public_id,
+                            name: matchedCust.name,
+                            trade_name: matchedCust.trade_name,
+                            cnpj_cpf: matchedCust.cnpj_cpf
+                        };
+
+                        const syncUpdates: string[] = [];
+                        const syncVals: any[] = [];
+
+                        // Documents sync
+                        const custDocs = matchedCust.cnpj_document_url;
+                        if (custDocs && custDocs !== '[]' && (!company.cnpj_document_url || company.cnpj_document_url === '[]')) {
+                            company.cnpj_document_url = custDocs;
+                            syncUpdates.push('cnpj_document_url = ?');
+                            syncVals.push(custDocs);
+                        }
+
+                        // Basic information sync
+                        if ((!company.trade_name || company.trade_name === 'Empresa Sem Nome') && (matchedCust.trade_name || matchedCust.name)) {
+                            company.trade_name = matchedCust.trade_name || matchedCust.name;
+                            syncUpdates.push('trade_name = ?');
+                            syncVals.push(company.trade_name);
+                        }
+                        if (!company.company_name && (matchedCust.name || matchedCust.trade_name)) {
+                            company.company_name = matchedCust.name || matchedCust.trade_name;
+                            syncUpdates.push('company_name = ?');
+                            syncVals.push(company.company_name);
+                        }
+                        if (!company.email && matchedCust.email) {
+                            company.email = matchedCust.email;
+                            syncUpdates.push('email = ?');
+                            syncVals.push(matchedCust.email);
+                        }
+                        if (!company.phone && (matchedCust.phone || matchedCust.phone_landline)) {
+                            company.phone = matchedCust.phone || matchedCust.phone_landline;
+                            syncUpdates.push('phone = ?');
+                            syncVals.push(company.phone);
+                        }
+                        if (!company.zipcode && matchedCust.zipcode) {
+                            company.zipcode = matchedCust.zipcode;
+                            syncUpdates.push('zipcode = ?');
+                            syncVals.push(matchedCust.zipcode);
+                        }
+                        if (!company.street && matchedCust.street) {
+                            company.street = matchedCust.street;
+                            syncUpdates.push('street = ?');
+                            syncVals.push(matchedCust.street);
+                        }
+                        if (!company.number && matchedCust.number) {
+                            company.number = matchedCust.number;
+                            syncUpdates.push('number = ?');
+                            syncVals.push(matchedCust.number);
+                        }
+                        if (!company.complement && matchedCust.complement) {
+                            company.complement = matchedCust.complement;
+                            syncUpdates.push('complement = ?');
+                            syncVals.push(matchedCust.complement);
+                        }
+                        if (!company.neighborhood && matchedCust.neighborhood) {
+                            company.neighborhood = matchedCust.neighborhood;
+                            syncUpdates.push('neighborhood = ?');
+                            syncVals.push(matchedCust.neighborhood);
+                        }
+                        if (!company.city && matchedCust.city) {
+                            company.city = matchedCust.city;
+                            syncUpdates.push('city = ?');
+                            syncVals.push(matchedCust.city);
+                        }
+                        if (!company.state && matchedCust.state) {
+                            company.state = matchedCust.state;
+                            syncUpdates.push('state = ?');
+                            syncVals.push(matchedCust.state);
+                        }
+                        if (!company.ie && matchedCust.inscricao_estadual) {
+                            company.ie = matchedCust.inscricao_estadual;
+                            syncUpdates.push('ie = ?');
+                            syncVals.push(matchedCust.inscricao_estadual);
+                        }
+                        if (!company.im && matchedCust.inscricao_municipal) {
+                            company.im = matchedCust.inscricao_municipal;
+                            syncUpdates.push('im = ?');
+                            syncVals.push(matchedCust.inscricao_municipal);
+                        }
+                        if (!company.tax_regime && matchedCust.tax_regime) {
+                            company.tax_regime = matchedCust.tax_regime;
+                            syncUpdates.push('tax_regime = ?');
+                            syncVals.push(matchedCust.tax_regime);
+                        }
+                        if (!company.cnae_principal && matchedCust.cnae_principal) {
+                            company.cnae_principal = matchedCust.cnae_principal;
+                            syncUpdates.push('cnae_principal = ?');
+                            syncVals.push(matchedCust.cnae_principal);
+                        }
+                        if (!company.certificate_url && matchedCust.certificate_url) {
+                            company.certificate_url = matchedCust.certificate_url;
+                            syncUpdates.push('certificate_url = ?');
+                            syncVals.push(matchedCust.certificate_url);
+                        }
+                        if (!company.certificate_password && matchedCust.certificate_password) {
+                            company.certificate_password = matchedCust.certificate_password;
+                            syncUpdates.push('certificate_password = ?');
+                            syncVals.push(matchedCust.certificate_password);
+                        }
+                        if (!company.certificate_expiration && matchedCust.certificate_expiration) {
+                            company.certificate_expiration = matchedCust.certificate_expiration;
+                            syncUpdates.push('certificate_expiration = ?');
+                            syncVals.push(matchedCust.certificate_expiration);
+                        }
+                        if (!company.certificate_name && matchedCust.certificate_name) {
+                            company.certificate_name = matchedCust.certificate_name;
+                            syncUpdates.push('certificate_name = ?');
+                            syncVals.push(matchedCust.certificate_name);
+                        }
+
+                        if (syncUpdates.length > 0) {
+                            syncVals.push(company.id);
+                            await pool.query(`UPDATE companies SET ${syncUpdates.join(', ')} WHERE id = ?`, syncVals);
+                        }
+                    }
+                }
+            }
+
             res.status(200).json({
                 status: 'success',
                 data: {
                     ...company,
+                    parent_customer: parentCustomer,
                     users,
                     whatsapp_sessions: sessions
                 }

@@ -246,25 +246,43 @@
 
   const applySocioPrefillFromQuery = (): void => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('prefill') !== 'socio') return;
+    const prefill = String(params.get('prefill') || '').trim().toLowerCase();
+    if (prefill !== 'socio' && prefill !== 'socios') return;
 
-    const queryName = params.get('name') || '';
-    const queryPhone = params.get('phone') || '';
-    const queryEmail = params.get('email') || '';
+    const queryName = String(params.get('name') || '').trim();
+    const queryPhone = String(params.get('phone') || '').trim();
+    const queryEmail = String(params.get('email') || '').trim();
 
-    if (getById('socioName') && queryName) getById('socioName').value = queryName;
-    if (getById('socioEmail') && queryEmail) getById('socioEmail').value = queryEmail;
-    if (queryPhone) setMaskedValue(socioPhoneMask, 'socioPhone', queryPhone);
+    if (sociosManager?.onEdit) {
+      sociosManager.onEdit(null);
+    } else {
+      getById('entityModal')?.classList.remove('hidden');
+    }
 
-    const openBtn = getById('btnOpenModal');
-    if (openBtn) openBtn.click();
+    window.requestAnimationFrame(() => {
+      if (getById('socioName') && queryName) getById('socioName').value = queryName;
+      if (getById('socioEmail') && queryEmail) getById('socioEmail').value = queryEmail;
+      if (queryPhone) setMaskedValue(socioPhoneMask, 'socioPhone', queryPhone);
+    });
+
+    (UI as any)?.showAlert?.('alertMessage', 'Preenchimento aplicado. Revise os dados e clique em Salvar.', 'success', 4500);
+
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete('prefill');
+    cleanUrl.searchParams.delete('name');
+    cleanUrl.searchParams.delete('phone');
+    cleanUrl.searchParams.delete('email');
+    window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
   };
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    if (!Auth.requireAuth()) return;
+  const initPage = async (): Promise<void> => {
+    if (!(Auth as any).isAuthenticated()) {
+      window.location.href = '/';
+      return;
+    }
 
     setupSocioFormEnhancements();
-    await loadSocioStateOptions();
+    await loadSocioStateOptions('');
     setupDetailsModalTabs();
 
     (api as any)('/auth/me')
@@ -433,6 +451,7 @@
           setMaskedValue(socioZipMask, 'socioZipcode', '');
           populateSocioStateOptions('');
         }
+        getById('entityModal')?.classList.remove('hidden');
       },
     });
 
@@ -952,5 +971,13 @@
             console.error('Erro ao buscar dados do sócio:', error);
         }
     }
-  });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      void initPage();
+    });
+  } else {
+    void initPage();
+  }
 })();

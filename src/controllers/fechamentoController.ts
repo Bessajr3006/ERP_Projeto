@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { FechamentoService } from '../services/fechamentoService';
 import { AppError } from '../errors/AppError';
 import pool from '../config/db';
-import { RowDataPacket } from 'mysql2/promise';
+import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import { randomUUID } from 'crypto';
 
 const currencyField = z.preprocess(
     (val) => {
@@ -293,6 +294,59 @@ export class FechamentoController {
         }
         if (!customer && extracted.razao_social) {
             customer = await EntityRepository.getCustomerByName(companyId, extracted.razao_social);
+        }
+
+        // Auto-match or register as customer if not found
+        if (!customer && (extracted.cnpj_limpo || extracted.cnpj || extracted.razao_social)) {
+            const cleanDoc = extracted.cnpj_limpo || (extracted.cnpj || '').replace(/\D/g, '');
+            
+            let [custRows] = await pool.query<RowDataPacket[]>(
+                `SELECT * FROM customers 
+                 WHERE company_id = ? AND (
+                     (cnpj_cpf IS NOT NULL AND REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?)
+                     OR (? != '' AND LOWER(TRIM(name)) = LOWER(TRIM(?)))
+                 ) LIMIT 1`,
+                [companyId, cleanDoc, extracted.razao_social || '', extracted.razao_social || '']
+            );
+            
+            if (custRows && custRows.length > 0) {
+                customer = custRows[0];
+            } else {
+                let compName = extracted.razao_social || '';
+                let compTrade = extracted.razao_social || '';
+                let compDoc = extracted.cnpj || cleanDoc;
+
+                if (cleanDoc) {
+                    const [compRows] = await pool.query<RowDataPacket[]>(
+                        `SELECT * FROM companies 
+                         WHERE REPLACE(REPLACE(REPLACE(REPLACE(cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = ? LIMIT 1`,
+                        [cleanDoc]
+                    );
+                    if (compRows && compRows.length > 0 && compRows[0]) {
+                        const comp = compRows[0];
+                        compName = comp.company_name || comp.trade_name || compName;
+                        compTrade = comp.trade_name || comp.company_name || compTrade;
+                        compDoc = comp.cnpj || compDoc;
+                    }
+                }
+
+                if (compName || compDoc) {
+                    const newCustPublicId = randomUUID();
+                    const [insRes] = await pool.query<ResultSetHeader>(
+                        `INSERT INTO customers (public_id, company_id, name, trade_name, cnpj_cpf, tax_regime)
+                         VALUES (?, ?, ?, ?, ?, ?)`,
+                        [newCustPublicId, companyId, compName || `Empresa ${compDoc}`, compTrade || compName || `Empresa ${compDoc}`, compDoc, 'Simples Nacional']
+                    );
+                    customer = {
+                        id: insRes.insertId,
+                        public_id: newCustPublicId,
+                        name: compName || `Empresa ${compDoc}`,
+                        trade_name: compTrade || compName || `Empresa ${compDoc}`,
+                        cnpj_cpf: compDoc,
+                        tax_regime: 'Simples Nacional'
+                    };
+                }
+            }
         }
 
         let existingFechamento: any = null;

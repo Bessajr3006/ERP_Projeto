@@ -332,7 +332,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         customersToRender.forEach((customer) => {
             const option = document.createElement('option');
             option.value = customer.id;
-            option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
+            const trade = (customer.trade_name && customer.trade_name !== customer.name) ? ` (${customer.trade_name})` : '';
+            const doc = customer.cnpj_cpf ? ` - ${customer.cnpj_cpf}` : '';
+            option.textContent = `${customer.name || customer.razao_social || `Cliente ${customer.id}`}${trade}${doc}`;
             companyParam.appendChild(option);
         });
     }
@@ -356,7 +358,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         customersToRender.forEach((customer) => {
             const option = document.createElement('option');
             option.value = customer.id;
-            option.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
+            const trade = (customer.trade_name && customer.trade_name !== customer.name) ? ` (${customer.trade_name})` : '';
+            const doc = customer.cnpj_cpf ? ` - ${customer.cnpj_cpf}` : '';
+            option.textContent = `${customer.name || customer.razao_social || `Cliente ${customer.id}`}${trade}${doc}`;
             filterCompanyParam.appendChild(option);
         });
         if (currentVal && customersToRender.some((c) => String(c.id) === String(currentVal))) {
@@ -1216,7 +1220,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? 'Fechamento atualizado com sucesso!'
                 : 'Fechamento lançado com sucesso!');
             closeModal();
-            loadFechamentos();
+            await loadCustomers();
+            await loadFechamentos();
         }
         catch (error) {
             console.error('Erro ao salvar fechamento:', error);
@@ -1627,8 +1632,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     // Match customer
                     if (data.customerFound && data.customer) {
-                        companyParam.value = String(data.customer.id);
-                        updateCustomerTypeIndicator(String(data.customer.id));
+                        const custIdStr = String(data.customer.id);
+                        if (!allCustomers.some(c => String(c.id) === custIdStr)) {
+                            allCustomers.push(data.customer);
+                            populateCustomersSelect(allCustomers);
+                            populateFilterCustomersSelect(allCustomers);
+                        }
+                        companyParam.value = custIdStr;
+                        updateCustomerTypeIndicator(custIdStr);
                     }
                     else if (data.cnpj) {
                         showAlert(`Cliente com CNPJ ${data.cnpj} (${data.razaoSocial || ''}) não foi encontrado automaticamente. Por favor, selecione-o na lista.`, false);
@@ -1777,6 +1788,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (res && res.status === 'success') {
                     showAlert(`Lançamento concluído com sucesso! ${res.data?.createdCount || 0} cadastrado(s), ${res.data?.updatedCount || 0} atualizado(s).`);
                     closePgdasPastMonthsModal();
+                    await loadCustomers();
                     await loadFechamentos();
                 }
                 else {

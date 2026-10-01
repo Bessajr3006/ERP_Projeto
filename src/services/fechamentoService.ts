@@ -108,7 +108,10 @@ export class FechamentoService {
 
     static async getById(id: number, companyId: number): Promise<Fechamento> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT f.*, c.name AS customer_name, c.cnpj_cpf AS customer_cnpj_cpf,
+            `SELECT f.*, 
+                    COALESCE(c.name, (SELECT comp.company_name FROM companies comp WHERE comp.id = f.company_id), 'Empresa') AS customer_name, 
+                    COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
+                    COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
                     CASE 
                         WHEN f.observacao LIKE '%Importado%' OR f.observacao LIKE '%SPED%' OR f.observacao LIKE '%XML%' THEN 'Arquivo'
                         ELSE 'Manual'
@@ -128,7 +131,10 @@ export class FechamentoService {
 
     static async getByPublicId(publicId: string, companyId: number): Promise<Fechamento> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT f.*, c.name AS customer_name, c.cnpj_cpf AS customer_cnpj_cpf,
+            `SELECT f.*, 
+                    COALESCE(c.name, (SELECT comp.company_name FROM companies comp WHERE comp.id = f.company_id), 'Empresa') AS customer_name, 
+                    COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
+                    COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
                     CASE 
                         WHEN f.observacao LIKE '%Importado%' OR f.observacao LIKE '%SPED%' OR f.observacao LIKE '%XML%' THEN 'Arquivo'
                         ELSE 'Manual'
@@ -166,7 +172,10 @@ export class FechamentoService {
         }
 
         const query = `
-            SELECT f.*, c.name AS customer_name, c.trade_name AS customer_trade_name, c.cnpj_cpf AS customer_cnpj_cpf,
+            SELECT f.*, 
+                   COALESCE(c.name, (SELECT comp.company_name FROM companies comp WHERE comp.id = f.company_id), 'Empresa') AS customer_name, 
+                   COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
+                   COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
                    CASE 
                        WHEN f.observacao LIKE '%Importado%' OR f.observacao LIKE '%SPED%' OR f.observacao LIKE '%XML%' THEN 'Arquivo'
                        ELSE 'Manual'

@@ -235,6 +235,19 @@
             return;
         if (txtAnoFim < txtAnoInicio || (txtAnoFim === txtAnoInicio && endMes < startMes))
             return;
+        // Sincroniza controles de período da toolbar
+        const selIniMes = document.getElementById('toolbarSelectMesInicio');
+        const inpIniAno = document.getElementById('toolbarInputAnoInicio');
+        const selFimMes = document.getElementById('toolbarSelectMesFim');
+        const inpFimAno = document.getElementById('toolbarInputAnoFim');
+        if (selIniMes && selIniMes.value !== String(startMes))
+            selIniMes.value = String(startMes);
+        if (inpIniAno && inpIniAno.value !== String(txtAnoInicio))
+            inpIniAno.value = String(txtAnoInicio);
+        if (selFimMes && selFimMes.value !== String(endMes))
+            selFimMes.value = String(endMes);
+        if (inpFimAno && inpFimAno.value !== String(txtAnoFim))
+            inpFimAno.value = String(txtAnoFim);
         const diff = calcularDiferencaMeses(startMes, txtAnoInicio, endMes, txtAnoFim);
         if (diff >= 1 && diff <= 60) {
             sincronizarSeletorMeses(diff);
@@ -289,6 +302,19 @@
         atualizarTodosOsCampos('.sync-ano-inicio', iniAno.toString());
         atualizarTodosOsCampos('.sync-mes-fim', fimNome);
         atualizarTodosOsCampos('.sync-ano-fim', fimAno.toString());
+        // Atualiza controles da toolbar
+        const selIniMes = document.getElementById('toolbarSelectMesInicio');
+        const inpIniAno = document.getElementById('toolbarInputAnoInicio');
+        const selFimMes = document.getElementById('toolbarSelectMesFim');
+        const inpFimAno = document.getElementById('toolbarInputAnoFim');
+        if (selIniMes)
+            selIniMes.value = String(iniMesIdx);
+        if (inpIniAno)
+            inpIniAno.value = String(iniAno);
+        if (selFimMes)
+            selFimMes.value = String(fimMesIdx);
+        if (inpFimAno)
+            inpFimAno.value = String(fimAno);
         atualizarTabelaMeses();
     }
     function preencherUltimosNMeses(qtdMeses, usarFimAtual = true) {
@@ -837,6 +863,28 @@
                 }
             });
         });
+        // Controles de Período da Toolbar (Mês/Ano Inicial até Mês/Ano Final)
+        function aplicarPeriodoPelaToolbar() {
+            const selIniMes = document.getElementById('toolbarSelectMesInicio');
+            const inpIniAno = document.getElementById('toolbarInputAnoInicio');
+            const selFimMes = document.getElementById('toolbarSelectMesFim');
+            const inpFimAno = document.getElementById('toolbarInputAnoFim');
+            if (!selIniMes || !inpIniAno || !selFimMes || !inpFimAno)
+                return;
+            const iniMes = parseInt(selIniMes.value, 10);
+            const iniAno = parseInt(inpIniAno.value, 10);
+            const fimMes = parseInt(selFimMes.value, 10);
+            const fimAno = parseInt(inpFimAno.value, 10);
+            if (isNaN(iniMes) || isNaN(iniAno) || isNaN(fimMes) || isNaN(fimAno) || iniAno < 1900 || fimAno < 1900)
+                return;
+            if (fimAno < iniAno || (fimAno === iniAno && fimMes < iniMes))
+                return;
+            aplicarPeriodo(iniMes, iniAno, fimMes, fimAno);
+        }
+        document.getElementById('toolbarSelectMesInicio')?.addEventListener('change', aplicarPeriodoPelaToolbar);
+        document.getElementById('toolbarInputAnoInicio')?.addEventListener('input', aplicarPeriodoPelaToolbar);
+        document.getElementById('toolbarSelectMesFim')?.addEventListener('change', aplicarPeriodoPelaToolbar);
+        document.getElementById('toolbarInputAnoFim')?.addEventListener('input', aplicarPeriodoPelaToolbar);
         // Botões e seletores da Toolbar
         const selectMeses = document.getElementById('selectNumMeses');
         const containerCustomMeses = document.getElementById('containerCustomMeses');

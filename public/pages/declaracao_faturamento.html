@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Declaração de Faturamento</title>
-    <link href="/css/style.css?v=20261001163743" rel="stylesheet">
+    <link href="/css/style.css?v=20261001165338" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001163743"></script>
+    <script src="/js/pwa.js?v=20261001165338"></script>
     <style>
         /* --- ESTILOS DE TELA E FOLHA A4 --- */
         .doc-page-container {
@@ -541,14 +541,87 @@
 
                 <!-- Action Buttons -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <!-- Seletor de Número de Meses -->
+                    <button type="button" id="btnPuxarReceitas" title="Importar total de faturamento bruto a partir das receitas lançadas no ERP" class="px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-xs">
+                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>💰 Puxar Receitas</span>
+                    </button>
+                    <button type="button" id="btnBuscarEmpresaAtiva" title="Preencher dados da empresa ativa logada" class="px-2.5 py-1.5 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1">
+                        🏢 Empresa Ativa
+                    </button>
+                    <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" title="Validar autenticidade do documento no validador oficial do ITI (validar.iti.br)" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1">
+                        <span>🛡️</span>
+                        <span>Validador ITI</span>
+                    </a>
+                    <button type="button" id="btnAbrirModalGovBr" class="px-3.5 py-1.5 bg-[#1351b4] hover:bg-[#0c326f] text-white rounded-lg text-xs font-bold transition-all shadow-sm inline-flex items-center gap-1.5 ring-1 ring-[#1351b4]/30 hover:ring-[#1351b4]">
+                        <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white text-[#1351b4] font-black text-[9px] leading-none">gov</span>
+                        <span>Assinar com gov.br</span>
+                    </button>
+                    <button type="button" onclick="window.print()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-sm">
+                        🖨️ Imprimir / PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card de Controle de Período (Mês/Ano Inicial e Mês/Ano Final) -->
+            <div class="bg-white dark:bg-slate-800 px-4 py-3 rounded-xl shadow-xs border border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <!-- Seletor Mês/Ano Inicial até Mês/Ano Final -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Período da Declaração:</span>
+                    </span>
+
+                    <!-- Mês/Ano Inicial -->
+                    <div class="flex items-center gap-1 bg-gray-50 dark:bg-slate-700/60 p-1 px-2 rounded-lg border border-gray-200 dark:border-slate-600 shadow-2xs">
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">De:</span>
+                        <select id="toolbarSelectMesInicio" class="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-semibold py-1 px-2 rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs cursor-pointer">
+                            <option value="0">Janeiro</option>
+                            <option value="1">Fevereiro</option>
+                            <option value="2">Março</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Maio</option>
+                            <option value="5">Junho</option>
+                            <option value="6">Julho</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Setembro</option>
+                            <option value="9">Outubro</option>
+                            <option value="10">Novembro</option>
+                            <option value="11">Dezembro</option>
+                        </select>
+                        <input type="number" id="toolbarInputAnoInicio" min="1990" max="2099" class="w-16 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-bold py-1 px-1.5 rounded-md border border-gray-300 dark:border-slate-600 text-center focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs" placeholder="Ano" title="Ano Inicial">
+                    </div>
+
+                    <span class="text-gray-400 dark:text-gray-500 font-bold">até</span>
+
+                    <!-- Mês/Ano Final -->
+                    <div class="flex items-center gap-1 bg-gray-50 dark:bg-slate-700/60 p-1 px-2 rounded-lg border border-gray-200 dark:border-slate-600 shadow-2xs">
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">Até:</span>
+                        <select id="toolbarSelectMesFim" class="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-semibold py-1 px-2 rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs cursor-pointer">
+                            <option value="0">Janeiro</option>
+                            <option value="1">Fevereiro</option>
+                            <option value="2">Março</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Maio</option>
+                            <option value="5">Junho</option>
+                            <option value="6">Julho</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Setembro</option>
+                            <option value="9">Outubro</option>
+                            <option value="10">Novembro</option>
+                            <option value="11">Dezembro</option>
+                        </select>
+                        <input type="number" id="toolbarInputAnoFim" min="1990" max="2099" class="w-16 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-bold py-1 px-1.5 rounded-md border border-gray-300 dark:border-slate-600 text-center focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs" placeholder="Ano" title="Ano Final">
+                    </div>
+                </div>
+
+                <!-- Duração / Presets rápidos -->
+                <div class="flex flex-wrap items-center gap-2">
                     <div class="flex items-center gap-1.5 bg-gray-50 dark:bg-slate-700/60 p-1 px-2 rounded-lg border border-gray-200 dark:border-slate-600 text-xs shadow-2xs">
-                        <span class="font-semibold text-gray-600 dark:text-gray-300 flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span>Meses:</span>
-                        </span>
+                        <span class="font-semibold text-gray-600 dark:text-gray-300">Duração:</span>
                         <select id="selectNumMeses" class="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-semibold py-1 px-2 rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs cursor-pointer">
                             <option value="1">1 Mês</option>
                             <option value="2">2 Meses</option>
@@ -574,26 +647,6 @@
                     </button>
                     <button type="button" id="btnPresetAnoAtual" class="px-2.5 py-1.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition-colors">
                         📅 Ano Atual
-                    </button>
-                    <button type="button" id="btnPuxarReceitas" title="Importar total de faturamento bruto a partir das receitas lançadas no ERP" class="px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-xs">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>💰 Puxar Receitas</span>
-                    </button>
-                    <button type="button" id="btnBuscarEmpresaAtiva" title="Preencher dados da empresa ativa logada" class="px-2.5 py-1.5 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1">
-                        🏢 Empresa Ativa
-                    </button>
-                    <a href="https://validar.iti.br" target="_blank" rel="noopener noreferrer" title="Validar autenticidade do documento no validador oficial do ITI (validar.iti.br)" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1">
-                        <span>🛡️</span>
-                        <span>Validador ITI</span>
-                    </a>
-                    <button type="button" id="btnAbrirModalGovBr" class="px-3.5 py-1.5 bg-[#1351b4] hover:bg-[#0c326f] text-white rounded-lg text-xs font-bold transition-all shadow-sm inline-flex items-center gap-1.5 ring-1 ring-[#1351b4]/30 hover:ring-[#1351b4]">
-                        <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white text-[#1351b4] font-black text-[9px] leading-none">gov</span>
-                        <span>Assinar com gov.br</span>
-                    </button>
-                    <button type="button" onclick="window.print()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-sm">
-                        🖨️ Imprimir / PDF
                     </button>
                 </div>
             </div>
@@ -870,10 +923,10 @@
 
     <div id="app-footer" class="shrink-0"></div>
 
-    <script src="/js/api.js?v=20261001163743"></script>
-    <script src="/js/components/navbar.js?v=20261001163743"></script>
-    <script src="/js/declaracao_faturamento.js?v=20261001163743"></script>
-    <script src="/js/components/footer.js?v=20261001163743"></script>
+    <script src="/js/api.js?v=20261001165338"></script>
+    <script src="/js/components/navbar.js?v=20261001165338"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001165338"></script>
+    <script src="/js/components/footer.js?v=20261001165338"></script>
 </body>
 
 </html>

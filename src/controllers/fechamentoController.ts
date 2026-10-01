@@ -327,10 +327,22 @@ export class FechamentoController {
             }
         }
 
+        const pastMonths = (extracted.receitas_anteriores || []).map(r => {
+            const existing = existingMonthsMap[r.competencia];
+            return {
+                competencia: r.competencia,
+                competenciaFormatted: r.mesAno || r.competencia,
+                revenue: r.valor,
+                exists: !!existing,
+                existingId: existing?.id,
+                existingValor: existing?.valor_faturamento || 0
+            };
+        });
+
         return res.status(200).json({
             status: 'success',
             data: {
-                extracted,
+                ...extracted,
                 customer: customer ? {
                     id: customer.id,
                     public_id: customer.public_id,
@@ -339,6 +351,27 @@ export class FechamentoController {
                     cnpj_cpf: customer.cnpj_cpf,
                     customer_group_id: customer.customer_group_id
                 } : null,
+                customerFound: !!customer,
+                cnpj: extracted.cnpj,
+                razaoSocial: extracted.razao_social,
+                competencia: extracted.competencia,
+                simples_faturamento: extracted.faturamento_mes,
+                simples_valor_tributado: extracted.valor_tributado || extracted.faturamento_mes,
+                simples_valor_nao_tributado: extracted.valor_nao_tributado || 0,
+                venda_valor: extracted.faturamento_mes,
+                simples_aliquota: extracted.aliquota_efetiva,
+                simples_das: extracted.total_das,
+                simples_cpp: extracted.tributos?.cpp || 0,
+                simples_icms: extracted.tributos?.icms || 0,
+                simples_ipi: extracted.tributos?.ipi || 0,
+                simples_iss: extracted.tributos?.iss || 0,
+                simples_pis: extracted.tributos?.pis || 0,
+                simples_cofins: extracted.tributos?.cofins || 0,
+                simples_irpj: extracted.tributos?.irpj || 0,
+                simples_csll: extracted.tributos?.csll || 0,
+                simples_faturamento_acumulado_12m: extracted.rbt12,
+                simples_faturamento_acumulado_ano_anterior: extracted.rbaa,
+                pastMonths,
                 existingFechamento,
                 existingMonthsMap
             }
@@ -348,12 +381,16 @@ export class FechamentoController {
     static async batchImportPgdas(req: Request, res: Response): Promise<any> {
         const companyId = req.user!.company_id;
         const customerId = Number(req.body.customerId);
-        const items = req.body.items;
+        const rawItems = req.body.months || req.body.items || [];
+        const items = Array.isArray(rawItems) ? rawItems.map((it: any) => ({
+            competencia: String(it.competencia || '').trim(),
+            valor: Number(it.revenue !== undefined ? it.revenue : it.valor) || 0
+        })) : [];
 
         if (!customerId) {
             return res.status(400).json({ status: 'error', message: 'Cliente não informado.' });
         }
-        if (!Array.isArray(items) || items.length === 0) {
+        if (items.length === 0) {
             return res.status(400).json({ status: 'error', message: 'Nenhum mês para importar.' });
         }
 

@@ -1632,6 +1632,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const btnPgdasSelectNewOnly = document.getElementById('btnPgdasSelectNewOnly');
+    if (btnPgdasSelectNewOnly) {
+        btnPgdasSelectNewOnly.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.pgdas-month-check') as NodeListOf<HTMLInputElement>;
+            checkboxes.forEach(cb => {
+                const isNew = cb.getAttribute('data-is-new') === 'true';
+                cb.checked = isNew;
+            });
+            if (pgdasSelectAllMonths) pgdasSelectAllMonths.checked = false;
+        });
+    }
+
     if (pgdasFileInput) {
         pgdasFileInput.addEventListener('change', async () => {
             const file = pgdasFileInput.files?.[0];
@@ -1771,7 +1783,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                                 tr.innerHTML = `
                                     <td class="w-10 px-3 py-2 text-center">
-                                        <input type="checkbox" class="pgdas-month-check rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800" data-competencia="${m.competencia}" data-revenue="${m.revenue}" checked>
+                                        <input type="checkbox" class="pgdas-month-check rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800" data-competencia="${m.competencia}" data-revenue="${m.revenue}" data-is-new="${!m.exists}" checked>
                                     </td>
                                     <td class="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">${m.competenciaFormatted || m.competencia}</td>
                                     <td class="px-3 py-2 text-right font-bold text-gray-900 dark:text-gray-100">${formatBRL(m.revenue) || 'R$ 0,00'}</td>

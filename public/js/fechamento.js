@@ -1551,6 +1551,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             checkboxes.forEach(cb => cb.checked = pgdasSelectAllMonths.checked);
         });
     }
+    const btnPgdasSelectNewOnly = document.getElementById('btnPgdasSelectNewOnly');
+    if (btnPgdasSelectNewOnly) {
+        btnPgdasSelectNewOnly.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.pgdas-month-check');
+            checkboxes.forEach(cb => {
+                const isNew = cb.getAttribute('data-is-new') === 'true';
+                cb.checked = isNew;
+            });
+            if (pgdasSelectAllMonths)
+                pgdasSelectAllMonths.checked = false;
+        });
+    }
     if (pgdasFileInput) {
         pgdasFileInput.addEventListener('change', async () => {
             const file = pgdasFileInput.files?.[0];
@@ -1681,7 +1693,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     : `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">Novo (Cadastrar)</span>`;
                                 tr.innerHTML = `
                                     <td class="w-10 px-3 py-2 text-center">
-                                        <input type="checkbox" class="pgdas-month-check rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800" data-competencia="${m.competencia}" data-revenue="${m.revenue}" checked>
+                                        <input type="checkbox" class="pgdas-month-check rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800" data-competencia="${m.competencia}" data-revenue="${m.revenue}" data-is-new="${!m.exists}" checked>
                                     </td>
                                     <td class="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">${m.competenciaFormatted || m.competencia}</td>
                                     <td class="px-3 py-2 text-right font-bold text-gray-900 dark:text-gray-100">${formatBRL(m.revenue) || 'R$ 0,00'}</td>

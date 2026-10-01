@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Declaração de Faturamento</title>
-    <link href="/css/style.css?v=20261001203239" rel="stylesheet">
+    <link href="/css/style.css?v=20261001205500" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001203239"></script>
+    <script src="/js/pwa.js?v=20261001205500"></script>
     <style>
         /* Destaque sutil para campos editáveis na tela */
         [contenteditable="true"] {
@@ -138,6 +138,12 @@
 
                 <!-- Action Buttons -->
                 <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="btnPuxarFaturamento" title="Importar total de faturamento bruto a partir dos Fechamentos Fiscais do ERP (Simples Nacional / Vendas / PGDAS)" class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-indigo-300 dark:border-indigo-700 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-sm font-medium text-indigo-700 dark:text-indigo-300 shadow-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span>📊 Puxar pelo Faturamento</span>
+                    </button>
                     <button type="button" id="btnPuxarReceitas" title="Importar total de faturamento bruto a partir das receitas lançadas no ERP" class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-sm font-medium text-emerald-700 dark:text-emerald-300 shadow-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors cursor-pointer">
                         <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -178,6 +184,13 @@
                         <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3.5">
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end">
                                 
+                                <div class="sm:col-span-2 lg:col-span-4">
+                                    <label for="toolbarSelectCliente" class="block text-[11px] text-gray-500 uppercase font-bold tracking-wider dark:text-gray-400 mb-1.5">Cliente / Empresa Cadastrada</label>
+                                    <select id="toolbarSelectCliente" class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm min-h-10.5 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors cursor-pointer font-medium">
+                                        <option value="">🏢 Empresa Ativa Logada</option>
+                                    </select>
+                                </div>
+
                                 <div>
                                     <label for="toolbarSelectMesInicio" class="block text-[11px] text-gray-500 uppercase font-bold tracking-wider dark:text-gray-400 mb-1.5">Mês Inicial</label>
                                     <select id="toolbarSelectMesInicio" class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm min-h-10.5 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors cursor-pointer font-semibold">
@@ -504,10 +517,10 @@
 
     <div id="app-footer" class="shrink-0"></div>
 
-    <script src="/js/api.js?v=20261001203239"></script>
-    <script src="/js/components/navbar.js?v=20261001203239"></script>
-    <script src="/js/declaracao_faturamento.js?v=20261001203239"></script>
-    <script src="/js/components/footer.js?v=20261001203239"></script>
+    <script src="/js/api.js?v=20261001205500"></script>
+    <script src="/js/components/navbar.js?v=20261001205500"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001205500"></script>
+    <script src="/js/components/footer.js?v=20261001205500"></script>
 </body>
 
 </html>

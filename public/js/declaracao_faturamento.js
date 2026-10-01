@@ -383,6 +383,170 @@
         }
         return null;
     }
+    // Cache e gerenciamento de clientes/empresas cadastrados
+    let clientesCache = [];
+    function aplicarDadosCliente(cliente) {
+        if (!cliente)
+            return;
+        const razaoSocial = cliente.name || cliente.trade_name || '';
+        const cnpj = cliente.cnpj_cpf ? formatarCnpj(cliente.cnpj_cpf) : '';
+        if (razaoSocial) {
+            atualizarTodosOsCampos('.sync-empresa', razaoSocial);
+        }
+        if (cnpj) {
+            atualizarTodosOsCampos('.sync-cnpj', cnpj);
+        }
+        const logradouro = cliente.street || cliente.logradouro || cliente.endereco || '';
+        const numero = cliente.number || cliente.numero || '';
+        const complemento = cliente.complement || cliente.complemento || '';
+        const bairro = cliente.neighborhood || cliente.bairro || '';
+        let enderecoLinha1 = '';
+        if (logradouro) {
+            enderecoLinha1 = `${logradouro}${numero ? ', ' + numero : ''}`;
+            if (complemento)
+                enderecoLinha1 += ` - ${complemento}`;
+            if (bairro)
+                enderecoLinha1 += ` - ${bairro}`;
+            atualizarTodosOsCampos('.sync-endereco-linha1', enderecoLinha1);
+        }
+        const cidade = cliente.city || cliente.municipio || cliente.cidade || '';
+        const uf = cliente.state || cliente.uf || cliente.estado || '';
+        const cepRaw = cliente.zipcode || cliente.cep || '';
+        const cepFormatado = cepRaw ? formatarCep(cepRaw) : '';
+        if (cidade || uf) {
+            const cidadeUfCep = `${cidade || 'Niterói'} - ${uf || 'RJ'}${cepFormatado ? ', CEP: ' + cepFormatado : ''}`;
+            atualizarTodosOsCampos('.sync-endereco-linha2', cidadeUfCep);
+            atualizarDataExtenso(cidade || 'Niterói', uf || 'RJ');
+        }
+        if (!enderecoLinha1 && cnpj && cnpj.replace(/\D/g, '').length === 14) {
+            const cnpjEl = document.querySelector('.sync-cnpj');
+            if (cnpjEl) {
+                buscarCnpjNaAPI(cnpjEl);
+            }
+        }
+    }
+    async function carregarClientesNoSeletor() {
+        const select = document.getElementById('toolbarSelectCliente');
+        if (!select || typeof win.api !== 'function')
+            return;
+        try {
+            const res = await win.api('/entities/customers');
+            clientesCache = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+            // Ordena clientes por nome
+            clientesCache.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            // Preserva a opção padrão da empresa ativa
+            select.innerHTML = '<option value="">🏢 Empresa Ativa Logada</option>';
+            clientesCache.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = String(c.id);
+                const docFmt = c.cnpj_cpf ? ` - ${formatarCnpj(c.cnpj_cpf)}` : '';
+                const tradeFmt = c.trade_name && c.trade_name !== c.name ? ` (${c.trade_name})` : '';
+                opt.textContent = `👤 ${c.name}${tradeFmt}${docFmt}`;
+                select.appendChild(opt);
+            });
+        }
+        catch (e) {
+            console.debug('Não foi possível carregar lista de clientes no seletor:', e);
+        }
+    }
+    async function importarFaturamentoDoERP() {
+        const btn = document.getElementById('btnPuxarFaturamento');
+        const textoOriginal = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="animate-spin w-3.5 h-3.5 inline text-indigo-600 dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Puxando Fechamento...</span>
+            `;
+        }
+        try {
+            if (typeof win.api !== 'function') {
+                throw new Error('API não inicializada. Recarregue a página.');
+            }
+            const selCliente = document.getElementById('toolbarSelectCliente');
+            const selectedCustomerId = selCliente?.value ? Number(selCliente.value) : null;
+            let url = '/fechamentos';
+            if (selectedCustomerId) {
+                url += `?customerId=${selectedCustomerId}`;
+            }
+            const res = await win.api(url);
+            let fechamentos = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+            if (selectedCustomerId && fechamentos.length > 0) {
+                fechamentos = fechamentos.filter((f) => Number(f.customer_id) === selectedCustomerId);
+            }
+            if (fechamentos.length === 0) {
+                win.UI?.showAlert?.('alertMessage', 'Nenhum fechamento fiscal encontrado no ERP para a empresa / cliente selecionado.', 'info');
+                return;
+            }
+            // Agrupa faturamento bruto por competência mês-ano
+            const faturamentoPorMesAno = {};
+            let totalPeriodo = 0;
+            let countFechamentos = 0;
+            for (const f of fechamentos) {
+                const comp = String(f.competencia || '').trim();
+                if (!comp || !comp.includes('-'))
+                    continue;
+                const [anoStr, mesStr] = comp.split('-');
+                const ano = parseInt(anoStr, 10);
+                const mes = parseInt(mesStr, 10) - 1; // 0-indexed
+                if (isNaN(ano) || isNaN(mes) || mes < 0 || mes > 11)
+                    continue;
+                const key = `${mes}-${ano}`;
+                // Prioridade: Simples Nacional > Venda / SPED > Tributado
+                let valor = 0;
+                const sFat = Number(f.simples_faturamento || 0);
+                const vVal = Number(f.venda_valor || 0);
+                const sTrib = Number(f.simples_valor_tributado || 0);
+                if (sFat > 0) {
+                    valor = sFat;
+                }
+                else if (vVal > 0) {
+                    valor = vVal;
+                }
+                else if (sTrib > 0) {
+                    valor = sTrib;
+                }
+                if (valor > 0) {
+                    faturamentoPorMesAno[key] = (faturamentoPorMesAno[key] || 0) + valor;
+                    countFechamentos++;
+                }
+            }
+            // Atualiza memória de valores com o que foi apurado
+            Object.keys(faturamentoPorMesAno).forEach(k => {
+                memoriaValores[k] = formatarMoeda(faturamentoPorMesAno[k]);
+            });
+            // Atualiza cada linha visível na tabela
+            let countMesesPreenchidos = 0;
+            document.querySelectorAll('.valor-mes').forEach(celula => {
+                const key = celula.getAttribute('data-key');
+                if (key) {
+                    const valorDoMes = faturamentoPorMesAno[key] || 0;
+                    celula.innerText = formatarMoeda(valorDoMes);
+                    memoriaValores[key] = formatarMoeda(valorDoMes);
+                    if (valorDoMes > 0) {
+                        totalPeriodo += valorDoMes;
+                        countMesesPreenchidos++;
+                    }
+                }
+            });
+            calcularTotal();
+            const totalPeriodoFormatado = formatarMoeda(totalPeriodo);
+            win.UI?.showAlert?.('alertMessage', `Faturamento dos Fechamentos Fiscais importado com sucesso! Total no período: R$ ${totalPeriodoFormatado} (${countMesesPreenchidos} mês(es) com faturamento no período da declaração).`, 'success', 5000);
+        }
+        catch (err) {
+            console.error('Erro ao buscar fechamentos do ERP:', err);
+            win.UI?.showAlert?.('alertMessage', err.message || 'Erro ao carregar faturamento dos fechamentos.', 'error');
+        }
+        finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        }
+    }
     async function importarReceitasDoERP() {
         const btn = document.getElementById('btnPuxarReceitas');
         const textoOriginal = btn ? btn.innerHTML : '';
@@ -400,6 +564,8 @@
             if (typeof win.api !== 'function') {
                 throw new Error('API não inicializada. Recarregue a página.');
             }
+            const selCliente = document.getElementById('toolbarSelectCliente');
+            const selectedCustomerId = selCliente?.value ? Number(selCliente.value) : null;
             const res = await win.api('/finance/revenues');
             const revenues = Array.isArray(res?.data) ? res.data : [];
             if (revenues.length === 0) {
@@ -413,6 +579,8 @@
             let countTotal = 0;
             for (const rev of revenues) {
                 if (rev.status === 'cancelled')
+                    continue;
+                if (selectedCustomerId && rev.customer_id && Number(rev.customer_id) !== selectedCustomerId)
                     continue;
                 const dt = parseTransactionDate(rev.date || rev.date_launch || rev.created_at);
                 if (!dt)
@@ -910,8 +1078,29 @@
             filterBody.style.transition = 'max-height 0.3s ease, opacity 0.3s ease';
             filterBody.style.maxHeight = filterBody.scrollHeight + 'px';
         }
+        // Ações de Carregamento de Dados (Faturamento e Receitas)
+        document.getElementById('btnPuxarFaturamento')?.addEventListener('click', () => void importarFaturamentoDoERP());
         document.getElementById('btnPuxarReceitas')?.addEventListener('click', () => void importarReceitasDoERP());
-        document.getElementById('btnBuscarEmpresaAtiva')?.addEventListener('click', carregarEmpresaAtivaERP);
+        document.getElementById('btnBuscarEmpresaAtiva')?.addEventListener('click', () => {
+            const select = document.getElementById('toolbarSelectCliente');
+            if (select)
+                select.value = '';
+            carregarEmpresaAtivaERP();
+        });
+        // Seletor de Cliente / Empresa Cadastrada no Filtro
+        document.getElementById('toolbarSelectCliente')?.addEventListener('change', (e) => {
+            const select = e.target;
+            const custId = select.value ? Number(select.value) : null;
+            if (!custId) {
+                carregarEmpresaAtivaERP();
+            }
+            else {
+                const found = clientesCache.find(c => Number(c.id) === custId);
+                if (found) {
+                    aplicarDadosCliente(found);
+                }
+            }
+        });
         // Configuração Gov.br e assinaturas
         configurarEventosGovBr();
         // Inicialização
@@ -919,9 +1108,11 @@
         atualizarDataExtenso();
         preencherUltimos12Meses();
         carregarEmpresaAtivaERP();
+        carregarClientesNoSeletor();
         // Repete o carregamento após pequeno delay para garantir que o navbar.js já concluiu a injeção do contexto
         setTimeout(() => {
             carregarEmpresaAtivaERP();
+            carregarClientesNoSeletor();
         }, 300);
         setTimeout(() => {
             carregarEmpresaAtivaERP();

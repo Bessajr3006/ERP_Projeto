@@ -885,44 +885,30 @@
         document.getElementById('toolbarInputAnoInicio')?.addEventListener('input', aplicarPeriodoPelaToolbar);
         document.getElementById('toolbarSelectMesFim')?.addEventListener('change', aplicarPeriodoPelaToolbar);
         document.getElementById('toolbarInputAnoFim')?.addEventListener('input', aplicarPeriodoPelaToolbar);
-        // Botões e seletores da Toolbar
-        const selectMeses = document.getElementById('selectNumMeses');
-        const containerCustomMeses = document.getElementById('containerCustomMeses');
-        const inputCustomMeses = document.getElementById('inputNumMesesCustom');
-        selectMeses?.addEventListener('change', () => {
-            const val = selectMeses.value;
-            if (val === 'custom') {
-                if (containerCustomMeses) {
-                    containerCustomMeses.classList.remove('hidden');
-                    containerCustomMeses.classList.add('flex');
+        // Toggle do Painel de Filtro (Estilo Customers ERP)
+        const filterToggleBtn = document.getElementById('declaracao_filter_panel-filter-panel-toggle');
+        const filterBody = document.getElementById('declaracao_filter_panel-filter-panel-body');
+        const filterChevron = document.getElementById('declaracao_filter_panel-filter-panel-chevron');
+        if (filterToggleBtn && filterBody) {
+            let isFilterOpen = true;
+            filterToggleBtn.addEventListener('click', () => {
+                isFilterOpen = !isFilterOpen;
+                if (isFilterOpen) {
+                    filterBody.style.maxHeight = filterBody.scrollHeight + 'px';
+                    filterBody.style.opacity = '1';
+                    if (filterChevron)
+                        filterChevron.style.transform = 'rotate(0deg)';
                 }
-                if (inputCustomMeses) {
-                    inputCustomMeses.focus();
-                    const qtd = parseInt(inputCustomMeses.value, 10) || 12;
-                    preencherUltimosNMeses(qtd, true);
+                else {
+                    filterBody.style.maxHeight = '0px';
+                    filterBody.style.opacity = '0';
+                    if (filterChevron)
+                        filterChevron.style.transform = 'rotate(-90deg)';
                 }
-            }
-            else {
-                if (containerCustomMeses) {
-                    containerCustomMeses.classList.remove('flex');
-                    containerCustomMeses.classList.add('hidden');
-                }
-                const qtd = parseInt(val, 10);
-                if (!isNaN(qtd)) {
-                    preencherUltimosNMeses(qtd, true);
-                }
-            }
-        });
-        inputCustomMeses?.addEventListener('input', () => {
-            let qtd = parseInt(inputCustomMeses.value, 10);
-            if (isNaN(qtd))
-                return;
-            if (qtd < 1)
-                qtd = 1;
-            if (qtd > 60)
-                qtd = 60;
-            preencherUltimosNMeses(qtd, true);
-        });
+            });
+            filterBody.style.transition = 'max-height 0.3s ease, opacity 0.3s ease';
+            filterBody.style.maxHeight = filterBody.scrollHeight + 'px';
+        }
         document.getElementById('btnPuxarReceitas')?.addEventListener('click', () => void importarReceitasDoERP());
         document.getElementById('btnBuscarEmpresaAtiva')?.addEventListener('click', carregarEmpresaAtivaERP);
         // Configuração Gov.br e assinaturas

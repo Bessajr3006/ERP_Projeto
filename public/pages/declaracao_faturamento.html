@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Declaração de Faturamento</title>
-    <link href="/css/style.css?v=20261001174140" rel="stylesheet">
+    <link href="/css/style.css?v=20261001174726" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001174140"></script>
+    <script src="/js/pwa.js?v=20261001174726"></script>
     <style>
         /* --- ESTILOS DE TELA E FOLHA A4 --- */
         .doc-page-container {
@@ -395,6 +395,50 @@
             box-shadow: 0 0 0 2px #eab308;
         }
 
+        /* --- REGRAS RESPONSIVAS (TELA) --- */
+        @media screen and (max-width: 768px) {
+            .doc-page-container {
+                padding: 24px 16px;
+                border-radius: 8px;
+                margin-bottom: 24px;
+                max-width: 100%;
+            }
+            .doc-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .doc-title {
+                font-size: 1.25rem;
+                margin: 18px 0;
+            }
+            .doc-text-body {
+                font-size: 0.88rem;
+                line-height: 1.6;
+            }
+            .doc-billing-table {
+                font-size: 0.82rem;
+            }
+            .doc-billing-table th, 
+            .doc-billing-table td {
+                padding: 6px 8px;
+            }
+            .doc-govbr-stamp {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px;
+                padding: 12px;
+            }
+            .doc-govbr-stamp-right {
+                max-width: 100%;
+                width: 100%;
+                min-width: 100%;
+            }
+            .doc-signatures {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+
         /* --- REGRAS DE IMPRESSÃO (A4) --- */
         @media print {
             #globalNavRoot, #app-navbar, #app-footer, .no-print, header, nav, #modalGovBr {
@@ -509,16 +553,13 @@
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-gray-100 font-sans flex flex-col h-dvh overflow-hidden">
     <div id="app-navbar"></div>
 
-    <main class="flex-1 min-h-0 overflow-y-auto w-full pt-4 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-y-auto">
         
-        <div id="alertMessage" class="hidden w-full max-w-205 mb-3 p-4 rounded-xl text-sm no-print"></div>
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm no-print"></div>
 
-        <!-- TOP TOOLBAR & ACTIONS (No-Print) -->
-        <div class="w-full max-w-205 mb-4 no-print flex flex-col gap-3">
-            
-
+        <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
             <!-- Header & Ações Card (Estilo Customers ERP) -->
-            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 px-4 py-3 sm:px-5 flex flex-wrap items-center justify-between gap-3">
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 px-4 py-3 sm:px-5 flex flex-wrap items-center justify-between gap-3 mb-3 no-print">
                 <div class="flex items-center gap-2.5">
                     <div class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -556,7 +597,7 @@
             </div>
 
             <!-- Painel de Filtro / Parâmetros (Estilo Customers ERP) -->
-            <div id="declaracao_filter_panel-filter-panel" class="w-full">
+            <div id="declaracao_filter_panel-filter-panel" class="w-full mb-4 no-print">
                 <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
                     <button type="button" id="declaracao_filter_panel-filter-panel-toggle" class="w-full px-4 py-3 flex items-center justify-between min-h-11 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors rounded-xl cursor-pointer">
                         <div class="flex items-center gap-2">
@@ -641,10 +682,11 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- A4 DOCUMENT CONTAINER -->
-        <div class="doc-page-container" id="content">
+            <!-- Document Sheet Container Wrapper (Centering + Responsiveness) -->
+            <div class="flex-1 flex justify-center overflow-x-auto py-2 pb-12 w-full">
+                <!-- A4 DOCUMENT CONTAINER -->
+                <div class="doc-page-container" id="content">
             
             <!-- Cabeçalho da Empresa -->
             <div class="doc-header">
@@ -789,8 +831,9 @@
             </div>
 
         </div>
-
-    </main>
+    </div>
+</div>
+</main>
 
     <!-- MODAL ASSINATURA GOV.BR -->
     <div id="modalGovBr" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4">
@@ -896,10 +939,10 @@
 
     <div id="app-footer" class="shrink-0"></div>
 
-    <script src="/js/api.js?v=20261001174140"></script>
-    <script src="/js/components/navbar.js?v=20261001174140"></script>
-    <script src="/js/declaracao_faturamento.js?v=20261001174140"></script>
-    <script src="/js/components/footer.js?v=20261001174140"></script>
+    <script src="/js/api.js?v=20261001174726"></script>
+    <script src="/js/components/navbar.js?v=20261001174726"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001174726"></script>
+    <script src="/js/components/footer.js?v=20261001174726"></script>
 </body>
 
 </html>

@@ -199,7 +199,7 @@
 
         if (!sel) return;
 
-        const opcoesPadrao = ['3', '6', '12', '18', '24', '36', '48', '60'];
+        const opcoesPadrao = ['1', '2', '3', '4', '5', '6', '12', '18', '24', '36', '48', '60'];
         const strQtd = String(qtdMeses);
 
         if (opcoesPadrao.includes(strQtd)) {

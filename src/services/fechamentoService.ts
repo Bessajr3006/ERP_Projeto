@@ -1829,8 +1829,23 @@ export class FechamentoService {
             }
         }
 
-        if (!targetCompany && !customer.is_registered_as_company) {
-            throw new AppError('Esta visão é permitida apenas para empresas cadastradas no sistema.', 400);
+        if (!targetCompany) {
+            targetCompany = {
+                id: customer.id,
+                company_name: customer.name,
+                name: customer.name,
+                trade_name: customer.trade_name || customer.name,
+                cnpj: customer.cnpj_cpf,
+                ie: customer.inscricao_estadual,
+                im: customer.inscricao_municipal,
+                city: customer.city,
+                state: customer.state,
+                cd_municipio: customer.cd_municipio,
+                street: customer.street,
+                number: customer.number,
+                neighborhood: customer.neighborhood,
+                tax_regime: customer.tax_regime
+            };
         }
 
         const [fechRows] = await pool.query<RowDataPacket[]>(

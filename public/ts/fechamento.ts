@@ -283,24 +283,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const cleanDoc = (customer.cnpj_cpf || '').replace(/\D/g, '');
         const isPJ = cleanDoc.length === 14;
-        const isRegistered = customer.is_registered_as_company === 1 || customer.is_registered_as_company === true;
-
         const regime = customer.tax_regime || 'Regime não informado';
+
         companyTypeIndicator.classList.remove('hidden');
         companyTypeIndicator.classList.add('inline-flex');
         
-        if (isRegistered) {
-            companyTypeDot.className = 'h-2.5 w-2.5 rounded-full mr-1.5 bg-green-500';
-            enableXmlImport(true);
-        } else {
-            companyTypeDot.className = 'h-2.5 w-2.5 rounded-full mr-1.5 bg-red-500';
-            enableXmlImport(false);
-        }
+        // When customer is registered, show always active green dot and enable import movements
+        companyTypeDot.className = 'h-2.5 w-2.5 rounded-full mr-1.5 bg-green-500';
+        enableXmlImport(true);
 
         if (isPJ) {
             companyTypeText.textContent = `Empresa | ${regime}`;
         } else {
-            companyTypeText.textContent = `Pessoa Física | ${regime}`;
+            companyTypeText.textContent = `Empresa / Cliente | ${regime}`;
         }
     };
 

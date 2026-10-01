@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Declaração de Faturamento</title>
-    <link href="/css/style.css?v=20261001160237" rel="stylesheet">
+    <link href="/css/style.css?v=20261001162253" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001160237"></script>
+    <script src="/js/pwa.js?v=20261001162253"></script>
     <style>
         /* --- ESTILOS DE TELA E FOLHA A4 --- */
         .doc-page-container {
@@ -289,6 +289,93 @@
             background-color: #0c326f;
         }
 
+        /* Selos Digitais ICP-Brasil (Empresa e Contador) */
+        .doc-signatures {
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            margin-top: 26px;
+            page-break-inside: avoid;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .doc-digital-stamp {
+            flex: 1;
+            border: 1.5px solid #059669;
+            border-radius: 8px;
+            padding: 12px 14px;
+            background-color: #f0fdf4;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(5, 150, 105, 0.08);
+            position: relative;
+        }
+
+        .doc-stamp-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #bbf7d0;
+            padding-bottom: 6px;
+        }
+
+        .doc-stamp-badge {
+            background-color: #059669;
+            color: #ffffff;
+            font-size: 0.65rem;
+            font-weight: 900;
+            padding: 3px 7px;
+            border-radius: 4px;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .doc-stamp-title {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+        }
+
+        .doc-stamp-text {
+            font-size: 0.74rem;
+            line-height: 1.48;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5px;
+        }
+
+        .doc-stamp-text .info-nome {
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+        }
+
+        .doc-stamp-text .timestamp {
+            font-size: 0.70rem;
+            color: #475569;
+            margin-top: 1px;
+        }
+
+        .doc-stamp-legal {
+            font-size: 0.65rem;
+            color: #047857;
+            margin-top: 4px;
+            line-height: 1.35;
+            border-top: 1px dashed #bbf7d0;
+            padding-top: 4px;
+        }
+
         /* Destaque para campos editáveis na tela */
         [contenteditable="true"] {
             outline: none;
@@ -347,11 +434,43 @@
                 print-color-adjust: exact;
             }
 
+            .doc-signatures {
+                display: flex !important;
+                gap: 12px !important;
+                width: 100% !important;
+                margin-top: 20px !important;
+                page-break-inside: avoid !important;
+            }
+
             .doc-digital-stamp {
-                background-color: #fcfcfc !important;
-                border: 1px solid #666666 !important;
+                flex: 1 !important;
+                background-color: #ffffff !important;
+                border: 1.5px solid #059669 !important;
+                border-radius: 6px !important;
+                padding: 10px 12px !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                page-break-inside: avoid !important;
+            }
+
+            .doc-stamp-header {
+                border-bottom: 1px solid #d1fae5 !important;
+            }
+
+            .doc-stamp-badge {
+                background-color: #059669 !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .doc-stamp-title {
+                color: #065f46 !important;
+            }
+
+            .doc-stamp-legal {
+                color: #047857 !important;
+                border-top: 1px dashed #d1fae5 !important;
             }
 
             .doc-govbr-stamp {
@@ -592,35 +711,49 @@
                 </div>
             </div>
 
-            <!-- SELOS DIGITAIS ICP-BRASIL (Empresa + Contador) -->
+            <!-- SELOS DIGITAIS ICP-BRASIL (Empresa + Contador / Responsável) -->
             <div id="secao-assinaturas-icp" class="doc-signatures" style="display: none;">
+                <!-- Carimbo Digital Empresa (e-CNPJ) -->
                 <div class="doc-digital-stamp">
                     <div class="doc-stamp-header">
-                        <svg class="doc-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        <span>ASSINATURA DIGITAL DA EMPRESA</span>
+                        <div class="doc-stamp-badge">
+                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            <span>ICP-Brasil</span>
+                        </div>
+                        <span class="doc-stamp-title">Assinatura Digital da Empresa (e-CNPJ)</span>
                     </div>
                     <div class="doc-stamp-text">
-                        <strong>ASSINADO DIGITALMENTE POR:</strong>
+                        <div><strong>Assinado digitalmente por:</strong></div>
                         <div class="info-nome sync-empresa" contenteditable="true">[NOME DA SUA EMPRESA LTDA]</div>
-                        <div>CNPJ: <span class="sync-cnpj">00.000.000/0001-00</span></div>
-                        <div class="timestamp" contenteditable="true" id="stamp-time-empresa">Data: 12/03/2026 15:30:00 -03:00</div>
+                        <div><strong>CNPJ:</strong> <span class="sync-cnpj" contenteditable="true">00.000.000/0001-00</span></div>
+                        <div><strong>Certificado / AC:</strong> <span id="stamp-icp-empresa-ac" contenteditable="true">AC SERASA RFB v5 &bull; e-CNPJ A1</span></div>
+                        <div><strong>Serial / ID:</strong> <span id="stamp-icp-empresa-serial" class="font-mono text-[11px]" contenteditable="true">4A82-C1F9-038D-91E2</span></div>
+                        <div class="timestamp" contenteditable="true" id="stamp-time-empresa">Data e Hora: 12/03/2026 15:30:00 -03:00</div>
+                        <div class="doc-stamp-legal">Assinatura Digital qualificada conforme Medida Provisória nº 2.200-2/2001 e validade jurídica plena ICP-Brasil.</div>
                     </div>
                 </div>
                 
+                <!-- Carimbo Digital Contador / Responsável Legal (e-CPF / CRC) -->
                 <div class="doc-digital-stamp">
                     <div class="doc-stamp-header">
-                        <svg class="doc-stamp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        <span>ASSINATURA DIGITAL RESPONSÁVEL</span>
+                        <div class="doc-stamp-badge">
+                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            <span>ICP-Brasil</span>
+                        </div>
+                        <span class="doc-stamp-title">Assinatura Digital Contador / Responsável</span>
                     </div>
                     <div class="doc-stamp-text">
-                        <strong>ASSINADO DIGITALMENTE POR:</strong>
-                        <div class="info-nome" id="stamp-contador-nome" contenteditable="true">[NOME DO CONTADOR / DIRETOR]</div>
-                        <div>CRC / Cargo: <span id="stamp-contador-crc" contenteditable="true">000000/O-0</span></div>
-                        <div class="timestamp" contenteditable="true" id="stamp-time-contador">Data: 12/03/2026 15:30:00 -03:00</div>
+                        <div><strong>Assinado digitalmente por:</strong></div>
+                        <div class="info-nome" id="stamp-contador-nome" contenteditable="true">[NOME DO CONTADOR / SÓCIO RESPONSÁVEL]</div>
+                        <div><strong>Registro / Documento:</strong> <span id="stamp-contador-crc" contenteditable="true">CRC: 000000/O-0 &bull; Contador</span></div>
+                        <div><strong>Certificado / AC:</strong> <span id="stamp-icp-contador-ac" contenteditable="true">AC CERTISIGN MULTIPLA v5 &bull; e-CPF A1</span></div>
+                        <div><strong>Serial / ID:</strong> <span id="stamp-icp-contador-serial" class="font-mono text-[11px]" contenteditable="true">7F3B-E291-56A0-18CD</span></div>
+                        <div class="timestamp" contenteditable="true" id="stamp-time-contador">Data e Hora: 12/03/2026 15:30:00 -03:00</div>
+                        <div class="doc-stamp-legal">Assinatura Digital qualificada conforme Medida Provisória nº 2.200-2/2001 e validade jurídica plena ICP-Brasil.</div>
                     </div>
                 </div>
             </div>
@@ -733,10 +866,10 @@
 
     <div id="app-footer" class="shrink-0"></div>
 
-    <script src="/js/api.js?v=20261001160237"></script>
-    <script src="/js/components/navbar.js?v=20261001160237"></script>
-    <script src="/js/declaracao_faturamento.js?v=20261001160237"></script>
-    <script src="/js/components/footer.js?v=20261001160237"></script>
+    <script src="/js/api.js?v=20261001162253"></script>
+    <script src="/js/components/navbar.js?v=20261001162253"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001162253"></script>
+    <script src="/js/components/footer.js?v=20261001162253"></script>
 </body>
 
 </html>

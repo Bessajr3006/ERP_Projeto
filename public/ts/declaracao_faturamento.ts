@@ -512,12 +512,36 @@
         const stampContador = document.getElementById('stamp-time-contador');
         const stampGovBr = document.getElementById('stamp-time-govbr');
 
-        if (stampEmpresa) stampEmpresa.innerText = `Data: ${tsFormatado}`;
-        if (stampContador) stampContador.innerText = `Data: ${tsFormatado}`;
+        if (stampEmpresa) stampEmpresa.innerText = `Data e Hora: ${tsFormatado}`;
+        if (stampContador) stampContador.innerText = `Data e Hora: ${tsFormatado}`;
         if (stampGovBr) stampGovBr.innerText = tsFormatado;
     }
 
-    // 5. Modos de Assinatura & Assinatura Gov.br
+    // 5. Modos de Assinatura & Assinatura Gov.br / ICP-Brasil
+    function gerarSerialIcp(): string {
+        const hexChars = '0123456789ABCDEF';
+        const blocos: string[] = [];
+        for (let b = 0; b < 4; b++) {
+            let bloco = '';
+            for (let c = 0; c < 4; c++) {
+                bloco += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
+            }
+            blocos.push(bloco);
+        }
+        return blocos.join('-');
+    }
+
+    function aplicarSeriaisIcp() {
+        const elEmpresa = document.getElementById('stamp-icp-empresa-serial');
+        if (elEmpresa && (!elEmpresa.innerText || elEmpresa.innerText.includes('4A82'))) {
+            elEmpresa.innerText = gerarSerialIcp();
+        }
+        const elContador = document.getElementById('stamp-icp-contador-serial');
+        if (elContador && (!elContador.innerText || elContador.innerText.includes('7F3B'))) {
+            elContador.innerText = gerarSerialIcp();
+        }
+    }
+
     function definirModoAssinatura(modo: 'govbr' | 'icp' | 'ambos') {
         const secGovBr = document.getElementById('secao-assinatura-govbr');
         const secIcp = document.getElementById('secao-assinaturas-icp');
@@ -548,10 +572,12 @@
             if (secGovBr) secGovBr.style.display = 'none';
             if (secIcp) secIcp.style.display = 'flex';
             setActiveBtn(btnIcp, 'bg-emerald-600');
+            aplicarSeriaisIcp();
         } else if (modo === 'ambos') {
             if (secGovBr) secGovBr.style.display = 'flex';
             if (secIcp) secIcp.style.display = 'flex';
             setActiveBtn(btnAmbos, 'bg-slate-800 dark:bg-slate-600');
+            aplicarSeriaisIcp();
         }
     }
 
@@ -566,16 +592,20 @@
         const crcRaw = contador.crc || '';
         const docRaw = contador.cpf_cnpj ? formatarCpf(contador.cpf_cnpj, false) : '';
 
-        let crcFormatado = '';
+        let docCargo = '';
         if (crcRaw) {
-            crcFormatado = crcRaw.toUpperCase().includes('CRC') ? crcRaw.toUpperCase() : `CRC: ${crcRaw.toUpperCase()}`;
+            docCargo = crcRaw.toUpperCase().includes('CRC') ? crcRaw.toUpperCase() : `CRC: ${crcRaw.toUpperCase()}`;
+            if (docRaw) docCargo += ` • CPF: ${docRaw}`;
+            docCargo += ` • Contador Responsável`;
         } else if (docRaw) {
-            crcFormatado = `CPF: ${docRaw}`;
+            docCargo = `CPF: ${docRaw} • Responsável Legal / Sócio`;
+        } else {
+            docCargo = 'Contador / Responsável Legal';
         }
 
         contadorCadastradoCache = {
             nome: nome.toUpperCase(),
-            crc: crcFormatado,
+            crc: docCargo,
             cpf: docRaw
         };
 
@@ -585,8 +615,8 @@
         }
 
         const stampContadorCrc = document.getElementById('stamp-contador-crc');
-        if (stampContadorCrc && crcFormatado) {
-            stampContadorCrc.innerText = crcFormatado;
+        if (stampContadorCrc && docCargo) {
+            stampContadorCrc.innerText = docCargo;
         }
     }
 
@@ -602,19 +632,6 @@
                 (u.role === 'accountant' || u.role === 'auxiliar_contador') && u.is_active !== false
             );
 
-            if (contadores.length > 0) {
-                // Seleciona o contador padrão se definido, ou o primeiro cadastrado
-                const contadorPadrao = contadores.find((u: any) => Boolean(u.is_default_declaration_signer));
-                const contadorPrincipal = contadorPadrao || contadores[0];
-                aplicarDadosContador(contadorPrincipal);
-            } else {
-                // Se nenhum usuário tiver role='accountant', verifica se o usuário logado atual tem CRC
-                const authUser = win.gNavbarAuthContext?.user;
-                if (authUser?.crc) {
-                    aplicarDadosContador(authUser);
-                }
-            }
-
             // Identifica o sócio / dono da empresa responsável padrão
             const socios = users.filter((u: any) => 
                 u.role === 'socio' && u.is_active !== false
@@ -626,6 +643,29 @@
                         nome: (socioPadrao.full_name || socioPadrao.name || '').toUpperCase(),
                         cpf: socioPadrao.cpf_cnpj ? formatarCpf(socioPadrao.cpf_cnpj, false) : ''
                     };
+                }
+            }
+
+            if (contadores.length > 0) {
+                // Seleciona o contador padrão se definido, ou o primeiro cadastrado
+                const contadorPadrao = contadores.find((u: any) => Boolean(u.is_default_declaration_signer));
+                const contadorPrincipal = contadorPadrao || contadores[0];
+                aplicarDadosContador(contadorPrincipal);
+            } else if (socios.length > 0 && responsavelEmpresaCache.nome) {
+                // Se não houver contador cadastrado, usa o sócio responsável no segundo carimbo
+                const stampContadorNome = document.getElementById('stamp-contador-nome');
+                const stampContadorCrc = document.getElementById('stamp-contador-crc');
+                if (stampContadorNome && (!stampContadorNome.innerText || stampContadorNome.innerText.includes('[NOME'))) {
+                    stampContadorNome.innerText = responsavelEmpresaCache.nome;
+                }
+                if (stampContadorCrc && (!stampContadorCrc.innerText || stampContadorCrc.innerText.includes('000000'))) {
+                    stampContadorCrc.innerText = responsavelEmpresaCache.cpf ? `CPF: ${responsavelEmpresaCache.cpf} • Responsável Legal / Sócio` : 'Responsável Legal / Sócio';
+                }
+            } else {
+                // Se nenhum usuário tiver role='accountant', verifica se o usuário logado atual tem CRC
+                const authUser = win.gNavbarAuthContext?.user;
+                if (authUser?.crc) {
+                    aplicarDadosContador(authUser);
                 }
             }
         } catch (err) {

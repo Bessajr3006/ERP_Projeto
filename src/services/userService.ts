@@ -173,8 +173,14 @@ export class UserService {
             : null;
 
         const isDefaultDeclarationSigner = data.is_default_declaration_signer ? 1 : 0;
-        if (isDefaultDeclarationSigner) {
-            await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ?', [companyId]);
+        if (isDefaultDeclarationSigner && companyId) {
+            if (role === 'socio') {
+                await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ? AND role = ?', [companyId, 'socio']);
+            } else if (role === 'accountant' || role === 'auxiliar_contador') {
+                await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ? AND role IN (?, ?)', [companyId, 'accountant', 'auxiliar_contador']);
+            } else {
+                await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ? AND role = ?', [companyId, role]);
+            }
         }
 
         const columns = [
@@ -273,8 +279,15 @@ export class UserService {
 
         if (hasOwnProperty(typedData, 'is_default_declaration_signer') && typedData.is_default_declaration_signer !== undefined) {
             const isDef = typedData.is_default_declaration_signer ? 1 : 0;
-            if (isDef) {
-                await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ?', [companyId]);
+            if (isDef && companyId) {
+                const targetRole = (typedData.role as string) || currentUser.role;
+                if (targetRole === 'socio') {
+                    await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ? AND role = ?', [companyId, 'socio']);
+                } else if (targetRole === 'accountant' || targetRole === 'auxiliar_contador') {
+                    await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ? AND role IN (?, ?)', [companyId, 'accountant', 'auxiliar_contador']);
+                } else {
+                    await pool.query('UPDATE users SET is_default_declaration_signer = 0 WHERE company_id = ? AND role = ?', [companyId, targetRole]);
+                }
             }
             updates.push('is_default_declaration_signer = ?');
             values.push(isDef);

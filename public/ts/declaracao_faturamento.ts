@@ -434,8 +434,22 @@
                     aplicarDadosContador(authUser);
                 }
             }
+
+            // Identifica o sócio / dono da empresa responsável padrão
+            const socios = users.filter((u: any) => 
+                u.role === 'socio' && u.is_active !== false
+            );
+            if (socios.length > 0) {
+                const socioPadrao = socios.find((u: any) => Boolean(u.is_default_declaration_signer)) || socios[0];
+                if (socioPadrao) {
+                    responsavelEmpresaCache = {
+                        nome: (socioPadrao.full_name || socioPadrao.name || '').toUpperCase(),
+                        cpf: socioPadrao.cpf_cnpj ? formatarCpf(socioPadrao.cpf_cnpj, false) : ''
+                    };
+                }
+            }
         } catch (err) {
-            console.debug('Consulta de usuários/contadores não disponível para a sessão atual:', err);
+            console.debug('Consulta de usuários/contadores/sócios não disponível para a sessão atual:', err);
             const authUser = win.gNavbarAuthContext?.user;
             if (authUser?.crc) {
                 aplicarDadosContador(authUser);

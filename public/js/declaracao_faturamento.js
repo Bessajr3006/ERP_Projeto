@@ -923,7 +923,6 @@
                 qtd = 60;
             preencherUltimosNMeses(qtd, true);
         });
-        document.getElementById('btnPreset12Meses')?.addEventListener('click', preencherUltimos12Meses);
         document.getElementById('btnPuxarReceitas')?.addEventListener('click', () => void importarReceitasDoERP());
         document.getElementById('btnBuscarEmpresaAtiva')?.addEventListener('click', carregarEmpresaAtivaERP);
         // Configuração Gov.br e assinaturas

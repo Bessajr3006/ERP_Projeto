@@ -968,10 +968,28 @@
         document.getElementById('toolbarSelectMesFim')?.addEventListener('change', aplicarPeriodoPelaToolbar);
         document.getElementById('toolbarInputAnoFim')?.addEventListener('input', aplicarPeriodoPelaToolbar);
 
-        // Botões e seletores da Toolbar
-        const selectMeses = document.getElementById('selectNumMeses') as HTMLSelectElement | null;
-        const containerCustomMeses = document.getElementById('containerCustomMeses');
-        const inputCustomMeses = document.getElementById('inputNumMesesCustom') as HTMLInputElement | null;
+        // Toggle do Painel de Filtro (Estilo Customers ERP)
+        const filterToggleBtn = document.getElementById('declaracao_filter_panel-filter-panel-toggle');
+        const filterBody = document.getElementById('declaracao_filter_panel-filter-panel-body');
+        const filterChevron = document.getElementById('declaracao_filter_panel-filter-panel-chevron');
+
+        if (filterToggleBtn && filterBody) {
+            let isFilterOpen = true;
+            filterToggleBtn.addEventListener('click', () => {
+                isFilterOpen = !isFilterOpen;
+                if (isFilterOpen) {
+                    filterBody.style.maxHeight = filterBody.scrollHeight + 'px';
+                    filterBody.style.opacity = '1';
+                    if (filterChevron) filterChevron.style.transform = 'rotate(0deg)';
+                } else {
+                    filterBody.style.maxHeight = '0px';
+                    filterBody.style.opacity = '0';
+                    if (filterChevron) filterChevron.style.transform = 'rotate(-90deg)';
+                }
+            });
+            filterBody.style.transition = 'max-height 0.3s ease, opacity 0.3s ease';
+            filterBody.style.maxHeight = filterBody.scrollHeight + 'px';
+        }
 
         selectMeses?.addEventListener('change', () => {
             const val = selectMeses.value;

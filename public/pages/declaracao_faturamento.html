@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Declaração de Faturamento</title>
-    <link href="/css/style.css?v=20261001171725" rel="stylesheet">
+    <link href="/css/style.css?v=20261001172223" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001171725"></script>
+    <script src="/js/pwa.js?v=20261001172223"></script>
     <style>
         /* --- ESTILOS DE TELA E FOLHA A4 --- */
         .doc-page-container {
@@ -555,73 +555,89 @@
                 </div>
             </div>
 
-            <!-- Card de Controle de Período e Modo de Assinatura -->
-            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 px-4 py-3 sm:px-5 flex flex-wrap items-center justify-between gap-4 text-xs">
-                <!-- Seletor Mês/Ano Inicial até Mês/Ano Final -->
-                <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <span class="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <!-- Painel de Filtro / Parâmetros (Estilo Customers ERP) -->
+            <div id="declaracao_filter_panel-filter-panel" class="w-full">
+                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
+                    <button type="button" id="declaracao_filter_panel-filter-panel-toggle" class="w-full px-4 py-3 flex items-center justify-between min-h-11 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors rounded-xl cursor-pointer">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path>
+                            </svg>
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                        </div>
+                        <svg id="declaracao_filter_panel-filter-panel-chevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
-                        <span>Período da Declaração:</span>
-                    </span>
+                    </button>
+                    <div id="declaracao_filter_panel-filter-panel-body" class="overflow-hidden">
+                        <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3.5">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end">
+                                
+                                <div>
+                                    <label for="toolbarSelectMesInicio" class="block text-[11px] text-gray-500 uppercase font-bold tracking-wider dark:text-gray-400 mb-1.5">Mês Inicial</label>
+                                    <select id="toolbarSelectMesInicio" class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm min-h-[42px] focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors cursor-pointer font-semibold">
+                                        <option value="0">Janeiro</option>
+                                        <option value="1">Fevereiro</option>
+                                        <option value="2">Março</option>
+                                        <option value="3">Abril</option>
+                                        <option value="4">Maio</option>
+                                        <option value="5">Junho</option>
+                                        <option value="6">Julho</option>
+                                        <option value="7">Agosto</option>
+                                        <option value="8">Setembro</option>
+                                        <option value="9">Outubro</option>
+                                        <option value="10">Novembro</option>
+                                        <option value="11">Dezembro</option>
+                                    </select>
+                                </div>
 
-                    <!-- Mês/Ano Inicial -->
-                    <div class="flex items-center gap-1.5 bg-gray-50 dark:bg-slate-700/60 p-1 px-2.5 rounded-lg border border-gray-200 dark:border-slate-600 shadow-2xs">
-                        <span class="text-gray-500 dark:text-gray-400 font-semibold">De:</span>
-                        <select id="toolbarSelectMesInicio" class="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-semibold py-1 px-2 rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs cursor-pointer">
-                            <option value="0">Janeiro</option>
-                            <option value="1">Fevereiro</option>
-                            <option value="2">Março</option>
-                            <option value="3">Abril</option>
-                            <option value="4">Maio</option>
-                            <option value="5">Junho</option>
-                            <option value="6">Julho</option>
-                            <option value="7">Agosto</option>
-                            <option value="8">Setembro</option>
-                            <option value="9">Outubro</option>
-                            <option value="10">Novembro</option>
-                            <option value="11">Dezembro</option>
-                        </select>
-                        <input type="number" id="toolbarInputAnoInicio" min="1990" max="2099" class="w-16 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-bold py-1 px-1.5 rounded-md border border-gray-300 dark:border-slate-600 text-center focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs" placeholder="Ano" title="Ano Inicial">
-                    </div>
+                                <div>
+                                    <label for="toolbarInputAnoInicio" class="block text-[11px] text-gray-500 uppercase font-bold tracking-wider dark:text-gray-400 mb-1.5">Ano Inicial</label>
+                                    <input type="number" id="toolbarInputAnoInicio" min="1990" max="2099" placeholder="Ano Inicial" class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm min-h-[42px] focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors font-bold text-center">
+                                </div>
 
-                    <span class="text-gray-400 dark:text-gray-500 font-bold">até</span>
+                                <div>
+                                    <label for="toolbarSelectMesFim" class="block text-[11px] text-gray-500 uppercase font-bold tracking-wider dark:text-gray-400 mb-1.5">Mês Final</label>
+                                    <select id="toolbarSelectMesFim" class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm min-h-[42px] focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors cursor-pointer font-semibold">
+                                        <option value="0">Janeiro</option>
+                                        <option value="1">Fevereiro</option>
+                                        <option value="2">Março</option>
+                                        <option value="3">Abril</option>
+                                        <option value="4">Maio</option>
+                                        <option value="5">Junho</option>
+                                        <option value="6">Julho</option>
+                                        <option value="7">Agosto</option>
+                                        <option value="8">Setembro</option>
+                                        <option value="9">Outubro</option>
+                                        <option value="10">Novembro</option>
+                                        <option value="11">Dezembro</option>
+                                    </select>
+                                </div>
 
-                    <!-- Mês/Ano Final -->
-                    <div class="flex items-center gap-1.5 bg-gray-50 dark:bg-slate-700/60 p-1 px-2.5 rounded-lg border border-gray-200 dark:border-slate-600 shadow-2xs">
-                        <span class="text-gray-500 dark:text-gray-400 font-semibold">Até:</span>
-                        <select id="toolbarSelectMesFim" class="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-semibold py-1 px-2 rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs cursor-pointer">
-                            <option value="0">Janeiro</option>
-                            <option value="1">Fevereiro</option>
-                            <option value="2">Março</option>
-                            <option value="3">Abril</option>
-                            <option value="4">Maio</option>
-                            <option value="5">Junho</option>
-                            <option value="6">Julho</option>
-                            <option value="7">Agosto</option>
-                            <option value="8">Setembro</option>
-                            <option value="9">Outubro</option>
-                            <option value="10">Novembro</option>
-                            <option value="11">Dezembro</option>
-                        </select>
-                        <input type="number" id="toolbarInputAnoFim" min="1990" max="2099" class="w-16 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-bold py-1 px-1.5 rounded-md border border-gray-300 dark:border-slate-600 text-center focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs" placeholder="Ano" title="Ano Final">
-                    </div>
-                </div>
+                                <div>
+                                    <label for="toolbarInputAnoFim" class="block text-[11px] text-gray-500 uppercase font-bold tracking-wider dark:text-gray-400 mb-1.5">Ano Final</label>
+                                    <input type="number" id="toolbarInputAnoFim" min="1990" max="2099" placeholder="Ano Final" class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm min-h-[42px] focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors font-bold text-center">
+                                </div>
 
-                <!-- Modo de Assinatura -->
-                <div class="flex items-center gap-2">
-                    <span class="font-semibold text-gray-600 dark:text-gray-300">Modo de Assinatura:</span>
-                    <div class="flex items-center gap-1.5">
-                        <button type="button" id="btnModoGovBr" class="px-2.5 py-1 rounded-md font-medium text-xs transition-colors bg-[#1351b4] text-white shadow-xs">
-                            🇧🇷 Selo Oficial gov.br
-                        </button>
-                        <button type="button" id="btnModoIcp" class="px-2.5 py-1 rounded-md font-medium text-xs transition-colors bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:bg-gray-100">
-                            💼 ICP-Brasil (Empresa / Contador)
-                        </button>
-                        <button type="button" id="btnModoAmbos" class="px-2.5 py-1 rounded-md font-medium text-xs transition-colors bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:bg-gray-100">
-                            📑 Ambos os Selos
-                        </button>
+                            </div>
+
+                            <div class="flex flex-wrap items-center justify-between gap-3 mt-3.5 pt-3 border-t border-gray-100 dark:border-slate-700/60">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-gray-500 uppercase font-bold tracking-wider dark:text-gray-400">Modo de Assinatura:</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" id="btnModoGovBr" class="px-2.5 py-1.5 rounded-md font-medium text-xs transition-colors bg-[#1351b4] text-white shadow-xs">
+                                            🇧🇷 Selo Oficial gov.br
+                                        </button>
+                                        <button type="button" id="btnModoIcp" class="px-2.5 py-1.5 rounded-md font-medium text-xs transition-colors bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:bg-gray-100">
+                                            💼 ICP-Brasil (Empresa / Contador)
+                                        </button>
+                                        <button type="button" id="btnModoAmbos" class="px-2.5 py-1.5 rounded-md font-medium text-xs transition-colors bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:bg-gray-100">
+                                            📑 Ambos os Selos
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -880,10 +896,10 @@
 
     <div id="app-footer" class="shrink-0"></div>
 
-    <script src="/js/api.js?v=20261001171725"></script>
-    <script src="/js/components/navbar.js?v=20261001171725"></script>
-    <script src="/js/declaracao_faturamento.js?v=20261001171725"></script>
-    <script src="/js/components/footer.js?v=20261001171725"></script>
+    <script src="/js/api.js?v=20261001172223"></script>
+    <script src="/js/components/navbar.js?v=20261001172223"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001172223"></script>
+    <script src="/js/components/footer.js?v=20261001172223"></script>
 </body>
 
 </html>

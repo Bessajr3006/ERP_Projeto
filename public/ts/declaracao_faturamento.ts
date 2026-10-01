@@ -991,37 +991,6 @@
             filterBody.style.maxHeight = filterBody.scrollHeight + 'px';
         }
 
-        selectMeses?.addEventListener('change', () => {
-            const val = selectMeses.value;
-            if (val === 'custom') {
-                if (containerCustomMeses) {
-                    containerCustomMeses.classList.remove('hidden');
-                    containerCustomMeses.classList.add('flex');
-                }
-                if (inputCustomMeses) {
-                    inputCustomMeses.focus();
-                    const qtd = parseInt(inputCustomMeses.value, 10) || 12;
-                    preencherUltimosNMeses(qtd, true);
-                }
-            } else {
-                if (containerCustomMeses) {
-                    containerCustomMeses.classList.remove('flex');
-                    containerCustomMeses.classList.add('hidden');
-                }
-                const qtd = parseInt(val, 10);
-                if (!isNaN(qtd)) {
-                    preencherUltimosNMeses(qtd, true);
-                }
-            }
-        });
-
-        inputCustomMeses?.addEventListener('input', () => {
-            let qtd = parseInt(inputCustomMeses.value, 10);
-            if (isNaN(qtd)) return;
-            if (qtd < 1) qtd = 1;
-            if (qtd > 60) qtd = 60;
-            preencherUltimosNMeses(qtd, true);
-        });
 
         document.getElementById('btnPuxarReceitas')?.addEventListener('click', () => void importarReceitasDoERP());
         document.getElementById('btnBuscarEmpresaAtiva')?.addEventListener('click', carregarEmpresaAtivaERP);

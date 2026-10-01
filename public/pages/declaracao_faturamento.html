@@ -422,6 +422,30 @@
 
                 <!-- Action Buttons -->
                 <div class="flex flex-wrap items-center gap-2">
+                    <!-- Seletor de Número de Meses -->
+                    <div class="flex items-center gap-1.5 bg-gray-50 dark:bg-slate-700/60 p-1 px-2 rounded-lg border border-gray-200 dark:border-slate-600 text-xs shadow-2xs">
+                        <span class="font-semibold text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>Meses:</span>
+                        </span>
+                        <select id="selectNumMeses" class="bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 font-semibold py-1 px-2 rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs cursor-pointer">
+                            <option value="3">3 Meses</option>
+                            <option value="6">6 Meses</option>
+                            <option value="12" selected>12 Meses</option>
+                            <option value="18">18 Meses</option>
+                            <option value="24">24 Meses (2 Anos)</option>
+                            <option value="36">36 Meses (3 Anos)</option>
+                            <option value="48">48 Meses (4 Anos)</option>
+                            <option value="60">60 Meses (5 Anos)</option>
+                            <option value="custom">Personalizado...</option>
+                        </select>
+                        <div id="containerCustomMeses" class="hidden items-center gap-1">
+                            <input type="number" id="inputNumMesesCustom" min="1" max="60" value="12" class="w-14 bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 py-1 px-1.5 rounded-md border border-gray-300 dark:border-slate-600 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="Qtd" title="Quantidade de meses personalizada (1 a 60)">
+                        </div>
+                    </div>
+
                     <button type="button" id="btnPreset12Meses" class="px-2.5 py-1.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition-colors">
                         📅 12 Meses
                     </button>

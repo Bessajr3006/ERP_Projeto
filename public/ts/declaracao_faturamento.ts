@@ -188,6 +188,58 @@
         });
     }
 
+    function calcularDiferencaMeses(startMes: number, startAno: number, endMes: number, endAno: number): number {
+        return (endAno - startAno) * 12 + (endMes - startMes) + 1;
+    }
+
+    function sincronizarSeletorMeses(qtdMeses: number) {
+        const sel = document.getElementById('selectNumMeses') as HTMLSelectElement | null;
+        const containerCustom = document.getElementById('containerCustomMeses');
+        const inputCustom = document.getElementById('inputNumMesesCustom') as HTMLInputElement | null;
+
+        if (!sel) return;
+
+        const opcoesPadrao = ['3', '6', '12', '18', '24', '36', '48', '60'];
+        const strQtd = String(qtdMeses);
+
+        if (opcoesPadrao.includes(strQtd)) {
+            sel.value = strQtd;
+            if (containerCustom) {
+                containerCustom.classList.remove('flex');
+                containerCustom.classList.add('hidden');
+            }
+        } else {
+            sel.value = 'custom';
+            if (containerCustom) {
+                containerCustom.classList.remove('hidden');
+                containerCustom.classList.add('flex');
+            }
+            if (inputCustom) {
+                inputCustom.value = strQtd;
+            }
+        }
+    }
+
+    function obterFimPeriodoAtual(): { fimMes: number; fimAno: number } {
+        const elMesFim = document.querySelector<HTMLElement>('.sync-mes-fim');
+        const elAnoFim = document.querySelector<HTMLElement>('.sync-ano-fim');
+        const endMes = elMesFim ? getMesIndex(elMesFim.innerText) : -1;
+        const endAno = elAnoFim ? parseInt(elAnoFim.innerText.trim(), 10) : NaN;
+
+        if (endMes !== -1 && !isNaN(endAno) && endAno >= 1900) {
+            return { fimMes: endMes, fimAno: endAno };
+        }
+
+        const hoje = new Date();
+        let fimMes = hoje.getMonth() - 1;
+        let fimAno = hoje.getFullYear();
+        if (fimMes < 0) {
+            fimMes = 11;
+            fimAno--;
+        }
+        return { fimMes, fimAno };
+    }
+
     function atualizarTabelaMeses() {
         const elMesIni = document.querySelector<HTMLElement>('.sync-mes-inicio');
         const elAnoIni = document.querySelector<HTMLElement>('.sync-ano-inicio');
@@ -204,6 +256,11 @@
         if (startMes === -1 || endMes === -1 || isNaN(txtAnoInicio) || isNaN(txtAnoFim) || txtAnoInicio < 1900 || txtAnoFim < 1900) return;
         if (txtAnoFim < txtAnoInicio || (txtAnoFim === txtAnoInicio && endMes < startMes)) return;
 
+        const diff = calcularDiferencaMeses(startMes, txtAnoInicio, endMes, txtAnoFim);
+        if (diff >= 1 && diff <= 60) {
+            sincronizarSeletorMeses(diff);
+        }
+
         const tbody = document.getElementById('tbody-meses');
         if (!tbody) return;
         tbody.innerHTML = '';
@@ -212,7 +269,7 @@
         let currentAno = txtAnoInicio;
         let limit = 0;
 
-        while (limit < 60) {
+        while (limit < 120) {
             const mesNomeFormatado = mesesNomes[currentMes].charAt(0).toUpperCase() + mesesNomes[currentMes].slice(1);
             const key = `${currentMes}-${currentAno}`;
             const valorAtual = memoriaValores[key] || '0,00';
@@ -251,7 +308,7 @@
         });
     }
 
-    // 4. Presets rápidos de período
+    // 4. Presets e seleção dinâmica de período
     function aplicarPeriodo(iniMesIdx: number, iniAno: number, fimMesIdx: number, fimAno: number) {
         const iniNome = mesesNomes[iniMesIdx].charAt(0).toUpperCase() + mesesNomes[iniMesIdx].slice(1);
         const fimNome = mesesNomes[fimMesIdx].charAt(0).toUpperCase() + mesesNomes[fimMesIdx].slice(1);
@@ -264,42 +321,48 @@
         atualizarTabelaMeses();
     }
 
-    function preencherUltimos12Meses() {
-        const hoje = new Date();
-        let fimMes = hoje.getMonth() - 1; // Mês anterior fechado
-        let fimAno = hoje.getFullYear();
-        if (fimMes < 0) {
-            fimMes = 11;
-            fimAno--;
+    function preencherUltimosNMeses(qtdMeses: number, usarFimAtual = true) {
+        if (!qtdMeses || qtdMeses < 1) qtdMeses = 1;
+        if (qtdMeses > 60) qtdMeses = 60;
+
+        let fimMes: number;
+        let fimAno: number;
+
+        if (usarFimAtual) {
+            const fim = obterFimPeriodoAtual();
+            fimMes = fim.fimMes;
+            fimAno = fim.fimAno;
+        } else {
+            const hoje = new Date();
+            fimMes = hoje.getMonth() - 1;
+            fimAno = hoje.getFullYear();
+            if (fimMes < 0) {
+                fimMes = 11;
+                fimAno--;
+            }
         }
 
-        const iniData = new Date(fimAno, fimMes - 11, 1);
+        const iniData = new Date(fimAno, fimMes - (qtdMeses - 1), 1);
         const iniMes = iniData.getMonth();
         const iniAno = iniData.getFullYear();
 
         aplicarPeriodo(iniMes, iniAno, fimMes, fimAno);
+        sincronizarSeletorMeses(qtdMeses);
+    }
+
+    function preencherUltimos12Meses() {
+        preencherUltimosNMeses(12, false);
     }
 
     function preencherAnoAtual() {
         const hoje = new Date();
         const ano = hoje.getFullYear();
         aplicarPeriodo(0, ano, 11, ano);
+        sincronizarSeletorMeses(12);
     }
 
     function preencherUltimos6Meses() {
-        const hoje = new Date();
-        let fimMes = hoje.getMonth() - 1;
-        let fimAno = hoje.getFullYear();
-        if (fimMes < 0) {
-            fimMes = 11;
-            fimAno--;
-        }
-
-        const iniData = new Date(fimAno, fimMes - 5, 1);
-        const iniMes = iniData.getMonth();
-        const iniAno = iniData.getFullYear();
-
-        aplicarPeriodo(iniMes, iniAno, fimMes, fimAno);
+        preencherUltimosNMeses(6, false);
     }
 
     function parseTransactionDate(dateStr: any): { ano: number; mes: number } | null {
@@ -818,7 +881,43 @@
             });
         });
 
-        // Botões da Toolbar
+        // Botões e seletores da Toolbar
+        const selectMeses = document.getElementById('selectNumMeses') as HTMLSelectElement | null;
+        const containerCustomMeses = document.getElementById('containerCustomMeses');
+        const inputCustomMeses = document.getElementById('inputNumMesesCustom') as HTMLInputElement | null;
+
+        selectMeses?.addEventListener('change', () => {
+            const val = selectMeses.value;
+            if (val === 'custom') {
+                if (containerCustomMeses) {
+                    containerCustomMeses.classList.remove('hidden');
+                    containerCustomMeses.classList.add('flex');
+                }
+                if (inputCustomMeses) {
+                    inputCustomMeses.focus();
+                    const qtd = parseInt(inputCustomMeses.value, 10) || 12;
+                    preencherUltimosNMeses(qtd, true);
+                }
+            } else {
+                if (containerCustomMeses) {
+                    containerCustomMeses.classList.remove('flex');
+                    containerCustomMeses.classList.add('hidden');
+                }
+                const qtd = parseInt(val, 10);
+                if (!isNaN(qtd)) {
+                    preencherUltimosNMeses(qtd, true);
+                }
+            }
+        });
+
+        inputCustomMeses?.addEventListener('input', () => {
+            let qtd = parseInt(inputCustomMeses.value, 10);
+            if (isNaN(qtd)) return;
+            if (qtd < 1) qtd = 1;
+            if (qtd > 60) qtd = 60;
+            preencherUltimosNMeses(qtd, true);
+        });
+
         document.getElementById('btnPreset12Meses')?.addEventListener('click', preencherUltimos12Meses);
         document.getElementById('btnPresetAnoAtual')?.addEventListener('click', preencherAnoAtual);
         document.getElementById('btnPuxarReceitas')?.addEventListener('click', () => void importarReceitasDoERP());

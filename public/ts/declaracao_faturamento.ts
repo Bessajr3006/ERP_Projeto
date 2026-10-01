@@ -302,6 +302,123 @@
         aplicarPeriodo(iniMes, iniAno, fimMes, fimAno);
     }
 
+    function parseTransactionDate(dateStr: any): { ano: number; mes: number } | null {
+        if (!dateStr) return null;
+        const str = String(dateStr).trim();
+        const matchIso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+        if (matchIso) {
+            const ano = parseInt(matchIso[1], 10);
+            const mes = parseInt(matchIso[2], 10) - 1;
+            if (!isNaN(ano) && !isNaN(mes) && mes >= 0 && mes <= 11) {
+                return { ano, mes };
+            }
+        }
+        const matchBr = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (matchBr) {
+            const ano = parseInt(matchBr[3], 10);
+            const mes = parseInt(matchBr[2], 10) - 1;
+            if (!isNaN(ano) && !isNaN(mes) && mes >= 0 && mes <= 11) {
+                return { ano, mes };
+            }
+        }
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) {
+            return { ano: d.getFullYear(), mes: d.getMonth() };
+        }
+        return null;
+    }
+
+    async function importarReceitasDoERP(): Promise<void> {
+        const btn = document.getElementById('btnPuxarReceitas') as HTMLButtonElement | null;
+        const textoOriginal = btn ? btn.innerHTML : '';
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="animate-spin w-3.5 h-3.5 inline text-emerald-600 dark:text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Puxando Receitas...</span>
+            `;
+        }
+
+        try {
+            if (typeof win.api !== 'function') {
+                throw new Error('API não inicializada. Recarregue a página.');
+            }
+
+            const res = await win.api('/finance/revenues');
+            const revenues = Array.isArray(res?.data) ? res.data : [];
+
+            if (revenues.length === 0) {
+                (win.UI as any)?.showAlert?.('alertMessage', 'Nenhum lançamento de receita encontrado no ERP para a empresa ativa.', 'info');
+                return;
+            }
+
+            // Agrupa faturamento bruto por competência mês-ano
+            const faturamentoPorMesAno: Record<string, number> = {};
+            let totalPeriodo = 0;
+            let totalGeral = 0;
+            let countTotal = 0;
+
+            for (const rev of revenues) {
+                if (rev.status === 'cancelled') continue;
+
+                const dt = parseTransactionDate(rev.date || rev.date_launch || rev.created_at);
+                if (!dt) continue;
+
+                const key = `${dt.mes}-${dt.ano}`;
+                const rawVal = Number(rev.received_amount || rev.amount || rev.original_amount || 0);
+                const valor = isNaN(rawVal) ? 0 : rawVal;
+
+                if (valor > 0) {
+                    faturamentoPorMesAno[key] = (faturamentoPorMesAno[key] || 0) + valor;
+                    totalGeral += valor;
+                    countTotal++;
+                }
+            }
+
+            // Atualiza memória de valores com tudo que foi apurado
+            Object.keys(faturamentoPorMesAno).forEach(k => {
+                memoriaValores[k] = formatarMoeda(faturamentoPorMesAno[k]);
+            });
+
+            // Atualiza cada linha visível na tabela
+            let countMesesPreenchidos = 0;
+            document.querySelectorAll<HTMLElement>('.valor-mes').forEach(celula => {
+                const key = celula.getAttribute('data-key');
+                if (key) {
+                    const valorDoMes = faturamentoPorMesAno[key] || 0;
+                    celula.innerText = formatarMoeda(valorDoMes);
+                    memoriaValores[key] = formatarMoeda(valorDoMes);
+                    if (valorDoMes > 0) {
+                        totalPeriodo += valorDoMes;
+                        countMesesPreenchidos++;
+                    }
+                }
+            });
+
+            calcularTotal();
+
+            const totalPeriodoFormatado = formatarMoeda(totalPeriodo);
+            (win.UI as any)?.showAlert?.(
+                'alertMessage',
+                `Faturamento bruto importado com sucesso! Total no período da declaração: R$ ${totalPeriodoFormatado} (${countMesesPreenchidos} mês(es) com movimento de receitas no período).`,
+                'success',
+                5000
+            );
+        } catch (err: any) {
+            console.error('Erro ao buscar receitas do ERP:', err);
+            (win.UI as any)?.showAlert?.('alertMessage', err.message || 'Erro ao carregar receitas do ERP.', 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        }
+    }
+
     function zerarValores() {
         document.querySelectorAll<HTMLElement>('.valor-mes').forEach(celula => {
             celula.innerText = '0,00';
@@ -704,6 +821,7 @@
         // Botões da Toolbar
         document.getElementById('btnPreset12Meses')?.addEventListener('click', preencherUltimos12Meses);
         document.getElementById('btnPresetAnoAtual')?.addEventListener('click', preencherAnoAtual);
+        document.getElementById('btnPuxarReceitas')?.addEventListener('click', () => void importarReceitasDoERP());
         document.getElementById('btnBuscarEmpresaAtiva')?.addEventListener('click', carregarEmpresaAtivaERP);
 
         // Configuração Gov.br e assinaturas

@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Declaração de Faturamento</title>
-    <link href="/css/style.css?v=20261001154010" rel="stylesheet">
+    <link href="/css/style.css?v=20261001155154" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001154010"></script>
+    <script src="/js/pwa.js?v=20261001155154"></script>
     <style>
         /* --- ESTILOS DE TELA E FOLHA A4 --- */
         .doc-page-container {
@@ -392,6 +392,8 @@
 
     <main class="flex-1 min-h-0 overflow-y-auto w-full pt-4 pb-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
         
+        <div id="alertMessage" class="hidden w-full max-w-205 mb-3 p-4 rounded-xl text-sm no-print"></div>
+
         <!-- TOP TOOLBAR & ACTIONS (No-Print) -->
         <div class="w-full max-w-205 mb-4 no-print flex flex-col gap-3">
             
@@ -425,6 +427,12 @@
                     </button>
                     <button type="button" id="btnPresetAnoAtual" class="px-2.5 py-1.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold transition-colors">
                         📅 Ano Atual
+                    </button>
+                    <button type="button" id="btnPuxarReceitas" title="Importar total de faturamento bruto a partir das receitas lançadas no ERP" class="px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shadow-xs">
+                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>💰 Puxar Receitas</span>
                     </button>
                     <button type="button" id="btnBuscarEmpresaAtiva" title="Preencher dados da empresa ativa logada" class="px-2.5 py-1.5 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1">
                         🏢 Empresa Ativa
@@ -701,10 +709,10 @@
 
     <div id="app-footer" class="shrink-0"></div>
 
-    <script src="/js/api.js?v=20261001154010"></script>
-    <script src="/js/components/navbar.js?v=20261001154010"></script>
-    <script src="/js/declaracao_faturamento.js?v=20261001154010"></script>
-    <script src="/js/components/footer.js?v=20261001154010"></script>
+    <script src="/js/api.js?v=20261001155154"></script>
+    <script src="/js/components/navbar.js?v=20261001155154"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001155154"></script>
+    <script src="/js/components/footer.js?v=20261001155154"></script>
 </body>
 
 </html>

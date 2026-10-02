@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Declaração de Faturamento</title>
-    <link href="/css/style.css?v=20261001212314" rel="stylesheet">
+    <link href="/css/style.css?v=20261001212928" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001212314"></script>
+    <script src="/js/pwa.js?v=20261001212928"></script>
     <style>
         /* Destaque sutil para campos editáveis na tela */
         [contenteditable="true"] {
@@ -51,7 +51,7 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 6mm 8mm 6mm 8mm;
+                margin: 4mm 7mm 4mm 7mm;
             }
 
             *, *::before, *::after {
@@ -66,32 +66,28 @@
                 margin: 0 !important;
                 padding: 0 !important;
                 width: 100% !important;
-                height: auto !important;
-                min-height: 0 !important;
-                overflow: visible !important;
+                height: 100% !important;
+                max-height: 100% !important;
+                overflow: hidden !important;
             }
 
             #globalNavRoot, #app-navbar, #app-footer, .no-print, header, nav, #modalGovBr, #declaracao_filter_panel-filter-panel, #alertMessage {
                 display: none !important;
             }
 
-            main {
-                padding: 0 !important;
-                margin: 0 !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                overflow: visible !important;
-                display: block !important;
-            }
-
+            main, 
             main > div,
             .w-full.flex-1.flex.justify-center.pb-12 {
                 padding: 0 !important;
                 margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100% !important;
+                overflow: hidden !important;
                 display: block !important;
             }
 
-            /* Container do Documento na Folha A4 */
+            /* Container do Documento na Folha A4 - Distribuído proporcionalmente */
             #content {
                 background: #ffffff !important;
                 color: #111827 !important;
@@ -101,14 +97,32 @@
                 border: none !important;
                 max-width: 100% !important;
                 width: 100% !important;
-                gap: 2mm !important;
+                height: 100% !important;
+                max-height: 288mm !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                gap: 0 !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                page-break-before: avoid !important;
+                break-before: avoid !important;
+            }
+
+            #content > * {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                page-break-before: avoid !important;
+                break-before: avoid !important;
             }
 
             /* Cabeçalho da Empresa */
             #content > .border-b-2 {
-                padding-bottom: 1.5mm !important;
+                padding-bottom: 1.2mm !important;
                 margin-bottom: 0 !important;
                 border-bottom: 1.5px solid #d1d5db !important;
             }
@@ -120,14 +134,14 @@
             }
 
             #content .border-b-2 .text-sm {
-                font-size: 8pt !important;
+                font-size: 7.8pt !important;
                 line-height: 1.2 !important;
             }
 
             #content .border-b-2 .rounded-lg {
                 padding: 1px 5px !important;
                 margin-top: 0.5mm !important;
-                font-size: 7.5pt !important;
+                font-size: 7.2pt !important;
             }
 
             /* Título Central */
@@ -137,6 +151,7 @@
                 padding: 0 !important;
                 font-weight: 800 !important;
                 letter-spacing: 0.5px !important;
+                text-align: center !important;
             }
 
             /* Texto Declaratório */
@@ -152,16 +167,17 @@
                 margin: 0.8mm 0 !important;
                 border-radius: 4px !important;
                 border: 1px solid #d1d5db !important;
-                overflow: visible !important;
+                overflow: hidden !important;
             }
 
             #content table {
                 width: 100% !important;
                 border-collapse: collapse !important;
+                table-layout: fixed !important;
             }
 
             #content table th {
-                padding: 1.5px 6px !important;
+                padding: 1.2px 6px !important;
                 font-size: 7.5pt !important;
                 background-color: #f3f4f6 !important;
                 border-bottom: 1px solid #d1d5db !important;
@@ -170,7 +186,7 @@
             }
 
             #content table td {
-                padding: 1.5px 6px !important;
+                padding: 1.2px 6px !important;
                 font-size: 7.5pt !important;
                 line-height: 1.15 !important;
                 border-bottom: 1px solid #f3f4f6 !important;
@@ -178,8 +194,9 @@
             }
 
             #content tfoot td {
-                padding: 2px 6px !important;
+                padding: 1.8px 6px !important;
                 font-size: 8pt !important;
+                font-weight: 800 !important;
                 border-top: 1.5px solid #d1d5db !important;
                 background-color: #f9fafb !important;
                 line-height: 1.2 !important;
@@ -200,6 +217,7 @@
                 padding-top: 0.5mm !important;
                 font-size: 7.5pt !important;
                 line-height: 1.2 !important;
+                margin: 0 !important;
             }
 
             #content .pt-2 br {
@@ -210,7 +228,7 @@
 
             /* Selo Oficial gov.br */
             #secao-assinatura-govbr {
-                padding: 4px 8px !important;
+                padding: 3px 6px !important;
                 border-radius: 6px !important;
                 border: 1.5px solid #1351b4 !important;
                 background-color: #f0f6ff !important;
@@ -221,40 +239,40 @@
             }
 
             #secao-assinatura-govbr .bg-\[\#1351b4\] {
-                font-size: 9pt !important;
-                padding: 2px 5px !important;
+                font-size: 8.5pt !important;
+                padding: 2px 4px !important;
                 border-radius: 4px !important;
             }
 
             #secao-assinatura-govbr .text-xs {
-                font-size: 7pt !important;
+                font-size: 6.8pt !important;
                 line-height: 1.15 !important;
             }
 
             #secao-assinatura-govbr .text-\[11px\] {
-                font-size: 6pt !important;
+                font-size: 5.8pt !important;
                 line-height: 1.1 !important;
             }
 
             #quadro-validacao-govbr {
                 padding: 2px 4px !important;
-                min-width: 80px !important;
+                min-width: 75px !important;
                 border-radius: 4px !important;
             }
 
             #quadro-validacao-govbr #govbr-qr-image {
-                width: 38px !important;
-                height: 38px !important;
+                width: 36px !important;
+                height: 36px !important;
                 margin-bottom: 1px !important;
                 padding: 1px !important;
             }
 
             #quadro-validacao-govbr .text-\[11px\] {
-                font-size: 6.5pt !important;
+                font-size: 6.2pt !important;
             }
 
             #quadro-validacao-govbr .text-\[10px\] {
-                font-size: 5.5pt !important;
+                font-size: 5.2pt !important;
             }
 
             /* Selos ICP-Brasil */
@@ -266,20 +284,20 @@
             }
 
             #secao-assinaturas-icp > div {
-                padding: 4px 6px !important;
+                padding: 3px 5px !important;
                 border-radius: 6px !important;
                 border: 1.5px solid #059669 !important;
                 background-color: #ecfdf5 !important;
-                gap: 1.5px !important;
+                gap: 1.2px !important;
             }
 
             #secao-assinaturas-icp .text-xs {
-                font-size: 7pt !important;
+                font-size: 6.8pt !important;
                 line-height: 1.15 !important;
             }
 
             #secao-assinaturas-icp .text-\[11px\] {
-                font-size: 6pt !important;
+                font-size: 5.8pt !important;
                 line-height: 1.1 !important;
             }
 
@@ -739,10 +757,10 @@
 
     <div id="app-footer" class="shrink-0"></div>
 
-    <script src="/js/api.js?v=20261001212314"></script>
-    <script src="/js/components/navbar.js?v=20261001212314"></script>
-    <script src="/js/declaracao_faturamento.js?v=20261001212314"></script>
-    <script src="/js/components/footer.js?v=20261001212314"></script>
+    <script src="/js/api.js?v=20261001212928"></script>
+    <script src="/js/components/navbar.js?v=20261001212928"></script>
+    <script src="/js/declaracao_faturamento.js?v=20261001212928"></script>
+    <script src="/js/components/footer.js?v=20261001212928"></script>
 </body>
 
 </html>

@@ -17,7 +17,7 @@ const router = Router();
  *     responses:
  *       201: { description: Empresa criada }
  */
-router.post('/', (req, res, next) => CompanyController.create(req, res).catch(next));
+router.post('/', protectRoute, requireSuperAdmin, (req, res, next) => CompanyController.create(req, res).catch(next));
 
 // Protect viewing and updating information
 /**
@@ -373,5 +373,9 @@ router.post('/:companyId/poscontrol-sync/sales/sync', protectRoute, (req, res, n
 
 // Alterdata database connection test route
 router.post('/:id/test-alterdata-connection', protectRoute, (req, res, next) => CompanyController.testAlterdataConnection(req, res).catch(next));
+
+// Swagger token management (super admin only)
+router.post('/:id/swagger-token/regenerate', protectRoute, requireSuperAdmin, (req, res, next) => CompanyController.regenerateSwaggerToken(req, res).catch(next));
+router.post('/:id/swagger-token/revoke', protectRoute, requireSuperAdmin, (req, res, next) => CompanyController.revokeSwaggerToken(req, res).catch(next));
 
 export default router;

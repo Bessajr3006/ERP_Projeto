@@ -6,7 +6,6 @@ export const PublicUserSchema = z.object({
     public_id: z.string().uuid(),
     email: z.string().email(),
     full_name: z.string(),
-    passwordRaw: z.string().nullable().optional(),
     cpf_cnpj: z.string().nullable().optional(),
     crc: z.string().nullable().optional(),
     phone: z.string().nullable().optional(),
@@ -20,7 +19,6 @@ export const PublicUserSchema = z.object({
     default_page: z.string().nullable().optional(),
     photo_base64: z.string().nullable().optional(),
     photo_filename: z.string().nullable().optional(),
-    face_descriptor: z.string().nullable().optional(),
     cnpj_document_url: z.string().nullable().optional(),
     whatsapp_auto_reply_mode: z.enum(['automatic', 'manual']).nullable().optional(),
     whatsapp_enable_manual_billing: z.boolean().or(z.number().transform(val => Boolean(val))).nullable().optional(),
@@ -31,7 +29,7 @@ export const PublicUserSchema = z.object({
     is_active: z.boolean().or(z.number().transform(val => Boolean(val))),
     is_deletable: z.boolean().or(z.number().transform(val => Boolean(val))).optional(),
     created_at: z.date().optional().or(z.string().optional())
-}).passthrough();
+});
 
 export const PublicUserListSchema = z.array(PublicUserSchema);
 

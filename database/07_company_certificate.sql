@@ -1,4 +1,0 @@
-ALTER TABLE companies
-ADD COLUMN certificate_base64 LONGTEXT DEFAULT NULL,
-ADD COLUMN certificate_password VARCHAR(255) DEFAULT NULL,
-ADD COLUMN certificate_validity DATE DEFAULT NULL;

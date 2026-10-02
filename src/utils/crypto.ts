@@ -44,6 +44,7 @@ function getKey(): Buffer {
  */
 export function encrypt(plaintext: string | null | undefined): string | null {
     if (plaintext == null) return null;
+    if (typeof plaintext === 'string' && ENCRYPTED_PATTERN.test(plaintext)) return plaintext;
 
     const key = getKey();
     const iv = randomBytes(IV_LENGTH);

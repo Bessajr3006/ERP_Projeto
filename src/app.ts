@@ -54,6 +54,7 @@ import publicRoutes from './routes/publicRoutes';
 import censusRoutes from './routes/censusRoutes';
 import mecRoutes from './routes/mecRoutes';
 import maintenanceRoutes from './routes/maintenanceRoutes';
+import documentRoutes from './routes/documentRoutes';
 import { StorageService } from './utils/storageService';
 import { toBrazilIsoDateTime } from './utils/dateTime';
 import httpLogger from './middlewares/httpLogger';
@@ -113,6 +114,14 @@ app.use('/api', (_req: Request, res: Response, next) => {
     next();
 });
 
+// ── Bloqueio de Acesso Estático a Documentos Sensíveis (C4) ────────────────────
+// Documentos (/uploads/documents) contêm arquivos sigilosos e nunca podem ser servidos estaticamente.
+// Acesso exclusivo via rota autenticada GET /api/v1/documents/:id.
+app.use('/uploads/documents', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.status(404).json({ status: 'error', message: 'Not found' });
+});
+
 // ── Static Files ──────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '../public'), {
     etag: false,
@@ -142,7 +151,17 @@ app.use(express.static(path.join(__dirname, '../public'), {
         }
     },
 }));
-app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads'), {
+// Servir apenas pastas públicas de uploads (imagens de produtos, logos de empresas e mídias de chat)
+// /uploads/documents NÃO é servido estaticamente (acesso exclusivo autenticado via /api/v1/documents/:id)
+app.use('/uploads/products', express.static(path.join(process.cwd(), 'public', 'uploads', 'products'), {
+    maxAge: '7d',
+    immutable: true,
+}));
+app.use('/uploads/company-logos', express.static(path.join(process.cwd(), 'public', 'uploads', 'company-logos'), {
+    maxAge: '7d',
+    immutable: true,
+}));
+app.use('/uploads/whatsapp', express.static(path.join(process.cwd(), 'public', 'uploads', 'whatsapp'), {
     maxAge: '7d',
     immutable: true,
 }));
@@ -333,8 +352,10 @@ app.use('/api/v1/email-config', emailConfigRoutes);
 app.use('/api/v1/ui-preferences', uiPreferenceRoutes);
 app.use('/api/v1/backup', backupRoutes);
 app.use('/api/v1/public', publicRoutes);
+app.use('/public', publicRoutes);
 app.use('/api/v1/census', censusRoutes);
 app.use('/api/v1/mec', mecRoutes);
+app.use('/api/v1/documents', documentRoutes);
 app.use('/api/v1/maintenance', maintenanceRoutes);
 
 // ── Utility Routes ────────────────────────────────────────────────────────────

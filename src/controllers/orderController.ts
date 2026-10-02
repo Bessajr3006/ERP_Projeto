@@ -30,7 +30,7 @@ const createPurchaseSchema = z.object({
 
 const createSalesSchema = z.object({
     customer_public_id: z.string().uuid('Invalid customer ID').optional().nullable(),
-    delivery_address: z.string().optional().nullable(),
+    delivery_address: z.string().trim().max(500, 'Endereço muito longo').optional().nullable(),
     bank_account_public_id: z.string().uuid('Invalid bank account ID'),
     category_public_id: z.string().uuid('Invalid category ID'),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
@@ -45,12 +45,12 @@ const createSalesSchema = z.object({
 
 const createQuoteSchema = z.object({
     customer_public_id: z.string().uuid('Invalid customer ID').optional().nullable(),
-    manual_customer_name: z.string().max(150).optional().nullable(),
-    brand: z.string().max(100).optional().nullable(),
-    payment_method: z.string().max(50).optional().nullable(),
-    payment_terms: z.string().max(100).optional().nullable(),
+    manual_customer_name: z.string().trim().max(150, 'Nome muito longo').optional().nullable(),
+    brand: z.string().trim().max(100).optional().nullable(),
+    payment_method: z.string().trim().max(50).optional().nullable(),
+    payment_terms: z.string().trim().max(100).optional().nullable(),
     seller_public_id: z.string().uuid('Invalid seller ID').optional().nullable(),
-    observation: z.string().optional().nullable(),
+    observation: z.string().trim().max(1000, 'Observação muito longa').optional().nullable(),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
     validity_date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }).optional().nullable(),
     items: z.array(itemSchema).min(1, 'Quote must contain at least one item')

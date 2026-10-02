@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { PermissionController } from '../controllers/permissionController';
-import { protectRoute } from '../middlewares/authMiddleware';
+import { protectRoute, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 router.use(protectRoute);
@@ -38,6 +38,6 @@ router.get('/:role', PermissionController.getByRole);
  *     responses:
  *       200: { description: Permissoes atualizadas }
  */
-router.post('/:role', PermissionController.updateByRole);
+router.post('/:role', requireRole('admin', 'super_admin'), PermissionController.updateByRole);
 
 export default router;

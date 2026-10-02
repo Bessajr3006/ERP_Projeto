@@ -1,6 +1,4 @@
-import 'dotenv/config';
-import { readFile } from 'fs/promises';
-import path from 'path';
+import { IBGE_TABLES_SQL } from './ibgeTables';
 import mysql, { ConnectionOptions } from 'mysql2/promise';
 
 const DB_NAME = process.env.DB_NAME || 'bessa_erp';
@@ -29,12 +27,10 @@ export async function runMigration22(): Promise<void> {
     console.log('└──────────────────────────────────────────────────────────────┘');
     console.log('');
 
-    const sqlPath = path.resolve(__dirname, '../../database/17_ibge_tables.sql');
-    const sql = await readFile(sqlPath, 'utf8');
     const connection = await mysql.createConnection(makeConnectionConfig());
 
     try {
-        await connection.query(sql);
+        await connection.query(IBGE_TABLES_SQL);
         console.log('[OK] Migration 22 completed successfully.');
     } finally {
         await connection.end();

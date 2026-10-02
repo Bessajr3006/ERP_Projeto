@@ -10,6 +10,7 @@ import {
 import { StorageService } from '../utils/storageService';
 import { AppError } from '../errors/AppError';
 import forge from 'node-forge';
+import { encrypt, decrypt } from '../utils/crypto';
 
 type ColumnExistsRow = RowDataPacket & { column_count: number };
 
@@ -485,6 +486,9 @@ export class EntityRepository {
 
         const persistedFields = await this.getPersistedFieldsForTable(table);
         const persistedValues: Record<string, any> = Object.fromEntries(persistedFields.map((field) => [field, (data as any)[field] ?? null]));
+        if (persistedValues.certificate_password) {
+            persistedValues.certificate_password = encrypt(String(persistedValues.certificate_password));
+        }
         persistedValues.certificate_url = certUrl;
         persistedValues.social_contract_url = socialDestUrl;
         persistedValues.cnpj_document_url = cnpjDestUrl;
@@ -587,7 +591,7 @@ export class EntityRepository {
                                 updateVals.push((data as any).cnpj_document_url);
                             }
                             if ((data as any).certificate_url !== undefined) { updateFields.push('certificate_url = ?'); updateVals.push((data as any).certificate_url || null); }
-                            if ((data as any).certificate_password !== undefined) { updateFields.push('certificate_password = ?'); updateVals.push((data as any).certificate_password || null); }
+                            if ((data as any).certificate_password !== undefined) { updateFields.push('certificate_password = ?'); updateVals.push((data as any).certificate_password ? encrypt(String((data as any).certificate_password)) : null); }
                             if ((data as any).certificate_expiration !== undefined) { updateFields.push('certificate_expiration = ?'); updateVals.push((data as any).certificate_expiration || null); }
                             if ((data as any).certificate_name !== undefined) { updateFields.push('certificate_name = ?'); updateVals.push((data as any).certificate_name || null); }
 
@@ -611,7 +615,11 @@ export class EntityRepository {
                             if ((data as any)[field] !== undefined && (data as any)[field] !== null) {
                                 columns.push(field);
                                 placeholders.push('?');
-                                values.push((data as any)[field] || null);
+                                let val = (data as any)[field];
+                                if (field === 'certificate_password' && val) {
+                                    val = encrypt(String(val));
+                                }
+                                values.push(val || null);
                             }
                         }
 
@@ -735,7 +743,8 @@ export class EntityRepository {
             updates.push('certificate_url = ?'); values.push(saved ? saved.url : null);
 
             // Auto-extract expiration date from the PFX when password is available
-            const pfxPassword = data.certificate_password ?? currentEnt.certificate_password ?? '';
+            const rawCurrentCertPass = currentEnt.certificate_password ? decrypt(currentEnt.certificate_password) : '';
+            const pfxPassword = data.certificate_password ?? rawCurrentCertPass ?? '';
             if (pfxPassword && data.certificate_base64) {
                 try {
                     const dataUriMatch = data.certificate_base64.match(/^data:([^;]+);base64,(.+)$/);
@@ -851,7 +860,8 @@ export class EntityRepository {
             const val = (data as any)[field];
             if (val !== undefined) {
                 updates.push(`${field} = ?`);
-                values.push(val);
+                const formattedVal = (field === 'certificate_password' && val) ? encrypt(String(val)) : val;
+                values.push(formattedVal);
             }
         }
 
@@ -988,7 +998,7 @@ export class EntityRepository {
                             const certUrl = (data as any).certificate_url !== undefined ? (data as any).certificate_url : currentEnt.certificate_url;
                             if (certUrl !== undefined) { updateFields.push('certificate_url = ?'); updateVals.push(certUrl || null); }
                             const certPwd = (data as any).certificate_password !== undefined ? (data as any).certificate_password : currentEnt.certificate_password;
-                            if (certPwd !== undefined) { updateFields.push('certificate_password = ?'); updateVals.push(certPwd || null); }
+                            if (certPwd !== undefined) { updateFields.push('certificate_password = ?'); updateVals.push(certPwd ? encrypt(String(certPwd)) : null); }
                             const certExp = (data as any).certificate_expiration !== undefined ? (data as any).certificate_expiration : currentEnt.certificate_expiration;
                             if (certExp !== undefined) { updateFields.push('certificate_expiration = ?'); updateVals.push(certExp || null); }
                             const certName = (data as any).certificate_name !== undefined ? (data as any).certificate_name : currentEnt.certificate_name;
@@ -1011,10 +1021,13 @@ export class EntityRepository {
                             'certificate_expiration', 'certificate_name'
                         ];
                         for (const field of extraFields) {
-                            const val = (data as any)[field] !== undefined ? (data as any)[field] : currentEnt[field];
+                            let val = (data as any)[field] !== undefined ? (data as any)[field] : currentEnt[field];
                             if (val !== undefined && val !== null) {
                                 columns.push(field);
                                 placeholders.push('?');
+                                if (field === 'certificate_password' && val) {
+                                    val = encrypt(String(val));
+                                }
                                 insertValues.push(val || null);
                             }
                         }

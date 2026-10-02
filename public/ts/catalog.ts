@@ -154,6 +154,16 @@
       return '55' + digits;
     };
 
+    const escapeHtml = (str: any): string => {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
     // --- Template Renders ---
     function render(): void {
       const app = document.getElementById('vue-app');
@@ -194,27 +204,27 @@
                             <div class="flex items-center gap-4">
                                 ${logoSrc ? `<img src="${logoSrc}" class="w-12 h-12 object-contain rounded-xl border border-gray-200 dark:border-slate-700 bg-white p-1">` : ''}
                                 <div>
-                                    <h1 class="text-xl font-bold dark:text-white leading-tight">${comp.trade_name || comp.company_name}</h1>
+                                    <h1 class="text-xl font-bold dark:text-white leading-tight">${escapeHtml(comp.trade_name || comp.company_name)}</h1>
                                     ${state.customerName ? `
                                       <p class="text-xs text-brand-600 dark:text-brand-400 font-bold flex items-center gap-1 mt-0.5">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                        Cliente: ${state.customerName}
+                                        Cliente: ${escapeHtml(state.customerName)}
                                       </p>
                                     ` : '<p class="text-xs text-gray-500 dark:text-gray-400">Catálogo de Produtos Digital</p>'}
                                 </div>
                             </div>
                             ${state.activeSellerPublicId ? `
-                              <div class="flex flex-col gap-1.5 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200/50 dark:border-slate-700/50 min-w-[240px]">
+                              <div class="flex flex-col gap-1.5 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200/50 dark:border-slate-700/50 min-w-60">
                                   <div class="flex items-center gap-1.5 text-xs text-brand-800 dark:text-brand-300 font-semibold mb-0.5">
                                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                      <span>Vendedor: <strong>${state.sellerName || 'Identificado'}</strong></span>
+                                      <span>Vendedor: <strong>${escapeHtml(state.sellerName || 'Identificado')}</strong></span>
                                   </div>
                                   <div>
                                       <label class="block text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">Selecione o Cliente</label>
                                       <select id="headerCustomerSelect" class="w-full text-xs border dark:border-slate-700 p-2 rounded bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 font-semibold shadow-sm">
                                           <option value="">Sem desconto (Preço Padrão)</option>
                                           ${state.sellerCustomers.map(c => `
-                                            <option value="${c.public_id}" ${customerPublicId === c.public_id ? 'selected' : ''}>${c.name}</option>
+                                            <option value="${escapeHtml(c.public_id)}" ${customerPublicId === c.public_id ? 'selected' : ''}>${escapeHtml(c.name)}</option>
                                           `).join('')}
                                       </select>
                                   </div>
@@ -232,7 +242,7 @@
                                     <div class="grid place-items-center h-full w-12 text-gray-400">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                     </div>
-                                    <input id="searchInput" type="text" value="${state.searchQuery}" placeholder="Buscar produto..." class="peer h-full w-full outline-none text-[16px] md:text-sm font-medium text-gray-700 dark:text-gray-300 pr-2 bg-transparent placeholder-gray-400">
+                                    <input id="searchInput" type="text" value="${escapeHtml(state.searchQuery)}" placeholder="Buscar produto..." class="peer h-full w-full outline-none text-[16px] md:text-sm font-medium text-gray-700 dark:text-gray-300 pr-2 bg-transparent placeholder-gray-400">
                                 </div>
                             </div>
                             <div class="shrink-0">
@@ -270,11 +280,11 @@
                                   .map(
                                     (cat) => `
                                     <li class="shrink-0">
-                                        <button type="button" data-cat="${cat}" class="cat-btn inline-block pb-3 px-1.5 border-b-2 transition-colors ${
+                                        <button type="button" data-cat="${escapeHtml(cat)}" class="cat-btn inline-block pb-3 px-1.5 border-b-2 transition-colors ${
                                           state.activeCategory === cat
                                             ? 'border-brand-600 text-brand-600'
                                             : 'border-transparent text-gray-500'
-                                        }">${cat}</button>
+                                        }">${escapeHtml(cat)}</button>
                                     </li>
                                 `
                                   )
@@ -440,11 +450,11 @@
                           </div>
                           ${
                             p.category_name
-                              ? `<span class="inline-block text-[9px] font-bold tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded-md mb-1 w-fit uppercase">${p.category_name}</span>`
+                              ? `<span class="inline-block text-[9px] font-bold tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 px-1.5 py-0.5 rounded-md mb-1 w-fit uppercase">${escapeHtml(p.category_name)}</span>`
                               : ''
                           }
-                          <h4 class="font-bold text-[14px] sm:text-[15px] text-gray-800 dark:text-gray-200 leading-tight mb-1 line-clamp-2 mt-auto">${p.name}</h4>
-                          <p class="text-[11px] text-gray-400 dark:text-gray-500 line-clamp-2 mb-2 min-h-6 leading-tight">${p.description || ''}</p>
+                          <h4 class="font-bold text-[14px] sm:text-[15px] text-gray-800 dark:text-gray-200 leading-tight mb-1 line-clamp-2 mt-auto">${escapeHtml(p.name)}</h4>
+                          <p class="text-[11px] text-gray-400 dark:text-gray-500 line-clamp-2 mb-2 min-h-6 leading-tight">${escapeHtml(p.description || '')}</p>
                           <div class="flex flex-col justify-end mt-1">
                               <div class="flex items-baseline gap-1 flex-wrap">
                                   ${hasCustomerDiscount ? `
@@ -459,11 +469,11 @@
                           </div>
                           <div class="mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2">
                               <div class="flex items-center select-none rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700">
-                                  <button type="button" class="card-qty-minus w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 text-lg font-bold leading-none" data-id="${p.public_id}">−</button>
-                                  <span class="card-qty-display w-7 text-center text-sm font-bold text-gray-800 dark:text-white pointer-events-none" data-id="${p.public_id}">${state.cardQty[p.public_id] || 0}</span>
-                                  <button type="button" class="card-qty-plus w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 text-lg font-bold leading-none" data-id="${p.public_id}">+</button>
+                                  <button type="button" class="card-qty-minus w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 text-lg font-bold leading-none" data-id="${escapeHtml(p.public_id)}">−</button>
+                                  <span class="card-qty-display w-7 text-center text-sm font-bold text-gray-800 dark:text-white pointer-events-none" data-id="${escapeHtml(p.public_id)}">${state.cardQty[p.public_id] || 0}</span>
+                                  <button type="button" class="card-qty-plus w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 text-lg font-bold leading-none" data-id="${escapeHtml(p.public_id)}">+</button>
                               </div>
-                              <button type="button" class="card-add-btn flex-1 h-8 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold rounded-lg transition-all relative flex items-center justify-center" data-id="${p.public_id}">
+                              <button type="button" class="card-add-btn flex-1 h-8 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold rounded-lg transition-all relative flex items-center justify-center" data-id="${escapeHtml(p.public_id)}">
                                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
                                   </svg>
@@ -507,7 +517,7 @@
                     }
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight pr-5">${item.product.name}</h4>
+                    <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight pr-5">${escapeHtml(item.product.name)}</h4>
                     <div class="flex justify-between items-center mt-2">
                         <span class="font-bold text-gray-900 dark:text-white text-[14px]">${formatCurrency(price * item.quantity)}</span>
                         <div class="flex items-center bg-gray-50 dark:bg-slate-900 rounded-lg p-0.5 border border-gray-100 dark:border-slate-700">
@@ -731,7 +741,7 @@
               if (customerSelect) {
                 customerSelect.innerHTML = '<option value="">Sem desconto (Preço Padrão)</option>';
                 res.customers.forEach((c: any) => {
-                  customerSelect.innerHTML += `<option value="${c.public_id}">${c.name}</option>`;
+                  customerSelect.innerHTML += `<option value="${escapeHtml(c.public_id)}">${escapeHtml(c.name)}</option>`;
                 });
                 
                 // If there's currently a customerPublicId loaded, preselect it in the dropdown

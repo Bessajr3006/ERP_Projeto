@@ -2,6 +2,7 @@ import pool from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { SolidconConfig, CreateSolidconConfigData, UpdateSolidconConfigData } from '../types/Company';
 import { ExternalDbService } from './externalDbService';
+import { encrypt, decrypt } from '../utils/crypto';
 
 export class SolidconConfigService {
     static async list(companyId: number): Promise<SolidconConfig[]> {
@@ -10,7 +11,10 @@ export class SolidconConfigService {
                 'SELECT id, company_id, name, serv_solidcon, bd_solidcon, login_solidcon, senha_solidcon, cdfilial, cdpdv, is_default, created_at, updated_at FROM company_solidcon_configs WHERE company_id = ? ORDER BY is_default DESC, name ASC, id ASC',
                 [companyId]
             );
-            return rows as SolidconConfig[];
+            return (rows as SolidconConfig[]).map(r => ({
+                ...r,
+                senha_solidcon: r.senha_solidcon ? (decrypt(r.senha_solidcon) ?? '') : ''
+            }));
         } catch (err) {
             return [];
         }
@@ -22,7 +26,12 @@ export class SolidconConfigService {
                 'SELECT id, company_id, name, serv_solidcon, bd_solidcon, login_solidcon, senha_solidcon, cdfilial, cdpdv, is_default, created_at, updated_at FROM company_solidcon_configs WHERE id = ? AND company_id = ? LIMIT 1',
                 [id, companyId]
             );
-            return (rows[0] as SolidconConfig) || null;
+            if (!rows || rows.length === 0) return null;
+            const config = rows[0] as SolidconConfig;
+            if (config.senha_solidcon) {
+                config.senha_solidcon = decrypt(config.senha_solidcon) ?? '';
+            }
+            return config;
         } catch (err) {
             return null;
         }
@@ -33,7 +42,8 @@ export class SolidconConfigService {
         const servSolidcon = (data.serv_solidcon || '').trim();
         const bdSolidcon = (data.bd_solidcon || '').trim();
         const loginSolidcon = (data.login_solidcon || '').trim();
-        const senhaSolidcon = data.senha_solidcon || '';
+        const rawSenha = data.senha_solidcon || '';
+        const senhaSolidcon = rawSenha ? encrypt(rawSenha) : '';
         const cdfilial = data.cdfilial !== undefined ? (String(data.cdfilial || '').trim() || null) : null;
         const cdpdv = data.cdpdv !== undefined ? (String(data.cdpdv || '').trim() || null) : null;
         let isDefault = (data.is_default === true || data.is_default === 1 || String(data.is_default) === '1') ? 1 : 0;
@@ -94,9 +104,10 @@ export class SolidconConfigService {
         const servSolidcon = data.serv_solidcon !== undefined ? (data.serv_solidcon || '').trim() : current.serv_solidcon;
         const bdSolidcon = data.bd_solidcon !== undefined ? (data.bd_solidcon || '').trim() : current.bd_solidcon;
         const loginSolidcon = data.login_solidcon !== undefined ? (data.login_solidcon || '').trim() : current.login_solidcon;
-        const senhaSolidcon = (data.senha_solidcon !== undefined && data.senha_solidcon !== '') 
+        const rawSenha = (data.senha_solidcon !== undefined && data.senha_solidcon !== '') 
             ? data.senha_solidcon 
             : current.senha_solidcon;
+        const senhaSolidcon = rawSenha ? encrypt(rawSenha) : '';
         const cdfilial = data.cdfilial !== undefined ? (String(data.cdfilial || '').trim() || null) : current.cdfilial;
         const cdpdv = data.cdpdv !== undefined ? (String(data.cdpdv || '').trim() || null) : current.cdpdv;
         const isDefault = data.is_default !== undefined 
@@ -175,11 +186,12 @@ export class SolidconConfigService {
         login_solidcon?: string;
         senha_solidcon?: string;
     }): Promise<{ success: boolean; message: string; details?: any }> {
+        const rawPassword = data.senha_solidcon ? decrypt(data.senha_solidcon) : data.senha_solidcon;
         return await ExternalDbService.testSolidconConnection({
             host: data.serv_solidcon,
             database: data.bd_solidcon,
             user: data.login_solidcon,
-            password: data.senha_solidcon
+            password: rawPassword
         });
     }
 }

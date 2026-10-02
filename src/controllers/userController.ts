@@ -4,6 +4,7 @@ import { UserService } from '../services/userService';
 import { WhatsAppBusinessService } from '../services/whatsappBusinessService';
 import { WhatsAppBusinessMessageService } from '../services/whatsappBusinessMessageService';
 import { AppError } from '../errors/AppError';
+import { serializeSafeUser, serializeSafeUsers } from '../serializers/safeDataSerializer';
 
 const optionalTrimmedString = (max: number, min = 1, message = 'Invalid value') => z.preprocess(
     (value) => {
@@ -33,13 +34,15 @@ const optionalEmail = z.preprocess(
     z.string().email('Invalid email').optional()
 );
 
+import { ALLOWED_USER_ROLES, canManageRole } from '../utils/roleHierarchy';
+
 const whatsappAutoReplyModeSchema = z.enum(['automatic', 'manual']);
-const roleSlugSchema = z.string().trim().min(1, 'Role is required').max(80, 'Role is too long').regex(/^[a-z0-9_]+$/, 'Invalid role');
+const roleSlugSchema = z.enum(ALLOWED_USER_ROLES);
 
 const createUserSchema = z.object({
     email: z.string().trim().email('Invalid email format'),
     full_name: z.string().trim().min(2, 'Name must be at least 2 characters').max(150, 'Name must be at most 150 characters'),
-    passwordRaw: z.string().min(6, 'Password must be at least 6 characters'),
+    passwordRaw: z.string().min(10, 'Password must be at least 10 characters'),
     role: roleSlugSchema.optional().default('user'),
     is_active: z.boolean().optional(),
     cpf_cnpj: optionalTrimmedString(18),
@@ -206,24 +209,49 @@ export class UserController {
             })
         );
 
-        res.status(200).json({ status: 'success', data: enrichedUsers });
+        res.status(200).json({ status: 'success', data: serializeSafeUsers(enrichedUsers) });
+    }
+
+    static async getById(req: Request, res: Response): Promise<any> {
+        const callerRole = req.user!.role;
+        const companyId = req.user!.company_id;
+        const targetId = req.params.id as string;
+
+        if (!targetId) {
+            throw new AppError('User ID required', 400);
+        }
+
+        const isSelf = await UserController.isSelfTarget(req, targetId);
+        if (callerRole !== 'admin' && callerRole !== 'super_admin' && !isSelf) {
+            throw new AppError('Not authorized to view this user', 403);
+        }
+
+        const user = await UserService.getById(companyId, targetId);
+        return res.status(200).json({ status: 'success', data: serializeSafeUser(user) });
     }
 
     static async create(req: Request, res: Response): Promise<any> {
+        const callerRole = req.user!.role;
         const companyId = req.user!.company_id;
-        if (req.user!.role !== 'admin') {
-            // Allowing for prototyping
+
+        if (callerRole !== 'admin' && callerRole !== 'super_admin') {
+            throw new AppError('Acesso restrito a administradores', 403);
         }
 
         const validatedData = createUserSchema.parse(req.body);
-        if (validatedData.role === 'super_admin' && req.user!.role !== 'super_admin') {
-            throw new AppError('Only the super admin can create a super admin user', 403);
+        const targetRole = validatedData.role || 'user';
+
+        // Ninguém cria usuário com papel igual ou superior ao seu (exceto super_admin)
+        if (!canManageRole(callerRole, targetRole)) {
+            throw new AppError('Não é permitido criar usuário com papel igual ou superior ao seu', 403);
         }
+
         const newUser = await UserService.create(companyId, validatedData);
-        return res.status(201).json({ status: 'success', data: newUser });
+        return res.status(201).json({ status: 'success', data: serializeSafeUser(newUser) });
     }
 
     static async toggleActive(req: Request, res: Response): Promise<any> {
+        const callerRole = req.user!.role;
         const companyId = req.user!.company_id;
         const targetId = req.params.id;
 
@@ -235,6 +263,14 @@ export class UserController {
             throw new AppError('Cannot deactivate your own account', 400);
         }
 
+        // Busca o usuário alvo para garantir isolamento por empresa e validar hierarquia
+        const targetUser = await UserService.getById(companyId, targetId);
+
+        // Ninguém altera status de usuário com papel igual ou superior ao seu (exceto super_admin)
+        if (!canManageRole(callerRole, targetUser.role)) {
+            throw new AppError('Não é permitido alterar status de usuário com papel igual ou superior ao seu', 403);
+        }
+
         const validatedData = toggleUserSchema.parse(req.body);
         await UserService.toggleActive(companyId, targetId, validatedData.is_active);
 
@@ -242,37 +278,52 @@ export class UserController {
     }
 
     static async update(req: Request, res: Response): Promise<any> {
+        const callerRole = req.user!.role;
         const companyId = req.user!.company_id;
         const targetId = req.params.id as string;
         
         if (!targetId) {
             throw new AppError('User ID required', 400);
         }
-        if (req.user!.role !== 'admin' && req.user!.role !== 'super_admin' && !(await UserController.isSelfTarget(req, targetId))) {
+
+        const isSelf = await UserController.isSelfTarget(req, targetId);
+        if (callerRole !== 'admin' && callerRole !== 'super_admin' && !isSelf) {
             throw new AppError('Not authorized to update this profile', 403);
         }
 
-        const validatedData = updateUserSchema.parse(req.body);
-        if (validatedData.role === 'super_admin' && req.user!.role !== 'super_admin') {
-            throw new AppError('Only the super admin can assign the super admin role', 403);
+        // Busca o usuário alvo dentro da empresa do chamador (retorna 404 se pertencer a outra empresa)
+        const targetUser = await UserService.getById(companyId, targetId);
+
+        // Se não for edição do próprio perfil, ninguém edita usuário com papel igual ou superior ao seu
+        if (!isSelf && !canManageRole(callerRole, targetUser.role)) {
+            throw new AppError('Não é permitido editar usuário com papel igual ou superior ao seu', 403);
         }
-        
-        if (req.user!.role !== 'admin' && req.user!.role !== 'super_admin' && validatedData.role && validatedData.role !== req.user!.role) {
-            throw new AppError('Not authorized to change role', 403);
+
+        const validatedData = updateUserSchema.parse(req.body);
+
+        // Se estiver tentando alterar o papel do usuário
+        if (validatedData.role && validatedData.role !== targetUser.role) {
+            if (isSelf && callerRole !== 'super_admin') {
+                throw new AppError('Não é permitido alterar o próprio papel', 403);
+            }
+            if (!canManageRole(callerRole, validatedData.role)) {
+                throw new AppError('Não é permitido atribuir papel igual ou superior ao seu', 403);
+            }
         }
 
         if (validatedData.passwordRaw === '') {
              delete validatedData.passwordRaw;
-        } else if (validatedData.passwordRaw && validatedData.passwordRaw.length < 6) {
-             throw new AppError('Password must be at least 6 characters', 400);
+        } else if (validatedData.passwordRaw && validatedData.passwordRaw.length < 10) {
+             throw new AppError('Password must be at least 10 characters', 400);
         }
 
         const updatedUser = await UserService.update(companyId, targetId, validatedData);
 
-        return res.status(200).json({ status: 'success', message: 'User updated successfully', data: updatedUser });
+        return res.status(200).json({ status: 'success', message: 'User updated successfully', data: serializeSafeUser(updatedUser) });
     }
 
     static async delete(req: Request, res: Response): Promise<any> {
+        const callerRole = req.user!.role;
         const companyId = req.user!.company_id;
         const targetId = req.params.id;
 
@@ -280,8 +331,16 @@ export class UserController {
             throw new AppError('User ID required', 400);
         }
 
-        if (targetId === req.user!.id) {
+        if (targetId === req.user!.id || (await UserController.isSelfTarget(req, targetId))) {
             throw new AppError('Cannot delete your own account', 400);
+        }
+
+        // Busca o usuário alvo dentro da empresa do chamador (retorna 404 se pertencer a outra empresa)
+        const targetUser = await UserService.getById(companyId, targetId);
+
+        // Ninguém exclui usuário com papel igual ou superior ao seu (exceto super_admin)
+        if (!canManageRole(callerRole, targetUser.role)) {
+            throw new AppError('Não é permitido excluir usuário com papel igual ou superior ao seu', 403);
         }
 
         await UserService.delete(companyId, targetId);

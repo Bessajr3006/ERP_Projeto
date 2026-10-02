@@ -1,5 +1,6 @@
 import pool from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { encrypt, decrypt } from '../utils/crypto';
 
 export interface PosControlConfig {
     id: number;
@@ -21,7 +22,15 @@ export class PosControlConfigService {
             [companyId]
         );
         return (rows as PosControlConfig[]).map(config => {
-            if (!config.ocp_apim_subscription_key && config.subscription_key) {
+            if (config.poscontrol_password) {
+                config.poscontrol_password = decrypt(config.poscontrol_password);
+            }
+            if (config.subscription_key) {
+                config.subscription_key = decrypt(config.subscription_key);
+            }
+            if (config.ocp_apim_subscription_key) {
+                config.ocp_apim_subscription_key = decrypt(config.ocp_apim_subscription_key);
+            } else if (config.subscription_key) {
                 config.ocp_apim_subscription_key = config.subscription_key;
             }
             return config;
@@ -35,16 +44,28 @@ export class PosControlConfigService {
         );
         if (!rows || rows.length === 0) return null;
         const config = rows[0] as PosControlConfig;
-        if (!config.ocp_apim_subscription_key && config.subscription_key) {
+        if (config.poscontrol_password) {
+            config.poscontrol_password = decrypt(config.poscontrol_password);
+        }
+        if (config.subscription_key) {
+            config.subscription_key = decrypt(config.subscription_key);
+        }
+        if (config.ocp_apim_subscription_key) {
+            config.ocp_apim_subscription_key = decrypt(config.ocp_apim_subscription_key);
+        } else if (config.subscription_key) {
             config.ocp_apim_subscription_key = config.subscription_key;
         }
         return config;
     }
 
     static async create(companyId: number, data: { subscription_key?: string | null, ocp_apim_subscription_key?: string | null, url_token?: string | null, url_productgroups_post?: string | null, poscontrol_username?: string | null, poscontrol_password?: string | null }): Promise<PosControlConfig> {
+        const encSubKey = data.subscription_key ? encrypt(data.subscription_key) : null;
+        const encOcpKey = data.ocp_apim_subscription_key ? encrypt(data.ocp_apim_subscription_key) : (encSubKey || null);
+        const encPass = data.poscontrol_password ? encrypt(data.poscontrol_password) : null;
+
         const [result] = await pool.query<ResultSetHeader>(
             'INSERT INTO company_poscontrol_configs (company_id, subscription_key, ocp_apim_subscription_key, url_token, url_productgroups_post, poscontrol_username, poscontrol_password) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [companyId, data.subscription_key || null, data.ocp_apim_subscription_key || null, data.url_token || null, data.url_productgroups_post || null, data.poscontrol_username || null, data.poscontrol_password || null]
+            [companyId, encSubKey, encOcpKey, data.url_token || null, data.url_productgroups_post || null, data.poscontrol_username || null, encPass]
         );
         const newId = result.insertId;
         const config = await this.getById(companyId, newId);
@@ -63,9 +84,13 @@ export class PosControlConfigService {
         const uName = data.poscontrol_username !== undefined ? data.poscontrol_username : existing.poscontrol_username;
         const uPass = data.poscontrol_password !== undefined ? data.poscontrol_password : existing.poscontrol_password;
 
+        const encSubKey = subKey ? encrypt(subKey) : null;
+        const encOcpKey = ocpKey ? encrypt(ocpKey) : null;
+        const encPass = uPass ? encrypt(uPass) : null;
+
         await pool.query(
             'UPDATE company_poscontrol_configs SET subscription_key = ?, ocp_apim_subscription_key = ?, url_token = ?, url_productgroups_post = ?, poscontrol_username = ?, poscontrol_password = ? WHERE id = ? AND company_id = ?',
-            [subKey || null, ocpKey || null, urlTok || null, urlPgPost || null, uName || null, uPass || null, id, companyId]
+            [encSubKey, encOcpKey, urlTok || null, urlPgPost || null, uName || null, encPass, id, companyId]
         );
 
         const updated = await this.getById(companyId, id);

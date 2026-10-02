@@ -184,7 +184,7 @@ export class UserService {
         }
 
         const columns = [
-            'public_id', 'company_id', 'email', 'password_hash', 'raw_password', 'full_name',
+            'public_id', 'company_id', 'email', 'password_hash', 'full_name',
             'cpf_cnpj', 'crc', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'default_page', 'whatsapp_auto_reply_mode', 'whatsapp_enable_manual_billing', 'whatsapp_auto_send_boleto',
             'role', 'is_active', 'photo_base64', 'photo_filename', 'cnpj_document_url', 'face_descriptor', 'default_bank_account_id', 'is_default_declaration_signer'
         ];
@@ -194,7 +194,6 @@ export class UserService {
             companyId,
             email,
             passwordHash,
-            passwordRaw || null,
             full_name,
             profile.cpf_cnpj,
             profile.crc,
@@ -222,7 +221,7 @@ export class UserService {
 
         await UserRepository.create(columns, placeholders, values);
 
-        return { public_id: publicId, email, full_name, role, is_active, is_default_declaration_signer: isDefaultDeclarationSigner, whatsapp_auto_reply_mode: whatsappAutoReplyMode, whatsapp_enable_manual_billing: whatsappEnableManualBilling, whatsapp_auto_send_boleto: whatsappAutoSendBoleto, password: passwordRaw, default_bank_account_public_id: data.default_bank_account_public_id, ...profile };
+        return { public_id: publicId, email, full_name, role, is_active, is_default_declaration_signer: isDefaultDeclarationSigner, whatsapp_auto_reply_mode: whatsappAutoReplyMode, whatsapp_enable_manual_billing: whatsappEnableManualBilling, whatsapp_auto_send_boleto: whatsappAutoSendBoleto, default_bank_account_public_id: data.default_bank_account_public_id, ...profile };
     }
 
     static async toggleActive(companyId: number, identifier: string, isActive: boolean) {
@@ -230,7 +229,7 @@ export class UserService {
         const affectedRows = await UserRepository.updateByCompanyAndPublicId(
             companyId, publicId, ['is_active = ?'], [isActive]
         );
-        if (affectedRows === 0) throw new Error('User not found or nothing changed');
+        if (affectedRows === 0) throw new AppError('Usuário não encontrado ou nenhuma alteração realizada', 404);
         return true;
     }
 
@@ -255,8 +254,6 @@ export class UserService {
             const passwordHash = await bcrypt.hash(String(typedData.passwordRaw), SALT_ROUNDS);
             updates.push('password_hash = ?');
             values.push(passwordHash);
-            updates.push('raw_password = ?');
-            values.push(String(typedData.passwordRaw));
         }
         if (hasOwnProperty(typedData, 'role') && typedData.role !== undefined) {
             updates.push('role = ?');
@@ -325,7 +322,7 @@ export class UserService {
         
         if (updates.length > 0) {
             const affectedRows = await UserRepository.updateByCompanyAndPublicId(companyId, publicId, updates, values);
-            if (affectedRows === 0) throw new Error('User not found or nothing changed');
+            if (affectedRows === 0) throw new AppError('Usuário não encontrado ou nenhuma alteração realizada', 404);
         }
 
         return this.getById(companyId, publicId);

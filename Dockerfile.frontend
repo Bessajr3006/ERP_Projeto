@@ -1,28 +1,25 @@
-# ── Stage 1: Build do CSS ────────────────────────────────────────────────────
-FROM node:22 AS builder
+# ── Stage 1: Build dos assets ──────────────────────────────────────────────────
+FROM node:22-bookworm-slim@sha256:560c5a2c10b50aa22eb4fbc266ee5b28d0eb9f68ad38753239a51cb684c311c6 AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-# Evita downloads pesados de binários C++ (puppeteer, ffmpeg) durante o build do frontend
+# Evita downloads pesados de binários C++ durante o build do frontend
 RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true \
     NODE_OPTIONS="--max-old-space-size=512" \
     npm ci --no-audit --no-fund
 
 COPY . .
 
-# Gera build.json e atualiza o cache name do SW durante o build da imagem
-# (assim, ao rebuild do Docker, a versão aparece imediatamente no sistema).
+# Atualiza versão de build
 RUN npm run --silent bump:build-version
 
-# Compila apenas o Tailwind CSS (os arquivos JS/HTML já estão em public/)
+# Compila Tailwind CSS e TypeScript do frontend
 RUN npm run build:css
-
-# Compila TypeScript dos scripts estáticos para public/js
 RUN npm run build:public
 
-# ── Stage 2: Nginx servindo os arquivos estáticos ────────────────────────────
-FROM nginx:1.27-alpine
+# ── Stage 2: Nginx não-root servindo os arquivos estáticos ─────────────────────
+FROM nginx:1.27-alpine@sha256:01d51624b6caee4b46c641cc996e3ad5d098e9c7081734bc166d7ad4ec4101e3
 
 # Copia os arquivos estáticos compilados para o diretório raiz do Nginx
 COPY --from=builder /app/public /usr/share/nginx/html

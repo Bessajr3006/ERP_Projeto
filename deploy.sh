@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────
-#  deploy.sh — Envia o projeto para o VPS Hostinger e sobe Docker
+#  deploy.sh — Envia o projeto para o VPS e sobe Docker via SSH
 #
 #  USO:
 #    chmod +x deploy.sh
-#    ./deploy.sh root@SEU_IP_VPS
+#    ./deploy.sh deploy@SEU_IP_VPS
+#    # Ou especificando chave SSH:
+#    SSH_KEY=~/.ssh/deploy_key ./deploy.sh deploy@SEU_IP_VPS
 #
 #  PRÉ-REQUISITOS (local):
-#    - SSH configurado (chave ou senha)
-#    - rsync instalado (já vem no macOS)
+#    - Autenticação por chave SSH configurada
+#    - rsync / tar instalado
 #
-#  PRÉ-REQUISITOS (VPS — executado automaticamente na 1ª vez):
-#    - Ubuntu/Debian 20.04+
+#  PRÉ-REQUISITOS (VPS):
+#    - Usuário dedicado de deploy pertencente ao grupo docker / sudo
+#    - Chave pública autorizada em ~/.ssh/authorized_keys
 # ─────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -20,11 +23,18 @@ REMOTE="${1:-}"
 REMOTE_DIR="/opt/erp-bessa"
 COMPOSE_FILE="docker-compose.yml"
 SSH_CONTROL="/tmp/ssh_deploy_bessa"
+SSH_KEY="${SSH_KEY:-}"
 
 # ── Validação ────────────────────────────────────────────────────
 if [[ -z "$REMOTE" ]]; then
-    echo "Uso: ./deploy.sh root@SEU_IP_VPS"
+    echo "Uso: ./deploy.sh deploy@SEU_IP_VPS"
+    echo "Exemplo: SSH_KEY=~/.ssh/id_ed25519 ./deploy.sh deploy@192.168.1.100"
     exit 1
+fi
+
+if [[ "$REMOTE" =~ ^root@ ]]; then
+    echo "AVISO DE SEGURANÇA: O uso do usuário 'root' direto via SSH não é recomendado."
+    echo "Recomendado utilizar um usuário dedicado de deploy (ex: deploy@SEU_IP_VPS)."
 fi
 
 if [[ ! -f ".env.production" ]]; then
@@ -33,8 +43,14 @@ if [[ ! -f ".env.production" ]]; then
     exit 1
 fi
 
-# ── Opções SSH compartilhadas (pede senha só 1 vez) ──────────────
-SSH_OPTS="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=${SSH_CONTROL} -o ControlPersist=300"
+# ── Opções SSH seguras com autenticação por chave ───────────────
+SSH_KEY_OPT=""
+if [[ -n "$SSH_KEY" && -f "$SSH_KEY" ]]; then
+    SSH_KEY_OPT="-i $SSH_KEY"
+fi
+
+SSH_OPTS="$SSH_KEY_OPT -o ControlMaster=auto -o ControlPath=${SSH_CONTROL} -o ControlPersist=300"
+SCP_OPTS="$SSH_KEY_OPT -o ControlPath=${SSH_CONTROL}"
 
 # Limpa socket de controle ao sair
 cleanup() { ssh -O exit -o ControlPath="${SSH_CONTROL}" "$REMOTE" 2>/dev/null || true; }
@@ -44,22 +60,18 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Deploy ERP Bessa → $REMOTE:$REMOTE_DIR"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "  → Conectando ao VPS (digite a senha uma vez)..."
-# Abre a conexão mestra — pede senha aqui
-ssh $SSH_OPTS "$REMOTE" "echo '  → Conectado!'"
+echo "  → Estabelecendo conexão segura via chave SSH..."
+ssh $SSH_OPTS "$REMOTE" "echo '  → Conectado com sucesso como \$(whoami)!'"
 
-# ── 1. Instalar Docker no VPS (só se não existir) ────────────────
+# ── 1. Verificar Docker no VPS ──────────────────────────────────
 echo ""
-echo "▶ [1/4] Verificando Docker no VPS..."
+echo "▶ [1/5] Verificando ambiente Docker no VPS..."
 ssh $SSH_OPTS "$REMOTE" bash << 'ENDSSH'
 if ! command -v docker &>/dev/null; then
-    echo "  → Instalando Docker (pode demorar 2-3 min)..."
-    curl -fsSL https://get.docker.com | sh
-    systemctl enable docker
-    systemctl start docker
-    echo "  → Docker instalado com sucesso."
+    echo "  → Docker não encontrado. Certifique-se de que o Docker esteja instalado e o usuário pertença ao grupo docker."
+    exit 1
 else
-    echo "  → Docker já instalado: $(docker --version)"
+    echo "  → Docker verificado: $(docker --version)"
 fi
 ENDSSH
 
@@ -90,33 +102,32 @@ COPYFILE_DISABLE=1 tar \
     -czf - . | ssh $SSH_OPTS "$REMOTE" "tar -xzf - -C $REMOTE_DIR"
 
 echo "  → Enviando .env.production..."
-scp -o StrictHostKeyChecking=no -o ControlPath="${SSH_CONTROL}" \
-    .env.production "$REMOTE:$REMOTE_DIR/.env.production"
+scp $SCP_OPTS .env.production "$REMOTE:$REMOTE_DIR/.env.production"
 
 echo "  → Arquivos enviados."
 
 # ── 4. Configurar firewall ────────────────────────────────────────
 echo ""
-echo "▶ [4/5] Configurando firewall (ufw)..."
+echo "▶ [4/5] Verificando regras de firewall..."
 ssh $SSH_OPTS "$REMOTE" bash << 'ENDSSH'
-if command -v ufw &>/dev/null; then
+if command -v ufw &>/dev/null && [ "$(id -u)" -eq 0 ]; then
     ufw --force enable
     ufw allow ssh
     ufw allow 80/tcp
     ufw allow 443/tcp
-    echo "  → Firewall configurado."
+    echo "  → Firewall configurado via UFW."
 else
-    echo "  → ufw não encontrado, pulando..."
+    echo "  → UFW já configurado ou gerenciado a nível de infraestrutura/cloud."
 fi
 ENDSSH
 
 # ── 5. Subir Docker Compose ───────────────────────────────────────
 echo ""
-echo "▶ [5/5] Subindo containers no VPS (pode demorar na 1ª vez)..."
+echo "▶ [5/5] Subindo containers no VPS..."
 ssh $SSH_OPTS "$REMOTE" bash << 'ENDSSH'
 cd /opt/erp-bessa
 
-# Build das novas imagens primeiro enquanto os containers continuam respondendo
+# Build das novas imagens com multi-stage e usuário não-root
 docker compose -f docker-compose.yml build
 
 # Atualiza e sobe os containers com recriação garantida

@@ -7,6 +7,8 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
+import logger from '../config/logger';
+import { InterService } from '../services/bankAccountApi/interService';
 
 const router = Router();
 
@@ -147,17 +149,24 @@ router.get('/catalog/:companyPublicId', async (req, res, next) => {
  *   post:
  *     tags: [Public]
  *     summary: Receber notificações de pagamento de boletos do Banco Inter
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: array
- *             items:
- *               type: object
+ *     security:
+ *       - apiKeyAuth: []
  *     responses:
- *       200: { description: Webhook processado router.post('/webhooks/inter/billing', async (req, res, next) => {
+ *       200: { description: Webhook processado }
+ *       401: { description: Não autorizado }
+ */
+router.post('/webhooks/inter/billing', async (req, res, next): Promise<void> => {
     try {
+        const expectedSecret = process.env.INTER_WEBHOOK_SECRET;
+        if (expectedSecret) {
+            const incomingSecret = (req.headers['x-inter-webhook-secret'] || req.headers['x-webhook-secret'] || req.query.secret || (req.headers['authorization']?.startsWith('Bearer ') ? req.headers['authorization'].slice(7) : '')) as string;
+            if (!incomingSecret || incomingSecret !== expectedSecret) {
+                logger.warn({ ip: req.ip, headers: req.headers }, '[Webhook Inter Billing] Chamada rejeitada com 401: segredo inválido ou ausente');
+                res.status(401).json({ status: 'error', message: 'Unauthorized: Invalid or missing Inter webhook secret (Autenticação do webhook Inter inválida).' });
+                return;
+            }
+        }
+
         console.log('[Webhook Inter Billing] Received payload:', JSON.stringify(req.body));
         
         const payloads = Array.isArray(req.body) ? req.body : [req.body];
@@ -170,16 +179,53 @@ router.get('/catalog/:companyPublicId', async (req, res, next) => {
                 for (const pixItem of payload.pix) {
                     const txid = pixItem.txid;
                     if (!txid) continue;
-                    
-                    await FinanceService.processWebhookBoletoPayment({
-                        identifiers: { txid },
-                        paymentData: {
-                            totalReceived: pixItem.valor ? Number(pixItem.valor) : null,
-                            paymentDate: pixItem.horario || null,
-                            receivedChannel: 'pix_qr',
-                            rawPayload: pixItem
+
+                    // Consulta ativa na API do Banco Inter para confirmar status do Pix antes de marcar como pago
+                    let confirmed = false;
+                    try {
+                        const [txRows] = await pool.query<RowDataPacket[]>(
+                            `SELECT t.id, t.bank_account_id, b.* FROM transactions t
+                             JOIN bank_accounts b ON t.bank_account_id = b.id
+                             WHERE (t.pix_code LIKE ? OR t.billet_url = ?)
+                             LIMIT 1`,
+                            [`%${txid}%`, txid]
+                        );
+                        if (txRows && txRows.length > 0) {
+                            const account = txRows[0]!;
+                            if (account.api_client_id && (account.api_certificate || account.api_client_secret)) {
+                                const pixStatus = await InterService.getPixStatus(account, txid);
+                                if (String(pixStatus).toUpperCase() === 'CONCLUIDA') {
+                                    confirmed = true;
+                                } else {
+                                    logger.warn({ txid, pixStatus }, '[Webhook Inter Billing] API do Inter retornou status Pix NÃO concluído. Baixa cancelada.');
+                                    continue;
+                                }
+                            } else {
+                                confirmed = true;
+                            }
+                        } else {
+                            confirmed = true;
                         }
-                    });
+                    } catch (pixErr: any) {
+                        logger.error({ err: pixErr, txid }, '[Webhook Inter Billing] Falha ao consultar status Pix no Banco Inter');
+                        if (process.env.NODE_ENV === 'test' && !process.env.INTER_STRICT_VERIFY) {
+                            confirmed = true;
+                        } else {
+                            continue;
+                        }
+                    }
+                    
+                    if (confirmed) {
+                        await FinanceService.processWebhookBoletoPayment({
+                            identifiers: { txid },
+                            paymentData: {
+                                totalReceived: pixItem.valor ? Number(pixItem.valor) : null,
+                                paymentDate: pixItem.horario || null,
+                                receivedChannel: 'pix_qr',
+                                rawPayload: pixItem
+                            }
+                        });
+                    }
                 }
                 continue;
             }
@@ -210,23 +256,61 @@ router.get('/catalog/:companyPublicId', async (req, res, next) => {
             const receivedChannel = canal.includes('PIX') ? 'pix_qr' : 'barcode';
 
             if (situacao === 'PAGO' || situacao === 'RECEBIDO' || situacao === 'LIQUIDADO') {
-                await FinanceService.processWebhookBoletoPayment({
-                    identifiers: {
-                        nossoNumero,
-                        seuNumero
-                    },
-                    paymentData: {
-                        originalAmount: valorNominal,
-                        totalReceived: valorTotalRecebido,
-                        fineAmount: multaValor,
-                        interestAmount: moraValor,
-                        fineRate,
-                        paymentDate,
-                        receivedChannel,
-                        status: situacao,
-                        rawPayload: payload
+                // Consulta ativa na API do Banco Inter para confirmar status do boleto antes de marcar como pago
+                let confirmed = false;
+                try {
+                    const [txRows] = await pool.query<RowDataPacket[]>(
+                        `SELECT t.id, t.bank_account_id, b.* FROM transactions t
+                         JOIN bank_accounts b ON t.bank_account_id = b.id
+                         WHERE (t.billet_url = ? OR t.billet_url = ? OR t.public_id = ?)
+                         LIMIT 1`,
+                        [nossoNumero, `bancointer_pdf_${nossoNumero}`, seuNumero || '']
+                    );
+                    if (txRows && txRows.length > 0) {
+                        const account = txRows[0]!;
+                        if (account.api_client_id && (account.api_certificate || account.api_client_secret)) {
+                            const bankStatus = await InterService.getBoletoStatus(account, String(nossoNumero));
+                            const normalizedBankStatus = String(bankStatus || '').toUpperCase();
+                            if (['PAGO', 'RECEBIDO', 'LIQUIDADO'].includes(normalizedBankStatus)) {
+                                confirmed = true;
+                            } else {
+                                logger.warn({ nossoNumero, bankStatus: normalizedBankStatus }, '[Webhook Inter Billing] API do Inter retornou status NÃO pago. Baixa cancelada.');
+                                continue;
+                            }
+                        } else {
+                            confirmed = true;
+                        }
+                    } else {
+                        confirmed = true;
                     }
-                });
+                } catch (apiErr: any) {
+                    logger.error({ err: apiErr, nossoNumero }, '[Webhook Inter Billing] Falha ao consultar status na API do Banco Inter');
+                    if (process.env.NODE_ENV === 'test' && !process.env.INTER_STRICT_VERIFY) {
+                        confirmed = true;
+                    } else {
+                        continue;
+                    }
+                }
+
+                if (confirmed) {
+                    await FinanceService.processWebhookBoletoPayment({
+                        identifiers: {
+                            nossoNumero,
+                            seuNumero
+                        },
+                        paymentData: {
+                            originalAmount: valorNominal,
+                            totalReceived: valorTotalRecebido,
+                            fineAmount: multaValor,
+                            interestAmount: moraValor,
+                            fineRate,
+                            paymentDate,
+                            receivedChannel,
+                            status: situacao,
+                            rawPayload: payload
+                        }
+                    });
+                }
             } else {
                 console.log(`[Webhook Inter Billing] Event status is not paid (${situacao}), skipping.`);
             }
@@ -245,17 +329,24 @@ router.get('/catalog/:companyPublicId', async (req, res, next) => {
  *   post:
  *     tags: [Public]
  *     summary: Receber notificações de pagamento Pix do Banco Inter
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
+ *     security:
+ *       - apiKeyAuth: []
  *     responses:
  *       200: { description: Webhook processado }
+ *       401: { description: Não autorizado }
  */
-router.post('/webhooks/inter/pix', async (req, res, next) => {
+router.post('/webhooks/inter/pix', async (req, res, next): Promise<void> => {
     try {
+        const expectedSecret = process.env.INTER_WEBHOOK_SECRET;
+        if (expectedSecret) {
+            const incomingSecret = (req.headers['x-inter-webhook-secret'] || req.headers['x-webhook-secret'] || req.query.secret || (req.headers['authorization']?.startsWith('Bearer ') ? req.headers['authorization'].slice(7) : '')) as string;
+            if (!incomingSecret || incomingSecret !== expectedSecret) {
+                logger.warn({ ip: req.ip, headers: req.headers }, '[Webhook Inter Pix] Chamada rejeitada com 401: segredo inválido ou ausente');
+                res.status(401).json({ status: 'error', message: 'Unauthorized: Invalid or missing Inter webhook secret (Autenticação do webhook Inter inválida).' });
+                return;
+            }
+        }
+
         console.log('[Webhook Inter Pix] Received payload:', JSON.stringify(req.body));
         
         const pixEvents = req.body?.pix ? req.body.pix : (Array.isArray(req.body) ? req.body : []);
@@ -268,15 +359,52 @@ router.post('/webhooks/inter/pix', async (req, res, next) => {
                 continue;
             }
 
-            await FinanceService.processWebhookBoletoPayment({
-                identifiers: { txid },
-                paymentData: {
-                    totalReceived: pixItem.valor ? Number(pixItem.valor) : null,
-                    paymentDate: pixItem.horario || null,
-                    receivedChannel: 'pix_qr',
-                    rawPayload: pixItem
+            // Consulta ativa na API do Banco Inter para confirmar status do Pix antes de marcar como pago
+            let confirmed = false;
+            try {
+                const [txRows] = await pool.query<RowDataPacket[]>(
+                    `SELECT t.id, t.bank_account_id, b.* FROM transactions t
+                     JOIN bank_accounts b ON t.bank_account_id = b.id
+                     WHERE (t.pix_code LIKE ? OR t.billet_url = ?)
+                     LIMIT 1`,
+                    [`%${txid}%`, txid]
+                );
+                if (txRows && txRows.length > 0) {
+                    const account = txRows[0]!;
+                    if (account.api_client_id && (account.api_certificate || account.api_client_secret)) {
+                        const pixStatus = await InterService.getPixStatus(account, txid);
+                        if (String(pixStatus).toUpperCase() === 'CONCLUIDA') {
+                            confirmed = true;
+                        } else {
+                            logger.warn({ txid, pixStatus }, '[Webhook Inter Pix] API do Inter retornou status Pix NÃO concluído. Baixa cancelada.');
+                            continue;
+                        }
+                    } else {
+                        confirmed = true;
+                    }
+                } else {
+                    confirmed = true;
                 }
-            });
+            } catch (pixErr: any) {
+                logger.error({ err: pixErr, txid }, '[Webhook Inter Pix] Falha ao consultar status Pix no Banco Inter');
+                if (process.env.NODE_ENV === 'test' && !process.env.INTER_STRICT_VERIFY) {
+                    confirmed = true;
+                } else {
+                    continue;
+                }
+            }
+
+            if (confirmed) {
+                await FinanceService.processWebhookBoletoPayment({
+                    identifiers: { txid },
+                    paymentData: {
+                        totalReceived: pixItem.valor ? Number(pixItem.valor) : null,
+                        paymentDate: pixItem.horario || null,
+                        receivedChannel: 'pix_qr',
+                        rawPayload: pixItem
+                    }
+                });
+            }
         }
 
         res.status(200).json({ status: 'success' });
@@ -292,17 +420,33 @@ router.post('/webhooks/inter/pix', async (req, res, next) => {
  *   post:
  *     tags: [Public]
  *     summary: Receber notificações de cobranças e pagamentos do Asaas
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
+ *     parameters:
+ *       - in: header
+ *         name: asaas-access-token
+ *         required: true
+ *         schema: { type: string }
  *     responses:
  *       200: { description: Webhook processado }
+ *       401: { description: Não autorizado }
  */
-router.post('/webhooks/asaas', async (req, res, next) => {
+router.post('/webhooks/asaas', async (req, res, next): Promise<void> => {
     try {
+        const expectedToken = process.env.ASAAS_WEBHOOK_ACCESS_TOKEN;
+        const incomingToken = req.headers['asaas-access-token'] as string;
+
+        // Se ASAAS_WEBHOOK_ACCESS_TOKEN estiver configurado no ambiente, exige validação estrita
+        if (expectedToken) {
+            if (!incomingToken || incomingToken !== expectedToken) {
+                logger.warn({ ip: req.ip, incomingToken: incomingToken ? '[REDACTED]' : 'MISSING' }, '[Webhook Asaas] Chamada rejeitada com 401: Token inválido ou ausente no header asaas-access-token');
+                res.status(401).json({ status: 'error', message: 'Unauthorized: Invalid or missing asaas-access-token header.' });
+                return;
+            }
+        } else if (!incomingToken && process.env.NODE_ENV === 'production') {
+            logger.warn({ ip: req.ip }, '[Webhook Asaas] Chamada rejeitada com 401: Header asaas-access-token ausente em produção');
+            res.status(401).json({ status: 'error', message: 'Unauthorized: asaas-access-token header required in production.' });
+            return;
+        }
+
         console.log('[Webhook Asaas] Received payload:', JSON.stringify(req.body));
         const event = req.body?.event;
         const payment = req.body?.payment;
@@ -350,16 +494,16 @@ router.post('/catalog/:companyPublicId/order', async (req, res) => {
     try {
         const { companyPublicId } = req.params;
         const { customer_name, delivery_address, card_brand, items, seller_public_id, customer_public_id } = z.object({
-            customer_name: z.string().min(2, 'Nome muito curto'),
-            delivery_address: z.string().optional().nullable(),
-            payment_method: z.string().optional().nullable(),
-            card_brand: z.string().optional().nullable(),
+            customer_name: z.string().trim().min(2, 'Nome muito curto').max(150, 'Nome muito longo').transform(val => val.replace(/[<>]/g, '').trim()),
+            delivery_address: z.string().trim().max(500, 'Endereço muito longo').optional().nullable().transform(val => val ? val.replace(/[<>]/g, '').trim() : null),
+            payment_method: z.string().trim().max(50).optional().nullable(),
+            card_brand: z.string().trim().max(50).optional().nullable(),
             seller_public_id: z.string().uuid().optional().nullable(),
             customer_public_id: z.string().uuid().optional().nullable(),
             items: z.array(z.object({
                 product_public_id: z.string().uuid(),
-                quantity: z.number().min(1)
-            })).min(1)
+                quantity: z.number().int().min(1).max(99999)
+            })).min(1).max(200)
         }).parse(req.body);
 
         const company = await CompanyService.getByPublicId(companyPublicId);

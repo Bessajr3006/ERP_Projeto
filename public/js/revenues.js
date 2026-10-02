@@ -16,6 +16,66 @@
     function getAuthToken() {
         return window.Auth?.getToken?.() || localStorage.getItem('erp_token') || sessionStorage.getItem('erp_token') || '';
     }
+    // Expose KPI update function for revenues
+    window.updateRevenueKPIs = function (items) {
+        if (!items || !items.length) {
+            ['kpiTotal', 'kpiPaid', 'kpiPending'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el)
+                    el.textContent = 'R$ 0,00';
+            });
+            ['kpiTotalCount', 'kpiPaidCount', 'kpiPendingCount'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el)
+                    el.textContent = '0 lançamentos';
+            });
+            const pb = document.getElementById('kpiPaidBar');
+            const pendB = document.getElementById('kpiPendingBar');
+            if (pb)
+                pb.style.width = '0%';
+            if (pendB)
+                pendB.style.width = '0%';
+            return;
+        }
+        const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const total = items.reduce((s, r) => s + (parseFloat(r.value) || 0), 0);
+        const paid = items.filter(r => r.status === 'paid');
+        const pend = items.filter(r => r.status !== 'paid');
+        const paidAmt = paid.reduce((s, r) => s + (parseFloat(r.value) || 0), 0);
+        const pendAmt = pend.reduce((s, r) => s + (parseFloat(r.value) || 0), 0);
+        const setEl = (id, val) => { const e = document.getElementById(id); if (e)
+            e.textContent = val; };
+        setEl('kpiTotal', fmt(total));
+        setEl('kpiTotalCount', `${items.length} lançamento${items.length !== 1 ? 's' : ''}`);
+        setEl('kpiPaid', fmt(paidAmt));
+        setEl('kpiPaidCount', `${paid.length} lançamento${paid.length !== 1 ? 's' : ''}`);
+        setEl('kpiPending', fmt(pendAmt));
+        setEl('kpiPendingCount', `${pend.length} lançamento${pend.length !== 1 ? 's' : ''}`);
+        const paidPct = total > 0 ? (paidAmt / total) * 100 : 0;
+        const pendPct = total > 0 ? (pendAmt / total) * 100 : 0;
+        const pb = document.getElementById('kpiPaidBar');
+        const pendB = document.getElementById('kpiPendingBar');
+        if (pb)
+            pb.style.width = paidPct.toFixed(1) + '%';
+        if (pendB)
+            pendB.style.width = pendPct.toFixed(1) + '%';
+    };
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn2 = document.getElementById('btnCancelModal2');
+        const btn1 = document.getElementById('btnCancelModal');
+        if (btn2 && btn1)
+            btn2.addEventListener('click', () => btn1.click());
+    });
+    function escapeHtml(str) {
+        if (str === null || str === undefined)
+            return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
     const peopleCache = {};
     let g_previousDueDate = '';
     function checkAndPromptDueDateInterestChange() {
@@ -230,7 +290,7 @@
             }
             if (customerGroupSelect) {
                 customerGroupSelect.innerHTML = '<option value="">Selecione o grupo...</option>' + customerGroupsData
-                    .map((g) => `<option value="${g.public_id}">${g.name}</option>`)
+                    .map((g) => `<option value="${escapeHtml(g.public_id)}">${escapeHtml(g.name)}</option>`)
                     .join('');
                 customerGroupSelect.value = '';
             }
@@ -262,7 +322,7 @@
                 filteredItems = items.filter((x) => x.customer_group_public_id === selectedGroup);
             }
             entitySelect.innerHTML = '<option value="">Selecione...</option>' + filteredItems
-                .map((x) => `<option value="${x.public_id}">${x.name}</option>`)
+                .map((x) => `<option value="${escapeHtml(x.public_id)}">${escapeHtml(x.name)}</option>`)
                 .join('');
             if (selectedEntityPublicId) {
                 entitySelect.value = selectedEntityPublicId;
@@ -1165,10 +1225,11 @@
         if (method === 'boleto' && batchGenerated) {
             label += ` (Lote)`;
         }
+        const safeLabel = escapeHtml(label);
         const isBoletoNotGenerated = (method === 'boleto' && !billetUrl && !isPaid);
         const isPixNotGenerated = (method === 'pix' && !pixCode && !isPaid);
         if (isBoletoNotGenerated || isPixNotGenerated) {
-            return `<span class="inline-flex items-center rounded bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 text-[11px] font-medium text-red-800 dark:text-red-300 ring-1 ring-red-200 dark:ring-red-800/60">${label}</span>`;
+            return `<span class="inline-flex items-center rounded bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 text-[11px] font-medium text-red-800 dark:text-red-300 ring-1 ring-red-200 dark:ring-red-800/60">${safeLabel}</span>`;
         }
         if (method === 'boleto' && isPaid) {
             if (receivedChannel === 'pix_qr') {
@@ -1178,7 +1239,7 @@
                 return `<span class="inline-flex items-center gap-1 rounded bg-blue-100 dark:bg-blue-950/40 px-1.5 py-0.5 text-[11px] font-medium text-blue-800 dark:text-blue-300 ring-1 ring-blue-300 dark:ring-blue-700/60" title="Boleto recebido via Código de Barras"><svg class="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>Boleto (Cód. Barras)</span>`;
             }
         }
-        return `<span class="inline-flex items-center rounded bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-300">${label}</span>`;
+        return `<span class="inline-flex items-center rounded bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-300">${safeLabel}</span>`;
     }
     function getRevenueStatus(row) {
         if (row.status !== 'paid' && row.sale_id && row.sale_status === 'progress')
@@ -1655,7 +1716,7 @@
                 const filterCustomerGroupSelect = document.getElementById('filterCustomerGroup');
                 if (filterCustomerGroupSelect) {
                     const saved = (window.CompanyStorage?.getItem('revenues_filter_filterCustomerGroup') ?? localStorage.getItem('revenues_filter_filterCustomerGroup')) || '';
-                    filterCustomerGroupSelect.innerHTML = '<option value="">Todos</option>' + customerGroupsData.map(g => `<option value="${g.public_id}">${g.name}</option>`).join('');
+                    filterCustomerGroupSelect.innerHTML = '<option value="">Todos</option>' + customerGroupsData.map(g => `<option value="${escapeHtml(g.public_id)}">${escapeHtml(g.name)}</option>`).join('');
                     filterCustomerGroupSelect.value = saved;
                 }
                 const costCenterSelect = document.getElementById('costCenter');
@@ -1663,7 +1724,7 @@
                     costCenterSelect.innerHTML = '<option value="">Nenhum/Não Informado</option>';
                     costCentersData.forEach(cc => {
                         if (cc.is_active) {
-                            costCenterSelect.innerHTML += `<option value="${cc.public_id}">${cc.name}</option>`;
+                            costCenterSelect.innerHTML += `<option value="${escapeHtml(cc.public_id)}">${escapeHtml(cc.name)}</option>`;
                         }
                     });
                 }
@@ -1695,7 +1756,7 @@
                 if (catSelect) {
                     catSelect.innerHTML = '<option value="">Selecione...</option>';
                     categoriesData.forEach(c => {
-                        catSelect.innerHTML += `<option value="${c.public_id}">${c.name}</option>`;
+                        catSelect.innerHTML += `<option value="${escapeHtml(c.public_id)}">${escapeHtml(c.name)}</option>`;
                     });
                 }
             }
@@ -1721,13 +1782,13 @@
             }
             banksData.forEach(b => {
                 if (bankSelect)
-                    bankSelect.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+                    bankSelect.innerHTML += `<option value="${escapeHtml(b.public_id)}">${escapeHtml(b.name)}</option>`;
                 if (filterBank)
-                    filterBank.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+                    filterBank.innerHTML += `<option value="${escapeHtml(b.public_id)}">${escapeHtml(b.name)}</option>`;
                 if (bulkUpdateBank)
-                    bulkUpdateBank.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+                    bulkUpdateBank.innerHTML += `<option value="${escapeHtml(b.public_id)}">${escapeHtml(b.name)}</option>`;
                 if (baixaBankSelect)
-                    baixaBankSelect.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+                    baixaBankSelect.innerHTML += `<option value="${escapeHtml(b.public_id)}">${escapeHtml(b.name)}</option>`;
             });
             if (bankSelect && currentBankSelectVal)
                 bankSelect.value = currentBankSelectVal;
@@ -1742,7 +1803,7 @@
                 if (cardBrandSelect) {
                     cardBrandSelect.innerHTML = '<option value="">Nenhuma/Não Informado</option>';
                     cardBrandsData.forEach(cb => {
-                        cardBrandSelect.innerHTML += `<option value="${cb.public_id}">${cb.name}</option>`;
+                        cardBrandSelect.innerHTML += `<option value="${escapeHtml(cb.public_id)}">${escapeHtml(cb.name)}</option>`;
                     });
                 }
             }
@@ -2047,7 +2108,8 @@
         if (!desc)
             return '';
         let cleaned = String(desc).replace(/\[ORIGIN_TX:[^\]]+\]/g, '').trim();
-        return cleaned.replace(/\((cash|pix|credit|debit|transfer|boleto)\)/gi, (match) => paymentTermsPtBr[match.toLowerCase()] || match);
+        let translated = cleaned.replace(/\((cash|pix|credit|debit|transfer|boleto)\)/gi, (match) => paymentTermsPtBr[match.toLowerCase()] || match);
+        return escapeHtml(translated);
     }
     function getRowInterestInfo(r, allRows = revenuesData) {
         const isCustomerExempt = r.customer_exempt_interest_fine === 1 || r.customer_exempt_interest_fine === true || r.exempt_interest_fine === 1 || r.exempt_interest_fine === true;
@@ -2213,7 +2275,7 @@
             return `
         <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group">
             <td class="px-2 py-4 whitespace-nowrap text-left w-8">
-                <input type="checkbox" value="${r.public_id}" class="revenue-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                <input type="checkbox" value="${escapeHtml(r.public_id)}" class="revenue-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
             </td>
             <td class="col-id px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
                 #${String(index + 1).padStart(4, '0')}
@@ -2221,13 +2283,13 @@
             <td class="col-desc px-2 py-4 whitespace-normal wrap-break-word min-w-37.5 text-sm font-medium text-gray-900 dark:text-gray-100">
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <span>${translateDescription(r.description)}</span>
-                    ${r.cdfilial ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30 whitespace-nowrap">Filial: ${r.cdfilial}</span>` : ''}
-                    ${r.pdv ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-100 dark:border-amber-900/30 whitespace-nowrap">PDV: ${r.pdv}</span>` : ''}
-                    ${r.solidcon_quitado ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 whitespace-nowrap" title="${r.solidcon_key ? `Código da Baixa Solidcon: #${r.solidcon_key}` : 'Baixado no Solidcon'}">Baixado no Solidcon${r.solidcon_key ? ` (#${r.solidcon_key})` : ''}</span>` : (r.solidcon_key ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap" title="Código Solidcon: #${r.solidcon_key}">Solidcon: #${r.solidcon_key}</span>` : '')}
+                    ${r.cdfilial ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30 whitespace-nowrap">Filial: ${escapeHtml(r.cdfilial)}</span>` : ''}
+                    ${r.pdv ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-100 dark:border-amber-900/30 whitespace-nowrap">PDV: ${escapeHtml(r.pdv)}</span>` : ''}
+                    ${r.solidcon_quitado ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 whitespace-nowrap" title="${r.solidcon_key ? `Código da Baixa Solidcon: #${escapeHtml(r.solidcon_key)}` : 'Baixado no Solidcon'}">Baixado no Solidcon${r.solidcon_key ? ` (#${escapeHtml(r.solidcon_key)})` : ''}</span>` : (r.solidcon_key ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap" title="Código Solidcon: #${escapeHtml(r.solidcon_key)}">Solidcon: #${escapeHtml(r.solidcon_key)}</span>` : '')}
                     ${(r.customer_only_solidcon_baixa === 1 || r.customer_only_solidcon_baixa === true || r.only_solidcon_baixa === 1 || r.only_solidcon_baixa === true) ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-100 dark:border-purple-900/30 whitespace-nowrap" title="Baixa manual no Keystone travada (Exclusiva Solidcon)">Baixa Solidcon</span>` : ''}
                     ${(r.customer_exempt_interest_fine === 1 || r.customer_exempt_interest_fine === true || r.exempt_interest_fine === 1 || r.exempt_interest_fine === true) ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 whitespace-nowrap" title="Cliente isento de cobrança de juros e multa por atraso">Isento Juros/Multa</span>` : ''}
                     ${(r.whatsapp_sent && Number(r.whatsapp_sent) > 0) ? `
-                        <button type="button" data-action="view-whatsapp-audit" data-public-id="${r.public_id}" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 whitespace-nowrap shadow-xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 cursor-pointer transition-colors" title="Enviado ${Number(r.whatsapp_sent)}x por WhatsApp - Clique para ver auditoria">
+                        <button type="button" data-action="view-whatsapp-audit" data-public-id="${escapeHtml(r.public_id)}" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 whitespace-nowrap shadow-xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 cursor-pointer transition-colors" title="Enviado ${Number(r.whatsapp_sent)}x por WhatsApp - Clique para ver auditoria">
                             <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400 inline shrink-0" fill="currentColor" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
                             WhatsApp (${Number(r.whatsapp_sent)})
                         </button>` : ''}
@@ -2236,38 +2298,38 @@
                 <div class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5 flex items-center gap-1.5 flex-wrap">
                     <span class="flex items-center gap-1">
                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                        ${r.entity_name}
+                        ${escapeHtml(r.entity_name)}
                     </span>
                     ${r.entity_cnpj_cpf ? `
                     <span class="text-gray-400 dark:text-gray-500 font-normal">|</span>
-                    <span class="font-mono text-[11px] text-gray-500 dark:text-gray-400">${r.entity_cnpj_cpf}</span>` : ''}
+                    <span class="font-mono text-[11px] text-gray-500 dark:text-gray-400">${escapeHtml(r.entity_cnpj_cpf)}</span>` : ''}
                     ${r.entity_phone ? `
                     <span class="text-gray-400 dark:text-gray-500 font-normal">|</span>
                     <span class="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-0.5">
                         <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                        ${r.entity_phone}
+                        ${escapeHtml(r.entity_phone)}
                     </span>` : ''}
                     ${r.customer_group_name ? `
                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-100 dark:border-purple-900/30 whitespace-nowrap">
-                        ${r.customer_group_name}
+                        ${escapeHtml(r.customer_group_name)}
                     </span>` : ''}
                 </div>` : '<div class="text-xs text-gray-400 mt-0.5 dark:text-gray-500">Sem vínculo</div>'}
             </td>
             <td class="col-cat px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                 <div class="flex flex-col items-center justify-center gap-1">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                        ${r.category_name || 'Geral'}
+                        ${escapeHtml(r.category_name || 'Geral')}
                     </span>
                     <div class="mt-0.5 text-center">
                         ${renderPaymentMethodLabel(r.payment_method, r.card_brand_name, r.billet_batch_generated, r.billet_url, r.pix_code, revenueStatus === 'paid', r.received_channel)}
                     </div>
                     ${r.card_brand_name ? `
                     <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 border border-orange-100 dark:border-orange-900/30">
-                        Bandeira: ${r.card_brand_name}
+                        Bandeira: ${escapeHtml(r.card_brand_name)}
                     </span>` : ''}
                     ${r.receivable_type_name ? `
                     <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300 border border-slate-200 dark:border-slate-600/40">
-                        Rec: ${r.receivable_type_name}
+                        Rec: ${escapeHtml(r.receivable_type_name)}
                     </span>` : ''}
                 </div>
             </td>
@@ -2281,7 +2343,7 @@
             <td class="col-launch px-2 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${DateUtils.formatDateTime(r.date_launch || r.created_at || r.date)}</td>
             <td class="col-status px-3 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                 <div class="flex flex-col items-center justify-center">
-                    <span class="font-medium text-gray-900 dark:text-gray-100">${r.bank_account_name || '-'}</span>
+                    <span class="font-medium text-gray-900 dark:text-gray-100">${escapeHtml(r.bank_account_name || '-')}</span>
                     <div class="mt-0.5 text-center flex items-center justify-center">
                         ${statusBadge}
                     </div>
@@ -2297,9 +2359,9 @@
                         <span class="${intInfo.hasSolidconCashInterest ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-semibold'}">+${formatCurrency(fineInterestToDisplay)}</span>
                         ${calc.isSimulated && !intInfo.hasSolidconCashInterest ? `<span class="text-[10px] text-amber-500/80 dark:text-amber-400/80 font-normal">(${calc.daysOverdue}d diário)</span>` : ''}
                         ${intInfo.hasSolidconCashInterest ? `
-                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 whitespace-nowrap mt-0.5" title="${r.solidcon_interest_key ? `Receita à vista de juros lançada no Solidcon (Receita #${r.solidcon_interest_key})` : 'Receita à vista de juros lançada no Solidcon'}">
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 whitespace-nowrap mt-0.5" title="${r.solidcon_interest_key ? `Receita à vista de juros lançada no Solidcon (Receita #${escapeHtml(r.solidcon_interest_key)})` : 'Receita à vista de juros lançada no Solidcon'}">
                                 <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                Solidcon (À Vista)${r.solidcon_interest_key ? ` #${r.solidcon_interest_key}` : ''}
+                                Solidcon (À Vista)${r.solidcon_interest_key ? ` #${escapeHtml(r.solidcon_interest_key)}` : ''}
                             </span>
                         ` : ''}
                     </div>
@@ -2324,29 +2386,29 @@
                 </div>
             </td>
             <td class="col-actions px-2 py-3 whitespace-nowrap text-center text-sm font-medium">
-                <button type="button" class="relative text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-2 cursor-pointer send-whatsapp-btn" data-id="${r.public_id}" data-phone="${r.customer_phone || ''}" title="Enviar por WhatsApp">
+                <button type="button" class="relative text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-2 cursor-pointer send-whatsapp-btn" data-id="${escapeHtml(r.public_id)}" data-phone="${escapeHtml(r.customer_phone || '')}" title="Enviar por WhatsApp">
                     <svg class="h-5 w-5 inline pointer-events-none" fill="currentColor" viewBox="0 0 448 512">
                         <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
                     </svg>
                     ${(r.whatsapp_sent && Number(r.whatsapp_sent) > 0) ? `<span class="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold border border-white dark:border-slate-800 shadow-sm leading-none" title="Enviado ${Number(r.whatsapp_sent)}x por WhatsApp">${Number(r.whatsapp_sent)}</span>` : ''}
                 </button>
                 ${(r.payment_method === 'boleto' && r.billet_url) ? '' : (isOverdue ? `
-                <button type="button" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 mr-2 cursor-pointer inline-flex items-center gap-1 open-receipt-btn" data-id="${r.public_id}" title="Cobrar">
+                <button type="button" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 mr-2 cursor-pointer inline-flex items-center gap-1 open-receipt-btn" data-id="${escapeHtml(r.public_id)}" title="Cobrar">
                     <span class="inline-flex h-5 w-5 items-center justify-center text-base font-bold leading-none text-rose-600 dark:text-rose-400 pointer-events-none">$</span>
                 </button>` : `
-                <button type="button" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 cursor-pointer open-receipt-btn" data-id="${r.public_id}" title="Recibo">
+                <button type="button" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 cursor-pointer open-receipt-btn" data-id="${escapeHtml(r.public_id)}" title="Recibo">
                     <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </button>`)}
                 ${(r.payment_method === 'boleto' && r.billet_url) ? `
-                    <button type="button" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 cursor-pointer open-boleto-btn" data-id="${r.public_id}" data-nosso-numero="${r.billet_url}" title="Visualizar Boleto PDF">
+                    <button type="button" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 cursor-pointer open-boleto-btn" data-id="${escapeHtml(r.public_id)}" data-nosso-numero="${escapeHtml(r.billet_url)}" title="Visualizar Boleto PDF">
                         <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                     </button>
                 ` : ''}
-                <button type="button" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 cursor-pointer edit-btn" data-id="${r.public_id}" title="Editar">
+                <button type="button" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 cursor-pointer edit-btn" data-id="${escapeHtml(r.public_id)}" title="Editar">
                     <svg class="h-5 w-5 inline pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
@@ -2398,7 +2460,7 @@
                 statusText = 'Pendente';
             }
             const solidconBtnHtml = (revenueStatus === 'paid' || r.solidcon_key || r.solidcon_quitado) ? `
-            <button type="button" class="btn-solidcon-details p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer" data-id="${r.public_id}" title="Auditoria Solidcon">
+            <button type="button" class="btn-solidcon-details p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer" data-id="${escapeHtml(r.public_id)}" title="Auditoria Solidcon">
                 <svg class="w-4 h-4 inline pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                 </svg>
@@ -2414,16 +2476,16 @@
                 ? `<div class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 flex-wrap">
                 <span class="flex items-center gap-1">
                     <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    ${r.entity_name}
+                    ${escapeHtml(r.entity_name)}
                 </span>
                 ${r.entity_cnpj_cpf ? `
                 <span class="text-gray-400 dark:text-gray-600 font-normal">|</span>
-                <span class="font-mono text-[11px]">${r.entity_cnpj_cpf}</span>` : ''}
+                <span class="font-mono text-[11px]">${escapeHtml(r.entity_cnpj_cpf)}</span>` : ''}
                 ${r.entity_phone ? `
                 <span class="text-gray-400 dark:text-gray-600 font-normal">|</span>
                 <span class="text-[11px] flex items-center gap-0.5">
                     <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                    ${r.entity_phone}
+                    ${escapeHtml(r.entity_phone)}
                 </span>` : ''}
                </div>`
                 : `<div class="mt-2 text-xs text-gray-400 dark:text-gray-500">Sem vínculo</div>`;
@@ -2432,34 +2494,34 @@
             
             <div class="flex justify-between items-start mb-3">
                 <div class="flex items-center z-10 pt-1">
-                    <input type="checkbox" value="${r.public_id}" class="revenue-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
+                    <input type="checkbox" value="${escapeHtml(r.public_id)}" class="revenue-checkbox cursor-pointer rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
                     <span class="ml-2 text-xs font-mono font-medium text-gray-500 dark:text-gray-400">#${String(index + 1).padStart(4, '0')}</span>
                 </div>
 
                 <div class="flex space-x-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 -mr-1 -mt-1">
-                    <button type="button" class="relative send-whatsapp-btn p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:text-green-400 dark:hover:bg-green-950/30 rounded-lg transition-colors cursor-pointer" data-id="${r.public_id}" data-phone="${r.customer_phone || ''}" title="Enviar por WhatsApp">
+                    <button type="button" class="relative send-whatsapp-btn p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:text-green-400 dark:hover:bg-green-950/30 rounded-lg transition-colors cursor-pointer" data-id="${escapeHtml(r.public_id)}" data-phone="${escapeHtml(r.customer_phone || '')}" title="Enviar por WhatsApp">
                         <svg class="h-4 w-4 pointer-events-none" fill="currentColor" viewBox="0 0 448 512">
                             <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
                         </svg>
                         ${(r.whatsapp_sent && Number(r.whatsapp_sent) > 0) ? `<span class="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold border border-white dark:border-slate-800 shadow-sm leading-none" title="Enviado ${Number(r.whatsapp_sent)}x por WhatsApp">${Number(r.whatsapp_sent)}</span>` : ''}
                     </button>
                     ${(r.payment_method === 'boleto' && r.billet_url) ? '' : (isOverdue ? `
-                    <button type="button" class="open-receipt-btn p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer" data-id="${r.public_id}" title="Cobrar">
+                    <button type="button" class="open-receipt-btn p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer" data-id="${escapeHtml(r.public_id)}" title="Cobrar">
                         <span class="inline-flex h-4 w-4 items-center justify-center text-sm font-bold leading-none pointer-events-none">$</span>
                     </button>` : `
-                    <button type="button" class="open-receipt-btn p-1.5 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/30 rounded-lg transition-colors cursor-pointer" data-id="${r.public_id}" title="Recibo">
+                    <button type="button" class="open-receipt-btn p-1.5 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/30 rounded-lg transition-colors cursor-pointer" data-id="${escapeHtml(r.public_id)}" title="Recibo">
                         <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                     </button>`)}
                     ${(r.payment_method === 'boleto' && r.billet_url) ? `
-                        <button type="button" class="open-boleto-btn p-1.5 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/30 rounded-lg transition-colors cursor-pointer" data-id="${r.public_id}" data-nosso-numero="${r.billet_url}" title="Visualizar Boleto PDF">
+                        <button type="button" class="open-boleto-btn p-1.5 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/30 rounded-lg transition-colors cursor-pointer" data-id="${escapeHtml(r.public_id)}" data-nosso-numero="${escapeHtml(r.billet_url)}" title="Visualizar Boleto PDF">
                             <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                         </button>
                     ` : ''}
-                    <button type="button" class="edit-btn p-1.5 text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 rounded-lg transition-colors cursor-pointer" data-id="${r.public_id}" title="Editar">
+                    <button type="button" class="edit-btn p-1.5 text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-950/30 rounded-lg transition-colors cursor-pointer" data-id="${escapeHtml(r.public_id)}" title="Editar">
                         <svg class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
@@ -2471,28 +2533,28 @@
                 <div class="flex justify-between items-start gap-2">
                     <h4 class="text-base font-bold text-gray-900 dark:text-gray-100 wrap-break-word flex-1 leading-tight pr-2">
                         <span>${translateDescription(r.description)}</span>
-                        ${r.cdfilial ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30 whitespace-nowrap align-middle">Filial: ${r.cdfilial}</span>` : ''}
-                        ${r.pdv ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-100 dark:border-amber-900/30 whitespace-nowrap align-middle">PDV: ${r.pdv}</span>` : ''}
-                        ${r.solidcon_quitado ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 whitespace-nowrap align-middle" title="${r.solidcon_key ? `Código da Baixa Solidcon: #${r.solidcon_key}` : 'Baixado no Solidcon'}">Baixado no Solidcon${r.solidcon_key ? ` (#${r.solidcon_key})` : ''}</span>` : (r.solidcon_key ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap align-middle" title="Código Solidcon: #${r.solidcon_key}">Solidcon: #${r.solidcon_key}</span>` : '')}
+                        ${r.cdfilial ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30 whitespace-nowrap align-middle">Filial: ${escapeHtml(r.cdfilial)}</span>` : ''}
+                        ${r.pdv ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-100 dark:border-amber-900/30 whitespace-nowrap align-middle">PDV: ${escapeHtml(r.pdv)}</span>` : ''}
+                        ${r.solidcon_quitado ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 whitespace-nowrap align-middle" title="${r.solidcon_key ? `Código da Baixa Solidcon: #${escapeHtml(r.solidcon_key)}` : 'Baixado no Solidcon'}">Baixado no Solidcon${r.solidcon_key ? ` (#${escapeHtml(r.solidcon_key)})` : ''}</span>` : (r.solidcon_key ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap align-middle" title="Código Solidcon: #${escapeHtml(r.solidcon_key)}">Solidcon: #${escapeHtml(r.solidcon_key)}</span>` : '')}
                         ${(r.customer_only_solidcon_baixa === 1 || r.customer_only_solidcon_baixa === true || r.only_solidcon_baixa === 1 || r.only_solidcon_baixa === true) ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-100 dark:border-purple-900/30 whitespace-nowrap align-middle" title="Baixa manual no Keystone travada (Exclusiva Solidcon)">Baixa Solidcon</span>` : ''}
                         ${(r.customer_exempt_interest_fine === 1 || r.customer_exempt_interest_fine === true || r.exempt_interest_fine === 1 || r.exempt_interest_fine === true) ? `<span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 whitespace-nowrap align-middle" title="Cliente isento de cobrança de juros e multa por atraso">Isento Juros/Multa</span>` : ''}
-                        ${(r.whatsapp_sent && Number(r.whatsapp_sent) > 0) ? `<button type="button" data-action="view-whatsapp-audit" data-public-id="${r.public_id}" class="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 whitespace-nowrap align-middle shadow-xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 cursor-pointer transition-colors" title="Enviado ${Number(r.whatsapp_sent)}x por WhatsApp - Clique para ver auditoria"><svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400 inline shrink-0" fill="currentColor" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>WhatsApp (${Number(r.whatsapp_sent)})</button>` : ''}
+                        ${(r.whatsapp_sent && Number(r.whatsapp_sent) > 0) ? `<button type="button" data-action="view-whatsapp-audit" data-public-id="${escapeHtml(r.public_id)}" class="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 whitespace-nowrap align-middle shadow-xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 cursor-pointer transition-colors" title="Enviado ${Number(r.whatsapp_sent)}x por WhatsApp - Clique para ver auditoria"><svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400 inline shrink-0" fill="currentColor" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>WhatsApp (${Number(r.whatsapp_sent)})</button>` : ''}
                     </h4>
                 </div>
                 
                 <div class="mt-2 flex flex-col gap-1 items-start">
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                            ${r.category_name || 'Geral'}
+                            ${escapeHtml(r.category_name || 'Geral')}
                         </span>
                         ${r.payment_method ? renderPaymentMethodLabel(r.payment_method, r.card_brand_name, r.billet_batch_generated, r.billet_url, r.pix_code, revenueStatus === 'paid', r.received_channel) : ''}
                         ${r.card_brand_name ? `
                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 border border-orange-100 dark:border-orange-900/30">
-                            Bandeira: ${r.card_brand_name}
+                            Bandeira: ${escapeHtml(r.card_brand_name)}
                         </span>` : ''}
                         ${r.receivable_type_name ? `
                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300 border border-slate-200 dark:border-slate-600/40">
-                            Rec: ${r.receivable_type_name}
+                            Rec: ${escapeHtml(r.receivable_type_name)}
                         </span>` : ''}
                     </div>
                     <div class="mt-1">${statusBadge}</div>
@@ -2518,7 +2580,7 @@
                     </div>
                     <div class="flex flex-col text-sm text-gray-600 dark:text-gray-300 col-span-2">
                         <span class="text-xs text-gray-500 dark:text-gray-400">Conta:</span>
-                        <span class="font-medium text-gray-900 dark:text-gray-100 text-xs truncate" title="${r.bank_account_name || '-'}">${r.bank_account_name || '-'}</span>
+                        <span class="font-medium text-gray-900 dark:text-gray-100 text-xs truncate" title="${escapeHtml(r.bank_account_name || '-')}">${escapeHtml(r.bank_account_name || '-')}</span>
                     </div>
                 </div>
 

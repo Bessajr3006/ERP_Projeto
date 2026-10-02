@@ -175,7 +175,7 @@ export class AccountingController {
 
             const database = (solidconConfig?.bd_solidcon || 'solidcon').trim();
             const user = (solidconConfig?.login_solidcon || 'aporttec').trim();
-            const password = solidconConfig?.senha_solidcon || '30mariafn@';
+            const password = solidconConfig?.senha_solidcon || '';
 
             const planId = cdPlanoContas ? parseInt(String(cdPlanoContas), 10) : undefined;
             const accounts = await ExternalDbService.getSolidconChartOfAccounts({

@@ -10,10 +10,10 @@ services:
     environment:
       # Bootstrap do MariaDB
       MARIADB_DATABASE: ${MARIADB_DATABASE:-bessa_erp}
-      MARIADB_USER: ${MARIADB_USER:-erp_user}
-      # Defaults de produção solicitados
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-30mariafn@}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-30mariafn@}
+      MARIADB_USER: ${MARIADB_USER:-erp_app}
+      # Credenciais obrigatórias via ambiente
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       # Permite login do root via phpMyAdmin (apenas rede interna)
       MARIADB_ROOT_HOST: ${MARIADB_ROOT_HOST:-%}
     healthcheck:
@@ -48,18 +48,18 @@ services:
       DB_HOST: db
       DB_PORT: 3306
       DB_NAME: ${DB_NAME:-bessa_erp}
-      DB_USER: ${DB_USER:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-30mariafn@}
+      DB_USER: ${DB_USER:-erp_app}
+      DB_PASSWORD: ${DB_PASSWORD}
 
-      JWT_SECRET: ${JWT_SECRET:-erp_keystones_jwt_2026_default_change_me}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       SALT_ROUNDS: ${SALT_ROUNDS:-10}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-d29900758b6b5e78698dc47e0830f863d49fc92331f882bb89bf0925fab7148c}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
 
       MARIADB_DATABASE: ${MARIADB_DATABASE:-bessa_erp}
-      MARIADB_USER: ${MARIADB_USER:-erp_user}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-30mariafn@}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-30mariafn@}
+      MARIADB_USER: ${MARIADB_USER:-erp_app}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
 
     volumes:
       - app_data:/data
@@ -94,18 +94,18 @@ services:
       DB_HOST: db
       DB_PORT: 3306
       DB_NAME: ${DB_NAME:-bessa_erp}
-      DB_USER: ${DB_USER:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-30mariafn@}
+      DB_USER: ${DB_USER:-erp_app}
+      DB_PASSWORD: ${DB_PASSWORD}
 
-      JWT_SECRET: ${JWT_SECRET:-erp_keystones_jwt_2026_default_change_me}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       SALT_ROUNDS: ${SALT_ROUNDS:-10}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-d29900758b6b5e78698dc47e0830f863d49fc92331f882bb89bf0925fab7148c}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
 
       MARIADB_DATABASE: ${MARIADB_DATABASE:-bessa_erp}
-      MARIADB_USER: ${MARIADB_USER:-erp_user}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-30mariafn@}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-30mariafn@}
+      MARIADB_USER: ${MARIADB_USER:-erp_app}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
 
     volumes:
       - app_data:/data
@@ -152,23 +152,23 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      PMA_USER: ${PMA_USER:-root}
-      PMA_PASSWORD: ${PMA_PASSWORD:-30mariafn@}
       PMA_ARBITRARY: 0
       UPLOAD_LIMIT: ${PHPMYADMIN_UPLOAD_LIMIT:-256M}
-      # opcional, melhora links quando está atrás de reverse proxy
-      PMA_ABSOLUTE_URI: https://phpmyadmin.erp.keystones.dev/
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik
-      - traefik.http.routers.phpmyadmin-keystones.rule=Host(`phpmyadmin.erp.keystones.dev`)
-      - traefik.http.routers.phpmyadmin-keystones.entrypoints=websecure
-      - traefik.http.routers.phpmyadmin-keystones.tls=true
-      - traefik.http.routers.phpmyadmin-keystones.tls.certresolver=${TRAEFIK_CERTRESOLVER:-myresolver}
-      - traefik.http.services.phpmyadmin-keystones.loadbalancer.server.port=80
+    # phpMyAdmin sem exposição pública Traefik. Acesso seguro via túnel SSH ou IP interno NetBird:
+    # Túnel SSH: ssh -L 8082:127.0.0.1:8082 usuario@ip-vps
+    # Acesso no navegador local: http://localhost:8082
+    ports:
+      - "127.0.0.1:8082:80"
+    # labels:
+    #   - traefik.enable=true
+    #   - traefik.docker.network=traefik
+    #   - traefik.http.routers.phpmyadmin-keystones.rule=Host(`phpmyadmin.erp.keystones.dev`)
+    #   - traefik.http.routers.phpmyadmin-keystones.entrypoints=websecure
+    #   - traefik.http.routers.phpmyadmin-keystones.tls=true
+    #   - traefik.http.routers.phpmyadmin-keystones.tls.certresolver=${TRAEFIK_CERTRESOLVER:-myresolver}
+    #   - traefik.http.services.phpmyadmin-keystones.loadbalancer.server.port=80
     networks:
       - erp-internal
-      - traefik-public
 
 volumes:
   mariadb:

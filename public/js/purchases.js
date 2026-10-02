@@ -39,6 +39,39 @@
         getEl('btnCancelModal')?.addEventListener('click', () => {
             window.closeModal();
         });
+        getEl('btnCancelModalFooter')?.addEventListener('click', () => {
+            window.closeModal?.();
+        });
+        getEl('btnCloseViewModalFooter')?.addEventListener('click', () => {
+            window.closeViewModal?.();
+        });
+        // Toggle Filtros
+        const toggleBtn = getEl('toggleFilterBtn');
+        const filterBody = getEl('filterBody');
+        const filterChevron = getEl('filterChevron');
+        if (toggleBtn && filterBody) {
+            toggleBtn.addEventListener('click', () => {
+                const isOpen = !filterBody.classList.contains('collapsed');
+                if (isOpen) {
+                    filterBody.classList.add('collapsed');
+                    filterChevron?.classList.add('-rotate-90');
+                }
+                else {
+                    filterBody.classList.remove('collapsed');
+                    filterChevron?.classList.remove('-rotate-90');
+                }
+            });
+        }
+        // Limpar filtros
+        getEl('btnClearFilters')?.addEventListener('click', () => {
+            ['filterSearch', 'filterStartDate', 'filterEndDate', 'filterStatus'].forEach(id => {
+                const el = getEl(id);
+                if (el)
+                    el.value = '';
+            });
+            applyFilters();
+        });
+        getEl('filterStatus')?.addEventListener('change', applyFilters);
         const backdrop = getEl('modalBackdrop');
         if (backdrop) {
             backdrop.addEventListener('click', (e) => {

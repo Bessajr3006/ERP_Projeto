@@ -291,6 +291,8 @@
 
     const btnCancelModal = document.getElementById('btnCancelModal');
     if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
+    const btnCancelModal2 = document.getElementById('btnCancelModal2');
+    if (btnCancelModal2) btnCancelModal2.addEventListener('click', closeModal);
 
     const expenseForm = document.getElementById('expenseForm') as HTMLFormElement | null;
     if (expenseForm) expenseForm.addEventListener('submit', handleSaveExpense);

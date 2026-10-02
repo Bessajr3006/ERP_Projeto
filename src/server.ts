@@ -6,6 +6,9 @@
  * Os testes importam `app.ts` diretamente — sem abrir porta.
  */
 import './config/runtimeEnv';
+import { validateEnv } from './config/env';
+validateEnv();
+
 import { patchWhatsAppWebJs } from './utils/patchWhatsAppWebJs';
 patchWhatsAppWebJs();
 

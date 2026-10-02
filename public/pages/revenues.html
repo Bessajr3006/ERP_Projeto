@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Financeiro (Receitas)</title>
-    <link href="/css/style.css?v=20261001203239" rel="stylesheet">
+    <link href="/css/style.css?v=20261001213428" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001203239"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="/js/pwa.js?v=20261001213428"></script>
+    <script src="/vendor/jszip.min.js?v=20261001213428"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -2001,64 +2001,13 @@
         </div>
     </div>
 
-    <!-- ── KPI updater (injeta dados nos cards quando revenues.js carregar) ── -->
-    <script>
-        // Expose KPI update function for revenues.js to call
-        window.updateRevenueKPIs = function(items) {
-            if (!items || !items.length) {
-                ['kpiTotal','kpiPaid','kpiPending'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.textContent = 'R$ 0,00';
-                });
-                ['kpiTotalCount','kpiPaidCount','kpiPendingCount'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.textContent = '0 lançamentos';
-                });
-                const pb = document.getElementById('kpiPaidBar');
-                const pendB = document.getElementById('kpiPendingBar');
-                if (pb) pb.style.width = '0%';
-                if (pendB) pendB.style.width = '0%';
-                return;
-            }
-
-            const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const total = items.reduce((s, r) => s + (parseFloat(r.value) || 0), 0);
-            const paid  = items.filter(r => r.status === 'paid');
-            const pend  = items.filter(r => r.status !== 'paid');
-            const paidAmt  = paid.reduce((s, r) => s + (parseFloat(r.value) || 0), 0);
-            const pendAmt  = pend.reduce((s, r) => s + (parseFloat(r.value) || 0), 0);
-
-            const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
-            setEl('kpiTotal',        fmt(total));
-            setEl('kpiTotalCount',   `${items.length} lançamento${items.length !== 1 ? 's' : ''}`);
-            setEl('kpiPaid',         fmt(paidAmt));
-            setEl('kpiPaidCount',    `${paid.length} lançamento${paid.length !== 1 ? 's' : ''}`);
-            setEl('kpiPending',      fmt(pendAmt));
-            setEl('kpiPendingCount', `${pend.length} lançamento${pend.length !== 1 ? 's' : ''}`);
-
-            const paidPct = total > 0 ? (paidAmt / total) * 100 : 0;
-            const pendPct = total > 0 ? (pendAmt / total) * 100 : 0;
-            const pb   = document.getElementById('kpiPaidBar');
-            const pendB = document.getElementById('kpiPendingBar');
-            if (pb) pb.style.width = paidPct.toFixed(1) + '%';
-            if (pendB) pendB.style.width = pendPct.toFixed(1) + '%';
-        };
-
-        // Wire secondary cancel button
-        document.addEventListener('DOMContentLoaded', () => {
-            const btn2 = document.getElementById('btnCancelModal2');
-            const btn1 = document.getElementById('btnCancelModal');
-            if (btn2 && btn1) btn2.addEventListener('click', () => btn1.click());
-        });
-    </script>
-
-    <script src="/js/api.js?v=20261001203239"></script>
-    <script src="/js/pagination.js?v=20261001203239"></script>
-    <script src="/js/revenues.js?v=20261001203239"></script>
-    <script src="/js/components/navbar.js?v=20261001203239"></script>
+    <script src="/js/api.js?v=20261001213428"></script>
+    <script src="/js/pagination.js?v=20261001213428"></script>
+    <script src="/js/revenues.js?v=20261001213428"></script>
+    <script src="/js/components/navbar.js?v=20261001213428"></script>
 
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261001203239"></script>
+    <script src="/js/components/footer.js?v=20261001213428"></script>
 </body>
 
 </html>

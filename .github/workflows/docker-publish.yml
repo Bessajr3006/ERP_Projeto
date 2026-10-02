@@ -6,6 +6,8 @@ on:
       - main
   workflow_dispatch:
 
+permissions: {}
+
 env:
   APP_IMAGE: ghcr.io/${{ github.repository_owner }}/erp-app
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/erp-frontend
@@ -20,21 +22,21 @@ jobs:
 
     steps:
       - name: Checkout código
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Log in no GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configurar Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@b5ca514310cf82a3acb647df84e656b81804f1e2 # v3.10.0
 
       - name: Extrair metadata — App (backend)
         id: meta-app
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@902fa8ec7d6ecbf6323670f461312842ee819347 # v5.7.0
         with:
           images: ${{ env.APP_IMAGE }}
           tags: |
@@ -43,7 +45,7 @@ jobs:
 
       - name: Extrair metadata — Frontend
         id: meta-frontend
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@902fa8ec7d6ecbf6323670f461312842ee819347 # v5.7.0
         with:
           images: ${{ env.FRONTEND_IMAGE }}
           tags: |
@@ -51,7 +53,7 @@ jobs:
             type=sha,prefix=sha-,format=short
 
       - name: Build & Push — App (backend + worker)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v6.15.0
         with:
           context: .
           file: Dockerfile.portainer
@@ -62,7 +64,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build & Push — Frontend (Nginx)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v6.15.0
         with:
           context: .
           file: Dockerfile.frontend

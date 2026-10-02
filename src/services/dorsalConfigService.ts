@@ -2,6 +2,7 @@ import pool from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { DorsalConfig, CreateDorsalConfigData, UpdateDorsalConfigData } from '../types/Company';
 import { ExternalDbService } from './externalDbService';
+import { encrypt, decrypt } from '../utils/crypto';
 
 export class DorsalConfigService {
     static async list(companyId: number): Promise<DorsalConfig[]> {
@@ -10,7 +11,10 @@ export class DorsalConfigService {
                 'SELECT id, company_id, name, serv_dorsal, bd_dorsal, login_dorsal, senha_dorsal, cdfilial, cdpdv, is_default, created_at, updated_at FROM company_dorsal_configs WHERE company_id = ? ORDER BY is_default DESC, name ASC, id ASC',
                 [companyId]
             );
-            return rows as DorsalConfig[];
+            return (rows as DorsalConfig[]).map(r => ({
+                ...r,
+                senha_dorsal: r.senha_dorsal ? (decrypt(r.senha_dorsal) ?? '') : ''
+            }));
         } catch (err) {
             return [];
         }
@@ -22,7 +26,12 @@ export class DorsalConfigService {
                 'SELECT id, company_id, name, serv_dorsal, bd_dorsal, login_dorsal, senha_dorsal, cdfilial, cdpdv, is_default, created_at, updated_at FROM company_dorsal_configs WHERE id = ? AND company_id = ? LIMIT 1',
                 [id, companyId]
             );
-            return (rows[0] as DorsalConfig) || null;
+            if (!rows || rows.length === 0) return null;
+            const config = rows[0] as DorsalConfig;
+            if (config.senha_dorsal) {
+                config.senha_dorsal = decrypt(config.senha_dorsal) ?? '';
+            }
+            return config;
         } catch (err) {
             return null;
         }
@@ -33,7 +42,8 @@ export class DorsalConfigService {
         const servDorsal = (data.serv_dorsal || '').trim();
         const bdDorsal = (data.bd_dorsal || '').trim();
         const loginDorsal = (data.login_dorsal || '').trim();
-        const senhaDorsal = data.senha_dorsal || '';
+        const rawSenha = data.senha_dorsal || '';
+        const senhaDorsal = rawSenha ? encrypt(rawSenha) : '';
         const cdfilial = data.cdfilial !== undefined ? (String(data.cdfilial || '').trim() || null) : null;
         const cdpdv = data.cdpdv !== undefined ? (String(data.cdpdv || '').trim() || null) : null;
         let isDefault = (data.is_default === true || data.is_default === 1 || String(data.is_default) === '1') ? 1 : 0;
@@ -94,9 +104,10 @@ export class DorsalConfigService {
         const servDorsal = data.serv_dorsal !== undefined ? (data.serv_dorsal || '').trim() : current.serv_dorsal;
         const bdDorsal = data.bd_dorsal !== undefined ? (data.bd_dorsal || '').trim() : current.bd_dorsal;
         const loginDorsal = data.login_dorsal !== undefined ? (data.login_dorsal || '').trim() : current.login_dorsal;
-        const senhaDorsal = (data.senha_dorsal !== undefined && data.senha_dorsal !== '') 
+        const rawSenha = (data.senha_dorsal !== undefined && data.senha_dorsal !== '') 
             ? data.senha_dorsal 
             : current.senha_dorsal;
+        const senhaDorsal = rawSenha ? encrypt(rawSenha) : '';
         const cdfilial = data.cdfilial !== undefined ? (String(data.cdfilial || '').trim() || null) : current.cdfilial;
         const cdpdv = data.cdpdv !== undefined ? (String(data.cdpdv || '').trim() || null) : current.cdpdv;
         const isDefault = data.is_default !== undefined 
@@ -175,11 +186,12 @@ export class DorsalConfigService {
         login_dorsal?: string;
         senha_dorsal?: string;
     }): Promise<{ success: boolean; message: string; details?: any }> {
+        const rawPassword = data.senha_dorsal ? decrypt(data.senha_dorsal) : data.senha_dorsal;
         return await ExternalDbService.testDorsalConnection({
             host: data.serv_dorsal,
             database: data.bd_dorsal,
             user: data.login_dorsal,
-            password: data.senha_dorsal
+            password: rawPassword
         });
     }
 }

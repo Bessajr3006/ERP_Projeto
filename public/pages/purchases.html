@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Pedidos de Compra</title>
-    <link href="/css/style.css?v=20261001203239" rel="stylesheet">
+    <link href="/css/style.css?v=20261001213428" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001203239"></script>
+    <script src="/js/pwa.js?v=20261001213428"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -444,81 +444,12 @@
     </div>
 
     <!-- App Scripts -->
-    <script src="/js/api.js?v=20261001203239"></script>
-    <script src="/js/filter-panel.js?v=20261001203239"></script>
-    <script src="/js/purchases.js?v=20261001203239"></script>
-    <script src="/js/components/navbar.js?v=20261001203239"></script>
+    <script src="/js/api.js?v=20261001213428"></script>
+    <script src="/js/filter-panel.js?v=20261001213428"></script>
+    <script src="/js/purchases.js?v=20261001213428"></script>
+    <script src="/js/components/navbar.js?v=20261001213428"></script>
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261001203239"></script>
-
-    <!-- Scripts de apoio ao layout -->
-    <script>
-        // Toggle Filtros
-        (function () {
-            const btn = document.getElementById('toggleFilterBtn');
-            const body = document.getElementById('filterBody');
-            const chevron = document.getElementById('filterChevron');
-            if (!btn || !body) return;
-            btn.addEventListener('click', () => {
-                const isOpen = !body.classList.contains('collapsed');
-                if (isOpen) {
-                    body.classList.add('collapsed');
-                    chevron?.classList.add('-rotate-90');
-                } else {
-                    body.classList.remove('collapsed');
-                    chevron?.classList.remove('-rotate-90');
-                }
-            });
-            // Limpar filtros
-            document.getElementById('btnClearFilters')?.addEventListener('click', () => {
-                ['filterSearch', 'filterStartDate', 'filterEndDate', 'filterStatus'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.value = '';
-                });
-                document.getElementById('filterSearch')?.dispatchEvent(new Event('input'));
-            });
-            // Botão cancelar do footer do modal
-            document.getElementById('btnCancelModalFooter')?.addEventListener('click', () => {
-                window.closeModal?.();
-            });
-            // Botão fechar do footer do modal de visualização
-            document.getElementById('btnCloseViewModalFooter')?.addEventListener('click', () => {
-                window.closeViewModal?.();
-            });
-        })();
-
-        // Filtro de status na tabela (client-side após renderização)
-        document.getElementById('filterStatus')?.addEventListener('change', () => {
-            document.getElementById('filterSearch')?.dispatchEvent(new Event('input'));
-        });
-
-        // KPIs — populados após renderização da tabela via MutationObserver
-        (function () {
-            const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
-            const observer = new MutationObserver(() => {
-                const rows = document.querySelectorAll('#purchasesTable tr.row-purchase');
-                if (!rows.length) return;
-                let total = 0, pending = 0, completed = 0, value = 0;
-                rows.forEach(row => {
-                    total++;
-                    const statusBadge = row.querySelector('[data-status]');
-                    const st = statusBadge?.getAttribute('data-status') || row.getAttribute('data-status') || '';
-                    if (st === 'completed') completed++;
-                    else if (st !== 'cancelled') pending++;
-                    const amtEl = row.querySelector('[data-amount]');
-                    if (amtEl) value += parseFloat(amtEl.getAttribute('data-amount') || '0');
-                });
-                document.getElementById('kpiTotal').textContent = total;
-                document.getElementById('kpiPending').textContent = pending;
-                document.getElementById('kpiCompleted').textContent = completed;
-                document.getElementById('kpiValue').textContent = fmt(value);
-                document.getElementById('purchaseCount').textContent = `${total} registro${total !== 1 ? 's' : ''}`;
-            });
-            const tbody = document.getElementById('purchasesTable');
-            if (tbody) observer.observe(tbody, { childList: true, subtree: true });
-        })();
-    </script>
-
+    <script src="/js/components/footer.js?v=20261001213428"></script>
 </body>
 
 </html>

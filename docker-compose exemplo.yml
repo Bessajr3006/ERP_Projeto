@@ -14,13 +14,13 @@ services:
       DB_HOST: cartilha_db
       DB_PORT: "3306"
       DB_USER: root
-      DB_PASSWORD: "30mariafn@"
+      DB_PASSWORD: ${DB_PASSWORD:-CHANGE_ME}
       DB_NAME: cartilha
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MASTER_EMAIL: ${MASTER_EMAIL:-master}
-      MASTER_PASSWORD: ${MASTER_PASSWORD:-master123}
+      MASTER_PASSWORD: ${MASTER_PASSWORD:-CHANGE_ME}
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-usuario}
-      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-usuario123}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-CHANGE_ME}
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
       GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
     networks:
@@ -46,14 +46,14 @@ services:
     container_name: cartilha_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: "30mariafn@"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
       MYSQL_DATABASE: cartilha
     volumes:
       - cartilha_db:/var/lib/mysql
     networks:
       - cartilha_internal
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p30mariafn@"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$${MYSQL_ROOT_PASSWORD}\""]
       interval: 10s
       timeout: 5s
       retries: 8
@@ -69,7 +69,7 @@ services:
       PMA_HOST: cartilha_db
       PMA_PORT: 3306
       PMA_USER: root
-      PMA_PASSWORD: "30mariafn@"
+      PMA_PASSWORD: ${PMA_PASSWORD:-CHANGE_ME}
       PMA_ABSOLUTE_URI: https://phpmyadmin.cartilha.aporttec.com/
       UPLOAD_LIMIT: 64M
     networks:

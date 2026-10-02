@@ -5176,7 +5176,7 @@ export class ExternalDbService {
 
         const sqlConfig: sql.config = {
             user: (config.user || 'aporttec').trim(),
-            password: config.password || '30mariafn@',
+            password: config.password || '',
             database: database,
             server: server || 'n13884.ddns.net',
             port: port,
@@ -5297,7 +5297,7 @@ export class ExternalDbService {
 
         const sqlConfig: sql.config = {
             user: (config.user || 'aporttec').trim(),
-            password: config.password || '30mariafn@',
+            password: config.password || '',
             database: database,
             server: server || 'n13884.ddns.net',
             port: port,

@@ -1,10 +1,9 @@
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
-import { readFile } from 'fs/promises';
-import path from 'path';
 import bcrypt from 'bcryptjs';
 import mysql, { ConnectionOptions, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import pool from '../config/db';
+import { CANONICAL_SCHEMA_SQL } from './canonicalSchema';
 import { runMigration18 } from './run_migration_18';
 import { runMigration19 } from './run_migration_19';
 import { runMigration21 } from './run_migration_21';
@@ -53,6 +52,8 @@ import { runMigration249CompanyAlterdataConfigs } from './run_migration_249_comp
 import { runMigration250AccountingClosings } from './run_migration_250_accounting_closings';
 import { runMigration251UserDefaultDeclarationSigner } from './run_migration_251_user_default_declaration_signer';
 import runMigration252SocioModulePermissions from './run_migration_252_socio_module_permissions';
+import runMigration253CreateErpAppUser from './run_migration_253_create_erp_app_user';
+import { runMigration254EncryptCredentialsAndDropRawPassword } from './run_migration_254_encrypt_credentials_and_drop_raw_password';
 import { runMigration22 } from './run_migration_22';
 import { runMigration23 } from './run_migration_23';
 import { runMigration24 } from './run_migration_24';
@@ -262,7 +263,6 @@ type CompanyRow = RowDataPacket & {
 
 const DB_NAME = process.env.DB_NAME || 'bessa_erp';
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || '10', 10);
-const DEFAULT_PASSWORD = '123';
 const DEFAULT_VISIBLE_COMPANY_NAME = 'Empresa Padrao';
 const SYSTEM_COMPANY_NAME = 'Sistema Keystone';
 
@@ -424,8 +424,7 @@ async function ensureDatabaseExists(): Promise<void> {
 }
 
 async function applyCanonicalSchema(): Promise<void> {
-    const schemaPath = path.resolve(__dirname, '../../database/schema.sql');
-    const schemaSql = normalizeSchemaDatabase(await readFile(schemaPath, 'utf8'));
+    const schemaSql = normalizeSchemaDatabase(CANONICAL_SCHEMA_SQL);
     const connection = await mysql.createConnection({
         ...makeBaseConnectionConfig(),
         database: DB_NAME,
@@ -511,27 +510,6 @@ export async function getVisibleCompanies(): Promise<CompanyRow[]> {
     return rows;
 }
 
-async function ensureUser(companyId: number, fullName: string, email: string, role: SeedRole): Promise<void> {
-    const [existingUsers] = await pool.query<RowDataPacket[]>(
-        'SELECT id FROM users WHERE email = ? LIMIT 1',
-        [email]
-    );
-
-    if (existingUsers.length > 0) {
-        console.log(`[SKIP] user already exists: ${email}`);
-        return;
-    }
-
-    const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
-    await pool.query<ResultSetHeader>(
-        `INSERT INTO users (public_id, company_id, email, password_hash, full_name, role, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
-        [randomUUID(), companyId, email, passwordHash, fullName, role]
-    );
-
-    console.log(`[OK] user created: ${email} (${role})`);
-}
-
 async function ensureRolePermissions(companyId: number, role: SeedRole, modules: readonly string[]): Promise<void> {
     for (const module of modules) {
         await pool.query<ResultSetHeader>(
@@ -542,41 +520,33 @@ async function ensureRolePermissions(companyId: number, role: SeedRole, modules:
     }
 }
 
-/*
-async function seedDefaultCompanyUsers(companies: CompanyRow[]): Promise<void> {
-    for (const company of companies) {
-        const [existingUserCount] = await pool.query<RowDataPacket[]>(
-            'SELECT COUNT(*) AS count FROM users WHERE company_id = ?',
-            [company.id]
-        );
-        if (existingUserCount[0] && Number(existingUserCount[0].count) > 0) {
-            console.log(`[SKIP] company ${company.id} (${company.trade_name}) already has users. Skipping default company users seeding.`);
-            continue;
-        }
-
-        console.log(`[INFO] seeding users for company ${company.id} (${company.trade_name})`);
-
-        await ensureRolePermissions(company.id, 'seller', ROLE_MODULES.seller);
-        await ensureRolePermissions(company.id, 'accountant', ROLE_MODULES.accountant);
-        await ensureRolePermissions(company.id, 'admin_basic', ROLE_MODULES.admin_basic);
-        await ensureRolePermissions(company.id, 'pix_operator', ROLE_MODULES.pix_operator);
-        await ensureRolePermissions(company.id, 'auxiliar_contador', ROLE_MODULES.auxiliar_contador);
-
-        for (const user of DEFAULT_COMPANY_USERS) {
-            await ensureUser(
-                company.id,
-                user.fullName,
-                makeCompanySeedEmail(user.emailPrefix, company.id),
-                user.role
-            );
-            await ensureRolePermissions(company.id, user.role, ROLE_MODULES[user.role]);
-        }
-    }
-}
-*/
-
 async function seedSuperAdmin(systemCompanyId: number): Promise<void> {
-    await ensureUser(systemCompanyId, 'Super Admin', 'superadmin@keystone.local', 'super_admin');
+    const email = 'superadmin@keystone.local';
+    const [existingUsers] = await pool.query<RowDataPacket[]>(
+        'SELECT id FROM users WHERE email = ? LIMIT 1',
+        [email]
+    );
+
+    if (existingUsers.length > 0) {
+        console.log(`[SKIP] superadmin user already exists: ${email}. Senha preservada.`);
+        await ensureRolePermissions(systemCompanyId, 'super_admin', ROLE_MODULES.super_admin);
+        return;
+    }
+
+    const initialPassword = process.env.SUPERADMIN_INITIAL_PASSWORD;
+    if (!initialPassword || initialPassword.length < 12) {
+        console.warn('⚠️  [SECURITY WARNING] SUPERADMIN_INITIAL_PASSWORD não informada ou com menos de 12 caracteres. Criação do superadmin inicial ignorada por segurança.');
+        return;
+    }
+
+    const passwordHash = await bcrypt.hash(initialPassword, SALT_ROUNDS);
+    await pool.query<ResultSetHeader>(
+        `INSERT INTO users (public_id, company_id, email, password_hash, full_name, role, is_active)
+         VALUES (?, ?, ?, ?, ?, 'super_admin', TRUE)`,
+        [randomUUID(), systemCompanyId, email, passwordHash, 'Super Admin']
+    );
+
+    console.log(`[OK] superadmin user created: ${email}`);
     await ensureRolePermissions(systemCompanyId, 'super_admin', ROLE_MODULES.super_admin);
 }
 
@@ -841,6 +811,8 @@ async function runInitDb(): Promise<void> {
     await runMigration250AccountingClosings();
     await runMigration251UserDefaultDeclarationSigner();
     await runMigration252SocioModulePermissions();
+    await runMigration253CreateErpAppUser();
+    await runMigration254EncryptCredentialsAndDropRawPassword();
     await runMigration223PopulateSolidconKeyInTransactions();
     await normalizeAllDocuments();
 

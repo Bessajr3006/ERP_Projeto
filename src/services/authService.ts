@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { User, UserRegistrationData, UserLoginData, AuthResult, ActiveSessionInfo } from '../types/User';
+import { UserPayload } from '../types/express';
 import { DatabaseUserSchema } from '../schemas/authSchemas';
 import { UserRepository } from '../repositories/userRepository';
 import pool from '../config/db';
@@ -9,8 +10,8 @@ import { RowDataPacket } from 'mysql2/promise';
 import { GeoIpService } from './geoIpService';
 import { SessionConflictError } from '../errors/SessionConflictError';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_change_me_in_production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || '10', 10);
 
 export class AuthService {
@@ -19,7 +20,7 @@ export class AuthService {
      * Extracted from Express context, handles only business logic and data persistence.
      */
     static async register(data: UserRegistrationData & { ipAddress?: string; userAgent?: string }): Promise<AuthResult> {
-        const { email, passwordRaw, full_name, company_id, ipAddress, userAgent } = data;
+        const { email, passwordRaw, full_name, company_id, role = 'user', ipAddress, userAgent } = data;
 
         // Check if user already exists
         const existingUsers = await UserRepository.getByEmail(email);
@@ -38,7 +39,8 @@ export class AuthService {
             company_id,
             email,
             passwordHash,
-            full_name
+            full_name,
+            role
         );
 
         if (affectedRows !== 1) {
@@ -48,7 +50,7 @@ export class AuthService {
         // Generate JWT token
         const payload = {
             id: publicId,
-            role: 'user',
+            role,
             company_id
         };
 
@@ -222,6 +224,82 @@ export class AuthService {
         );
     }
 
+    /**
+     * Renova o token de acesso (refresh token) para uma sessão ativa válida.
+     */
+    static async refreshToken(
+        currentUser: UserPayload,
+        currentToken: string,
+        ipAddress?: string,
+        userAgent?: string
+    ): Promise<AuthResult> {
+        const [userRows] = await pool.query<RowDataPacket[]>(
+            `SELECT id, public_id, email, full_name, role, company_id, default_page, is_active, current_session_token 
+             FROM users WHERE public_id = ? LIMIT 1`,
+            [currentUser.id]
+        );
+
+        const user = userRows[0];
+        if (!user || !user.is_active) {
+            throw new Error('Usuário inativo ou não encontrado');
+        }
+
+        if (!user.current_session_token || user.current_session_token !== currentToken) {
+            throw new Error('Sessão inválida ou expirada');
+        }
+
+        let groupMasterCompanyId: number | undefined = currentUser.group_master_company_id;
+        let generalAdminCompanyId: number | undefined = currentUser.general_admin_company_id;
+
+        const payload: any = {
+            id: user.public_id,
+            role: user.role,
+            company_id: user.company_id
+        };
+
+        if (groupMasterCompanyId) {
+            payload.group_master_company_id = groupMasterCompanyId;
+        }
+        if (generalAdminCompanyId) {
+            payload.general_admin_company_id = generalAdminCompanyId;
+        }
+
+        const newToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] & string });
+
+        const clientIp = ipAddress || '127.0.0.1';
+        const clientLocation = await GeoIpService.resolveLocation(clientIp);
+        const friendlyUserAgent = GeoIpService.parseUserAgent(userAgent);
+
+        try {
+            await pool.query(
+                `UPDATE users SET 
+                    current_session_token = ?, 
+                    current_session_ip = ?, 
+                    current_session_location = ?, 
+                    current_session_user_agent = ?, 
+                    last_activity_at = NOW() 
+                 WHERE id = ?`,
+                [newToken, clientIp, clientLocation, friendlyUserAgent, user.id]
+            );
+        } catch (_err) {
+            // Ignora se coluna estiver pendente
+        }
+
+        return {
+            token: newToken,
+            user: {
+                public_id: user.public_id,
+                email: user.email,
+                full_name: user.full_name,
+                role: user.role,
+                company_id: user.company_id,
+                default_page: user.default_page || null,
+                group_master_company_id: groupMasterCompanyId ?? null,
+                general_admin_company_id: generalAdminCompanyId ?? null,
+            }
+        };
+    }
+
     static async changePassword(companyId: number, userPublicId: string, currentPasswordRaw: string, newPasswordRaw: string): Promise<void> {
         // 1. Fetch user including password_hash
         const [rows] = await pool.query<RowDataPacket[]>(
@@ -244,8 +322,8 @@ export class AuthService {
         const newPasswordHash = await bcrypt.hash(newPasswordRaw, SALT_ROUNDS);
         
         await pool.query(
-            `UPDATE users SET password_hash = ?, raw_password = ? WHERE company_id = ? AND public_id = ?`,
-            [newPasswordHash, newPasswordRaw, companyId, userPublicId]
+            `UPDATE users SET password_hash = ? WHERE company_id = ? AND public_id = ?`,
+            [newPasswordHash, companyId, userPublicId]
         );
     }
 

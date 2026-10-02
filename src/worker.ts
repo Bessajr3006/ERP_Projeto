@@ -6,6 +6,9 @@
  */
 import 'dotenv/config';
 import './config/runtimeEnv';
+import { validateEnv } from './config/env';
+validateEnv();
+
 import { patchWhatsAppWebJs } from './utils/patchWhatsAppWebJs';
 patchWhatsAppWebJs();
 

@@ -121,21 +121,41 @@ export class StorageService {
 
     /**
      * Remove um arquivo do disco dado sua URL relativa.
-     * Falha silenciosa se o arquivo não existir (idempotente).
+     * Garante contenção estrita dentro de public/uploads.
      *
-     * @param url - URL relativa como /uploads/products/abc.jpg
+     * @param url - URL relativa como /uploads/products/abc.jpg ou products/abc.jpg
+     * @returns boolean - true se o arquivo foi excluído com sucesso, false caso contrário
      */
-    static delete(url: string | null | undefined): void {
-        if (!url) return;
+    static delete(url: string | null | undefined): boolean {
+        if (!url) return false;
 
-        // Constrói o caminho absoluto a partir da URL relativa
-        // Ex: /uploads/products/abc.jpg → public/uploads/products/abc.jpg
-        const relativePath = url.startsWith('/') ? url.slice(1) : url;
-        const absolutePath = path.join(process.cwd(), 'public', relativePath);
+        let relativePath = url.replace(/^[/\\]+/, '');
+        if (!relativePath.startsWith('uploads/') && !relativePath.startsWith('public/uploads/')) {
+            relativePath = path.join('uploads', relativePath);
+        }
+
+        const absolutePath = relativePath.startsWith('public/')
+            ? path.resolve(process.cwd(), relativePath)
+            : path.resolve(process.cwd(), 'public', relativePath);
+
+        const resolvedUploadsRoot = path.resolve(UPLOADS_ROOT);
+
+        // Garante que o caminho esteja estritamente dentro do diretório de uploads (prevenção de Path Traversal)
+        if (!absolutePath.startsWith(resolvedUploadsRoot + path.sep) && absolutePath !== resolvedUploadsRoot) {
+            logger.warn({ url, absolutePath, resolvedUploadsRoot }, '[Storage] Tentativa de exclusão com path traversal bloqueada');
+            return false;
+        }
 
         if (fs.existsSync(absolutePath)) {
-            fs.unlinkSync(absolutePath);
+            try {
+                fs.unlinkSync(absolutePath);
+                return true;
+            } catch (err) {
+                logger.error({ err, absolutePath }, '[Storage] Erro ao excluir arquivo');
+                return false;
+            }
         }
+        return false;
     }
 
     // ─── Helpers privados ───────────────────────────────────────────────────────

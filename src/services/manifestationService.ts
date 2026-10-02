@@ -134,13 +134,15 @@ export class ManifestationService {
 
     private static async performSefazRequest(pfx: Buffer, pass: string, host: string, path: string, payload: string, action?: string): Promise<string> {
         const https = await import('https');
+        const { getIcpBrasilCAs } = await import('../config/icpBrasilCAs');
         const defaultAction = 'http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe/nfeDistDFeInteresse';
         const soapAction = action || defaultAction;
 
         const agent = new https.Agent({
             pfx: pfx,
             passphrase: pass,
-            rejectUnauthorized: false,
+            rejectUnauthorized: true,
+            ca: getIcpBrasilCAs(),
             secureProtocol: 'TLSv1_2_method'
         });
 

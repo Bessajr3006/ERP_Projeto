@@ -1,2 +1,0 @@
-ALTER TABLE contacts
-    ADD COLUMN IF NOT EXISTS birth_date DATE DEFAULT NULL AFTER email;

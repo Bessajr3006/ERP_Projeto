@@ -5,13 +5,15 @@ import logger from '../config/logger';
 import { AuditService } from '../services/auditService';
 import { GeoIpService } from '../services/geoIpService';
 import { SessionConflictError } from '../errors/SessionConflictError';
+import { ALLOWED_USER_ROLES, canManageRole } from '../utils/roleHierarchy';
 
 // Zod Schemas for Validation
 const registerSchema = z.object({
-    company_id: z.number().int().positive('Invalid company ID'),
+    company_id: z.number().int().positive().optional(),
     email: z.string().email('Invalid email format'),
-    passwordRaw: z.string().min(8, 'Password must be at least 8 characters long'),
+    passwordRaw: z.string().min(10, 'A senha deve ter no mínimo 10 caracteres'),
     full_name: z.string().min(2, 'Name must be at least 2 characters long'),
+    role: z.enum(ALLOWED_USER_ROLES).default('user'),
 });
 
 const loginSchema = z.object({
@@ -28,7 +30,7 @@ const faceLoginSchema = z.object({
 
 const changePasswordSchema = z.object({
     currentPasswordRaw: z.string().min(1, 'Senha atual é obrigatória'),
-    newPasswordRaw: z.string().min(6, 'A nova senha deve ter pelo menos 6 caracteres')
+    newPasswordRaw: z.string().min(10, 'A nova senha deve ter no mínimo 10 caracteres')
 });
 
 export class AuthController {
@@ -55,14 +57,35 @@ export class AuthController {
 
     static async register(req: Request, res: Response): Promise<void> {
         try {
+            if (!req.user) {
+                res.status(401).json({ status: 'error', message: 'Acesso negado. Não autenticado.' });
+                return;
+            }
+
             // Validate request body
             const validatedData = registerSchema.parse(req.body);
+            const targetRole = validatedData.role;
+            const callerRole = req.user.role;
+
+            // Checagem de hierarquia: ninguém cria usuário com papel igual ou superior ao seu (exceto super_admin)
+            if (!canManageRole(callerRole, targetRole)) {
+                res.status(403).json({
+                    status: 'error',
+                    message: 'Não é permitido criar usuário com papel igual ou superior ao seu'
+                });
+                return;
+            }
+
+            // SEMPRE usa o company_id do token autenticado (nunca o do corpo da requisição)
+            const companyId = req.user.company_id;
             const ipAddress = GeoIpService.extractClientIp(req);
             const userAgent = String(req.headers['user-agent'] || '');
 
             // Call Service
             const result = await AuthService.register({
                 ...validatedData,
+                company_id: companyId,
+                role: targetRole,
                 ipAddress,
                 userAgent
             });
@@ -229,4 +252,45 @@ export class AuthController {
             res.status(500).json({ status: 'error', message: error.message || 'Erro no reconhecimento facial.' });
         }
     }
+
+    static async refreshToken(req: Request, res: Response): Promise<void> {
+        try {
+            if (!req.user) {
+                res.status(401).json({ status: 'error', message: 'Acesso negado. Não autenticado.' });
+                return;
+            }
+
+            const authHeader = req.headers.authorization;
+            const currentToken = authHeader && authHeader.startsWith('Bearer ')
+                ? authHeader.split(' ')[1]?.trim() || ''
+                : '';
+
+            if (!currentToken) {
+                res.status(401).json({ status: 'error', message: 'Token não fornecido.' });
+                return;
+            }
+
+            const ipAddress = GeoIpService.extractClientIp(req);
+            const userAgent = String(req.headers['user-agent'] || '');
+
+            const result = await AuthService.refreshToken(
+                req.user,
+                currentToken,
+                ipAddress,
+                userAgent
+            );
+
+            res.status(200).json({
+                status: 'success',
+                data: result
+            });
+        } catch (error: any) {
+            console.error('[AuthController/refreshToken] Exception:', error);
+            res.status(401).json({
+                status: 'error',
+                message: error.message || 'Falha ao renovar sessão.'
+            });
+        }
+    }
 }
+

@@ -119,10 +119,26 @@
         if (countBadge) countBadge.classList.add('hidden');
 
         const dbType = (getById('dbTargetSelect') as HTMLSelectElement | null)?.value || 'sistema';
+        const selectEl = getById('dbTablesSelect') as HTMLSelectElement | null;
+        const selectedTable = selectEl?.value || '';
+
+        let action = 'table_counts';
+        if (selectedTable) {
+            action = 'table_schema';
+        } else if (query.toLowerCase().includes('status') || query.toLowerCase().includes('version')) {
+            action = 'status';
+        } else if (query.toLowerCase().includes('storage') || query.toLowerCase().includes('size')) {
+            action = 'storage';
+        } else if (query.toLowerCase().includes('process')) {
+            action = 'processes';
+        } else if (dbType !== 'sistema') {
+            action = 'external_ping';
+        }
+
         try {
-            const res = await api('/maintenance/query', {
+            const res = await api('/maintenance/diagnostics', {
                 method: 'POST',
-                body: JSON.stringify({ query, databaseType: dbType })
+                body: JSON.stringify({ action, tableName: selectedTable, databaseType: dbType })
             });
 
             if (res && res.status === 'success') {

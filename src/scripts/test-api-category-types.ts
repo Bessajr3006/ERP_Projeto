@@ -3,7 +3,7 @@ dotenv.config({ override: true });
 import jwt from 'jsonwebtoken';
 import https from 'https';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_change_me_in_production';
+const JWT_SECRET = process.env.JWT_SECRET || '';
 
 async function main() {
     const payload = {

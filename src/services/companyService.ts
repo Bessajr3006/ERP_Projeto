@@ -7,6 +7,8 @@ import { CacheService } from './cacheService';
 import { StorageService } from '../utils/storageService';
 import { CompanyRepository } from '../repositories/companyRepository';
 import { RoleService } from './roleService';
+import { encrypt, decrypt } from '../utils/crypto';
+import { generateSwaggerToken, hashSwaggerToken } from '../utils/swaggerToken';
 
 function processCompanyCnpjDocuments(data: any, currentCnpjDocumentUrl?: string | null): string | null {
     const parseCnpjDocuments = (val: any): { name: string; url: string; attachedAt?: string }[] => {
@@ -235,7 +237,8 @@ export class CompanyService {
                  values.push(saved.url);
              }
              // Auto-extract expiration date from the PFX when password is available
-             const pfxPassword = data.certificate_password ?? (current as any).certificate_password ?? '';
+             const rawCurrentCertPass = (current as any).certificate_password ? decrypt((current as any).certificate_password) : '';
+             const pfxPassword = data.certificate_password ?? rawCurrentCertPass ?? '';
              if (pfxPassword && !data.certificate_expiration) {
                  try {
                      const pfxBuf = Buffer.from(data.certificate_base64, 'base64');
@@ -357,6 +360,7 @@ export class CompanyService {
             (data as any).whatsapp_allow_all_users_active_sender = (val === true || val === 1 || val === 'true' || val === '1') ? 1 : 0;
         }
 
+        const sensitiveEncryptedFields = ['certificate_password', 'senha_solidcon', 'senha_dorsal', 'senha_alterdata'];
         const extraFields = ['tax_regime', 'email', 'phone', 'zipcode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state', 'certificate_password', 'certificate_expiration', 'certificate_name', 'api_token', 'swagger_api_token', 'whatsapp_chat_provider', 'whatsapp_business_scope', 'solidcon_api_token', 'solidcon_url_1', 'solidcon_url_2', 'solidcon_url_3', 'solidcon_url_4', 'solidcon_url_5', 'solidcon_customer_cpf', 'solidcon_customer_name', 'serv_solidcon', 'bd_solidcon', 'login_solidcon', 'senha_solidcon', 'serv_dorsal', 'bd_dorsal', 'login_dorsal', 'senha_dorsal', 'show_solidcon', 'serv_alterdata', 'bd_alterdata', 'login_alterdata', 'senha_alterdata', 'porta_alterdata', 'cdempresa_alterdata', 'show_alterdata', 'cdfilial', 'cdpdv', 'allow_print_without_confirmation', 'show_new_measure_button', 'ie', 'im', 'cnae_principal', 'crt', 'nfe_environment', 'nfe_series', 'nfe_number', 'nfce_series', 'nfce_number', 'csc_id', 'csc_token', 'is_general_admin', 'is_group_master', 'cnpj_document_url', 'default_customer_group_id', 'default_bank_account_id', 'default_receivable_type_id', 'auto_generate_billets', 'auto_generate_billets_time', 'auto_send_boleto_whatsapp', 'boleto_send_time', 'boleto_send_whatsapp_number', 'boleto_send_whatsapp_name', 'whatsapp_allow_all_users_active_sender', 'company_group_id'];
         for (const field of extraFields) {
             if ((data as any)[field] !== undefined) {
@@ -364,6 +368,10 @@ export class CompanyService {
                 let fieldValue = (data as any)[field];
                 if (fieldValue === '') {
                     fieldValue = null;
+                } else if (fieldValue && sensitiveEncryptedFields.includes(field)) {
+                    fieldValue = encrypt(String(fieldValue));
+                } else if (fieldValue && field === 'swagger_api_token') {
+                    fieldValue = hashSwaggerToken(String(fieldValue));
                 }
                 values.push(fieldValue ?? null);
             }
@@ -391,6 +399,37 @@ export class CompanyService {
         }
 
         return this.getByPublicId(publicId);
+    }
+
+    /**
+     * Regenera o token Swagger de uma empresa (retorna a versão em texto puro apenas uma vez).
+     */
+    static async regenerateSwaggerToken(publicId: string): Promise<{ rawToken: string }> {
+        const company = await this.getByPublicId(publicId);
+        if (!company) throw new Error('Company not found');
+
+        const { rawToken, tokenHash } = generateSwaggerToken();
+        await pool.query(
+            'UPDATE companies SET swagger_api_token = ? WHERE id = ?',
+            [tokenHash, company.id]
+        );
+
+        return { rawToken };
+    }
+
+    /**
+     * Revoga o token Swagger de uma empresa.
+     */
+    static async revokeSwaggerToken(publicId: string): Promise<boolean> {
+        const company = await this.getByPublicId(publicId);
+        if (!company) throw new Error('Company not found');
+
+        await pool.query(
+            'UPDATE companies SET swagger_api_token = NULL WHERE id = ?',
+            [company.id]
+        );
+
+        return true;
     }
 
     /**

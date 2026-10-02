@@ -2,7 +2,7 @@ import 'dotenv/config';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_change_me_in_production';
+const JWT_SECRET = process.env.JWT_SECRET || '';
 
 async function main() {
     // Get company 2 public ID

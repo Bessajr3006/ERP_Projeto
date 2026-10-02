@@ -444,6 +444,7 @@
                 opt.textContent = `👤 ${c.name}${tradeFmt}${docFmt}`;
                 select.appendChild(opt);
             });
+            atualizarComboboxDeclaracoesSalvas();
         }
         catch (e) {
             console.debug('Não foi possível carregar lista de clientes no seletor:', e);
@@ -721,42 +722,152 @@
             .replace(/^_|_$/g, '')
             .substring(0, 40);
     }
+    function obterClienteSelecionadoInfo() {
+        const selCliente = document.getElementById('toolbarSelectCliente');
+        const val = selCliente?.value ? String(selCliente.value) : '';
+        if (!val) {
+            const nomeEmpresa = document.querySelector('.sync-empresa')?.innerText.trim() || localStorage.getItem('keystone_last_company_name') || 'EMPRESA';
+            const cnpj = document.querySelector('.sync-cnpj')?.innerText.trim() || localStorage.getItem('keystone_last_company_cnpj') || '';
+            return {
+                id: null,
+                name: nomeEmpresa,
+                cnpj,
+                isEmpresaAtiva: true
+            };
+        }
+        const found = clientesCache.find(c => String(c.id) === val);
+        const name = found ? (found.name || found.trade_name || '') : '';
+        const cnpj = found ? (found.cnpj_cpf || '') : '';
+        return {
+            id: val,
+            name,
+            cnpj,
+            isEmpresaAtiva: false
+        };
+    }
+    function filtrarDeclaracoesPorCliente(lista, clienteInfo) {
+        const cleanCnpj = (doc) => (doc || '').toString().replace(/\D/g, '');
+        const targetCnpj = cleanCnpj(clienteInfo.cnpj);
+        const targetName = (clienteInfo.name || '').trim().toLowerCase();
+        if (clienteInfo.isEmpresaAtiva) {
+            const filtradas = lista.filter(d => {
+                if (d.customerId === null || d.customerId === undefined || d.customerId === '' || d.customerId === 'empresa_ativa')
+                    return true;
+                if (targetCnpj && cleanCnpj(d.cnpj) === targetCnpj)
+                    return true;
+                if (targetName && (d.nomeEmpresa || '').trim().toLowerCase() === targetName)
+                    return true;
+                return false;
+            });
+            return filtradas.length > 0 ? filtradas : lista;
+        }
+        return lista.filter(d => {
+            if (d.customerId && String(d.customerId) === String(clienteInfo.id))
+                return true;
+            if (targetCnpj && cleanCnpj(d.cnpj) === targetCnpj)
+                return true;
+            if (targetName && ((d.customerName || '').trim().toLowerCase() === targetName || (d.nomeEmpresa || '').trim().toLowerCase() === targetName))
+                return true;
+            return false;
+        });
+    }
     function atualizarComboboxDeclaracoesSalvas(selecionarId) {
         const select = document.getElementById('selectDeclaracoesSalvas');
         const badge = document.getElementById('badgeQtdSalvas');
+        const containerLista = document.getElementById('containerListaDeclaracoesSalvas');
         if (!select)
             return;
-        const lista = carregarDeclaracoesSalvas();
+        const todas = carregarDeclaracoesSalvas();
+        const clienteInfo = obterClienteSelecionadoInfo();
+        const filtradas = filtrarDeclaracoesPorCliente(todas, clienteInfo);
+        // Mais recentes primeiro
+        filtradas.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        const rotuloCliente = clienteInfo.isEmpresaAtiva ? 'Empresa Ativa' : (clienteInfo.name || 'Cliente');
         if (badge) {
-            badge.innerText = `${lista.length} salva${lista.length === 1 ? '' : 's'}`;
+            badge.innerText = `${filtradas.length} salva${filtradas.length === 1 ? '' : 's'} (${rotuloCliente})`;
         }
         select.innerHTML = '';
-        if (lista.length === 0) {
+        if (filtradas.length === 0) {
             const opt = document.createElement('option');
             opt.value = '';
-            opt.textContent = '-- Nenhuma declaração salva encontrada --';
+            opt.textContent = `-- Nenhuma declaração salva encontrada para: ${rotuloCliente} --`;
             select.appendChild(opt);
-            return;
         }
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '';
-        defaultOpt.textContent = `-- Selecione uma declaração (${lista.length} salva${lista.length === 1 ? '' : 's'}) --`;
-        select.appendChild(defaultOpt);
-        // Mais recentes primeiro
-        lista.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        lista.forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.id;
-            opt.textContent = `📅 ${item.dataHora} • 🏢 ${item.nomeEmpresa} • 📄 ${item.nomePdf}`;
-            if (selecionarId && item.id === selecionarId) {
-                opt.selected = true;
+        else {
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = `-- Selecione uma declaração (${filtradas.length} salva${filtradas.length === 1 ? '' : 's'} de ${rotuloCliente}) --`;
+            select.appendChild(defaultOpt);
+            filtradas.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                // Formato: Data, Hora e Nome em PDF
+                opt.textContent = `📅 ${item.dataHora} • 📄 ${item.nomePdf}${item.totalFaturamento ? ` • R$ ${item.totalFaturamento}` : ''}`;
+                if (selecionarId && item.id === selecionarId) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+        }
+        // Renderiza lista detalhada com Data, Hora e Nome em PDF
+        if (containerLista) {
+            if (filtradas.length === 0) {
+                containerLista.classList.add('hidden');
+                containerLista.classList.remove('flex');
+                containerLista.innerHTML = '';
             }
-            select.appendChild(opt);
-        });
+            else {
+                containerLista.classList.remove('hidden');
+                containerLista.classList.add('flex');
+                containerLista.innerHTML = filtradas.map(item => `
+                    <div class="p-2 sm:p-2.5 rounded-lg bg-white dark:bg-slate-800/90 border border-teal-200/80 dark:border-slate-700 flex items-center justify-between gap-2 text-xs shadow-2xs hover:border-teal-400 transition-colors">
+                        <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 font-bold text-gray-900 dark:text-gray-100 truncate">
+                                <span class="text-teal-600 dark:text-teal-400 shrink-0">📅 ${item.dataHora}</span>
+                                <span class="text-gray-400 dark:text-gray-500 shrink-0">•</span>
+                                <span class="truncate font-mono text-[11px] text-teal-800 dark:text-teal-300 font-semibold" title="${item.nomePdf}">📄 ${item.nomePdf}</span>
+                            </div>
+                            <div class="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-2 truncate">
+                                <span>🏢 ${item.nomeEmpresa}</span>
+                                ${item.periodoTexto ? `<span>• 🗓️ ${item.periodoTexto}</span>` : ''}
+                                ${item.totalFaturamento ? `<span class="font-bold text-emerald-600 dark:text-emerald-400">• Total: R$ ${item.totalFaturamento}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" class="btn-item-carregar px-2.5 py-1 rounded bg-teal-600 hover:bg-teal-700 text-white font-bold text-[11px] transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1" data-id="${item.id}" title="Carregar esta declaração no documento">
+                                📂 Carregar
+                            </button>
+                            <button type="button" class="btn-item-excluir p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 dark:text-red-400 transition-colors cursor-pointer" data-id="${item.id}" title="Excluir declaração salva">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                containerLista.querySelectorAll('.btn-item-carregar').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        if (id) {
+                            if (select)
+                                select.value = id;
+                            carregarDeclaracaoSalva(id);
+                        }
+                    });
+                });
+                containerLista.querySelectorAll('.btn-item-excluir').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute('data-id');
+                        if (id) {
+                            excluirDeclaracaoSalva(id);
+                        }
+                    });
+                });
+            }
+        }
     }
     function salvarDeclaracaoAtual() {
-        const nomeEmpresa = document.querySelector('.sync-empresa')?.innerText.trim() || 'EMPRESA';
-        const cnpj = document.querySelector('.sync-cnpj')?.innerText.trim() || '';
+        const clienteInfo = obterClienteSelecionadoInfo();
+        const nomeEmpresa = document.querySelector('.sync-empresa')?.innerText.trim() || clienteInfo.name || 'EMPRESA';
+        const cnpj = document.querySelector('.sync-cnpj')?.innerText.trim() || clienteInfo.cnpj || '';
         const endereco1 = document.querySelector('.sync-endereco-linha1')?.innerText.trim() || '';
         const endereco2 = document.querySelector('.sync-endereco-linha2')?.innerText.trim() || '';
         const elMesIni = document.querySelector('.sync-mes-inicio');
@@ -790,10 +901,14 @@
         const empresaSanitizada = sanitizarNomeArquivo(nomeEmpresa);
         const nomePdf = `Declaracao_Faturamento_${empresaSanitizada}_${dataHoraArquivo}.pdf`;
         const id = `decl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const customerId = clienteInfo.isEmpresaAtiva ? 'empresa_ativa' : clienteInfo.id;
+        const customerName = clienteInfo.name || nomeEmpresa;
         const novaDeclaracao = {
             id,
             dataHora: dataHoraFormatada,
             timestamp: agora.getTime(),
+            customerId,
+            customerName,
             nomeEmpresa,
             nomePdf,
             cnpj,
@@ -843,6 +958,26 @@
             win.UI?.showAlert?.('alertMessage', 'Declaração não encontrada.', 'error');
             return;
         }
+        // Sincroniza o seletor de cliente se houver correspondência
+        const selectCliente = document.getElementById('toolbarSelectCliente');
+        if (selectCliente) {
+            if (item.customerId && item.customerId !== 'empresa_ativa') {
+                selectCliente.value = String(item.customerId);
+            }
+            else if (item.cnpj) {
+                const cleanItemCnpj = item.cnpj.replace(/\D/g, '');
+                const foundCliente = clientesCache.find(c => (c.cnpj_cpf || '').replace(/\D/g, '') === cleanItemCnpj);
+                if (foundCliente) {
+                    selectCliente.value = String(foundCliente.id);
+                }
+                else {
+                    selectCliente.value = '';
+                }
+            }
+            else {
+                selectCliente.value = '';
+            }
+        }
         // 1. Dados da empresa
         if (item.nomeEmpresa)
             atualizarTodosOsCampos('.sync-empresa', item.nomeEmpresa);
@@ -859,6 +994,19 @@
             });
         }
         aplicarPeriodo(item.mesInicio, item.anoInicio, item.mesFim, item.anoFim);
+        // Sincroniza os inputs da toolbar
+        const selIniMes = document.getElementById('toolbarSelectMesInicio');
+        const inpIniAno = document.getElementById('toolbarInputAnoInicio');
+        const selFimMes = document.getElementById('toolbarSelectMesFim');
+        const inpFimAno = document.getElementById('toolbarInputAnoFim');
+        if (selIniMes && item.mesInicio !== undefined)
+            selIniMes.value = String(item.mesInicio);
+        if (inpIniAno && item.anoInicio)
+            inpIniAno.value = String(item.anoInicio);
+        if (selFimMes && item.mesFim !== undefined)
+            selFimMes.value = String(item.mesFim);
+        if (inpFimAno && item.anoFim)
+            inpFimAno.value = String(item.anoFim);
         // 3. Data por extenso
         if (item.dataExtenso) {
             const campoDataExt = document.getElementById('campo-data-extenso');
@@ -934,6 +1082,7 @@
                     el.innerText = item.icp.contadorTime;
             }
         }
+        atualizarComboboxDeclaracoesSalvas(id);
         win.UI?.showAlert?.('alertMessage', `📂 Declaração de "${item.dataHora}" carregada com sucesso! (${item.nomePdf})`, 'success', 4000);
     }
     function excluirDeclaracaoSalva(id) {
@@ -1356,6 +1505,7 @@
             if (select)
                 select.value = '';
             carregarEmpresaAtivaERP();
+            atualizarComboboxDeclaracoesSalvas();
         });
         // Ações de Salvar e Gerenciar Declarações Salvas (Combobox)
         document.getElementById('btnSalvarDeclaracao')?.addEventListener('click', () => {
@@ -1398,6 +1548,7 @@
                     aplicarDadosCliente(found);
                 }
             }
+            atualizarComboboxDeclaracoesSalvas();
         });
         // Configuração Gov.br e assinaturas
         configurarEventosGovBr();

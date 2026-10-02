@@ -187,7 +187,7 @@ export class AccountingEntryController {
 
             const database = (solidconConfig?.bd_solidcon || 'solidcon').trim();
             const user = (solidconConfig?.login_solidcon || 'aporttec').trim();
-            const password = solidconConfig?.senha_solidcon || '30mariafn@';
+            const password = solidconConfig?.senha_solidcon || '';
 
             const entries = await ExternalDbService.getSolidconAccountingEntries(
                 {

@@ -8,20 +8,19 @@ import { RowDataPacket } from 'mysql2/promise';
 import logger from '../config/logger';
 import { CompanyService } from '../services/companyService';
 import { attachAuditActivityListener } from './auditMiddleware';
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_change_me_in_production';
+
+const JWT_SECRET = process.env.JWT_SECRET || '';
 
 export const protectRoute = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // 1. Verifica se o header de autorização existe ou se o token está na query
+    // 1. Verifica se o header de autorização Bearer existe (tokens via query string são estritamente rejeitados por segurança)
     let token = '';
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.split(' ')[1] || '';
-    } else if (req.query.token && typeof req.query.token === 'string') {
-        token = req.query.token;
+        token = authHeader.split(' ')[1]?.trim() || '';
     }
 
     if (!token) {
-        res.status(401).json({ error: 'Acesso negado. Token não fornecido.' });
+        res.status(401).json({ status: 'error', error: 'Acesso negado. Token não fornecido no header Authorization.', message: 'Acesso negado. Token não fornecido no header Authorization.' });
         return;
     }
 
@@ -38,6 +37,10 @@ export const protectRoute = async (req: Request, res: Response, next: NextFuncti
             attachAuditActivityListener(req, res);
             next();
             return;
+        }
+
+        if (!JWT_SECRET || JWT_SECRET.length < 32) {
+            throw new AppError('Configuração de segurança do servidor inválida (JWT_SECRET ausente ou fraco).', 500);
         }
 
         const verifiedToken = jwt.verify(token, JWT_SECRET);
@@ -82,12 +85,13 @@ export const protectRoute = async (req: Request, res: Response, next: NextFuncti
         }
 
         const activeToken = userRecord.current_session_token;
-        if (activeToken && activeToken !== token) {
+        // Sempre valida a sessão ativa no banco: se o token não corresponder ao activeToken (inclusive se for nulo), encerra
+        if (!activeToken || activeToken !== token) {
             res.status(401).json({
                 status: 'error',
                 code: 'SESSION_TERMINATED',
-                error: 'Sua sessão foi encerrada porque este usuário realizou login em outro local ou dispositivo.',
-                message: 'Sua sessão foi encerrada porque este usuário realizou login em outro local ou dispositivo.'
+                error: 'Sua sessão é inválida ou foi encerrada.',
+                message: 'Sua sessão é inválida ou foi encerrada.'
             });
             return;
         }
@@ -103,15 +107,25 @@ export const protectRoute = async (req: Request, res: Response, next: NextFuncti
     next();
 };
 
-// Middleware extra para barrar usuários em rotas exclusivas de admin
-export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-    if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        res.status(403).json({ error: 'Acesso restrito a administradores.' });
-        return;
-    }
+// Middleware reutilizável para restringir acesso por papéis (roles)
+export const requireRole = (...roles: string[]) => {
+    return (req: Request, res: Response, next: NextFunction): void => {
+        if (!req.user) {
+            res.status(401).json({ error: 'Acesso negado. Não autenticado.' });
+            return;
+        }
+
+        if (req.user.role === 'super_admin' || roles.includes(req.user.role)) {
+            next();
+            return;
+        }
+
+        res.status(403).json({ error: `Acesso restrito para os perfis: ${roles.join(', ')}.` });
+    };
 };
+
+// Middleware extra para barrar usuários em rotas exclusivas de admin
+export const requireAdmin = requireRole('admin');
 
 export const requireSuperAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (req.user && req.user.role === 'super_admin') {

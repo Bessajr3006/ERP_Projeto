@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_change_me_in_production';
+const JWT_SECRET = process.env.JWT_SECRET || '';
 
 async function main() {
     // Payload for user 6 (bessa@aporttec.com)

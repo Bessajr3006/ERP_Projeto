@@ -1,47 +1,59 @@
-FROM node:22 AS builder
+# ── Stage 1: Builder ──────────────────────────────────────────────────────────
+FROM node:22-bookworm-slim@sha256:560c5a2c10b50aa22eb4fbc266ee5b28d0eb9f68ad38753239a51cb684c311c6 AS builder
 
 WORKDIR /app
 
 # Copia os manifests primeiro para aproveitar cache de dependencias
 COPY package*.json ./
-RUN NODE_OPTIONS="--max-old-space-size=4096" npm install --no-audit --no-fund
+RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true NODE_OPTIONS="--max-old-space-size=4096" npm ci --no-audit --no-fund
 
 # Copia o projeto e gera os artefatos de producao
 COPY . .
-RUN npm run build && npm run build:css
+RUN npm run build && npm run build:css && npm run build:public
 
-FROM node:22 AS runner
+# Limpa dependências de desenvolvimento para economizar espaço
+RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm prune --omit=dev
+
+# ── Stage 2: Runner ───────────────────────────────────────────────────────────
+FROM node:22-bookworm-slim@sha256:560c5a2c10b50aa22eb4fbc266ee5b28d0eb9f68ad38753239a51cb684c311c6 AS runner
 
 WORKDIR /app
 
-# Chromium para whatsapp-web.js em ambiente container/cloud
+# Chromium para whatsapp-web.js em ambiente container/cloud e ffmpeg nativo
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation \
+  && apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
-# Instala somente dependencias de runtime
-# Reutiliza node_modules do builder e remove devDependencies (sem download adicional)
-COPY --from=builder /app/node_modules ./node_modules
-RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true npm prune --omit=dev
+# Criar pastas e permissões para usuário node
+RUN mkdir -p /data/uploads /data/runtime /app/public/uploads /app/.runtime \
+  && chown -R node:node /app /data
 
-# Copia build, arquivos publicos e scripts de banco
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/database ./database
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
+# Copia artefatos com permissão para usuário node
+COPY --chown=node:node --from=builder /app/node_modules ./node_modules
+COPY --chown=node:node --from=builder /app/dist ./dist
+COPY --chown=node:node --from=builder /app/public ./public
+COPY --chown=node:node --from=builder /app/database ./database
+COPY --chown=node:node --from=builder /app/package.json ./package.json
+COPY --chown=node:node --from=builder /app/package-lock.json ./package-lock.json
+COPY --chown=node:node --from=builder /app/crash-wrapper.js ./crash-wrapper.js
 
-# Reaproveita binario do ffmpeg baixado no stage builder
-COPY --from=builder /app/node_modules/ffmpeg-static/ffmpeg ./node_modules/ffmpeg-static/ffmpeg
+# Apontar ffmpeg-static para o binário do sistema
+RUN mkdir -p /app/node_modules/ffmpeg-static \
+    && ln -sf /usr/bin/ffmpeg /app/node_modules/ffmpeg-static/ffmpeg \
+    && chown -R node:node /app/node_modules/ffmpeg-static
 
 # Entry point para preparar persistencia em /data
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chown=node:node docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 EXPOSE 3000
+
+# Executar como usuário não-root
+USER node
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=5 \
   CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"

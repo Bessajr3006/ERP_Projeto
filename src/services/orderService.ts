@@ -183,9 +183,9 @@ export class OrderService {
         return parsed;
     }
 
-    public static getTagText(parent: Element | null | undefined, tagName: string): string {
+    public static getTagText(parent: any, tagName: string): string {
         if (!parent) return '';
-        const node = parent.getElementsByTagName(tagName)[0];
+        const node = parent.getElementsByTagName ? parent.getElementsByTagName(tagName)[0] : null;
         return String(node?.textContent || '').trim();
     }
 

@@ -4,7 +4,7 @@ import logger from './logger';
 // Define strict typing for database connection configuration
 const dbConfig: PoolOptions = {
     host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
+    user: process.env.DB_USER || 'erp_app',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'bessa_erp',
     port: parseInt(process.env.DB_PORT || '3306', 10),

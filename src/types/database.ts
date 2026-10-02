@@ -953,7 +953,6 @@ export interface Users {
    * UUID for public reference
    */
   public_id: string;
-  raw_password: Generated<string | null>;
   role: Generated<string>;
   state: Generated<string | null>;
   street: Generated<string | null>;

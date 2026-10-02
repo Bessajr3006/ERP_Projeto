@@ -11,6 +11,15 @@ import { WhatsAppBusinessMessageService } from '../services/whatsappBusinessMess
 import { FinanceService } from '../services/financeService';
 import { ExternalDbService } from '../services/externalDbService';
 import logger from '../config/logger';
+import {
+    serializeSafeCompany,
+    serializeSafeCompanies,
+    serializeSafeUsers,
+    serializeSafePosControlConfig,
+    serializeSafeSolidconConfig,
+    serializeSafeDorsalConfig,
+    serializeSafeAlterdataConfig
+} from '../serializers/safeDataSerializer';
 
 interface SolidconCacheEntry {
     products: any[];
@@ -195,11 +204,28 @@ const companyWritableFieldSchemas = {
     company_group_public_id: z.string().uuid().nullable().optional(),
 };
 
+export const ALLOWED_USER_ROLES = [
+    'super_admin',
+    'admin',
+    'supervisor',
+    'manager',
+    'seller',
+    'accountant',
+    'auxiliar_contador',
+    'socio',
+    'buyer',
+    'service_provider',
+    'solidcon',
+    'user'
+] as const;
+
+export type AllowedUserRole = typeof ALLOWED_USER_ROLES[number];
+
 const initialUserSchema = z.object({
     full_name: z.string().trim().min(2, 'Nome do usuário deve ter no mínimo 2 caracteres').max(150),
     email: z.string().trim().email('Email do usuário inválido'),
-    passwordRaw: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
-    role: z.string().trim().min(1, 'Role é obrigatório').max(80, 'Role muito longo').regex(/^[a-z0-9_]+$/, 'Role inválido').default('supervisor'),
+    passwordRaw: z.string().min(10, 'Senha deve ter no mínimo 10 caracteres'),
+    role: z.enum(ALLOWED_USER_ROLES).default('admin'),
 });
 
 const createCompanySchema = z.object({
@@ -418,23 +444,36 @@ export class CompanyController {
 
         res.status(200).json({
             status: 'success',
-            data: companies
+            data: serializeSafeCompanies(companies)
         });
     }
 
     static async create(req: Request, res: Response): Promise<void> {
         try {
+            const isSuperAdmin = req.user?.role === 'super_admin';
             const validatedData = createCompanySchema.parse(req.body);
             const { initial_user, ...companyData } = validatedData;
+
+            // Se não for super admin, ignore is_general_admin e is_group_master
+            if (!isSuperAdmin) {
+                delete (companyData as any).is_general_admin;
+                delete (companyData as any).is_group_master;
+            }
+
             const company = await CompanyService.create(companyData);
 
             if (initial_user) {
-                await UserService.create(company.id, initial_user);
+                // Se não for super admin, ignore initial_user.role customizado e force 'admin'
+                const userRole = isSuperAdmin ? initial_user.role : 'admin';
+                await UserService.create(company.id, {
+                    ...initial_user,
+                    role: userRole,
+                });
             }
 
             res.status(201).json({
                 status: 'success',
-                data: company
+                data: serializeSafeCompany(company)
             });
         } catch (error: any) {
             if (error instanceof z.ZodError) {
@@ -628,9 +667,9 @@ export class CompanyController {
             res.status(200).json({
                 status: 'success',
                 data: {
-                    ...company,
+                    ...serializeSafeCompany(company),
                     parent_customer: parentCustomer,
-                    users,
+                    users: serializeSafeUsers(users),
                     whatsapp_sessions: sessions
                 }
             });
@@ -667,7 +706,7 @@ export class CompanyController {
 
             res.status(200).json({
                 status: 'success',
-                data: company
+                data: serializeSafeCompany(company)
             });
         } catch (error: any) {
             if (error instanceof z.ZodError) {
@@ -1361,7 +1400,7 @@ export class CompanyController {
             }
 
             const configs = await PosControlConfigService.list(company.id);
-            res.status(200).json({ status: 'success', data: configs });
+            res.status(200).json({ status: 'success', data: configs.map(serializeSafePosControlConfig) });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
         }
@@ -1378,7 +1417,7 @@ export class CompanyController {
 
             const data = req.body;
             const config = await PosControlConfigService.create(company.id, data);
-            res.status(201).json({ status: 'success', data: config });
+            res.status(201).json({ status: 'success', data: serializeSafePosControlConfig(config) });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
         }
@@ -1396,7 +1435,7 @@ export class CompanyController {
 
             const data = req.body;
             const config = await PosControlConfigService.update(company.id, Number(id), data);
-            res.status(200).json({ status: 'success', data: config });
+            res.status(200).json({ status: 'success', data: serializeSafePosControlConfig(config) });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message || 'Internal Server Error' });
         }
@@ -1969,7 +2008,7 @@ export class CompanyController {
 
             const { SolidconConfigService } = await import('../services/solidconConfigService');
             const configs = await SolidconConfigService.list(company.id);
-            res.status(200).json({ status: 'success', data: configs });
+            res.status(200).json({ status: 'success', data: configs.map(serializeSafeSolidconConfig) });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message || 'Erro interno do servidor.' });
         }
@@ -1987,7 +2026,7 @@ export class CompanyController {
             const data = req.body;
             const { SolidconConfigService } = await import('../services/solidconConfigService');
             const config = await SolidconConfigService.create(company.id, data);
-            res.status(201).json({ status: 'success', data: config });
+            res.status(201).json({ status: 'success', data: serializeSafeSolidconConfig(config) });
         } catch (error: any) {
             res.status(400).json({ status: 'error', message: error.message || 'Erro ao criar conexão Solidcon.' });
         }
@@ -2006,7 +2045,7 @@ export class CompanyController {
             const data = req.body;
             const { SolidconConfigService } = await import('../services/solidconConfigService');
             const config = await SolidconConfigService.update(company.id, Number(id), data);
-            res.status(200).json({ status: 'success', data: config });
+            res.status(200).json({ status: 'success', data: serializeSafeSolidconConfig(config) });
         } catch (error: any) {
             res.status(400).json({ status: 'error', message: error.message || 'Erro ao atualizar conexão Solidcon.' });
         }
@@ -2091,7 +2130,7 @@ export class CompanyController {
 
             const { DorsalConfigService } = await import('../services/dorsalConfigService');
             const configs = await DorsalConfigService.list(company.id);
-            res.status(200).json({ status: 'success', data: configs });
+            res.status(200).json({ status: 'success', data: configs.map(serializeSafeDorsalConfig) });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message || 'Erro interno do servidor.' });
         }
@@ -2109,7 +2148,7 @@ export class CompanyController {
             const data = req.body;
             const { DorsalConfigService } = await import('../services/dorsalConfigService');
             const config = await DorsalConfigService.create(company.id, data);
-            res.status(201).json({ status: 'success', data: config });
+            res.status(201).json({ status: 'success', data: serializeSafeDorsalConfig(config) });
         } catch (error: any) {
             res.status(400).json({ status: 'error', message: error.message || 'Erro ao criar conexão Dorsal.' });
         }
@@ -2128,7 +2167,7 @@ export class CompanyController {
             const data = req.body;
             const { DorsalConfigService } = await import('../services/dorsalConfigService');
             const config = await DorsalConfigService.update(company.id, Number(id), data);
-            res.status(200).json({ status: 'success', data: config });
+            res.status(200).json({ status: 'success', data: serializeSafeDorsalConfig(config) });
         } catch (error: any) {
             res.status(400).json({ status: 'error', message: error.message || 'Erro ao atualizar conexão Dorsal.' });
         }
@@ -2213,7 +2252,7 @@ export class CompanyController {
 
             const { AlterdataConfigService } = await import('../services/alterdataConfigService');
             const configs = await AlterdataConfigService.list(company.id);
-            res.status(200).json({ status: 'success', data: configs });
+            res.status(200).json({ status: 'success', data: configs.map(serializeSafeAlterdataConfig) });
         } catch (error: any) {
             res.status(500).json({ status: 'error', message: error.message || 'Erro interno do servidor.' });
         }
@@ -2231,7 +2270,7 @@ export class CompanyController {
             const data = req.body;
             const { AlterdataConfigService } = await import('../services/alterdataConfigService');
             const config = await AlterdataConfigService.create(company.id, data);
-            res.status(201).json({ status: 'success', data: config });
+            res.status(201).json({ status: 'success', data: serializeSafeAlterdataConfig(config) });
         } catch (error: any) {
             res.status(400).json({ status: 'error', message: error.message || 'Erro ao criar conexão Alterdata.' });
         }
@@ -2250,7 +2289,7 @@ export class CompanyController {
             const data = req.body;
             const { AlterdataConfigService } = await import('../services/alterdataConfigService');
             const config = await AlterdataConfigService.update(company.id, Number(id), data);
-            res.status(200).json({ status: 'success', data: config });
+            res.status(200).json({ status: 'success', data: serializeSafeAlterdataConfig(config) });
         } catch (error: any) {
             res.status(400).json({ status: 'error', message: error.message || 'Erro ao atualizar conexão Alterdata.' });
         }
@@ -2324,6 +2363,57 @@ export class CompanyController {
                 status: 'error',
                 message: error.message || 'Falha ao testar conexão com o banco Alterdata.'
             });
+        }
+    }
+
+    static async regenerateSwaggerToken(req: Request, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                res.status(400).json({ status: 'error', message: 'Missing company ID' });
+                return;
+            }
+
+            const callerRole = req.user?.role;
+            if (callerRole !== 'super_admin') {
+                res.status(403).json({ status: 'error', message: 'Acesso restrito ao super administrador.' });
+                return;
+            }
+
+            const { rawToken } = await CompanyService.regenerateSwaggerToken(id);
+            res.status(200).json({
+                status: 'success',
+                message: 'Token Swagger gerado com sucesso. Guarde este token, ele não será exibido novamente.',
+                data: {
+                    token: rawToken
+                }
+            });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error.message || 'Falha ao regenerar token Swagger.' });
+        }
+    }
+
+    static async revokeSwaggerToken(req: Request, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                res.status(400).json({ status: 'error', message: 'Missing company ID' });
+                return;
+            }
+
+            const callerRole = req.user?.role;
+            if (callerRole !== 'super_admin') {
+                res.status(403).json({ status: 'error', message: 'Acesso restrito ao super administrador.' });
+                return;
+            }
+
+            await CompanyService.revokeSwaggerToken(id);
+            res.status(200).json({
+                status: 'success',
+                message: 'Token Swagger revogado com sucesso.'
+            });
+        } catch (error: any) {
+            res.status(500).json({ status: 'error', message: error.message || 'Falha ao revogar token Swagger.' });
         }
     }
 }

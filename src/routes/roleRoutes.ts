@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { RoleController } from '../controllers/roleController';
-import { protectRoute } from '../middlewares/authMiddleware';
+import { protectRoute, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 router.use(protectRoute);
@@ -45,7 +45,7 @@ router.get('/:slug', RoleController.getBySlug);
  *     responses:
  *       201: { description: Perfil criado }
  */
-router.post('/', RoleController.create);
+router.post('/', requireRole('admin', 'super_admin'), RoleController.create);
 /**
  * @openapi
  * /roles/{slug}:
@@ -62,7 +62,7 @@ router.post('/', RoleController.create);
  *     responses:
  *       200: { description: Perfil atualizado }
  */
-router.put('/:slug', RoleController.update);
+router.put('/:slug', requireRole('admin', 'super_admin'), RoleController.update);
 /**
  * @openapi
  * /roles/{slug}:
@@ -79,6 +79,6 @@ router.put('/:slug', RoleController.update);
  *     responses:
  *       204: { description: Perfil removido }
  */
-router.delete('/:slug', RoleController.delete);
+router.delete('/:slug', requireRole('admin', 'super_admin'), RoleController.delete);
 
 export default router;

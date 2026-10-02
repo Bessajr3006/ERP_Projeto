@@ -4,22 +4,24 @@ import { CompanyService } from '../services/companyService';
 import { PermissionService } from '../services/permissionService';
 import { UserService } from '../services/userService';
 import { WhatsAppBusinessService } from '../services/whatsappBusinessService';
-import { protectRoute } from '../middlewares/authMiddleware';
+import { protectRoute, requireRole } from '../middlewares/authMiddleware';
+import { authRateLimiter } from '../middlewares/authRateLimiter';
 import pool from '../config/db';
 import { RowDataPacket } from 'mysql2/promise';
 import logger from '../config/logger';
+import { serializeSafeUser, serializeSafeCompany, serializeSafeCompanies } from '../serializers/safeDataSerializer';
 
 const router = Router();
 
-// Public Routes
-// Passing explicitly to catch errors inside the promise and forward to next() if we weren't doing custom try/catch
-// Note: Next version of express handles async natively, but here we invoke it directly.
+// Routes
 /**
  * @openapi
  * /auth/register:
  *   post:
  *     tags: [Auth]
- *     summary: Criar conta e empresa
+ *     summary: Criar conta de usuário (admin autenticado)
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -34,8 +36,9 @@ const router = Router();
  *             required: [name, email, password, company_name]
  *     responses:
  *       201: { description: Registrado com sucesso }
+ *       403: { description: Acesso negado }
  */
-router.post('/register', (req, res, next) => AuthController.register(req, res).catch(next));
+router.post('/register', authRateLimiter, protectRoute, requireRole('admin', 'super_admin'), (req, res, next) => AuthController.register(req, res).catch(next));
 /**
  * @openapi
  * /auth/login:
@@ -56,8 +59,9 @@ router.post('/register', (req, res, next) => AuthController.register(req, res).c
  *       200: { description: Login bem-sucedido }
  *       401: { description: Credenciais invalidas }
  */
-router.post('/login', (req, res, next) => AuthController.login(req, res).catch(next));
-router.post('/login-by-face', (req, res, next) => AuthController.loginByFace(req, res).catch(next));
+router.post('/login', authRateLimiter, (req, res, next) => AuthController.login(req, res).catch(next));
+router.post('/login-by-face', authRateLimiter, (req, res, next) => AuthController.loginByFace(req, res).catch(next));
+router.post('/refresh', protectRoute, (req, res, next) => AuthController.refreshToken(req, res).catch(next));
 
 // Protected Route Example
 /**
@@ -164,10 +168,10 @@ router.get('/me', protectRoute, async (req: Request, res: Response) => {
         status: 'success',
         data: {
             message: 'You have access to this protected route.',
-            user: fullUser,
-            company: companyDetails,
+            user: serializeSafeUser(fullUser),
+            company: serializeSafeCompany(companyDetails),
             permissions: permissions,
-            companies: companies
+            companies: serializeSafeCompanies(companies)
         }
     });
 });

@@ -52,6 +52,7 @@ export interface UserRegistrationData {
     whatsapp_enable_manual_billing?: boolean | number | null;
     whatsapp_auto_send_boleto?: boolean | number | null;
     is_default_declaration_signer?: boolean | number | null;
+    role?: UserRole;
 }
 
 export interface UserLoginData {

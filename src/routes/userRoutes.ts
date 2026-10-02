@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/userController';
 import { EmailConfigController } from '../controllers/emailConfigController';
-import { protectRoute } from '../middlewares/authMiddleware';
+import { protectRoute, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 
@@ -22,6 +22,23 @@ router.use(protectRoute);
 router.get('/',          (req, res, next) => UserController.getAll(req, res).catch(next));
 /**
  * @openapi
+ * /users/{id}:
+ *   get:
+ *     tags: [Users]
+ *     summary: Obter usuario por ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Dados do usuario }
+ */
+router.get('/:id',       (req, res, next) => UserController.getById(req, res).catch(next));
+/**
+ * @openapi
  * /users:
  *   post:
  *     tags: [Users]
@@ -31,7 +48,7 @@ router.get('/',          (req, res, next) => UserController.getAll(req, res).cat
  *     responses:
  *       201: { description: Usuario criado }
  */
-router.post('/',         (req, res, next) => UserController.create(req, res).catch(next));
+router.post('/',         requireRole('admin', 'super_admin'), (req, res, next) => UserController.create(req, res).catch(next));
 /**
  * @openapi
  * /users/{id}:
@@ -65,7 +82,7 @@ router.patch('/:id',     (req, res, next) => UserController.update(req, res).cat
  *     responses:
  *       200: { description: Status atualizado }
  */
-router.patch('/:id/status', (req, res, next) => UserController.toggleActive(req, res).catch(next));
+router.patch('/:id/status', requireRole('admin', 'super_admin'), (req, res, next) => UserController.toggleActive(req, res).catch(next));
 /**
  * @openapi
  * /users/{id}:
@@ -82,7 +99,7 @@ router.patch('/:id/status', (req, res, next) => UserController.toggleActive(req,
  *     responses:
  *       204: { description: Usuario excluido }
  */
-router.delete('/:id',    (req, res, next) => UserController.delete(req, res).catch(next));
+router.delete('/:id',    requireRole('admin', 'super_admin'), (req, res, next) => UserController.delete(req, res).catch(next));
 /**
  * @openapi
  * /users/{id}/whatsapp-business/session:

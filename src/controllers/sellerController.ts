@@ -37,7 +37,7 @@ const whatsappAutoReplyModeSchema = z.enum(['automatic', 'manual']);
 const createSellerSchema = z.object({
     email: z.string().trim().email('Invalid email format'),
     full_name: z.string().trim().min(2, 'Name must be at least 2 characters').max(150, 'Name must be at most 150 characters'),
-    passwordRaw: z.string().min(6, 'Password must be at least 6 characters'),
+    passwordRaw: z.string().min(10, 'Password must be at least 10 characters'),
     is_active: z.boolean().optional().default(true),
     cpf_cnpj: optionalTrimmedString(18),
     phone: optionalTrimmedString(20),
@@ -144,8 +144,8 @@ export class SellerController {
         
         if (validatedData.passwordRaw === '') {
              delete validatedData.passwordRaw;
-        } else if (validatedData.passwordRaw && validatedData.passwordRaw.length < 6) {
-             throw new AppError('Password must be at least 6 characters', 400);
+        } else if (validatedData.passwordRaw && validatedData.passwordRaw.length < 10) {
+             throw new AppError('Password must be at least 10 characters', 400);
         }
 
         const updatedSeller = await UserService.update(companyId, targetId, validatedData);

@@ -165,9 +165,11 @@ export class CompanyRepository {
     }
 
     static async getBySwaggerToken(swaggerToken: string): Promise<RowDataPacket[]> {
+        const { hashSwaggerToken } = await import('../utils/swaggerToken');
+        const tokenHash = hashSwaggerToken(swaggerToken);
         const [rows] = await pool.query<RowDataPacket[]>(
-            'SELECT * FROM companies WHERE swagger_api_token = ? LIMIT 1',
-            [swaggerToken]
+            'SELECT * FROM companies WHERE swagger_api_token = ? OR swagger_api_token = ? LIMIT 1',
+            [tokenHash, swaggerToken]
         );
         return rows;
     }

@@ -2,7 +2,7 @@
 
 Este projeto ja esta preparado para publicar no Portainer usando:
 
-- docker-compose.portainer.yml
+- docker-compose.yml
 - Dockerfile.portainer
 - Dockerfile.frontend
 
@@ -30,41 +30,42 @@ docker network create traefik
 4. Em Compose path, use:
 
 ```text
-docker-compose.portainer.yml
+docker-compose.yml
 ```
 
-5. Em Environment variables, nao e obrigatorio preencher nada para subir a stack.
+5. Em **Environment variables**, configure as variáveis obrigatórias:
 
-Defaults ja embutidos no projeto:
+### Variáveis Obrigatórias de Segurança:
+- `DB_PASSWORD`: Senha de conexão da aplicação (`erp_app`) com o MariaDB.
+- `MARIADB_PASSWORD`: Senha do usuário MariaDB `erp_app` (geralmente a mesma que `DB_PASSWORD`).
+- `MARIADB_ROOT_PASSWORD`: Senha do usuário `root` do MariaDB (para manutenções e backups restritos).
+- `JWT_SECRET`: Chave secreta para assinatura dos tokens JWT (**mínimo 32 caracteres**).
+- `ENCRYPTION_KEY`: Chave de 64 caracteres hexadecimais (32 bytes AES-256) para criptografia de credenciais (gere com `openssl rand -hex 32`).
 
-- DB_USER=root
-- DB_PASSWORD=30mariafn@
-- MARIADB_PASSWORD=30mariafn@
-- MARIADB_ROOT_PASSWORD=30mariafn@
-- PMA_USER=root
-- PMA_PASSWORD=30mariafn@
+### Variáveis Opcionais (possuem defaults no compose):
+- `DB_USER` (default: `erp_app`)
+- `DB_NAME` / `MARIADB_DATABASE` (default: `bessa_erp`)
+- `MARIADB_USER` (default: `erp_app`)
+- `JWT_EXPIRES_IN` (default: `24h`)
+- `SALT_ROUNDS` (default: `10`)
+- `TRAEFIK_CERTRESOLVER` (default: `myresolver`)
 
-Opcionalmente, voce pode sobrescrever:
+Você pode usar o arquivo [.env.production.example](../.env.production.example) como modelo.
 
-- JWT_SECRET
-- ENCRYPTION_KEY
-
-Voce pode usar a base de [.env.production.example](../.env.production.example).
-
-## 3) DNS necessario
+## 3) DNS necessário
 
 Crie/ajuste os registros para apontar ao host do Traefik:
 
 - erp.keystones.dev
-- phpmyadmin.erp.keystones.dev
 
-## 4) Validacao pos deploy
+> **Nota de Segurança**: O phpMyAdmin não fica exposto publicamente via Traefik. Para acessá-lo com segurança, utilize túnel SSH (`ssh -L 8082:127.0.0.1:8082 usuario@ip-vps` -> `http://localhost:8082`) ou IP seguro da VPN NetBird.
 
-1. Verifique se todos os servicos subiram no Portainer.
+## 4) Validação pós deploy
+
+1. Verifique se todos os serviços subiram no Portainer.
 2. Abra:
    - https://erp.keystones.dev
-   - https://phpmyadmin.erp.keystones.dev
-3. Confirme emissao de certificado TLS pelo Traefik.
+3. Confirme emissão de certificado TLS pelo Traefik.
 
 ## Observacao sobre primeira subida
 

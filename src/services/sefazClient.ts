@@ -1,6 +1,7 @@
 import * as https from 'https';
 import logger from '../config/logger';
 import { DOMParser } from '@xmldom/xmldom';
+import { getIcpBrasilCAs } from '../config/icpBrasilCAs';
 
 // Minimal definition of Endpoint URLs.
 const SEFAZ_URLS: Record<string, Record<string, any>> = {
@@ -39,7 +40,8 @@ export class SefazClient {
         return new https.Agent({
             pfx: this.pfxBuffer,
             passphrase: this.password,
-            rejectUnauthorized: false,
+            rejectUnauthorized: true,
+            ca: getIcpBrasilCAs(),
             // Sefaz requires specific ciphers
             secureProtocol: 'TLSv1_2_method'
         });

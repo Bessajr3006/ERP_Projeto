@@ -191,31 +191,6 @@ export class UserRepository {
             }
         }
 
-        // Global fallback for general_admin or switched company context
-        const [globalPublicRows] = await pool.query<RowDataPacket[]>(
-            `SELECT public_id
-             FROM users
-             WHERE public_id = ?
-             LIMIT 1`,
-            [normalized]
-        );
-        if (globalPublicRows.length > 0) {
-            return String(globalPublicRows[0]!.public_id);
-        }
-
-        if (Number.isInteger(numericId) && numericId > 0) {
-            const [globalLegacyRows] = await pool.query<RowDataPacket[]>(
-                `SELECT public_id
-                 FROM users
-                 WHERE id = ?
-                 LIMIT 1`,
-                [numericId]
-            );
-            if (globalLegacyRows.length > 0) {
-                return String(globalLegacyRows[0]!.public_id);
-            }
-        }
-
         return null;
     }
 
@@ -223,7 +198,6 @@ export class UserRepository {
         const baseColumns = [
             'public_id',
             'email',
-            'raw_password AS passwordRaw',
             'full_name',
             'cpf_cnpj',
             'crc',
@@ -290,7 +264,6 @@ export class UserRepository {
             'id',
             'public_id',
             'email',
-            'raw_password AS passwordRaw',
             'full_name',
             'cpf_cnpj',
             'crc',
@@ -356,7 +329,6 @@ export class UserRepository {
         const baseColumns = [
             'public_id',
             'email',
-            'raw_password AS passwordRaw',
             'full_name',
             'cpf_cnpj',
             'crc',
@@ -387,21 +359,12 @@ export class UserRepository {
 
         while (true) {
             try {
-                let [rows] = await pool.query<RowDataPacket[]>(
+                const [rows] = await pool.query<RowDataPacket[]>(
                     `SELECT ${currentColumns.join(', ')}
                      FROM users
                      WHERE company_id = ? AND public_id = ? LIMIT 1`,
                     [companyId, publicId]
                 );
-                if (rows.length === 0) {
-                    const [globalRows] = await pool.query<RowDataPacket[]>(
-                        `SELECT ${currentColumns.join(', ')}
-                         FROM users
-                         WHERE public_id = ? LIMIT 1`,
-                        [publicId]
-                    );
-                    rows = globalRows;
-                }
                 return rows;
             } catch (error: unknown) {
                 const missingColumn = parseMissingColumnFromError(error);
@@ -427,21 +390,12 @@ export class UserRepository {
     }
 
     static async getScoped(companyId: number, publicId: string): Promise<RowDataPacket[]> {
-        let rows = await queryRowsWithRetry(
+        return queryRowsWithRetry(
             `SELECT id, public_id, company_id, email, full_name, role, is_active
              FROM users
              WHERE company_id = ? AND public_id = ? LIMIT 1`,
             [companyId, publicId]
         );
-        if (rows.length === 0) {
-            rows = await queryRowsWithRetry(
-                `SELECT id, public_id, company_id, email, full_name, role, is_active
-                 FROM users
-                 WHERE public_id = ? LIMIT 1`,
-                [publicId]
-            );
-        }
-        return rows;
     }
 
     static async getByEmail(email: string): Promise<RowDataPacket[]> {
@@ -506,11 +460,11 @@ export class UserRepository {
         }
     }
 
-    static async createFull(publicId: string, company_id: number, email: string, passwordHash: string, full_name: string): Promise<number> {
+    static async createFull(publicId: string, company_id: number, email: string, passwordHash: string, full_name: string, role: string = 'user'): Promise<number> {
         const [result] = await pool.query<ResultSetHeader>(
             `INSERT INTO users (public_id, company_id, email, password_hash, full_name, role, is_active) 
-             VALUES (?, ?, ?, ?, ?, 'user', true)`,
-            [publicId, company_id, email, passwordHash, full_name]
+             VALUES (?, ?, ?, ?, ?, ?, true)`,
+            [publicId, company_id, email, passwordHash, full_name, role]
         );
         return result.affectedRows;
     }

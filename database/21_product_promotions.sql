@@ -1,3 +1,0 @@
-ALTER TABLE products
-    ADD COLUMN is_promotional TINYINT(1) NOT NULL DEFAULT 0,
-    ADD COLUMN promotional_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00;

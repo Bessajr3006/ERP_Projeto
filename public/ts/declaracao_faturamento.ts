@@ -761,7 +761,346 @@
         }
     }
 
+    interface SavedDeclaracao {
+        id: string;
+        dataHora: string;
+        timestamp: number;
+        nomeEmpresa: string;
+        nomePdf: string;
+        cnpj: string;
+        enderecoLinha1: string;
+        enderecoLinha2: string;
+        mesInicio: number;
+        anoInicio: number;
+        mesFim: number;
+        anoFim: number;
+        periodoTexto: string;
+        totalFaturamento: string;
+        valores: Record<string, string>;
+        dataExtenso: string;
+        modoAssinatura: 'govbr' | 'icp' | 'ambos';
+        govbr: {
+            nome: string;
+            cpf: string;
+            cargo: string;
+            time: string;
+            hash: string;
+        };
+        icp: {
+            empresaAc: string;
+            empresaSerial: string;
+            empresaTime: string;
+            contadorNome: string;
+            contadorCrc: string;
+            contadorAc: string;
+            contadorSerial: string;
+            contadorTime: string;
+        };
+    }
+
+    let modoAssinaturaAtual: 'govbr' | 'icp' | 'ambos' = 'govbr';
+
+    function getSavedDeclaracoesStorageKey(): string {
+        const companyId = win.gNavbarAuthContext?.activeCompanyId || win.gNavbarAuthContext?.user?.company_id || localStorage.getItem('keystone_last_company_public_id') || 'default';
+        return `@Keystone:declaracoes_salvas_${companyId}`;
+    }
+
+    function carregarDeclaracoesSalvas(): SavedDeclaracao[] {
+        try {
+            const key = getSavedDeclaracoesStorageKey();
+            const raw = (win.CompanyStorage?.getItem(key) ?? localStorage.getItem(key)) || '[]';
+            const list = JSON.parse(raw);
+            return Array.isArray(list) ? list : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function salvarDeclaracoesLista(lista: SavedDeclaracao[]) {
+        try {
+            const key = getSavedDeclaracoesStorageKey();
+            const val = JSON.stringify(lista);
+            if (win.CompanyStorage?.setItem) {
+                win.CompanyStorage.setItem(key, val);
+            }
+            localStorage.setItem(key, val);
+        } catch (e) {
+            console.warn('Erro ao salvar declarações no storage:', e);
+        }
+    }
+
+    function sanitizarNomeArquivo(texto: string): string {
+        return texto
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9_-]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '')
+            .substring(0, 40);
+    }
+
+    function atualizarComboboxDeclaracoesSalvas(selecionarId?: string) {
+        const select = document.getElementById('selectDeclaracoesSalvas') as HTMLSelectElement | null;
+        const badge = document.getElementById('badgeQtdSalvas');
+        if (!select) return;
+
+        const lista = carregarDeclaracoesSalvas();
+        if (badge) {
+            badge.innerText = `${lista.length} salva${lista.length === 1 ? '' : 's'}`;
+        }
+
+        select.innerHTML = '';
+        if (lista.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '-- Nenhuma declaração salva encontrada --';
+            select.appendChild(opt);
+            return;
+        }
+
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = `-- Selecione uma declaração (${lista.length} salva${lista.length === 1 ? '' : 's'}) --`;
+        select.appendChild(defaultOpt);
+
+        // Mais recentes primeiro
+        lista.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        lista.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            opt.textContent = `📅 ${item.dataHora} • 🏢 ${item.nomeEmpresa} • 📄 ${item.nomePdf}`;
+            if (selecionarId && item.id === selecionarId) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        });
+    }
+
+    function salvarDeclaracaoAtual(): void {
+        const nomeEmpresa = document.querySelector<HTMLElement>('.sync-empresa')?.innerText.trim() || 'EMPRESA';
+        const cnpj = document.querySelector<HTMLElement>('.sync-cnpj')?.innerText.trim() || '';
+        const endereco1 = document.querySelector<HTMLElement>('.sync-endereco-linha1')?.innerText.trim() || '';
+        const endereco2 = document.querySelector<HTMLElement>('.sync-endereco-linha2')?.innerText.trim() || '';
+        
+        const elMesIni = document.querySelector<HTMLElement>('.sync-mes-inicio');
+        const elAnoIni = document.querySelector<HTMLElement>('.sync-ano-inicio');
+        const elMesFim = document.querySelector<HTMLElement>('.sync-mes-fim');
+        const elAnoFim = document.querySelector<HTMLElement>('.sync-ano-fim');
+
+        const mesIni = getMesIndex(elMesIni?.innerText);
+        const anoIni = parseInt(elAnoIni?.innerText.trim() || '', 10) || new Date().getFullYear();
+        const mesFim = getMesIndex(elMesFim?.innerText);
+        const anoFim = parseInt(elAnoFim?.innerText.trim() || '', 10) || new Date().getFullYear();
+
+        const periodoTexto = `${mesesNomes[mesIni >= 0 ? mesIni : 0]}/${anoIni} a ${mesesNomes[mesFim >= 0 ? mesFim : 11]}/${anoFim}`;
+        const totalFaturamento = document.getElementById('total-anual')?.innerText.trim() || '0,00';
+        const dataExtenso = document.getElementById('campo-data-extenso')?.innerText.trim() || '';
+
+        // Copia todos os valores da memória e células da tabela
+        const valores: Record<string, string> = { ...memoriaValores };
+        document.querySelectorAll<HTMLElement>('.valor-mes').forEach(celula => {
+            const key = celula.getAttribute('data-key');
+            if (key && celula.innerText.trim()) {
+                valores[key] = celula.innerText.trim();
+            }
+        });
+
+        const agora = new Date();
+        const dia = String(agora.getDate()).padStart(2, '0');
+        const mesNum = String(agora.getMonth() + 1).padStart(2, '0');
+        const ano = agora.getFullYear();
+        const hora = String(agora.getHours()).padStart(2, '0');
+        const min = String(agora.getMinutes()).padStart(2, '0');
+        const seg = String(agora.getSeconds()).padStart(2, '0');
+
+        const dataHoraFormatada = `${dia}/${mesNum}/${ano} ${hora}:${min}:${seg}`;
+        const dataHoraArquivo = `${ano}${mesNum}${dia}_${hora}${min}${seg}`;
+        const empresaSanitizada = sanitizarNomeArquivo(nomeEmpresa);
+        const nomePdf = `Declaracao_Faturamento_${empresaSanitizada}_${dataHoraArquivo}.pdf`;
+
+        const id = `decl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+        const novaDeclaracao: SavedDeclaracao = {
+            id,
+            dataHora: dataHoraFormatada,
+            timestamp: agora.getTime(),
+            nomeEmpresa,
+            nomePdf,
+            cnpj,
+            enderecoLinha1: endereco1,
+            enderecoLinha2: endereco2,
+            mesInicio: mesIni >= 0 ? mesIni : 0,
+            anoInicio: anoIni,
+            mesFim: mesFim >= 0 ? mesFim : 11,
+            anoFim: anoFim,
+            periodoTexto,
+            totalFaturamento,
+            valores,
+            dataExtenso,
+            modoAssinatura: modoAssinaturaAtual,
+            govbr: {
+                nome: document.querySelector<HTMLElement>('.sync-govbr-nome')?.innerText.trim() || '',
+                cpf: document.querySelector<HTMLElement>('.sync-govbr-cpf')?.innerText.trim() || '',
+                cargo: document.getElementById('stamp-govbr-cargo')?.innerText.trim() || '',
+                time: document.getElementById('stamp-time-govbr')?.innerText.trim() || '',
+                hash: document.getElementById('stamp-govbr-hash')?.innerText.trim() || ''
+            },
+            icp: {
+                empresaAc: document.getElementById('stamp-icp-empresa-ac')?.innerText.trim() || '',
+                empresaSerial: document.getElementById('stamp-icp-empresa-serial')?.innerText.trim() || '',
+                empresaTime: document.getElementById('stamp-time-empresa')?.innerText.trim() || '',
+                contadorNome: document.getElementById('stamp-contador-nome')?.innerText.trim() || '',
+                contadorCrc: document.getElementById('stamp-contador-crc')?.innerText.trim() || '',
+                contadorAc: document.getElementById('stamp-icp-contador-ac')?.innerText.trim() || '',
+                contadorSerial: document.getElementById('stamp-icp-contador-serial')?.innerText.trim() || '',
+                contadorTime: document.getElementById('stamp-time-contador')?.innerText.trim() || ''
+            }
+        };
+
+        const lista = carregarDeclaracoesSalvas();
+        lista.unshift(novaDeclaracao);
+        salvarDeclaracoesLista(lista);
+
+        atualizarComboboxDeclaracoesSalvas(id);
+
+        (win.UI as any)?.showAlert?.(
+            'alertMessage',
+            `💾 Declaração salva com sucesso! Arquivo: "${nomePdf}" (${dataHoraFormatada})`,
+            'success',
+            5000
+        );
+    }
+
+    function carregarDeclaracaoSalva(id: string): void {
+        if (!id) {
+            (win.UI as any)?.showAlert?.('alertMessage', 'Selecione uma declaração salva no combobox para carregar.', 'info');
+            return;
+        }
+
+        const lista = carregarDeclaracoesSalvas();
+        const item = lista.find(d => d.id === id);
+        if (!item) {
+            (win.UI as any)?.showAlert?.('alertMessage', 'Declaração não encontrada.', 'error');
+            return;
+        }
+
+        // 1. Dados da empresa
+        if (item.nomeEmpresa) atualizarTodosOsCampos('.sync-empresa', item.nomeEmpresa);
+        if (item.cnpj) atualizarTodosOsCampos('.sync-cnpj', item.cnpj);
+        if (item.enderecoLinha1) atualizarTodosOsCampos('.sync-endereco-linha1', item.enderecoLinha1);
+        if (item.enderecoLinha2) atualizarTodosOsCampos('.sync-endereco-linha2', item.enderecoLinha2);
+
+        // 2. Período e valores
+        if (item.valores) {
+            Object.keys(item.valores).forEach(k => {
+                memoriaValores[k] = item.valores[k];
+            });
+        }
+
+        aplicarPeriodo(item.mesInicio, item.anoInicio, item.mesFim, item.anoFim);
+
+        // 3. Data por extenso
+        if (item.dataExtenso) {
+            const campoDataExt = document.getElementById('campo-data-extenso');
+            if (campoDataExt) campoDataExt.innerText = item.dataExtenso;
+        }
+
+        // 4. Modo de Assinatura e Dados Gov.br
+        if (item.modoAssinatura) {
+            definirModoAssinatura(item.modoAssinatura);
+        }
+
+        if (item.govbr) {
+            if (item.govbr.nome) atualizarTodosOsCampos('.sync-govbr-nome', item.govbr.nome);
+            if (item.govbr.cpf) atualizarTodosOsCampos('.sync-govbr-cpf', item.govbr.cpf);
+            if (item.govbr.cargo) {
+                const el = document.getElementById('stamp-govbr-cargo');
+                if (el) el.innerText = item.govbr.cargo;
+            }
+            if (item.govbr.time) {
+                const el = document.getElementById('stamp-time-govbr');
+                if (el) el.innerText = item.govbr.time;
+            }
+            if (item.govbr.hash) {
+                const el = document.getElementById('stamp-govbr-hash');
+                if (el) el.innerText = item.govbr.hash;
+                atualizarQrCodeGovBr(item.govbr.hash);
+            }
+        }
+
+        // 5. Dados ICP-Brasil
+        if (item.icp) {
+            if (item.icp.empresaAc) {
+                const el = document.getElementById('stamp-icp-empresa-ac');
+                if (el) el.innerText = item.icp.empresaAc;
+            }
+            if (item.icp.empresaSerial) {
+                const el = document.getElementById('stamp-icp-empresa-serial');
+                if (el) el.innerText = item.icp.empresaSerial;
+            }
+            if (item.icp.empresaTime) {
+                const el = document.getElementById('stamp-time-empresa');
+                if (el) el.innerText = item.icp.empresaTime;
+            }
+            if (item.icp.contadorNome) {
+                const el = document.getElementById('stamp-contador-nome');
+                if (el) el.innerText = item.icp.contadorNome;
+            }
+            if (item.icp.contadorCrc) {
+                const el = document.getElementById('stamp-contador-crc');
+                if (el) el.innerText = item.icp.contadorCrc;
+            }
+            if (item.icp.contadorAc) {
+                const el = document.getElementById('stamp-icp-contador-ac');
+                if (el) el.innerText = item.icp.contadorAc;
+            }
+            if (item.icp.contadorSerial) {
+                const el = document.getElementById('stamp-icp-contador-serial');
+                if (el) el.innerText = item.icp.contadorSerial;
+            }
+            if (item.icp.contadorTime) {
+                const el = document.getElementById('stamp-time-contador');
+                if (el) el.innerText = item.icp.contadorTime;
+            }
+        }
+
+        (win.UI as any)?.showAlert?.(
+            'alertMessage',
+            `📂 Declaração de "${item.dataHora}" carregada com sucesso! (${item.nomePdf})`,
+            'success',
+            4000
+        );
+    }
+
+    function excluirDeclaracaoSalva(id: string): void {
+        if (!id) {
+            (win.UI as any)?.showAlert?.('alertMessage', 'Selecione uma declaração salva para excluir.', 'info');
+            return;
+        }
+
+        const lista = carregarDeclaracoesSalvas();
+        const item = lista.find(d => d.id === id);
+        const nome = item?.nomePdf || 'esta declaração';
+
+        if (!confirm(`Deseja realmente excluir a declaração salva:\n"${nome}"?`)) {
+            return;
+        }
+
+        const novaLista = lista.filter(d => d.id !== id);
+        salvarDeclaracoesLista(novaLista);
+        atualizarComboboxDeclaracoesSalvas();
+
+        (win.UI as any)?.showAlert?.(
+            'alertMessage',
+            `🗑️ Declaração salva excluída com sucesso.`,
+            'info',
+            3000
+        );
+    }
+
     function definirModoAssinatura(modo: 'govbr' | 'icp' | 'ambos') {
+        modoAssinaturaAtual = modo;
         const secGovBr = document.getElementById('secao-assinatura-govbr');
         const secIcp = document.getElementById('secao-assinaturas-icp');
 
@@ -1198,6 +1537,36 @@
             carregarEmpresaAtivaERP();
         });
 
+        // Ações de Salvar e Gerenciar Declarações Salvas (Combobox)
+        document.getElementById('btnSalvarDeclaracao')?.addEventListener('click', () => {
+            salvarDeclaracaoAtual();
+        });
+
+        document.getElementById('btnCarregarDeclaracaoSalva')?.addEventListener('click', () => {
+            const select = document.getElementById('selectDeclaracoesSalvas') as HTMLSelectElement | null;
+            if (select && select.value) {
+                carregarDeclaracaoSalva(select.value);
+            } else {
+                (win.UI as any)?.showAlert?.('alertMessage', 'Selecione uma declaração salva no combobox para carregar.', 'info');
+            }
+        });
+
+        document.getElementById('selectDeclaracoesSalvas')?.addEventListener('change', (e: Event) => {
+            const select = e.target as HTMLSelectElement;
+            if (select.value) {
+                carregarDeclaracaoSalva(select.value);
+            }
+        });
+
+        document.getElementById('btnExcluirDeclaracaoSalva')?.addEventListener('click', () => {
+            const select = document.getElementById('selectDeclaracoesSalvas') as HTMLSelectElement | null;
+            if (select && select.value) {
+                excluirDeclaracaoSalva(select.value);
+            } else {
+                (win.UI as any)?.showAlert?.('alertMessage', 'Selecione uma declaração salva no combobox para excluir.', 'info');
+            }
+        });
+
         // Seletor de Cliente / Empresa Cadastrada no Filtro
         document.getElementById('toolbarSelectCliente')?.addEventListener('change', (e: Event) => {
             const select = e.target as HTMLSelectElement;
@@ -1222,14 +1591,17 @@
         preencherUltimos12Meses();
         carregarEmpresaAtivaERP();
         carregarClientesNoSeletor();
+        atualizarComboboxDeclaracoesSalvas();
 
         // Repete o carregamento após pequeno delay para garantir que o navbar.js já concluiu a injeção do contexto
         setTimeout(() => {
             carregarEmpresaAtivaERP();
             carregarClientesNoSeletor();
+            atualizarComboboxDeclaracoesSalvas();
         }, 300);
         setTimeout(() => {
             carregarEmpresaAtivaERP();
+            atualizarComboboxDeclaracoesSalvas();
         }, 1000);
     });
 
@@ -1237,6 +1609,7 @@
     window.addEventListener('storage', (e: StorageEvent) => {
         if (e.key === 'keystone_last_company_name' || e.key === 'keystone_last_company_cnpj' || e.key === 'keystone_last_company_public_id') {
             carregarEmpresaAtivaERP();
+            atualizarComboboxDeclaracoesSalvas();
         }
     });
 })();

@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Fechamento</title>
-    <link href="/css/style.css?v=20261001203239" rel="stylesheet">
+    <link href="/css/style.css?v=20261001211109" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261001203239"></script>
+    <script src="/js/pwa.js?v=20261001211109"></script>
 </head>
 
 <body data-required-module="fechamento" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -765,6 +765,58 @@
                                       </div>
                                   </div>
                                   
+                                  <!-- Card de Dados da Empresa / Cliente Selecionado -->
+                                  <div id="customerCompanyInfoContainer" class="hidden mt-3 p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs transition-all duration-300">
+                                      <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-slate-200/60 dark:border-slate-800">
+                                          <div class="flex items-center gap-2">
+                                              <div class="p-1.5 rounded-lg bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800">
+                                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                  </svg>
+                                              </div>
+                                              <div>
+                                                  <span class="font-bold text-gray-900 dark:text-gray-100 text-sm" id="customerInfoNome">-</span>
+                                                  <span class="text-gray-500 dark:text-gray-400 ml-1.5" id="customerInfoFantasia"></span>
+                                              </div>
+                                          </div>
+                                          <div class="flex items-center gap-1.5" id="customerInfoBadges">
+                                              <span id="customerInfoEmpresaBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                  🏢 Empresa Cadastrada
+                                              </span>
+                                              <span id="customerInfoRegimeBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                                                  Simples Nacional
+                                              </span>
+                                          </div>
+                                      </div>
+
+                                      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-gray-600 dark:text-gray-300">
+                                          <div>
+                                              <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">CNPJ / CPF</span>
+                                              <span class="font-mono font-semibold text-gray-800 dark:text-gray-200" id="customerInfoCnpj">-</span>
+                                          </div>
+                                          <div>
+                                              <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Inscrição Estadual (IE)</span>
+                                              <span class="font-semibold text-gray-800 dark:text-gray-200" id="customerInfoIe">-</span>
+                                          </div>
+                                          <div>
+                                              <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Inscrição Municipal (IM)</span>
+                                              <span class="font-semibold text-gray-800 dark:text-gray-200" id="customerInfoIm">-</span>
+                                          </div>
+                                          <div>
+                                              <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Cidade / UF</span>
+                                              <span class="font-semibold text-gray-800 dark:text-gray-200" id="customerInfoCidadeUf">-</span>
+                                          </div>
+                                          <div class="sm:col-span-2 md:col-span-3">
+                                              <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Endereço Completo</span>
+                                              <span class="text-gray-800 dark:text-gray-200" id="customerInfoEndereco">-</span>
+                                          </div>
+                                          <div>
+                                              <span class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Contato / Telefone</span>
+                                              <span class="text-gray-800 dark:text-gray-200" id="customerInfoContato">-</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  
                                   <!-- Feedback de Importação de Arquivos dentro do Modal -->
                                   <div id="importFeedbackContainer" class="mt-4 hidden p-3 rounded-lg border text-sm items-start gap-2.5 transition-all">
                                       <div id="importFeedbackIcon" class="mt-0.5 shrink-0"></div>
@@ -1265,11 +1317,11 @@
         </div>
     </div>
 
-    <script src="/js/api.js?v=20261001203239"></script>
-    <script src="/js/components/navbar.js?v=20261001203239"></script>
-    <script src="/js/fechamento.js?v=20261001203239"></script>
+    <script src="/js/api.js?v=20261001211109"></script>
+    <script src="/js/components/navbar.js?v=20261001211109"></script>
+    <script src="/js/fechamento.js?v=20261001211109"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261001203239"></script>
+    <script src="/js/components/footer.js?v=20261001211109"></script>
 </body>
 </html>

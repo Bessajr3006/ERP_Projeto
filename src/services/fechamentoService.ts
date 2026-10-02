@@ -112,6 +112,18 @@ export class FechamentoService {
                     COALESCE(c.name, (SELECT comp.company_name FROM companies comp WHERE comp.id = f.company_id), 'Empresa') AS customer_name, 
                     COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
                     COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
+                    c.tax_regime AS customer_tax_regime,
+                    c.inscricao_estadual AS customer_ie,
+                    c.inscricao_municipal AS customer_im,
+                    c.city AS customer_city,
+                    c.state AS customer_state,
+                    c.street AS customer_street,
+                    c.number AS customer_number,
+                    c.neighborhood AS customer_neighborhood,
+                    c.zipcode AS customer_zipcode,
+                    (CASE WHEN c.cnpj_cpf IS NOT NULL AND c.cnpj_cpf != '' THEN (SELECT COUNT(*) FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '')) > 0 ELSE 0 END) AS is_registered_as_company,
+                    (SELECT comp.id FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1) AS registered_company_id,
+                    (SELECT COALESCE(comp.trade_name, comp.company_name) FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1) AS registered_company_name,
                     CASE 
                         WHEN f.observacao LIKE '%Importado%' OR f.observacao LIKE '%SPED%' OR f.observacao LIKE '%XML%' THEN 'Arquivo'
                         ELSE 'Manual'
@@ -135,6 +147,18 @@ export class FechamentoService {
                     COALESCE(c.name, (SELECT comp.company_name FROM companies comp WHERE comp.id = f.company_id), 'Empresa') AS customer_name, 
                     COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
                     COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
+                    c.tax_regime AS customer_tax_regime,
+                    c.inscricao_estadual AS customer_ie,
+                    c.inscricao_municipal AS customer_im,
+                    c.city AS customer_city,
+                    c.state AS customer_state,
+                    c.street AS customer_street,
+                    c.number AS customer_number,
+                    c.neighborhood AS customer_neighborhood,
+                    c.zipcode AS customer_zipcode,
+                    (CASE WHEN c.cnpj_cpf IS NOT NULL AND c.cnpj_cpf != '' THEN (SELECT COUNT(*) FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '')) > 0 ELSE 0 END) AS is_registered_as_company,
+                    (SELECT comp.id FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1) AS registered_company_id,
+                    (SELECT COALESCE(comp.trade_name, comp.company_name) FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1) AS registered_company_name,
                     CASE 
                         WHEN f.observacao LIKE '%Importado%' OR f.observacao LIKE '%SPED%' OR f.observacao LIKE '%XML%' THEN 'Arquivo'
                         ELSE 'Manual'
@@ -176,6 +200,18 @@ export class FechamentoService {
                    COALESCE(c.name, (SELECT comp.company_name FROM companies comp WHERE comp.id = f.company_id), 'Empresa') AS customer_name, 
                    COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
                    COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
+                   c.tax_regime AS customer_tax_regime,
+                   c.inscricao_estadual AS customer_ie,
+                   c.inscricao_municipal AS customer_im,
+                   c.city AS customer_city,
+                   c.state AS customer_state,
+                   c.street AS customer_street,
+                   c.number AS customer_number,
+                   c.neighborhood AS customer_neighborhood,
+                   c.zipcode AS customer_zipcode,
+                   (CASE WHEN c.cnpj_cpf IS NOT NULL AND c.cnpj_cpf != '' THEN (SELECT COUNT(*) FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '')) > 0 ELSE 0 END) AS is_registered_as_company,
+                   (SELECT comp.id FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1) AS registered_company_id,
+                   (SELECT COALESCE(comp.trade_name, comp.company_name) FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1) AS registered_company_name,
                    CASE 
                        WHEN f.observacao LIKE '%Importado%' OR f.observacao LIKE '%SPED%' OR f.observacao LIKE '%XML%' THEN 'Arquivo'
                        ELSE 'Manual'

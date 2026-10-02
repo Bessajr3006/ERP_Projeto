@@ -229,11 +229,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    const formatCNPJ = (value: any) => {
+        const clean = String(value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (clean.length === 14) {
+            return clean.replace(/^([a-zA-Z0-9]{2})([a-zA-Z0-9]{3})([a-zA-Z0-9]{3})([a-zA-Z0-9]{4})([a-zA-Z0-9]{2})$/, "$1.$2.$3/$4-$5");
+        }
+        if (clean.length === 11) {
+            return clean.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
+        }
+        return value || '-';
+    };
+
+    const formatCEP = (value: any) => {
+        const clean = String(value || '').replace(/\D/g, '');
+        if (clean.length === 8) {
+            return clean.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+        }
+        return value || '-';
+    };
+
     const updateCustomerTypeIndicator = (customerId: string) => {
         const xmlImportLabel = document.getElementById('xmlImportLabel');
         const xmlFileInputEl = document.getElementById('xmlFileInput') as HTMLInputElement | null;
         const spedImportLabel = document.getElementById('spedImportLabel');
         const spedFileInputEl = document.getElementById('spedFileInput') as HTMLInputElement | null;
+
+        const customerInfoContainer = document.getElementById('customerCompanyInfoContainer');
+        const customerInfoNome = document.getElementById('customerInfoNome');
+        const customerInfoFantasia = document.getElementById('customerInfoFantasia');
+        const customerInfoCnpj = document.getElementById('customerInfoCnpj');
+        const customerInfoIe = document.getElementById('customerInfoIe');
+        const customerInfoIm = document.getElementById('customerInfoIm');
+        const customerInfoCidadeUf = document.getElementById('customerInfoCidadeUf');
+        const customerInfoEndereco = document.getElementById('customerInfoEndereco');
+        const customerInfoContato = document.getElementById('customerInfoContato');
+        const customerInfoEmpresaBadge = document.getElementById('customerInfoEmpresaBadge');
+        const customerInfoRegimeBadge = document.getElementById('customerInfoRegimeBadge');
 
         const disableXmlImport = () => {
             if (xmlFileInputEl) xmlFileInputEl.disabled = true;
@@ -264,38 +295,101 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
-        if (!companyTypeIndicator || !companyTypeDot || !companyTypeText) return;
-        
         if (!customerId) {
-            companyTypeIndicator.classList.add('hidden');
-            companyTypeIndicator.classList.remove('inline-flex');
+            if (companyTypeIndicator) {
+                companyTypeIndicator.classList.add('hidden');
+                companyTypeIndicator.classList.remove('inline-flex');
+            }
+            if (customerInfoContainer) {
+                customerInfoContainer.classList.add('hidden');
+            }
             disableXmlImport();
             return;
         }
 
         const customer = allCustomers.find(c => String(c.id) === String(customerId));
         if (!customer) {
-            companyTypeIndicator.classList.add('hidden');
-            companyTypeIndicator.classList.remove('inline-flex');
+            if (companyTypeIndicator) {
+                companyTypeIndicator.classList.add('hidden');
+                companyTypeIndicator.classList.remove('inline-flex');
+            }
+            if (customerInfoContainer) {
+                customerInfoContainer.classList.add('hidden');
+            }
             disableXmlImport();
             return;
         }
 
         const cleanDoc = (customer.cnpj_cpf || '').replace(/\D/g, '');
         const isPJ = cleanDoc.length === 14;
-        const regime = customer.tax_regime || 'Regime não informado';
+        const isRegisteredCompany = Boolean(customer.is_registered_as_company) || isPJ;
+        const regime = customer.tax_regime || (isPJ ? 'Simples Nacional' : 'Regime não informado');
 
-        companyTypeIndicator.classList.remove('hidden');
-        companyTypeIndicator.classList.add('inline-flex');
+        if (companyTypeIndicator && companyTypeDot && companyTypeText) {
+            companyTypeIndicator.classList.remove('hidden');
+            companyTypeIndicator.classList.add('inline-flex');
+            companyTypeDot.className = 'h-2.5 w-2.5 rounded-full mr-1.5 bg-green-500';
+
+            if (customer.is_registered_as_company) {
+                companyTypeText.textContent = `🏢 Empresa do Sistema | ${regime}`;
+            } else if (isPJ) {
+                companyTypeText.textContent = `🏢 Empresa | ${regime}`;
+            } else {
+                companyTypeText.textContent = `👤 Cliente / Autônomo | ${regime}`;
+            }
+        }
         
-        // When customer is registered, show always active green dot and enable import movements
-        companyTypeDot.className = 'h-2.5 w-2.5 rounded-full mr-1.5 bg-green-500';
         enableXmlImport(true);
 
-        if (isPJ) {
-            companyTypeText.textContent = `Empresa | ${regime}`;
-        } else {
-            companyTypeText.textContent = `Empresa / Cliente | ${regime}`;
+        // Preenche o Card de Dados da Empresa
+        if (customerInfoContainer) {
+            customerInfoContainer.classList.remove('hidden');
+
+            if (customerInfoNome) customerInfoNome.textContent = customer.name || customer.razao_social || `Cliente ${customer.id}`;
+            if (customerInfoFantasia) {
+                customerInfoFantasia.textContent = (customer.trade_name && customer.trade_name !== customer.name) ? `(${customer.trade_name})` : '';
+            }
+            if (customerInfoCnpj) customerInfoCnpj.textContent = formatCNPJ(customer.cnpj_cpf) || '-';
+            if (customerInfoIe) customerInfoIe.textContent = customer.inscricao_estadual || '-';
+            if (customerInfoIm) customerInfoIm.textContent = customer.inscricao_municipal || '-';
+
+            const cidade = customer.city || customer.municipio || '';
+            const uf = customer.state || customer.uf || '';
+            if (customerInfoCidadeUf) customerInfoCidadeUf.textContent = (cidade || uf) ? `${cidade || '-'}${uf ? ' / ' + uf : ''}` : '-';
+
+            const logradouro = customer.street || customer.logradouro || customer.endereco || '';
+            const numero = customer.number || customer.numero || '';
+            const complemento = customer.complement || customer.complemento || '';
+            const bairro = customer.neighborhood || customer.bairro || '';
+            const cep = customer.zipcode || customer.cep || '';
+            let endStr = logradouro ? `${logradouro}${numero ? ', ' + numero : ''}` : '';
+            if (complemento) endStr += ` - ${complemento}`;
+            if (bairro) endStr += ` - ${bairro}`;
+            if (cep) endStr += ` (CEP: ${formatCEP(cep)})`;
+            if (customerInfoEndereco) customerInfoEndereco.textContent = endStr || '-';
+
+            const tel = customer.phone || customer.phone_landline || customer.telefone || '';
+            const email = customer.email || '';
+            const contato = customer.contact || '';
+            const contatosArr = [contato, tel, email].filter(Boolean);
+            if (customerInfoContato) customerInfoContato.textContent = contatosArr.join(' • ') || '-';
+
+            if (customerInfoEmpresaBadge) {
+                if (customer.is_registered_as_company) {
+                    customerInfoEmpresaBadge.innerHTML = '🏢 Empresa Cadastrada no Sistema';
+                    customerInfoEmpresaBadge.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800';
+                } else if (isPJ) {
+                    customerInfoEmpresaBadge.innerHTML = '🏢 Pessoa Jurídica';
+                    customerInfoEmpresaBadge.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-300 dark:border-blue-800';
+                } else {
+                    customerInfoEmpresaBadge.innerHTML = '👤 Pessoa Física / Autônomo';
+                    customerInfoEmpresaBadge.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-300 border border-gray-300 dark:border-slate-600';
+                }
+            }
+
+            if (customerInfoRegimeBadge) {
+                customerInfoRegimeBadge.textContent = regime;
+            }
         }
     };
 
@@ -348,9 +442,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         customersToRender.forEach((customer: any) => {
             const option = document.createElement('option');
             option.value = customer.id;
+            const cleanDoc = (customer.cnpj_cpf || '').replace(/\D/g, '');
+            const isCompany = customer.is_registered_as_company || cleanDoc.length === 14;
+            const icon = isCompany ? '🏢 ' : '👤 ';
             const trade = (customer.trade_name && customer.trade_name !== customer.name) ? ` (${customer.trade_name})` : '';
-            const doc = customer.cnpj_cpf ? ` - ${customer.cnpj_cpf}` : '';
-            option.textContent = `${customer.name || customer.razao_social || `Cliente ${customer.id}`}${trade}${doc}`;
+            const doc = customer.cnpj_cpf ? ` - ${formatCNPJ(customer.cnpj_cpf)}` : '';
+            option.textContent = `${icon}${customer.name || customer.razao_social || `Cliente ${customer.id}`}${trade}${doc}`;
             companyParam.appendChild(option);
         });
     }
@@ -374,9 +471,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         customersToRender.forEach((customer: any) => {
             const option = document.createElement('option');
             option.value = customer.id;
+            const cleanDoc = (customer.cnpj_cpf || '').replace(/\D/g, '');
+            const isCompany = customer.is_registered_as_company || cleanDoc.length === 14;
+            const icon = isCompany ? '🏢 ' : '👤 ';
             const trade = (customer.trade_name && customer.trade_name !== customer.name) ? ` (${customer.trade_name})` : '';
-            const doc = customer.cnpj_cpf ? ` - ${customer.cnpj_cpf}` : '';
-            option.textContent = `${customer.name || customer.razao_social || `Cliente ${customer.id}`}${trade}${doc}`;
+            const doc = customer.cnpj_cpf ? ` - ${formatCNPJ(customer.cnpj_cpf)}` : '';
+            option.textContent = `${icon}${customer.name || customer.razao_social || `Cliente ${customer.id}`}${trade}${doc}`;
             filterCompanyParam.appendChild(option);
         });
         if (currentVal && customersToRender.some((c: any) => String(c.id) === String(currentVal))) {
@@ -648,13 +748,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ${formattedId}
                     </td>
                     <td class="col-empresa px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        <div class="font-medium">${f.customer_name || `Cliente ${f.customer_id}`}</div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-medium">${f.customer_name || `Cliente ${f.customer_id}`}</span>
+                            ${f.is_registered_as_company ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800" title="Cadastrada como empresa no ERP">🏢 Empresa</span>` : ''}
+                        </div>
+                        ${f.customer_tax_regime ? `<div class="text-[11px] text-gray-400 dark:text-gray-500">${f.customer_tax_regime}${f.customer_city ? ' • ' + f.customer_city + (f.customer_state ? '/' + f.customer_state : '') : ''}</div>` : (f.customer_city ? `<div class="text-[11px] text-gray-400 dark:text-gray-500">${f.customer_city}${f.customer_state ? '/' + f.customer_state : ''}</div>` : '')}
                     </td>
                     <td class="col-fantasia px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         ${f.customer_trade_name || '-'}
                     </td>
                     <td class="col-cnpj px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        ${formatCNPJ(f.customer_cnpj_cpf)}
+                        <span class="font-mono text-xs">${formatCNPJ(f.customer_cnpj_cpf)}</span>
                     </td>
                     <td class="col-periodo px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                         ${formatPeriod(f.competencia)}

@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Extrato</title>
-    <link href="/css/style.css?v=20261003163553" rel="stylesheet">
+    <link href="/css/style.css?v=20261003164713" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261003163553"></script>
+    <script src="/js/pwa.js?v=20261003164713"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -341,16 +341,18 @@
                                 <th scope="col" class="px-4 py-3 text-left w-12">
                                     <input type="checkbox" id="chkAllBank" title="Selecionar todos os lançamentos do banco" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600">
                                 </th>
-                                <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase">Data</th>
-                                <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase">Histórico</th>
-                                <th scope="col" class="px-3 py-3 text-right text-[10px] font-medium text-gray-500 uppercase">Valor</th>
-                                <th scope="col" class="px-4 py-3 text-center text-[10px] font-medium text-gray-500 uppercase">Ação</th>
+                                <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Histórico</th>
+                                <th scope="col" class="px-3 py-3 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                                <th scope="col" class="px-4 py-3 text-center text-[10px] font-medium text-gray-500 uppercase tracking-wider">Ação</th>
                             </tr>
                         </thead>
                         <tbody id="bankStatementsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
                             <tr>
                                 <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
                                 <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-5 w-14 bg-gray-200 dark:bg-slate-700 rounded-full animate-pulse"></div></td>
                                 <td class="px-3 py-3"><div class="h-3 w-32 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
                                 <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-emerald-100 dark:bg-emerald-900/30 ml-auto rounded animate-pulse"></div></td>
                                 <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
@@ -358,6 +360,7 @@
                             <tr>
                                 <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
                                 <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-5 w-14 bg-gray-200 dark:bg-slate-700 rounded-full animate-pulse"></div></td>
                                 <td class="px-3 py-3"><div class="h-3 w-24 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
                                 <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-red-100 dark:bg-red-900/30 ml-auto rounded animate-pulse"></div></td>
                                 <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
@@ -365,6 +368,7 @@
                             <tr>
                                 <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
                                 <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-5 w-14 bg-gray-200 dark:bg-slate-700 rounded-full animate-pulse"></div></td>
                                 <td class="px-3 py-3"><div class="h-3 w-36 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
                                 <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-red-100 dark:bg-red-900/30 ml-auto rounded animate-pulse"></div></td>
                                 <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
@@ -421,14 +425,14 @@
         </div>
     </div>
 
-    <script src="/js/api.js?v=20261003163553"></script>
-    <script src="/js/filter-panel.js?v=20261003163553"></script>
-    <script src="/js/pagination.js?v=20261003163553"></script>
-    <script src="/js/statements.js?v=20261003163553"></script>
-    <script src="/js/components/navbar.js?v=20261003163553"></script>
+    <script src="/js/api.js?v=20261003164713"></script>
+    <script src="/js/filter-panel.js?v=20261003164713"></script>
+    <script src="/js/pagination.js?v=20261003164713"></script>
+    <script src="/js/statements.js?v=20261003164713"></script>
+    <script src="/js/components/navbar.js?v=20261003164713"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261003163553"></script>
+    <script src="/js/components/footer.js?v=20261003164713"></script>
 </body>
 
 </html>

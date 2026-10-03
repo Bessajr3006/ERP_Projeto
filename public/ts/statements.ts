@@ -884,7 +884,7 @@
     updateBankFooter(finalStatements);
 
     if (finalStatements.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento no extrato para este período/conta.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento no extrato para este período/conta.</td></tr>`;
       return;
     }
 
@@ -894,6 +894,10 @@
         const amountColor = isRevenue ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400';
         const sign = isRevenue ? '+' : '-';
         const isReconciled = t.status === 'reconciled';
+
+        const typeBadge = isRevenue
+          ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Receita</span>`
+          : `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">Despesa</span>`;
 
         const rowClass = isReconciled
           ? 'opacity-60 bg-gray-50 dark:bg-slate-800/50'
@@ -915,13 +919,14 @@
             <td class="px-4 py-4 whitespace-nowrap w-12 text-center">
                 ${checkboxHtml}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-[11px] text-gray-500 dark:text-gray-400 font-medium">${formatDate(
+            <td class="px-3 py-4 whitespace-nowrap text-[11px] text-gray-500 dark:text-gray-400 font-medium">${formatDate(
               t.date
             )}</td>
-            <td class="px-6 py-4 text-xs text-gray-900 dark:text-gray-100 font-medium ${
+            <td class="px-3 py-4 whitespace-nowrap">${typeBadge}</td>
+            <td class="px-3 py-4 text-xs text-gray-900 dark:text-gray-100 font-medium ${
               isReconciled ? 'line-through decoration-gray-300 dark:decoration-slate-600' : ''
             }">${t.description}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-bold ${amountColor}">${sign} ${formatCurrency(
+            <td class="px-3 py-4 whitespace-nowrap text-right text-xs font-bold ${amountColor}">${sign} ${formatCurrency(
               t.amount
             )}</td>
             <td class="px-4 py-4 whitespace-nowrap text-center">

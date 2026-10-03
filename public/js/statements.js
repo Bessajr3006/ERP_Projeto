@@ -8,6 +8,8 @@
     let _gridPager = null;
     // Banco
     let bankStatementsData = [];
+    let categoriesData = [];
+    let selectedBankStatementForCreate = null;
     const getById = (id) => document.getElementById(id);
     const FilterPanel = window.FilterPanel;
     const Paginator = window.Paginator;
@@ -394,16 +396,156 @@
             }
         }
     }
+    function populateCreateModalBanks() {
+        const selBank = getById('stmtCreateBank');
+        if (!selBank)
+            return;
+        const prev = selBank.value;
+        selBank.innerHTML = '<option value="">Selecione uma conta...</option>';
+        banksData.forEach((b) => {
+            selBank.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+        });
+        if (prev) {
+            selBank.value = prev;
+        }
+        else if (banksData.length === 1) {
+            selBank.value = banksData[0].public_id;
+        }
+    }
+    function populateCreateModalCategories(type) {
+        const selCat = getById('stmtCreateCategory');
+        if (!selCat)
+            return;
+        const targetType = type === 'expense' ? 'expense' : 'income';
+        const filtered = categoriesData.filter((c) => {
+            if (!c.type || c.type === 'both')
+                return true;
+            return c.type === targetType || c.type === type;
+        });
+        selCat.innerHTML = '<option value="">Selecione a categoria...</option>';
+        filtered.forEach((c) => {
+            selCat.innerHTML += `<option value="${c.public_id}">${c.name}</option>`;
+        });
+        if (filtered.length === 1) {
+            selCat.value = filtered[0].public_id;
+        }
+    }
+    function updateModalTypeVisuals(type) {
+        const badgeType = getById('stmtModalTypeBadge');
+        const expenseLabel = getById('stmtTypeExpenseLabel');
+        const revenueLabel = getById('stmtTypeRevenueLabel');
+        if (badgeType) {
+            if (type === 'revenue') {
+                badgeType.className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
+                badgeType.textContent = 'Receita';
+            }
+            else {
+                badgeType.className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
+                badgeType.textContent = 'Despesa';
+            }
+        }
+        if (expenseLabel && revenueLabel) {
+            if (type === 'expense') {
+                expenseLabel.classList.add('border-red-500', 'bg-red-50/50', 'dark:bg-red-950/20');
+                expenseLabel.classList.remove('border-gray-200', 'dark:border-slate-700');
+                revenueLabel.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/20');
+                revenueLabel.classList.add('border-gray-200', 'dark:border-slate-700');
+            }
+            else {
+                revenueLabel.classList.add('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/20');
+                revenueLabel.classList.remove('border-gray-200', 'dark:border-slate-700');
+                expenseLabel.classList.remove('border-red-500', 'bg-red-50/50', 'dark:bg-red-950/20');
+                expenseLabel.classList.add('border-gray-200', 'dark:border-slate-700');
+            }
+        }
+    }
+    function openCreateFromStatementModal(statementPublicId) {
+        const stmt = bankStatementsData.find((s) => s.public_id === statementPublicId);
+        if (!stmt)
+            return;
+        selectedBankStatementForCreate = stmt;
+        const modal = getById('createFromStatementModal');
+        const hiddenId = getById('stmtCreateBankStatementId');
+        const dateInput = getById('stmtCreateDate');
+        const amountInput = getById('stmtCreateAmount');
+        const descInput = getById('stmtCreateDescription');
+        const bankSelect = getById('stmtCreateBank');
+        const radioExpense = getById('stmtTypeExpense');
+        const radioRevenue = getById('stmtTypeRevenue');
+        const autoReconcile = getById('stmtCreateAutoReconcile');
+        if (hiddenId)
+            hiddenId.value = stmt.public_id;
+        const rawAmount = parseFloat(stmt.amount) || 0;
+        const isIncome = stmt.type === 'income' || stmt.type === 'revenue' || rawAmount > 0;
+        const initialType = isIncome ? 'revenue' : 'expense';
+        if (radioExpense && radioRevenue) {
+            radioExpense.checked = !isIncome;
+            radioRevenue.checked = isIncome;
+        }
+        updateModalTypeVisuals(initialType);
+        if (dateInput) {
+            dateInput.value = stmt.date ? String(stmt.date).split('T')[0] : '';
+        }
+        if (amountInput) {
+            const absVal = Math.abs(rawAmount);
+            let formatted = absVal.toFixed(2).replace('.', ',');
+            formatted = formatted.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+            amountInput.value = 'R$ ' + formatted;
+        }
+        if (descInput) {
+            descInput.value = stmt.description || '';
+        }
+        populateCreateModalBanks();
+        if (bankSelect) {
+            const currentBankId = getById('filterBankSelect')?.value || getById('filterSysBank')?.value || stmt.bank_account_public_id;
+            if (currentBankId) {
+                bankSelect.value = currentBankId;
+            }
+            else if (banksData.length > 0) {
+                bankSelect.value = banksData[0].public_id;
+            }
+        }
+        populateCreateModalCategories(initialType);
+        const paySelect = getById('stmtCreatePaymentMethod');
+        if (paySelect) {
+            const descLower = (stmt.description || '').toLowerCase();
+            if (descLower.includes('pix'))
+                paySelect.value = 'pix';
+            else if (descLower.includes('ted') || descLower.includes('doc') || descLower.includes('transf'))
+                paySelect.value = 'transfer';
+            else if (descLower.includes('bol') || descLower.includes('deb'))
+                paySelect.value = 'boleto';
+            else
+                paySelect.value = 'pix';
+        }
+        const statusSelect = getById('stmtCreateStatus');
+        if (statusSelect)
+            statusSelect.value = 'paid';
+        if (autoReconcile)
+            autoReconcile.checked = true;
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+    function closeCreateFromStatementModal() {
+        const modal = getById('createFromStatementModal');
+        if (modal)
+            modal.classList.add('hidden');
+        selectedBankStatementForCreate = null;
+    }
     // ─── Busca de dados ───────────────────────────────────────────────────────────
     async function fetchStatements() {
         try {
-            const [expRes, revRes, bankRes] = await Promise.all([
+            const [expRes, revRes, bankRes, catRes] = await Promise.all([
                 api('/finance/expenses'),
                 api('/finance/revenues'),
                 api('/bank-accounts'),
+                api('/finance/categories'),
             ]);
             banksData = bankRes.data || [];
+            categoriesData = catRes.data || [];
             populateBankFilters();
+            populateCreateModalBanks();
             const expenses = (expRes.data || []).map((e) => ({ ...e, type: 'expense' }));
             const revenues = (revRes.data || []).map((r) => ({ ...r, type: 'revenue' }));
             // Ordena cronologico decrescente (mais recente primeiro usando data de efetivação quando pago)
@@ -829,9 +971,15 @@
             const actionHtml = isReconciled
                 ? `<div class="flex flex-col items-center gap-1">
                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Conciliado</span>
-                 <button class="text-[9px] text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors btn-unreconcile" data-id="${t.public_id}">Desconciliar</button>
+                 <button type="button" class="text-[9px] text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors btn-unreconcile cursor-pointer" data-id="${t.public_id}">Desconciliar</button>
                </div>`
-                : `<button class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold hover:bg-emerald-100 transition-colors dark:bg-emerald-900/30 dark:text-emerald-400 btn-conciliate-single" data-id="${t.public_id}">Conciliar</button>`;
+                : `<div class="flex items-center justify-center gap-1.5">
+                 <button type="button" class="inline-flex items-center gap-1 text-[10px] bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300 px-2 py-1 rounded font-bold hover:bg-brand-100 dark:hover:bg-brand-900/60 transition-colors border border-brand-200 dark:border-brand-700/60 btn-create-from-statement cursor-pointer" data-id="${t.public_id}" title="Fazer lançamento no sistema a partir deste extrato">
+                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                     Lançar
+                 </button>
+                 <button type="button" class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold hover:bg-emerald-100 transition-colors dark:bg-emerald-900/30 dark:text-emerald-400 btn-conciliate-single cursor-pointer" data-id="${t.public_id}">Conciliar</button>
+             </div>`;
             return `
         <tr class="${rowClass}">
             <td class="px-4 py-4 whitespace-nowrap w-12 text-center">
@@ -985,6 +1133,15 @@
         });
         document.addEventListener('click', async (e) => {
             const target = e?.target;
+            const createBtn = target?.closest?.('.btn-create-from-statement');
+            if (createBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const public_id = createBtn.dataset.id;
+                if (public_id)
+                    openCreateFromStatementModal(public_id);
+                return;
+            }
             if (target?.matches?.('.btn-unreconcile')) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1086,6 +1243,124 @@
                             bankChk.checked = true;
                         updateConciliationBar();
                     }
+                }
+            }
+        });
+        // Event listeners para o Modal de Lançamento a partir do Extrato
+        getById('btnCancelCreateFromStatementModal')?.addEventListener('click', closeCreateFromStatementModal);
+        getById('btnCloseCreateFromStatementModal')?.addEventListener('click', closeCreateFromStatementModal);
+        getById('createFromStatementModalBackdrop')?.addEventListener('click', closeCreateFromStatementModal);
+        getById('stmtTypeExpense')?.addEventListener('change', () => {
+            populateCreateModalCategories('expense');
+            updateModalTypeVisuals('expense');
+        });
+        getById('stmtTypeRevenue')?.addEventListener('change', () => {
+            populateCreateModalCategories('revenue');
+            updateModalTypeVisuals('revenue');
+        });
+        const stmtAmountInput = getById('stmtCreateAmount');
+        if (stmtAmountInput) {
+            stmtAmountInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value === '')
+                    value = '0';
+                let formatted = (parseInt(value, 10) / 100).toFixed(2) + '';
+                formatted = formatted.replace('.', ',');
+                formatted = formatted.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+                e.target.value = 'R$ ' + formatted;
+            });
+        }
+        getById('createFromStatementForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = getById('btnSubmitCreateFromStatement');
+            const isRevenue = getById('stmtTypeRevenue')?.checked;
+            const type = isRevenue ? 'revenue' : 'expense';
+            const date = getById('stmtCreateDate')?.value;
+            const amountStr = getById('stmtCreateAmount')?.value || '0';
+            const description = getById('stmtCreateDescription')?.value?.trim();
+            const bank_account_public_id = getById('stmtCreateBank')?.value;
+            const category_public_id = getById('stmtCreateCategory')?.value;
+            const payment_method = getById('stmtCreatePaymentMethod')?.value || null;
+            const status = getById('stmtCreateStatus')?.value || 'paid';
+            const autoReconcile = getById('stmtCreateAutoReconcile')?.checked;
+            const cleanAmount = amountStr.replace(/[^\d,]/g, '').replace(',', '.');
+            const amount = parseFloat(cleanAmount);
+            if (!date || isNaN(amount) || amount <= 0 || !description || !bank_account_public_id || !category_public_id) {
+                UI.showAlert('alertMessage', 'Por favor, preencha todos os campos obrigatórios (Data, Valor, Descrição, Conta e Categoria).', 'warning');
+                return;
+            }
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<svg class="w-4 h-4 animate-spin inline-block mr-1.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Salvando...</span>';
+                }
+                let createdTxPublicId = null;
+                if (type === 'expense') {
+                    const payload = {
+                        description,
+                        amount,
+                        date,
+                        bank_account_public_id,
+                        category_public_id,
+                        payment_method,
+                        status,
+                    };
+                    const res = await api('/finance/expenses', {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                    });
+                    createdTxPublicId = res?.data?.public_id || null;
+                }
+                else {
+                    const payload = {
+                        description,
+                        amount,
+                        date,
+                        received_at: date,
+                        bank_account_public_id,
+                        category_public_id,
+                        payment_method,
+                        status,
+                    };
+                    const res = await api('/finance/revenues', {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                    });
+                    createdTxPublicId = res?.data?.public_id || null;
+                }
+                if (autoReconcile && selectedBankStatementForCreate?.public_id && createdTxPublicId) {
+                    try {
+                        await api('/finance/reconcile', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                system_ids: [createdTxPublicId],
+                                bank_statement_ids: [selectedBankStatementForCreate.public_id],
+                            }),
+                        });
+                        UI.showAlert('alertMessage', 'Lançamento criado e conciliado com o extrato com sucesso!', 'success');
+                    }
+                    catch (recErr) {
+                        console.error('Erro ao conciliar automaticamente:', recErr);
+                        UI.showAlert('alertMessage', 'Lançamento criado com sucesso, mas a conciliação automática falhou: ' + (recErr.message || ''), 'warning');
+                    }
+                }
+                else {
+                    UI.showAlert('alertMessage', 'Lançamento criado com sucesso no sistema!', 'success');
+                }
+                closeCreateFromStatementModal();
+                await Promise.all([
+                    fetchStatements(),
+                    loadBankStatements(),
+                ]);
+            }
+            catch (err) {
+                console.error('Erro ao criar lançamento a partir do extrato:', err);
+                UI.showAlert('alertMessage', err?.message || 'Erro ao criar lançamento no sistema', 'error');
+            }
+            finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <span>Salvar e Lançar</span>';
                 }
             }
         });

@@ -31,3 +31,9 @@ query_test.ts
 test_pdf.ts
 test_pdf2.ts
 update_db_types.js
+.subir_nuvem*
+subir_nuvem*
+Sub_nuven*
+.deploy*
+.secrets*
+

@@ -48,6 +48,8 @@
     "build:sw": "tsc -p tsconfig.sw.json",
     "dev:public": "tsc -w -p tsconfig.public.json",
     "build:public": "tsc -p tsconfig.public.json && npm run --silent build:sw",
+    "Sub_nuven": "./.subir_nuvem.sh",
+    "subir:nuvem": "./.subir_nuvem.sh",
     "db:generate": "npx kysely-codegen --dialect mysql --out-file src/types/database.ts",
     "prepare": "husky"
   },

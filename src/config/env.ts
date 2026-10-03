@@ -11,9 +11,7 @@ const FORBIDDEN_PLACEHOLDERS = new Set([
     'dev_encryption_key_change_me',
     'fallback_secret_key_change_me_in_production',
     'erp_keystones_jwt_2026_default_change_me',
-    'd29900758b6b5e78698dc47e0830f863d49fc92331f882bb89bf0925fab7148c',
-    '0000000000000000000000000000000000000000000000000000000000000000',
-    '30mariafn@'
+    '0000000000000000000000000000000000000000000000000000000000000000'
 ]);
 
 function isPlaceholder(val: string): boolean {

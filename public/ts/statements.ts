@@ -13,6 +13,8 @@
   let categoriesData: any[] = [];
   let categoryTypesData: any[] = [];
   let selectedBankStatementForCreate: any = null;
+  let selectedStatementForEdit: any = null;
+  let selectedStatementForDelete: any = null;
 
   const getById = (id: string): any => document.getElementById(id);
 
@@ -252,7 +254,7 @@
     if (!tbody) return;
 
     if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+      tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
             Nenhuma movimentação encontrada para os filtros selecionados.</td></tr>`;
       return;
     }
@@ -307,6 +309,16 @@
             <td class="px-3 py-4 whitespace-nowrap ${valueClass}">
                 ${sign} ${formatCurrency(t.amount)}
             </td>
+            <td class="px-2 py-4 whitespace-nowrap text-center text-xs">
+                <div class="flex items-center justify-center gap-1">
+                    <button type="button" class="btn-edit-stmt p-1.5 rounded-lg text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" data-id="${t.public_id}" data-type="${t.type}" title="Editar lançamento">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <button type="button" class="btn-delete-stmt p-1.5 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" data-id="${t.public_id}" data-type="${t.type}" title="Excluir lançamento">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            </td>
         </tr>`;
       })
       .join('');
@@ -345,9 +357,17 @@
                       '0'
                     )}</span>
                 </div>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeBadge}">
-                    ${isRevenue ? 'Receita' : 'Despesa'}
-                </span>
+                <div class="flex items-center gap-1.5">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeBadge}">
+                        ${isRevenue ? 'Receita' : 'Despesa'}
+                    </span>
+                    <button type="button" class="btn-edit-stmt p-1 rounded-md text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" data-id="${t.public_id}" data-type="${t.type}" title="Editar lançamento">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <button type="button" class="btn-delete-stmt p-1 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer" data-id="${t.public_id}" data-type="${t.type}" title="Excluir lançamento">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="flex-1 mt-1">
@@ -630,6 +650,133 @@
   function closeQuickCategoryModal(): void {
     const modal = getById('quickCategoryModal');
     if (modal) modal.classList.add('hidden');
+  }
+
+  // ─── Modais de Edição e Exclusão do Sistema ───────────────────────────────────
+
+  function populateEditModalCategories(type: 'expense' | 'revenue'): void {
+    const selCat = getById('editStmtCategory') as HTMLSelectElement | null;
+    if (!selCat) return;
+    const targetType = type === 'expense' ? 'expense' : 'income';
+    const filtered = categoriesData.filter((c: any) => {
+      if (!c.type || c.type === 'both') return true;
+      return c.type === targetType || c.type === type;
+    });
+
+    selCat.innerHTML = '<option value="">Selecione a categoria...</option>';
+    filtered.forEach((c: any) => {
+      const typeSuffix = c.finance_category_type_name ? ` (${c.finance_category_type_name})` : '';
+      selCat.innerHTML += `<option value="${c.public_id}">${c.name}${typeSuffix}</option>`;
+    });
+  }
+
+  function populateEditModalBanks(): void {
+    const selBank = getById('editStmtBank') as HTMLSelectElement | null;
+    if (!selBank) return;
+    const prev = selBank.value;
+    selBank.innerHTML = '<option value="">Selecione uma conta...</option>';
+    banksData.forEach((b: any) => {
+      selBank.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+    });
+    if (prev) selBank.value = prev;
+  }
+
+  function openEditStatementModal(statementPublicId: string): void {
+    const stmt = statementsData.find((s: any) => s.public_id === statementPublicId);
+    if (!stmt) return;
+
+    selectedStatementForEdit = stmt;
+
+    const modal = getById('editStatementModal');
+    const idInput = getById('editStmtPublicId') as HTMLInputElement | null;
+    const typeInput = getById('editStmtType') as HTMLInputElement | null;
+    const badgeType = getById('editStmtModalTypeBadge');
+    const descInput = getById('editStmtDescription') as HTMLInputElement | null;
+    const amountInput = getById('editStmtAmount') as HTMLInputElement | null;
+    const dateInput = getById('editStmtDate') as HTMLInputElement | null;
+    const recInput = getById('editStmtReceivedAt') as HTMLInputElement | null;
+    const statusSelect = getById('editStmtStatus') as HTMLSelectElement | null;
+    const bankSelect = getById('editStmtBank') as HTMLSelectElement | null;
+    const paySelect = getById('editStmtPaymentMethod') as HTMLSelectElement | null;
+    const catSelect = getById('editStmtCategory') as HTMLSelectElement | null;
+
+    if (idInput) idInput.value = stmt.public_id;
+    if (typeInput) typeInput.value = stmt.type;
+
+    if (badgeType) {
+      if (stmt.type === 'revenue') {
+        badgeType.className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/50';
+        badgeType.textContent = 'Receita (Entrada)';
+      } else {
+        badgeType.className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700/50';
+        badgeType.textContent = 'Despesa (Saída)';
+      }
+    }
+
+    if (descInput) descInput.value = stmt.description || '';
+    if (amountInput) {
+      amountInput.value = formatCurrency(stmt.amount || 0);
+    }
+    if (dateInput) {
+      dateInput.value = stmt.date ? String(stmt.date).split('T')[0] : '';
+    }
+    if (recInput) {
+      recInput.value = stmt.received_at ? String(stmt.received_at).split('T')[0] : (stmt.status === 'paid' && stmt.date ? String(stmt.date).split('T')[0] : '');
+    }
+    if (statusSelect) {
+      statusSelect.value = stmt.status || 'paid';
+    }
+
+    populateEditModalBanks();
+    if (bankSelect) {
+      bankSelect.value = stmt.bank_account_public_id || '';
+    }
+
+    populateEditModalCategories(stmt.type);
+    if (catSelect) {
+      catSelect.value = stmt.category_public_id || '';
+    }
+
+    if (paySelect) {
+      paySelect.value = stmt.payment_method || '';
+    }
+
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function closeEditStatementModal(): void {
+    const modal = getById('editStatementModal');
+    if (modal) modal.classList.add('hidden');
+    selectedStatementForEdit = null;
+  }
+
+  function openDeleteStatementModal(statementPublicId: string): void {
+    const stmt = statementsData.find((s: any) => s.public_id === statementPublicId);
+    if (!stmt) return;
+
+    selectedStatementForDelete = stmt;
+
+    const modal = getById('deleteStatementModal');
+    const descEl = getById('deleteStmtDesc');
+    const amountEl = getById('deleteStmtAmount');
+    const typeEl = getById('deleteStmtTypeBadge');
+
+    if (descEl) descEl.textContent = stmt.description || '-';
+    if (amountEl) amountEl.textContent = formatCurrency(stmt.amount || 0);
+    if (typeEl) {
+      typeEl.textContent = stmt.type === 'revenue' ? 'Receita' : 'Despesa';
+      typeEl.className = stmt.type === 'revenue'
+        ? 'font-semibold text-emerald-600 dark:text-emerald-400'
+        : 'font-semibold text-red-600 dark:text-red-400';
+    }
+
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function closeDeleteStatementModal(): void {
+    const modal = getById('deleteStatementModal');
+    if (modal) modal.classList.add('hidden');
+    selectedStatementForDelete = null;
   }
 
   // ─── Busca de dados ───────────────────────────────────────────────────────────
@@ -1779,6 +1926,150 @@
         reader.readAsText(file);
       });
     }
+
+    // --- Edição e Exclusão de Lançamentos do Sistema ---
+    const editStmtAmountInput = getById('editStmtAmount') as HTMLInputElement | null;
+    if (editStmtAmountInput) {
+      editStmtAmountInput.addEventListener('input', (e: any) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value === '') value = '0';
+        let formatted = (parseInt(value, 10) / 100).toFixed(2) + '';
+        formatted = formatted.replace('.', ',');
+        formatted = formatted.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        e.target.value = 'R$ ' + formatted;
+      });
+    }
+
+    getById('editStmtStatus')?.addEventListener('change', (e: any) => {
+      const status = e.target.value;
+      const recDateInput = getById('editStmtReceivedAt') as HTMLInputElement | null;
+      const dueDateInput = getById('editStmtDate') as HTMLInputElement | null;
+      if (status === 'paid' && recDateInput && !recDateInput.value && dueDateInput?.value) {
+        recDateInput.value = dueDateInput.value;
+      }
+    });
+
+    getById('editStatementForm')?.addEventListener('submit', async (e: any) => {
+      e.preventDefault();
+      const submitBtn = getById('btnSubmitEditStatement');
+      const id = (getById('editStmtPublicId') as HTMLInputElement | null)?.value;
+      const type = (getById('editStmtType') as HTMLInputElement | null)?.value as 'revenue' | 'expense';
+
+      if (!id || !type) return;
+
+      const date = (getById('editStmtDate') as HTMLInputElement | null)?.value;
+      const received_at = (getById('editStmtReceivedAt') as HTMLInputElement | null)?.value || null;
+      const amountStr = (getById('editStmtAmount') as HTMLInputElement | null)?.value || '0';
+      const description = (getById('editStmtDescription') as HTMLInputElement | null)?.value?.trim();
+      const bank_account_public_id = (getById('editStmtBank') as HTMLSelectElement | null)?.value;
+      const category_public_id = (getById('editStmtCategory') as HTMLSelectElement | null)?.value;
+      const payment_method = (getById('editStmtPaymentMethod') as HTMLSelectElement | null)?.value || null;
+      const status = (getById('editStmtStatus') as HTMLSelectElement | null)?.value || 'paid';
+
+      const cleanAmount = amountStr.replace(/[^\d,]/g, '').replace(',', '.');
+      const amount = parseFloat(cleanAmount);
+
+      if (!date || isNaN(amount) || amount <= 0 || !description || !bank_account_public_id || !category_public_id) {
+        (UI as any).showAlert('alertMessage', 'Por favor, preencha todos os campos obrigatórios (Data, Valor, Descrição, Conta e Categoria).', 'warning');
+        return;
+      }
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<svg class="w-4 h-4 animate-spin inline-block mr-1.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Salvando...</span>';
+        }
+
+        const endpoint = type === 'revenue' ? `/finance/revenues/${id}` : `/finance/expenses/${id}`;
+        const payload: any = {
+          description,
+          amount,
+          date,
+          category_public_id,
+          bank_account_public_id,
+          payment_method,
+          status,
+          received_at: status === 'paid' ? (received_at || date) : null,
+        };
+
+        await (api as any)(endpoint, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+
+        (UI as any).showAlert('alertMessage', 'Lançamento atualizado com sucesso!', 'success');
+        closeEditStatementModal();
+        await fetchStatements();
+      } catch (err: any) {
+        console.error('Erro ao atualizar lançamento:', err);
+        (UI as any).showAlert('alertMessage', err?.message || 'Erro ao atualizar lançamento.', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <span>Salvar Alterações</span>';
+        }
+      }
+    });
+
+    getById('btnConfirmDeleteStatement')?.addEventListener('click', async () => {
+      if (!selectedStatementForDelete) return;
+
+      const confirmBtn = getById('btnConfirmDeleteStatement');
+      const id = selectedStatementForDelete.public_id;
+      const type = selectedStatementForDelete.type;
+
+      try {
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML = '<svg class="w-4 h-4 animate-spin inline-block mr-1.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Excluindo...</span>';
+        }
+
+        const endpoint = type === 'revenue' ? `/finance/revenues/${id}` : `/finance/expenses/${id}`;
+        await (api as any)(endpoint, {
+          method: 'DELETE',
+        });
+
+        (UI as any).showAlert('alertMessage', 'Lançamento excluído com sucesso!', 'success');
+        closeDeleteStatementModal();
+        await Promise.all([
+          fetchStatements(),
+          loadBankStatements(),
+        ]);
+      } catch (err: any) {
+        console.error('Erro ao excluir lançamento:', err);
+        (UI as any).showAlert('alertMessage', err?.message || 'Erro ao excluir lançamento.', 'error');
+      } finally {
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> <span>Excluir</span>';
+        }
+      }
+    });
+
+    // Close / backdrop listeners
+    getById('btnCloseEditStatementModal')?.addEventListener('click', closeEditStatementModal);
+    getById('btnCancelEditStatementModal')?.addEventListener('click', closeEditStatementModal);
+    getById('editStatementModalBackdrop')?.addEventListener('click', closeEditStatementModal);
+
+    getById('btnCancelDeleteStatementModal')?.addEventListener('click', closeDeleteStatementModal);
+    getById('deleteStatementModalBackdrop')?.addEventListener('click', closeDeleteStatementModal);
+
+    // Delegação de cliques para botões de Editar e Excluir
+    document.addEventListener('click', (e: any) => {
+      const editBtn = e?.target?.closest?.('.btn-edit-stmt');
+      if (editBtn) {
+        const id = editBtn.getAttribute('data-id');
+        if (id) openEditStatementModal(id);
+        return;
+      }
+
+      const delBtn = e?.target?.closest?.('.btn-delete-stmt');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-id');
+        if (id) openDeleteStatementModal(id);
+        return;
+      }
+    });
 
     // Carrega os dados
     await fetchStatements();

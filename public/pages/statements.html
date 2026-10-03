@@ -19,28 +19,121 @@
 
         <div class="px-4 sm:px-0 flex flex-col xl:flex-row gap-5 flex-1 min-h-0">
             <!-- COLUNA ESQUERDA: SISTEMA ERP -->
-            <div class="flex-1 flex flex-col min-w-0">
-                <div id="systemFilterAnchor"></div>
-                <div id="statementsSection" class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
-                    <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50/50 dark:bg-slate-800/50">
-                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <span class="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
-                            Lançamentos do Sistema
-                        </h3>
+            <div class="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
+                <!-- Header Lançamentos do Sistema -->
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50/50 dark:bg-slate-800/50 rounded-t-xl">
+                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <span class="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
+                        Lançamentos do Sistema
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center bg-gray-100 dark:bg-slate-700/60 p-0.5 rounded-lg text-xs">
+                            <button type="button" id="btnListView" class="flex items-center justify-center px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1 bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-xs" title="Ver como Lista">
+                                <svg class="w-3.5 h-3.5 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                                <span>Lista</span>
+                            </button>
+                            <button type="button" id="btnGridView" class="flex items-center justify-center px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1" title="Ver como Cards">
+                                <svg class="w-3.5 h-3.5 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                                <span>Cards</span>
+                            </button>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 border border-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:border-brand-800 px-2 py-0.5 rounded-md">ERP</span>
+                    </div>
+                </div>
+
+                <!-- Filtro Integrado Lançamentos do Sistema (estilo expenses.html) -->
+                <div class="shrink-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+                    <button type="button" id="toggleSysFilterBtn"
+                        class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
                         <div class="flex items-center gap-2">
-                            <div class="flex items-center bg-gray-100 dark:bg-slate-700/60 p-0.5 rounded-lg text-xs">
-                                <button type="button" id="btnListView" class="flex items-center justify-center px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1 bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-xs" title="Ver como Lista">
-                                    <svg class="w-3.5 h-3.5 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                                    <span>Lista</span>
-                                </button>
-                                <button type="button" id="btnGridView" class="flex items-center justify-center px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1" title="Ver como Cards">
-                                    <svg class="w-3.5 h-3.5 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                                    <span>Cards</span>
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path>
+                            </svg>
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                        </div>
+                        <svg id="sysFilterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="sysFilterBody" class="overflow-hidden">
+                        <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 items-end">
+                                <div>
+                                    <label for="filterSysPeriod" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Período</label>
+                                    <select id="filterSysPeriod" name="filterSysPeriod"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                        <option value="">Todos</option>
+                                        <option value="today">Hoje</option>
+                                        <option value="yesterday">Ontem</option>
+                                        <option value="this_month">Este Mês</option>
+                                        <option value="last_month">Mês Passado</option>
+                                        <option value="this_year">Este Ano</option>
+                                        <option value="custom">Personalizado</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="filterSysStart" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        Data Início
+                                    </label>
+                                    <input type="date" id="filterSysStart" name="filterSysStart"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                </div>
+                                <div>
+                                    <label for="filterSysEnd" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        Data Fim
+                                    </label>
+                                    <input type="date" id="filterSysEnd" name="filterSysEnd"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                </div>
+                                <div>
+                                    <label for="filterSysBank" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Conta Bancária</label>
+                                    <select id="filterSysBank" name="filterSysBank"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                        <option value="">Todas as contas</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="filterSysType" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Tipo</label>
+                                    <select id="filterSysType" name="filterSysType"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                        <option value="">Todos</option>
+                                        <option value="revenue">Receitas</option>
+                                        <option value="expense">Despesas</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="filterSysStatus" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Status</label>
+                                    <select id="filterSysStatus" name="filterSysStatus"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                        <option value="">Todos</option>
+                                        <option value="paid">Pagos / Recebidos</option>
+                                        <option value="pending">Pendentes</option>
+                                        <option value="overdue">Vencidos</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2 md:col-span-3 lg:col-span-3 xl:col-span-6">
+                                    <label for="filterSysSearch" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Busca</label>
+                                    <input type="text" id="filterSysSearch" name="filterSysSearch" placeholder="Descrição, categoria, entidade..."
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                </div>
+                            </div>
+                            <div class="flex justify-end mt-3 border-t border-gray-100 dark:border-slate-700/60 pt-3">
+                                <button type="button" id="btnClearSysFilters" 
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 cursor-pointer">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Limpar Filtro
                                 </button>
                             </div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 border border-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:border-brand-800 px-2 py-0.5 rounded-md">ERP</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Tabela de Lançamentos do Sistema -->
+                <div id="statementsSection" class="flex flex-col flex-1 min-h-0">
                     <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
                         <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
                             <thead class="bg-gray-50 dark:bg-slate-900/40">
@@ -63,10 +156,10 @@
                         </table>
                     </div>
                 </div>
-                <div id="statementsGridSection" class="hidden flex-col flex-1 min-h-0 bg-white dark:bg-slate-800 border-l border-r border-gray-200 dark:border-slate-700">
+                <div id="statementsGridSection" class="hidden flex-col flex-1 min-h-0">
                     <div id="statementsGridContainer" class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 content-start"></div>
                 </div>
-                <div id="statementsFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+                <div id="statementsFooter" class="shrink-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
                     <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0">
                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg>
                         <span id="footerCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span> mov(s)
@@ -89,108 +182,199 @@
             </div>
 
             <!-- COLUNA DIREITA: EXTRATO DO BANCO -->
-            <div class="flex-1 flex flex-col min-w-0">
-                <div id="bankFilterAnchor"></div>
-                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
-                    <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50/50 dark:bg-slate-800/50">
-                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <span class="w-1.5 h-4 bg-emerald-500 rounded-full inline-block"></span>
-                            Extrato do Banco
-                        </h3>
-                        <div class="flex items-center gap-2">
-                            <button id="btnHeaderSyncBankApi" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all focus:outline-none border border-emerald-500" title="Consultar Extrato via API">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                Consultar API
+            <div class="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700">
+                <!-- Header Extrato do Banco -->
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50/50 dark:bg-slate-800/50 rounded-t-xl">
+                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <span class="w-1.5 h-4 bg-emerald-500 rounded-full inline-block"></span>
+                        Extrato do Banco
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button id="btnHeaderSyncBankApi" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all focus:outline-none border border-emerald-500" title="Consultar Extrato via API">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Consultar API
+                        </button>
+                        <div class="relative inline-block text-left" id="bankApiDropdownContainer">
+                            <button id="btnBankActionsToggle" type="button" class="flex items-center justify-center p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors" title="Opções do Extrato">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                </svg>
                             </button>
-                            <div class="relative inline-block text-left" id="bankApiDropdownContainer">
-                                <button id="btnBankActionsToggle" type="button" class="flex items-center justify-center p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors" title="Opções do Extrato">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                    </svg>
-                                </button>
-                                <div id="bankActionsMenu" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 z-50 focus:outline-none divide-y divide-gray-100 dark:divide-slate-700">
-                                    <div class="py-1">
-                                        <button id="btnSyncBankApi" class="w-full text-left group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-brand-600 dark:hover:text-brand-400">
-                                            <svg class="mr-3 h-4 w-4 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                            Consultar API
-                                        </button>
-                                    </div>
-                                    <div class="py-1">
-                                        <button id="btnImportOfx" class="w-full text-left group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400">
-                                            <svg class="mr-3 h-4 w-4 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                            Importar OFX
-                                        </button>
-                                    </div>
-                                    <div class="py-1">
-                                        <button id="btnBatchDeleteBank" class="w-full text-left group flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
-                                            <svg class="mr-3 h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                            Excluir
-                                        </button>
-                                    </div>
+                            <div id="bankActionsMenu" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 z-50 focus:outline-none divide-y divide-gray-100 dark:divide-slate-700">
+                                <div class="py-1">
+                                    <button id="btnSyncBankApi" class="w-full text-left group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-brand-600 dark:hover:text-brand-400">
+                                        <svg class="mr-3 h-4 w-4 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                        Consultar API
+                                    </button>
+                                </div>
+                                <div class="py-1">
+                                    <button id="btnImportOfx" class="w-full text-left group flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-emerald-600 dark:hover:text-emerald-400">
+                                        <svg class="mr-3 h-4 w-4 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                        Importar OFX
+                                    </button>
+                                </div>
+                                <div class="py-1">
+                                    <button id="btnBatchDeleteBank" class="w-full text-left group flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                        <svg class="mr-3 h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        Excluir
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <input type="file" id="fileOfx" class="hidden" accept=".ofx,.qfx" title="Arquivo OFX para importação" />
                     </div>
-                    <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 relative">
-                        <!-- Componente de Empty State Moderno para o OFX -->
-                        <div id="bankStatementsEmptyState" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50/40 dark:bg-slate-900/20 backdrop-blur-[1px] z-10">
-                            <div class="w-14 h-14 bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-slate-700 rounded-2xl flex items-center justify-center mb-4 text-gray-400 dark:text-gray-500">
-                                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                                </svg>
-                            </div>
-                            <h4 class="text-sm font-semibold text-gray-900 dark:text-emerald-400 mb-1">Área de Conciliação Bancária</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 max-w-xs text-center leading-relaxed mb-4">
-                                Importe o arquivo <span class="font-mono bg-gray-100 dark:bg-slate-700 px-1 rounded">.OFX</span> ou faça a ponte automática via API do banco.
-                            </p>
-                            <button id="btnSyncBankApiCenter" class="flex items-center justify-center px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors shadow-sm gap-2 text-sm border border-emerald-500">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                Consultar Extrato via API
-                            </button>
-                        </div>
+                    <input type="file" id="fileOfx" class="hidden" accept=".ofx,.qfx" title="Arquivo OFX para importação" />
+                </div>
 
-                        <!-- Mock Table Body behind the blur -->
-                        <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60 opacity-30 select-none pointer-events-none">
-                            <thead class="bg-gray-50 dark:bg-slate-900/40">
-                                <tr>
-                                    <th scope="col" class="px-4 py-3 text-left w-12">
-                                        <input type="checkbox" id="chkAllBank" title="Selecionar todos os lançamentos do banco" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600">
-                                    </th>
-                                    <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase">Data</th>
-                                    <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase">Histórico</th>
-                                    <th scope="col" class="px-3 py-3 text-right text-[10px] font-medium text-gray-500 uppercase">Valor</th>
-                                    <th scope="col" class="px-4 py-3 text-center text-[10px] font-medium text-gray-500 uppercase">Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody id="bankStatementsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
-                                <tr>
-                                    <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3"><div class="h-3 w-32 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-emerald-100 dark:bg-emerald-900/30 ml-auto rounded animate-pulse"></div></td>
-                                    <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3"><div class="h-3 w-24 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-red-100 dark:bg-red-900/30 ml-auto rounded animate-pulse"></div></td>
-                                    <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
-                                </tr>
-                                <tr>
-                                    <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3"><div class="h-3 w-36 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
-                                    <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-red-100 dark:bg-red-900/30 ml-auto rounded animate-pulse"></div></td>
-                                    <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- Filtro Integrado Extrato do Banco (estilo expenses.html) -->
+                <div class="shrink-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+                    <button type="button" id="toggleBankFilterBtn"
+                        class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path>
+                            </svg>
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
+                        </div>
+                        <svg id="bankFilterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="bankFilterBody" class="overflow-hidden">
+                        <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 items-end">
+                                <div>
+                                    <label for="filterBankPeriod" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Período</label>
+                                    <select id="filterBankPeriod" name="filterBankPeriod"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                        <option value="">Todos</option>
+                                        <option value="today">Hoje</option>
+                                        <option value="yesterday">Ontem</option>
+                                        <option value="this_month">Este Mês</option>
+                                        <option value="last_month">Mês Passado</option>
+                                        <option value="this_year">Este Ano</option>
+                                        <option value="custom">Personalizado</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="filterBankStart" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        Data Início
+                                    </label>
+                                    <input type="date" id="filterBankStart" name="filterBankStart"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                </div>
+                                <div>
+                                    <label for="filterBankEnd" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        Data Fim
+                                    </label>
+                                    <input type="date" id="filterBankEnd" name="filterBankEnd"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                </div>
+                                <div>
+                                    <label for="filterBankSelect" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Conta Bancária</label>
+                                    <select id="filterBankSelect" name="filterBankSelect"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                        <option value="">Selecione uma conta</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="filterBankType" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Tipo</label>
+                                    <select id="filterBankType" name="filterBankType"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                        <option value="">Todos</option>
+                                        <option value="income">Entradas</option>
+                                        <option value="expense">Saídas</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="filterBankReconciled" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Status</label>
+                                    <select id="filterBankReconciled" name="filterBankReconciled"
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                        <option value="">Todos</option>
+                                        <option value="unreconciled">Não Conciliados</option>
+                                        <option value="reconciled">Conciliados</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2 md:col-span-3 lg:col-span-3 xl:col-span-6">
+                                    <label for="filterBankSearch" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Busca</label>
+                                    <input type="text" id="filterBankSearch" name="filterBankSearch" placeholder="Descrição no extrato..."
+                                        class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                </div>
+                            </div>
+                            <div class="flex justify-end mt-3 border-t border-gray-100 dark:border-slate-700/60 pt-3">
+                                <button type="button" id="btnClearBankFilters" 
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 cursor-pointer">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Limpar Filtro
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Tabela de Extrato do Banco -->
+                <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0 relative">
+                    <!-- Componente de Empty State Moderno para o OFX -->
+                    <div id="bankStatementsEmptyState" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50/40 dark:bg-slate-900/20 backdrop-blur-[1px] z-10">
+                        <div class="w-14 h-14 bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-slate-700 rounded-2xl flex items-center justify-center mb-4 text-gray-400 dark:text-gray-500">
+                            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-emerald-400 mb-1">Área de Conciliação Bancária</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 max-w-xs text-center leading-relaxed mb-4">
+                            Importe o arquivo <span class="font-mono bg-gray-100 dark:bg-slate-700 px-1 rounded">.OFX</span> ou faça a ponte automática via API do banco.
+                        </p>
+                        <button id="btnSyncBankApiCenter" class="flex items-center justify-center px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors shadow-sm gap-2 text-sm border border-emerald-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Consultar Extrato via API
+                        </button>
+                    </div>
+
+                    <!-- Mock Table Body behind the blur -->
+                    <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60 opacity-30 select-none pointer-events-none">
+                        <thead class="bg-gray-50 dark:bg-slate-900/40">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left w-12">
+                                    <input type="checkbox" id="chkAllBank" title="Selecionar todos os lançamentos do banco" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600">
+                                </th>
+                                <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase">Data</th>
+                                <th scope="col" class="px-3 py-3 text-left text-[10px] font-medium text-gray-500 uppercase">Histórico</th>
+                                <th scope="col" class="px-3 py-3 text-right text-[10px] font-medium text-gray-500 uppercase">Valor</th>
+                                <th scope="col" class="px-4 py-3 text-center text-[10px] font-medium text-gray-500 uppercase">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bankStatementsTable" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
+                            <tr>
+                                <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-3 w-32 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-emerald-100 dark:bg-emerald-900/30 ml-auto rounded animate-pulse"></div></td>
+                                <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-3 w-24 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-red-100 dark:bg-red-900/30 ml-auto rounded animate-pulse"></div></td>
+                                <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-3"><div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3"><div class="h-3 w-36 bg-gray-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                                <td class="px-3 py-3 text-right"><div class="h-3 w-16 bg-red-100 dark:bg-red-900/30 ml-auto rounded animate-pulse"></div></td>
+                                <td class="px-4 py-3"><div class="h-6 w-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 <!-- Footer OFX -->
-                <div id="statementsBankFooter" class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+                <div id="statementsBankFooter" class="shrink-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
                     <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0">
                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg>
                         <span id="footerBankCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span> mov(s)

@@ -423,91 +423,224 @@
             UI.showAlert('alertMessage', 'Erro ao carregar movimentações. Tente novamente.', 'error');
         }
     }
+    // ─── Helpers de data para Período ─────────────────────────────────────────────
+    const formatLocalDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    function updateDatesFromPeriod(periodId, startId, endId) {
+        const periodEl = getById(periodId);
+        const startEl = getById(startId);
+        const endEl = getById(endId);
+        if (!periodEl || !startEl || !endEl)
+            return false;
+        const period = periodEl.value;
+        if (period === 'custom')
+            return false;
+        let startVal = '';
+        let endVal = '';
+        const now = new Date();
+        if (period === 'today') {
+            const todayStr = formatLocalDate(now);
+            startVal = todayStr;
+            endVal = todayStr;
+        }
+        else if (period === 'yesterday') {
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            const yesterdayStr = formatLocalDate(yesterday);
+            startVal = yesterdayStr;
+            endVal = yesterdayStr;
+        }
+        else if (period === 'this_month') {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            startVal = formatLocalDate(start);
+            endVal = formatLocalDate(end);
+        }
+        else if (period === 'last_month') {
+            const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const end = new Date(now.getFullYear(), now.getMonth(), 0);
+            startVal = formatLocalDate(start);
+            endVal = formatLocalDate(end);
+        }
+        else if (period === 'this_year') {
+            const start = new Date(now.getFullYear(), 0, 1);
+            const end = new Date(now.getFullYear(), 11, 31);
+            startVal = formatLocalDate(start);
+            endVal = formatLocalDate(end);
+        }
+        let changed = false;
+        if (startEl.value !== startVal) {
+            startEl.value = startVal;
+            changed = true;
+        }
+        if (endEl.value !== endVal) {
+            endEl.value = endVal;
+            changed = true;
+        }
+        return changed;
+    }
+    function saveFilters() {
+        const sysSelectors = ['filterSysPeriod', 'filterSysStart', 'filterSysEnd', 'filterSysBank', 'filterSysType', 'filterSysStatus', 'filterSysSearch'];
+        sysSelectors.forEach((id) => {
+            const el = getById(id);
+            if (el) {
+                if (window.CompanyStorage) {
+                    window.CompanyStorage.setItem(`system_statements_filter_${id}`, el.value);
+                }
+                else {
+                    localStorage.setItem(`system_statements_filter_${id}`, el.value);
+                }
+            }
+        });
+        const bankSelectors = ['filterBankPeriod', 'filterBankStart', 'filterBankEnd', 'filterBankSelect', 'filterBankType', 'filterBankReconciled', 'filterBankSearch'];
+        bankSelectors.forEach((id) => {
+            const el = getById(id);
+            if (el) {
+                if (window.CompanyStorage) {
+                    window.CompanyStorage.setItem(`bank_statements_filter_${id}`, el.value);
+                }
+                else {
+                    localStorage.setItem(`bank_statements_filter_${id}`, el.value);
+                }
+            }
+        });
+    }
+    function restoreFilters() {
+        const sysSelectors = ['filterSysPeriod', 'filterSysStart', 'filterSysEnd', 'filterSysBank', 'filterSysType', 'filterSysStatus', 'filterSysSearch'];
+        sysSelectors.forEach((id) => {
+            const saved = window.CompanyStorage?.getItem(`system_statements_filter_${id}`) ?? localStorage.getItem(`system_statements_filter_${id}`);
+            if (saved !== null && saved !== undefined) {
+                const el = getById(id);
+                if (el)
+                    el.value = saved;
+            }
+        });
+        const bankSelectors = ['filterBankPeriod', 'filterBankStart', 'filterBankEnd', 'filterBankSelect', 'filterBankType', 'filterBankReconciled', 'filterBankSearch'];
+        bankSelectors.forEach((id) => {
+            const saved = window.CompanyStorage?.getItem(`bank_statements_filter_${id}`) ?? localStorage.getItem(`bank_statements_filter_${id}`);
+            if (saved !== null && saved !== undefined) {
+                const el = getById(id);
+                if (el)
+                    el.value = saved;
+            }
+        });
+        // Default period for System if not set
+        const sysPeriodEl = getById('filterSysPeriod');
+        const savedSysPeriod = window.CompanyStorage?.getItem('system_statements_filter_filterSysPeriod') ?? localStorage.getItem('system_statements_filter_filterSysPeriod');
+        if (savedSysPeriod === null || savedSysPeriod === undefined) {
+            if (sysPeriodEl)
+                sysPeriodEl.value = 'this_month';
+            updateDatesFromPeriod('filterSysPeriod', 'filterSysStart', 'filterSysEnd');
+        }
+        else if (savedSysPeriod !== 'custom' && savedSysPeriod !== '') {
+            if (sysPeriodEl)
+                sysPeriodEl.value = savedSysPeriod;
+            updateDatesFromPeriod('filterSysPeriod', 'filterSysStart', 'filterSysEnd');
+        }
+        // Default period for Bank if not set
+        const bankPeriodEl = getById('filterBankPeriod');
+        const savedBankPeriod = window.CompanyStorage?.getItem('bank_statements_filter_filterBankPeriod') ?? localStorage.getItem('bank_statements_filter_filterBankPeriod');
+        if (savedBankPeriod === null || savedBankPeriod === undefined) {
+            if (bankPeriodEl)
+                bankPeriodEl.value = 'this_month';
+            updateDatesFromPeriod('filterBankPeriod', 'filterBankStart', 'filterBankEnd');
+        }
+        else if (savedBankPeriod !== 'custom' && savedBankPeriod !== '') {
+            if (bankPeriodEl)
+                bankPeriodEl.value = savedBankPeriod;
+            updateDatesFromPeriod('filterBankPeriod', 'filterBankStart', 'filterBankEnd');
+        }
+    }
     function setupFilters() {
-        // 1. Filtro dos Lançamentos do Sistema ERP (Coluna Esquerda)
-        FilterPanel.mount({
-            afterElementId: 'systemFilterAnchor',
-            panelId: 'system-statements-filter-panel',
-            title: 'Filtro - Lançamentos do Sistema',
-            storageKey: 'system_statements_filters',
-            defaultOpen: false,
-            fields: [
-                { id: 'filterSysStart', label: 'Data Início', type: 'date' },
-                { id: 'filterSysEnd', label: 'Data Fim', type: 'date' },
-                {
-                    id: 'filterSysBank',
-                    label: 'Conta Bancária',
-                    type: 'select',
-                    options: [{ value: '', label: 'Todas as contas' }],
-                },
-                {
-                    id: 'filterSysType',
-                    label: 'Tipo',
-                    type: 'select',
-                    options: [
-                        { value: '', label: 'Todos' },
-                        { value: 'revenue', label: 'Receitas' },
-                        { value: 'expense', label: 'Despesas' },
-                    ],
-                },
-                {
-                    id: 'filterSysStatus',
-                    label: 'Status',
-                    type: 'select',
-                    options: [
-                        { value: '', label: 'Todos' },
-                        { value: 'paid', label: 'Pagos / Recebidos' },
-                        { value: 'pending', label: 'Pendentes' },
-                        { value: 'overdue', label: 'Vencidos' },
-                    ],
-                },
-                { id: 'filterSysSearch', label: 'Busca', type: 'text', placeholder: 'Descrição, categoria, entidade...' },
-            ],
-            gridClass: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end',
-        });
-        // 2. Filtro do Extrato do Banco (Coluna Direita)
-        FilterPanel.mount({
-            afterElementId: 'bankFilterAnchor',
-            panelId: 'bank-statements-filter-panel',
-            title: 'Filtro - Extrato do Banco',
-            storageKey: 'bank_statements_filters',
-            defaultOpen: false,
-            fields: [
-                { id: 'filterBankStart', label: 'Data Início', type: 'date' },
-                { id: 'filterBankEnd', label: 'Data Fim', type: 'date' },
-                {
-                    id: 'filterBankSelect',
-                    label: 'Conta Bancária',
-                    type: 'select',
-                    options: [{ value: '', label: 'Selecione uma conta' }],
-                },
-                {
-                    id: 'filterBankType',
-                    label: 'Tipo',
-                    type: 'select',
-                    options: [
-                        { value: '', label: 'Todos' },
-                        { value: 'income', label: 'Entradas' },
-                        { value: 'expense', label: 'Saídas' },
-                    ],
-                },
-                {
-                    id: 'filterBankReconciled',
-                    label: 'Status',
-                    type: 'select',
-                    options: [
-                        { value: '', label: 'Todos' },
-                        { value: 'unreconciled', label: 'Não Conciliados' },
-                        { value: 'reconciled', label: 'Conciliados' },
-                    ],
-                },
-                { id: 'filterBankSearch', label: 'Busca', type: 'text', placeholder: 'Descrição no extrato...' },
-            ],
-            gridClass: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end',
-        });
+        // 1. Accordion Sistema ERP
+        const SYS_FILTER_STORAGE_KEY = 'system_statements_filter_open';
+        const toggleSysFilterBtn = getById('toggleSysFilterBtn');
+        const sysFilterBody = getById('sysFilterBody');
+        const sysFilterChevron = getById('sysFilterChevron');
+        let sysFilterIsOpen = (window.CompanyStorage?.getItem(SYS_FILTER_STORAGE_KEY) ?? localStorage.getItem(SYS_FILTER_STORAGE_KEY)) === 'true';
+        if (sysFilterBody && sysFilterChevron) {
+            sysFilterBody.style.transition = 'none';
+            sysFilterBody.style.maxHeight = sysFilterIsOpen ? `${sysFilterBody.scrollHeight}px` : '0px';
+            sysFilterChevron.style.transform = sysFilterIsOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+            requestAnimationFrame(() => {
+                sysFilterBody.style.transition = 'max-height 0.3s ease';
+            });
+            if (toggleSysFilterBtn) {
+                toggleSysFilterBtn.addEventListener('click', () => {
+                    sysFilterIsOpen = !sysFilterIsOpen;
+                    if (window.CompanyStorage) {
+                        window.CompanyStorage.setItem(SYS_FILTER_STORAGE_KEY, sysFilterIsOpen ? 'true' : 'false');
+                    }
+                    else {
+                        localStorage.setItem(SYS_FILTER_STORAGE_KEY, sysFilterIsOpen ? 'true' : 'false');
+                    }
+                    sysFilterBody.style.maxHeight = sysFilterIsOpen ? `${sysFilterBody.scrollHeight}px` : '0px';
+                    sysFilterChevron.style.transform = sysFilterIsOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+                });
+            }
+        }
+        // 2. Accordion Extrato do Banco
+        const BANK_FILTER_STORAGE_KEY = 'bank_statements_filter_open';
+        const toggleBankFilterBtn = getById('toggleBankFilterBtn');
+        const bankFilterBody = getById('bankFilterBody');
+        const bankFilterChevron = getById('bankFilterChevron');
+        let bankFilterIsOpen = (window.CompanyStorage?.getItem(BANK_FILTER_STORAGE_KEY) ?? localStorage.getItem(BANK_FILTER_STORAGE_KEY)) === 'true';
+        if (bankFilterBody && bankFilterChevron) {
+            bankFilterBody.style.transition = 'none';
+            bankFilterBody.style.maxHeight = bankFilterIsOpen ? `${bankFilterBody.scrollHeight}px` : '0px';
+            bankFilterChevron.style.transform = bankFilterIsOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+            requestAnimationFrame(() => {
+                bankFilterBody.style.transition = 'max-height 0.3s ease';
+            });
+            if (toggleBankFilterBtn) {
+                toggleBankFilterBtn.addEventListener('click', () => {
+                    bankFilterIsOpen = !bankFilterIsOpen;
+                    if (window.CompanyStorage) {
+                        window.CompanyStorage.setItem(BANK_FILTER_STORAGE_KEY, bankFilterIsOpen ? 'true' : 'false');
+                    }
+                    else {
+                        localStorage.setItem(BANK_FILTER_STORAGE_KEY, bankFilterIsOpen ? 'true' : 'false');
+                    }
+                    bankFilterBody.style.maxHeight = bankFilterIsOpen ? `${bankFilterBody.scrollHeight}px` : '0px';
+                    bankFilterChevron.style.transform = bankFilterIsOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+                });
+            }
+        }
         restoreFilters();
-        // Eventos do Sistema
-        ['filterSysStart', 'filterSysEnd', 'filterSysBank', 'filterSysType', 'filterSysStatus'].forEach((id) => {
+        // Eventos Sistema
+        const sysPeriodEl = getById('filterSysPeriod');
+        const sysStartEl = getById('filterSysStart');
+        const sysEndEl = getById('filterSysEnd');
+        if (sysPeriodEl) {
+            sysPeriodEl.addEventListener('change', () => {
+                updateDatesFromPeriod('filterSysPeriod', 'filterSysStart', 'filterSysEnd');
+                saveFilters();
+                renderAllSystem();
+            });
+        }
+        if (sysStartEl) {
+            sysStartEl.addEventListener('change', () => {
+                if (sysPeriodEl && sysPeriodEl.value !== 'custom') {
+                    sysPeriodEl.value = 'custom';
+                }
+                saveFilters();
+                renderAllSystem();
+            });
+        }
+        if (sysEndEl) {
+            sysEndEl.addEventListener('change', () => {
+                if (sysPeriodEl && sysPeriodEl.value !== 'custom') {
+                    sysPeriodEl.value = 'custom';
+                }
+                saveFilters();
+                renderAllSystem();
+            });
+        }
+        ['filterSysBank', 'filterSysType', 'filterSysStatus'].forEach((id) => {
             getById(id)?.addEventListener('change', () => {
                 saveFilters();
                 renderAllSystem();
@@ -523,12 +656,59 @@
                 sysSearchTimer = null;
             }, 180);
         });
-        // Eventos do Banco
-        ['filterBankStart', 'filterBankEnd', 'filterBankSelect'].forEach((id) => {
-            getById(id)?.addEventListener('change', () => {
+        const btnClearSys = getById('btnClearSysFilters');
+        if (btnClearSys) {
+            btnClearSys.addEventListener('click', () => {
+                ['filterSysBank', 'filterSysType', 'filterSysStatus', 'filterSysSearch'].forEach((id) => {
+                    const el = getById(id);
+                    if (el)
+                        el.value = '';
+                    if (window.CompanyStorage) {
+                        window.CompanyStorage.removeItem(`system_statements_filter_${id}`);
+                    }
+                    else {
+                        localStorage.removeItem(`system_statements_filter_${id}`);
+                    }
+                });
+                if (sysPeriodEl)
+                    sysPeriodEl.value = 'this_month';
+                updateDatesFromPeriod('filterSysPeriod', 'filterSysStart', 'filterSysEnd');
+                saveFilters();
+                renderAllSystem();
+            });
+        }
+        // Eventos Extrato do Banco
+        const bankPeriodEl = getById('filterBankPeriod');
+        const bankStartEl = getById('filterBankStart');
+        const bankEndEl = getById('filterBankEnd');
+        if (bankPeriodEl) {
+            bankPeriodEl.addEventListener('change', () => {
+                updateDatesFromPeriod('filterBankPeriod', 'filterBankStart', 'filterBankEnd');
                 saveFilters();
                 void loadBankStatements();
             });
+        }
+        if (bankStartEl) {
+            bankStartEl.addEventListener('change', () => {
+                if (bankPeriodEl && bankPeriodEl.value !== 'custom') {
+                    bankPeriodEl.value = 'custom';
+                }
+                saveFilters();
+                void loadBankStatements();
+            });
+        }
+        if (bankEndEl) {
+            bankEndEl.addEventListener('change', () => {
+                if (bankPeriodEl && bankPeriodEl.value !== 'custom') {
+                    bankPeriodEl.value = 'custom';
+                }
+                saveFilters();
+                void loadBankStatements();
+            });
+        }
+        getById('filterBankSelect')?.addEventListener('change', () => {
+            saveFilters();
+            void loadBankStatements();
         });
         ['filterBankType', 'filterBankReconciled'].forEach((id) => {
             getById(id)?.addEventListener('change', () => {
@@ -546,97 +726,27 @@
                 bankSearchTimer = null;
             }, 180);
         });
-    }
-    function saveFilters() {
-        const sysFilters = {
-            filterSysStart: getById('filterSysStart')?.value || '',
-            filterSysEnd: getById('filterSysEnd')?.value || '',
-            filterSysBank: getById('filterSysBank')?.value || '',
-            filterSysType: getById('filterSysType')?.value || '',
-            filterSysStatus: getById('filterSysStatus')?.value || '',
-            filterSysSearch: getById('filterSysSearch')?.value || '',
-        };
-        const bankFilters = {
-            filterBankStart: getById('filterBankStart')?.value || '',
-            filterBankEnd: getById('filterBankEnd')?.value || '',
-            filterBankSelect: getById('filterBankSelect')?.value || '',
-            filterBankType: getById('filterBankType')?.value || '',
-            filterBankReconciled: getById('filterBankReconciled')?.value || '',
-            filterBankSearch: getById('filterBankSearch')?.value || '',
-        };
-        if (window.CompanyStorage) {
-            window.CompanyStorage.setItem('system_statements_filters_values', JSON.stringify(sysFilters));
-            window.CompanyStorage.setItem('bank_statements_filters_values', JSON.stringify(bankFilters));
+        const btnClearBank = getById('btnClearBankFilters');
+        if (btnClearBank) {
+            btnClearBank.addEventListener('click', () => {
+                ['filterBankType', 'filterBankReconciled', 'filterBankSearch'].forEach((id) => {
+                    const el = getById(id);
+                    if (el)
+                        el.value = '';
+                    if (window.CompanyStorage) {
+                        window.CompanyStorage.removeItem(`bank_statements_filter_${id}`);
+                    }
+                    else {
+                        localStorage.removeItem(`bank_statements_filter_${id}`);
+                    }
+                });
+                if (bankPeriodEl)
+                    bankPeriodEl.value = 'this_month';
+                updateDatesFromPeriod('filterBankPeriod', 'filterBankStart', 'filterBankEnd');
+                saveFilters();
+                void loadBankStatements();
+            });
         }
-        else {
-            localStorage.setItem('system_statements_filters_values', JSON.stringify(sysFilters));
-            localStorage.setItem('bank_statements_filters_values', JSON.stringify(bankFilters));
-        }
-    }
-    function restoreFilters() {
-        const savedSys = window.CompanyStorage?.getItem('system_statements_filters_values') ?? localStorage.getItem('system_statements_filters_values');
-        if (savedSys) {
-            try {
-                const filters = JSON.parse(savedSys);
-                if (getById('filterSysStart'))
-                    getById('filterSysStart').value = filters.filterSysStart || '';
-                if (getById('filterSysEnd'))
-                    getById('filterSysEnd').value = filters.filterSysEnd || '';
-                if (getById('filterSysBank'))
-                    getById('filterSysBank').value = filters.filterSysBank || '';
-                if (getById('filterSysType'))
-                    getById('filterSysType').value = filters.filterSysType || '';
-                if (getById('filterSysStatus'))
-                    getById('filterSysStatus').value = filters.filterSysStatus || '';
-                if (getById('filterSysSearch'))
-                    getById('filterSysSearch').value = filters.filterSysSearch || '';
-            }
-            catch (e) {
-                console.error('[Statements] Erro ao restaurar filtros do sistema:', e);
-            }
-        }
-        const savedBank = window.CompanyStorage?.getItem('bank_statements_filters_values') ?? localStorage.getItem('bank_statements_filters_values');
-        if (savedBank) {
-            try {
-                const filters = JSON.parse(savedBank);
-                if (getById('filterBankStart'))
-                    getById('filterBankStart').value = filters.filterBankStart || '';
-                if (getById('filterBankEnd'))
-                    getById('filterBankEnd').value = filters.filterBankEnd || '';
-                if (getById('filterBankSelect'))
-                    getById('filterBankSelect').value = filters.filterBankSelect || '';
-                if (getById('filterBankType'))
-                    getById('filterBankType').value = filters.filterBankType || '';
-                if (getById('filterBankReconciled'))
-                    getById('filterBankReconciled').value = filters.filterBankReconciled || '';
-                if (getById('filterBankSearch'))
-                    getById('filterBankSearch').value = filters.filterBankSearch || '';
-            }
-            catch (e) {
-                console.error('[Statements] Erro ao restaurar filtros do banco:', e);
-            }
-        }
-    }
-    // ─── Filtro rápido do mês corrente por default ────────────────────────────────
-    function setDefaultPeriods() {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const start = `${y}-${m}-01`;
-        const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
-        const end = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
-        const sysStart = getById('filterSysStart');
-        const sysEnd = getById('filterSysEnd');
-        if (sysStart && !sysStart.value)
-            sysStart.value = start;
-        if (sysEnd && !sysEnd.value)
-            sysEnd.value = end;
-        const bankStart = getById('filterBankStart');
-        const bankEnd = getById('filterBankEnd');
-        if (bankStart && !bankStart.value)
-            bankStart.value = start;
-        if (bankEnd && !bankEnd.value)
-            bankEnd.value = end;
     }
     // ─── Integração API Banco ─────────────────────────────────────────────────────
     function updateBankFooter(items) {
@@ -854,7 +964,6 @@
         getById('btnHeaderSyncBankApi')?.addEventListener('click', syncBankStatementsViaApi);
         updateViewToggle();
         setupFilters();
-        setDefaultPeriods();
         // Eventos para Select All Checkboxes
         getById('chkAllSystem')?.addEventListener('change', (e) => {
             const checkboxes = document.querySelectorAll('.chk-system');

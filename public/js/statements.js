@@ -530,6 +530,26 @@
             modal.classList.add('hidden');
         selectedBankStatementForCreate = null;
     }
+    function openQuickCategoryModal() {
+        const isRevenue = getById('stmtTypeRevenue')?.checked;
+        const catType = isRevenue ? 'income' : 'expense';
+        const typeSelect = getById('quickCategoryType');
+        const nameInput = getById('quickCategoryName');
+        if (typeSelect)
+            typeSelect.value = catType;
+        if (nameInput) {
+            nameInput.value = '';
+            setTimeout(() => nameInput.focus(), 50);
+        }
+        const modal = getById('quickCategoryModal');
+        if (modal)
+            modal.classList.remove('hidden');
+    }
+    function closeQuickCategoryModal() {
+        const modal = getById('quickCategoryModal');
+        if (modal)
+            modal.classList.add('hidden');
+    }
     // ─── Busca de dados ───────────────────────────────────────────────────────────
     async function fetchStatements() {
         try {
@@ -1255,6 +1275,59 @@
         getById('btnCancelCreateFromStatementModal')?.addEventListener('click', closeCreateFromStatementModal);
         getById('btnCloseCreateFromStatementModal')?.addEventListener('click', closeCreateFromStatementModal);
         getById('createFromStatementModalBackdrop')?.addEventListener('click', closeCreateFromStatementModal);
+        // Event listeners para o Modal de Cadastro Rápido de Categoria
+        getById('btnOpenQuickCategoryModal')?.addEventListener('click', openQuickCategoryModal);
+        getById('btnOpenQuickCategoryModalIcon')?.addEventListener('click', openQuickCategoryModal);
+        getById('btnCloseQuickCategoryModal')?.addEventListener('click', closeQuickCategoryModal);
+        getById('btnCancelQuickCategoryModal')?.addEventListener('click', closeQuickCategoryModal);
+        getById('quickCategoryModalBackdrop')?.addEventListener('click', closeQuickCategoryModal);
+        getById('quickCategoryForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = getById('btnSubmitQuickCategory');
+            const nameInput = getById('quickCategoryName');
+            const typeSelect = getById('quickCategoryType');
+            const name = nameInput?.value?.trim();
+            const type = typeSelect?.value || 'expense';
+            if (!name || name.length < 2) {
+                UI.showAlert('alertMessage', 'Informe um nome com pelo menos 2 caracteres para a categoria.', 'warning');
+                return;
+            }
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<svg class="w-4 h-4 animate-spin inline-block mr-1.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Salvando...</span>';
+                }
+                const res = await api('/finance/categories', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, type }),
+                });
+                const createdCategory = res?.data;
+                // Recarrega lista completa de categorias
+                const catRes = await api('/finance/categories');
+                categoriesData = catRes.data || [];
+                // Atualiza o select de categorias no modal de lançamento
+                const isRevenue = getById('stmtTypeRevenue')?.checked;
+                const activeType = isRevenue ? 'revenue' : 'expense';
+                populateCreateModalCategories(activeType);
+                // Seleciona automaticamente a categoria recém criada
+                const stmtCatSelect = getById('stmtCreateCategory');
+                if (stmtCatSelect && createdCategory?.public_id) {
+                    stmtCatSelect.value = createdCategory.public_id;
+                }
+                UI.showAlert('alertMessage', `Categoria "${name}" cadastrada com sucesso!`, 'success');
+                closeQuickCategoryModal();
+            }
+            catch (err) {
+                console.error('Erro ao cadastrar categoria:', err);
+                UI.showAlert('alertMessage', err?.message || 'Erro ao cadastrar categoria.', 'error');
+            }
+            finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <span>Salvar Categoria</span>';
+                }
+            }
+        });
         getById('stmtTypeExpense')?.addEventListener('change', () => {
             populateCreateModalCategories('expense');
             updateModalTypeVisuals('expense');

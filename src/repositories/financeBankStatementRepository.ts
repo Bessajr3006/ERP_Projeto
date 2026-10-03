@@ -21,7 +21,7 @@ export class FinanceBankStatementRepository {
 
     static async getBankAccountByPublicId(client: DBClient, companyId: number, publicId: string): Promise<RowDataPacket[]> {
         const [rows] = await client.query<RowDataPacket[]>(
-            'SELECT id, name, currency FROM bank_accounts WHERE public_id = ? AND company_id = ? LIMIT 1',
+            'SELECT id, name FROM bank_accounts WHERE public_id = ? AND company_id = ? LIMIT 1',
             [publicId, companyId]
         );
         return rows;

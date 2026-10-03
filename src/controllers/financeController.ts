@@ -240,9 +240,9 @@ export class FinanceController {
             const userId = req.user!.id;
             const validatedData = createExpenseSchema.parse(req.body);
 
-            await FinanceService.createExpense(companyId, userId, validatedData);
+            const result = await FinanceService.createExpense(companyId, userId, validatedData);
 
-            res.status(201).json({ status: 'success', message: 'Expense recorded successfully' });
+            res.status(201).json({ status: 'success', message: 'Expense recorded successfully', data: result });
         } catch (error: any) {
             if (error instanceof z.ZodError) {
                 logger.warn({ zodErrors: error.errors }, '[financeController] ZodError');
@@ -295,9 +295,9 @@ export class FinanceController {
             const userId = req.user!.id;
             const validatedData = createRevenueSchema.parse(req.body);
 
-            await FinanceService.createRevenue(companyId, userId, validatedData);
+            const result = await FinanceService.createRevenue(companyId, userId, validatedData);
 
-            res.status(201).json({ status: 'success', message: 'Revenue recorded successfully' });
+            res.status(201).json({ status: 'success', message: 'Revenue recorded successfully', data: result });
         } catch (error: any) {
             if (error instanceof z.ZodError) {
                 logger.warn({ zodErrors: error.errors }, '[financeController] ZodError (Revenue)');

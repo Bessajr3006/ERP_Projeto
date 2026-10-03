@@ -493,25 +493,21 @@
 
     if (badgeType) {
       if (type === 'revenue') {
-        badgeType.className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
-        badgeType.textContent = 'Receita';
+        badgeType.className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/50';
+        badgeType.textContent = 'Receita (Entrada)';
       } else {
-        badgeType.className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
-        badgeType.textContent = 'Despesa';
+        badgeType.className = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700/50';
+        badgeType.textContent = 'Despesa (Saída)';
       }
     }
 
     if (expenseLabel && revenueLabel) {
       if (type === 'expense') {
-        expenseLabel.classList.add('border-red-500', 'bg-red-50/50', 'dark:bg-red-950/20');
-        expenseLabel.classList.remove('border-gray-200', 'dark:border-slate-700');
-        revenueLabel.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/20');
-        revenueLabel.classList.add('border-gray-200', 'dark:border-slate-700');
+        expenseLabel.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-red-500 bg-red-50/80 dark:bg-red-950/40 cursor-pointer transition-all shadow-xs';
+        revenueLabel.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 cursor-pointer transition-all hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 opacity-70 hover:opacity-100';
       } else {
-        revenueLabel.classList.add('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/20');
-        revenueLabel.classList.remove('border-gray-200', 'dark:border-slate-700');
-        expenseLabel.classList.remove('border-red-500', 'bg-red-50/50', 'dark:bg-red-950/20');
-        expenseLabel.classList.add('border-gray-200', 'dark:border-slate-700');
+        revenueLabel.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 cursor-pointer transition-all shadow-xs';
+        expenseLabel.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 cursor-pointer transition-all hover:bg-red-50/50 dark:hover:bg-red-950/20 opacity-70 hover:opacity-100';
       }
     }
   }
@@ -534,13 +530,14 @@
 
     if (hiddenId) hiddenId.value = stmt.public_id;
 
+    // Regra estrita de tipo: Despesa vai para Despesa, Receita vai para Receita
     const rawAmount = parseFloat(stmt.amount) || 0;
-    const isIncome = stmt.type === 'income' || stmt.type === 'revenue' || rawAmount > 0;
-    const initialType: 'expense' | 'revenue' = isIncome ? 'revenue' : 'expense';
+    const isExpense = stmt.type === 'expense' || stmt.type === 'debit' || (stmt.type !== 'income' && stmt.type !== 'revenue' && rawAmount < 0);
+    const initialType: 'expense' | 'revenue' = isExpense ? 'expense' : 'revenue';
 
     if (radioExpense && radioRevenue) {
-      radioExpense.checked = !isIncome;
-      radioRevenue.checked = isIncome;
+      radioExpense.checked = isExpense;
+      radioRevenue.checked = !isExpense;
     }
 
     updateModalTypeVisuals(initialType);
@@ -1058,15 +1055,20 @@
 
         const actionHtml = isReconciled
           ? `<div class="flex flex-col items-center gap-1">
-                 <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Conciliado</span>
-                 <button type="button" class="text-[9px] text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors btn-unreconcile cursor-pointer" data-id="${t.public_id}">Desconciliar</button>
+                 <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 gap-1 border border-emerald-300 dark:border-emerald-700/50">
+                     <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                     Conciliado
+                 </span>
+                 <button type="button" class="text-[10px] font-semibold text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-2 transition-colors btn-unreconcile cursor-pointer" data-id="${t.public_id}">Desconciliar</button>
                </div>`
           : `<div class="flex items-center justify-center gap-1.5">
-                 <button type="button" class="inline-flex items-center gap-1 text-[10px] bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300 px-2 py-1 rounded font-bold hover:bg-brand-100 dark:hover:bg-brand-900/60 transition-colors border border-brand-200 dark:border-brand-700/60 btn-create-from-statement cursor-pointer" data-id="${t.public_id}" title="Fazer lançamento no sistema a partir deste extrato">
-                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                     Lançar
+                 <button type="button" class="inline-flex items-center gap-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-2.5 py-1 rounded-md shadow-sm transition-all btn-create-from-statement cursor-pointer" data-id="${t.public_id}" title="Fazer lançamento no sistema a partir deste extrato">
+                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                     <span>Lançar</span>
                  </button>
-                 <button type="button" class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold hover:bg-emerald-100 transition-colors dark:bg-emerald-900/30 dark:text-emerald-400 btn-conciliate-single cursor-pointer" data-id="${t.public_id}">Conciliar</button>
+                 <button type="button" class="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-2.5 py-1 rounded-md shadow-sm transition-all btn-conciliate-single cursor-pointer" data-id="${t.public_id}" title="Conciliar com lançamento do ERP">
+                     <span>Conciliar</span>
+                 </button>
              </div>`;
 
         return `

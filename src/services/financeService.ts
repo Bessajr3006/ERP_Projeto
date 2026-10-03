@@ -171,7 +171,8 @@ export class FinanceService {
         companyId: number,
         userId: string,
         data: { description: string; amount: number; date: string; category_public_id: string; bank_account_public_id: string; payment_method?: string | null | undefined; status?: string | undefined; entity_type?: string | null | undefined; entity_public_id?: string | null | undefined; cost_center_public_id?: string | null | undefined; barcode?: string | null | undefined; pix_code?: string | null | undefined; pix_key?: string | null | undefined }
-    ): Promise<void> {
+    ): Promise<{ public_id: string }> {
+        let createdTransactionPublicId: string | null = null;
         await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
             const catRows = await FinanceTransactionRepository.getCategoryByPublicId(conn, companyId, data.category_public_id);
             if (!catRows || catRows.length === 0 || !catRows[0]) throw new Error('Category not found');
@@ -196,6 +197,7 @@ export class FinanceService {
             }
 
             const transactionPublicId = randomUUID();
+            createdTransactionPublicId = transactionPublicId;
             const txStatus = data.status || 'paid';
 
             await FinanceTransactionRepository.insertTransaction(conn, {
@@ -226,6 +228,7 @@ export class FinanceService {
                 await FinanceTransactionRepository.updateBankAccountBalance(conn, companyId, bankAccountId, data.amount, true);
             }
         });
+        return { public_id: createdTransactionPublicId! };
     }
 
     static async listExpenses(companyId: number): Promise<any[]> {
@@ -245,7 +248,7 @@ export class FinanceService {
         companyId: number,
         userId: string,
         data: { description: string; amount: number; original_amount?: number | null | undefined; fine?: number | null | undefined; interest?: number | null | undefined; date: string; date_launch?: string | null | undefined; received_at?: string | undefined; received_channel?: string | null | undefined; category_public_id: string; bank_account_public_id: string; customer_public_id?: string | undefined; payment_method?: string | null | undefined; card_brand_public_id?: string | null | undefined; card_configuration_public_id?: string | null | undefined; status?: string | undefined; entity_type?: string | null | undefined; entity_public_id?: string | null | undefined; cost_center_public_id?: string | null | undefined; pdv?: string | null | undefined; cdfilial?: string | null | undefined; solidcon_quitado?: number | boolean | null | undefined; solidcon_key?: string | null | undefined }
-    ): Promise<void> {
+    ): Promise<{ public_id: string }> {
         let createdTransactionPublicId: string | null = null;
         await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
             const catRows = await FinanceTransactionRepository.getCategoryByPublicId(conn, companyId, data.category_public_id, 'income');
@@ -401,6 +404,8 @@ export class FinanceService {
         if (createdTransactionPublicId && data.status !== 'paid' && (data.payment_method === 'boleto' || data.payment_method === 'pix')) {
             void FinanceService.scheduleAutoSendWhatsApp(companyId, createdTransactionPublicId, userId, 30_000);
         }
+
+        return { public_id: createdTransactionPublicId! };
     }
 
     static async listRevenues(companyId: number): Promise<any[]> {

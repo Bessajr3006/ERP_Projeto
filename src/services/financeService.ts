@@ -894,12 +894,12 @@ export class FinanceService {
         });
     }
 
-    static async undoReconcile(companyId: number, bankStatementId: number): Promise<void> {
+    static async undoReconcile(companyId: number, bankStatementId: string | number, deleteTransaction: boolean = true): Promise<void> {
         const statements = await FinanceBankStatementRepository.getStatementsForReconciliation(pool, companyId, [String(bankStatementId)]);
-        if (statements.length === 0) throw new Error('Não encontrado');
+        if (statements.length === 0) throw new Error('Extrato não encontrado');
         const statement = statements[0]!;
         await FinanceBankStatementRepository.withTransaction(async (conn) => {
-            await FinanceBankStatementRepository.undoReconcile(conn, statement.id, statement.reconciled_transaction_id);
+            await FinanceBankStatementRepository.undoReconcile(conn, statement.id, statement.reconciled_transaction_id, deleteTransaction, companyId);
         });
     }
 

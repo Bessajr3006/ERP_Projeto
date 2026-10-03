@@ -1308,7 +1308,7 @@
         e.preventDefault();
         e.stopPropagation();
         const public_id = unreconcileBtn.dataset.id;
-        if (!confirm('Deseja realmente remover a conciliação deste lançamento?')) return;
+        if (!confirm('Deseja realmente remover a conciliação deste lançamento?\n\nO lançamento correspondente gerado no sistema (ERP) será excluído para restaurar o extrato e o saldo.')) return;
 
         try {
           unreconcileBtn.disabled = true;
@@ -1316,13 +1316,15 @@
 
           await (api as any)('/finance/reconcile/undo', {
             method: 'POST',
-            body: JSON.stringify({ bank_statement_id: public_id }),
+            body: JSON.stringify({ bank_statement_id: public_id, delete_transaction: true }),
           });
 
-          (UI as any).showAlert('alertMessage', 'Conciliação removida com sucesso!', 'success');
+          (UI as any).showAlert('alertMessage', 'Conciliação desfeita e lançamento excluído com sucesso!', 'success');
 
-          void fetchStatements();
-          void loadBankStatements();
+          await Promise.all([
+            fetchStatements(),
+            loadBankStatements(),
+          ]);
         } catch (err: any) {
           unreconcileBtn.disabled = false;
           unreconcileBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>`;

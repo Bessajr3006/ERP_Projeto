@@ -799,14 +799,15 @@ export class FinanceController {
     static async undoReconcile(req: Request, res: Response): Promise<void> {
         try {
             const companyId = req.user!.company_id;
-            const { bank_statement_id } = req.body;
+            const { bank_statement_id, delete_transaction } = req.body;
 
             if (!bank_statement_id) {
                 res.status(400).json({ status: 'error', message: 'bank_statement_id é obrigatório.' });
                 return;
             }
 
-            await FinanceService.undoReconcile(companyId, bank_statement_id);
+            const shouldDelete = delete_transaction !== undefined ? Boolean(delete_transaction) : true;
+            await FinanceService.undoReconcile(companyId, bank_statement_id, shouldDelete);
             res.status(200).json({ status: 'success', message: 'Conciliação desfeita com sucesso.' });
         } catch (error: any) {
             console.error('[FinanceController] Erro ao desconciliar:', error);

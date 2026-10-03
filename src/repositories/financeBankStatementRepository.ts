@@ -57,9 +57,13 @@ export class FinanceBankStatementRepository {
         const params: any[] = [companyId];
         let query = `
             SELECT 
-                bs.*, acc.name as bank_name
+                bs.*, acc.name as bank_name,
+                tx.public_id as reconciled_transaction_public_id,
+                tx.description as reconciled_transaction_description,
+                tx.type as reconciled_transaction_type
             FROM bank_statements bs
             JOIN bank_accounts acc ON bs.bank_account_id = acc.id
+            LEFT JOIN transactions tx ON bs.reconciled_transaction_id = tx.id
             WHERE bs.company_id = ?
         `;
 
@@ -121,12 +125,47 @@ export class FinanceBankStatementRepository {
         }
     }
 
-    static async undoReconcile(client: DBClient, statementId: number, reconciledTransactionId: number | null): Promise<void> {
+    static async undoReconcile(
+        client: DBClient,
+        statementId: number,
+        reconciledTransactionId: number | null,
+        deleteTransaction: boolean = true,
+        companyId?: number
+    ): Promise<void> {
         if (reconciledTransactionId) {
-            await client.query(
-                `UPDATE transactions SET status = 'pending', updated_at = NOW() WHERE id = ?`,
-                [reconciledTransactionId]
-            );
+            if (deleteTransaction && companyId) {
+                const [txRows] = await client.query<RowDataPacket[]>(
+                    `SELECT id, amount, type, status, bank_account_id FROM transactions WHERE id = ? AND company_id = ? LIMIT 1`,
+                    [reconciledTransactionId, companyId]
+                );
+
+                if (txRows && txRows.length > 0 && txRows[0]) {
+                    const tx = txRows[0];
+                    if (tx.status === 'paid' && tx.bank_account_id) {
+                        if (tx.type === 'expense') {
+                            await client.query(
+                                `UPDATE bank_accounts SET current_balance = current_balance + ?, updated_at = NOW() WHERE id = ? AND company_id = ?`,
+                                [tx.amount, tx.bank_account_id, companyId]
+                            );
+                        } else if (tx.type === 'income') {
+                            await client.query(
+                                `UPDATE bank_accounts SET current_balance = current_balance - ?, updated_at = NOW() WHERE id = ? AND company_id = ?`,
+                                [tx.amount, tx.bank_account_id, companyId]
+                            );
+                        }
+                    }
+
+                    await client.query(
+                        `DELETE FROM transactions WHERE id = ? AND company_id = ?`,
+                        [reconciledTransactionId, companyId]
+                    );
+                }
+            } else {
+                await client.query(
+                    `UPDATE transactions SET status = 'pending', updated_at = NOW() WHERE id = ?`,
+                    [reconciledTransactionId]
+                );
+            }
         }
 
         await client.query(

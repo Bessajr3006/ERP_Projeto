@@ -144,20 +144,13 @@
                     return false;
             }
             if (startFilter || endFilter) {
-                const tDate = t.date ? String(t.date).split('T')[0] : '';
-                const tReceived = t.received_at ? String(t.received_at).split('T')[0] : '';
-                const tScheduled = t.scheduled_at ? String(t.scheduled_at).split('T')[0] : '';
-                const matchDate = (d) => {
-                    if (!d)
-                        return false;
-                    if (startFilter && d < startFilter)
-                        return false;
-                    if (endFilter && d > endFilter)
-                        return false;
-                    return true;
-                };
-                const hasAnyDateMatch = matchDate(tDate) || matchDate(tReceived) || matchDate(tScheduled);
-                if (!hasAnyDateMatch)
+                const effectiveDate = (t.status === 'paid' && t.received_at) ? t.received_at : (t.date || '');
+                const tDate = String(effectiveDate).split('T')[0];
+                if (!tDate)
+                    return false;
+                if (startFilter && tDate < startFilter)
+                    return false;
+                if (endFilter && tDate > endFilter)
                     return false;
             }
             if (searchFilter) {

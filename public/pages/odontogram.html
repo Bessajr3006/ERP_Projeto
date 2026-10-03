@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Odontograma</title>
+    <link href="/css/style.css" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js"></script>
+    <style>
+        #odontogramSvg .tooth-face { cursor: pointer; stroke: #64748b; stroke-width: 1; transition: fill .12s ease; }
+        #odontogramSvg .tooth-face:hover { filter: brightness(0.92); }
+        #odontogramSvg .tooth-face.face-selected { stroke: #0ea5e9; stroke-width: 2.5; }
+        #odontogramSvg .tooth-label { font-size: 11px; font-weight: 600; cursor: pointer; fill: #475569; user-select: none; }
+        .dark #odontogramSvg .tooth-label { fill: #cbd5e1; }
+        #odontogramSvg .tooth-group.tooth-selected .tooth-outline { stroke: #0ea5e9; stroke-width: 2; }
+        #odontogramSvg .tooth-outline { fill: none; stroke: transparent; }
+        #odontogramSvg .tooth-mark { pointer-events: none; }
+    </style>
+</head>
+
+<body data-required-module="odontogram" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <div id="app-navbar"></div>
+
+    <main class="pt-4 pb-4 max-w-screen-2xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-x-hidden overflow-y-auto">
+        <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
+
+        <!-- Cabeçalho -->
+        <div class="px-4 sm:px-0 mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Odontograma</h1>
+            <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                <input type="text" id="patientFilter" placeholder="Filtrar paciente..."
+                    class="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 sm:w-56">
+                <select id="patientSelect"
+                    class="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 sm:w-80">
+                    <option value="">Selecione o paciente...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Estado vazio -->
+        <div id="emptyState" class="mx-4 sm:mx-0 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-10 text-center text-gray-500 dark:text-gray-400">
+            Selecione um paciente para visualizar ou criar o odontograma.
+        </div>
+
+        <!-- Criar odontograma -->
+        <div id="createChartState" class="hidden mx-4 sm:mx-0 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-10 text-center">
+            <p class="text-gray-600 dark:text-gray-300 mb-4">Este paciente ainda não possui odontograma.</p>
+            <button type="button" id="btnCreateChart"
+                class="inline-flex items-center justify-center rounded-lg px-4 py-2 bg-brand-600 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                Criar odontograma
+            </button>
+        </div>
+
+        <!-- Odontograma -->
+        <div id="chartSection" class="hidden px-4 sm:px-0 flex flex-col gap-4">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <!-- SVG -->
+                <div class="xl:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center bg-gray-100 dark:bg-slate-900 p-1 rounded-xl border border-gray-200 dark:border-slate-700" id="dentitionToggle">
+                            <button type="button" data-dentition="permanent" class="dentition-btn px-3 py-1.5 text-sm font-medium rounded-lg">Permanente</button>
+                            <button type="button" data-dentition="deciduous" class="dentition-btn px-3 py-1.5 text-sm font-medium rounded-lg">Decídua</button>
+                            <button type="button" data-dentition="mixed" class="dentition-btn px-3 py-1.5 text-sm font-medium rounded-lg">Mista</button>
+                        </div>
+                        <div id="legend" class="flex flex-wrap items-center gap-3 text-xs text-gray-600 dark:text-gray-300"></div>
+                    </div>
+                    <div class="w-full overflow-x-auto">
+                        <svg id="odontogramSvg" class="mx-auto block" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Odontograma"></svg>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Clique no número para selecionar o dente; clique nas faces para selecioná-las (M mesial, D distal, O oclusal, I incisal, V vestibular, L lingual, P palatina).</p>
+                </div>
+
+                <!-- Painel do dente / novo procedimento -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 flex flex-col gap-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Dente <span id="selectedToothLabel">—</span></h3>
+                        <div class="mt-2 grid grid-cols-1 gap-2">
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Condição
+                                <select id="toothCondition" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                                    <option value="present">Presente</option>
+                                    <option value="absent">Ausente</option>
+                                    <option value="extracted">Extraído</option>
+                                    <option value="implant">Implante</option>
+                                    <option value="unerupted">Não erupcionado</option>
+                                    <option value="retained">Retido</option>
+                                </select>
+                            </label>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Observações do dente
+                                <input type="text" id="toothNotes" maxlength="2000" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                            </label>
+                            <button type="button" id="btnSaveTooth" class="rounded-lg px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium">Salvar condição</button>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200 dark:border-slate-700">
+
+                    <form id="procedureForm" class="flex flex-col gap-2">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Novo procedimento</h3>
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Região
+                            <select id="procRegion" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                                <option value="tooth">Dente selecionado</option>
+                                <option value="quadrant">Quadrante do dente selecionado</option>
+                                <option value="upper_arch">Arcada superior</option>
+                                <option value="lower_arch">Arcada inferior</option>
+                                <option value="mouth">Boca toda</option>
+                            </select>
+                        </label>
+                        <div id="procFacesWrapper" class="text-xs font-medium text-gray-600 dark:text-gray-300">Faces
+                            <div id="procFaces" class="mt-1 flex flex-wrap gap-1"></div>
+                        </div>
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Serviço
+                            <select id="procService" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Valor (R$)
+                                <input type="number" id="procPrice" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                            </label>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Situação
+                                <select id="procStatus" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                                    <option value="planned">Planejado</option>
+                                    <option value="existing">Existente</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Profissional
+                                <select id="procProfessional" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                                    <option value="">—</option>
+                                </select>
+                            </label>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Data planejada
+                                <input type="date" id="procPlannedAt" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                            </label>
+                        </div>
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Observações
+                            <input type="text" id="procNotes" maxlength="5000" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                        </label>
+                        <button type="submit" id="btnAddProcedure" class="rounded-lg px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold">Adicionar procedimento</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Procedimentos -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Procedimentos</h3>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-600 dark:text-gray-300">Selecionados: <strong id="selectedProcCount">0</strong> — <strong id="selectedProcTotal">R$ 0,00</strong></span>
+                        <button type="button" id="btnGenerateQuote" disabled
+                            class="rounded-lg px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold">Gerar orçamento</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700 text-sm">
+                        <thead class="bg-gray-50 dark:bg-slate-900/50">
+                            <tr>
+                                <th class="px-3 py-2 w-8"><input type="checkbox" id="procSelectAll" title="Selecionar todos os planejados" class="rounded border-gray-300"></th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Dente / Região</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Serviço</th>
+                                <th class="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">Valor</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Situação</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Profissional</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Orçamento</th>
+                                <th class="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proceduresTable" class="divide-y divide-gray-100 dark:divide-slate-700 text-gray-900 dark:text-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: realizar procedimento -->
+    <div id="performModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80" data-close-modal="performModal"></div>
+            <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-5">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Marcar como realizado</h3>
+                <p id="performProcLabel" class="text-sm text-gray-500 dark:text-gray-400 mb-3"></p>
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Profissional
+                        <select id="performProfessional" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm"></select>
+                    </label>
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Data/hora de realização
+                        <input type="datetime-local" id="performAt" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                    </label>
+                </div>
+                <div class="mt-4 flex justify-end gap-2">
+                    <button type="button" data-close-modal="performModal" class="rounded-lg px-4 py-2 border border-gray-300 dark:border-slate-600 text-sm text-gray-700 dark:text-gray-200">Cancelar</button>
+                    <button type="button" id="btnConfirmPerform" class="rounded-lg px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: gerar orçamento -->
+    <div id="quoteModal" class="hidden fixed inset-0 z-10000 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500/75 dark:bg-slate-900/80" data-close-modal="quoteModal"></div>
+            <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-5">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Gerar orçamento</h3>
+                <p id="quoteSummary" class="text-sm text-gray-500 dark:text-gray-400 mb-3"></p>
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Validade
+                        <input type="date" id="quoteValidity" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                    </label>
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Condições de pagamento
+                        <input type="text" id="quotePaymentTerms" maxlength="100" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                    </label>
+                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Observação
+                        <textarea id="quoteObservation" rows="2" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm"></textarea>
+                    </label>
+                </div>
+                <div class="mt-4 flex justify-end gap-2">
+                    <button type="button" data-close-modal="quoteModal" class="rounded-lg px-4 py-2 border border-gray-300 dark:border-slate-600 text-sm text-gray-700 dark:text-gray-200">Cancelar</button>
+                    <button type="button" id="btnConfirmQuote" class="rounded-lg px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Gerar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/odontogram.js"></script>
+    <script src="/js/components/navbar.js?v=20260614201900"></script>
+
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js"></script>
+</body>
+
+</html>

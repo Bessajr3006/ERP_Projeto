@@ -72,6 +72,7 @@
                 links: [
                     { id: 'sales', label: 'PDV / Vendas' },
                     { id: 'quotes', label: 'Orçamentos' },
+                    { id: 'odontogram', label: 'Odontograma' },
                     { id: 'service_launches', label: 'Lançamento de Serviço' },
                     { id: 'restaurant', label: 'Restaurante' }
                 ]

@@ -222,7 +222,67 @@
         </div>
     </div>
 
-    <!-- Modal to View Details or Convert to Sale could be added later if needed -->
+    <!-- ── MODAL: Aprovar orçamento (Transformar em Venda) ───────────────────── -->
+    <div id="approveModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="approveModalTitle">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm" id="approveModalBackdrop"></div>
+            <div class="relative z-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl border border-gray-200 dark:border-slate-700">
+                <div class="flex items-center justify-between px-5 py-4 border-b dark:border-slate-700">
+                    <h3 id="approveModalTitle" class="text-base font-semibold text-gray-900 dark:text-gray-100">Aprovar orçamento <span id="approveQuoteNumber"></span></h3>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Total: <strong id="approveQuoteTotal">R$ 0,00</strong></span>
+                </div>
+                <div class="px-5 py-4 flex flex-col gap-3">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Ao aprovar, o orçamento vira venda (status "em andamento"), as parcelas são lançadas em Receitas como pendentes e itens de produto baixam o estoque.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Conta bancária
+                            <select id="approveBankAccount" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm"></select>
+                        </label>
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Categoria (receita)
+                            <select id="approveCategory" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm"></select>
+                        </label>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Nº de parcelas
+                            <input type="number" id="approveInstallmentsCount" min="1" max="120" value="1" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                        </label>
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">1º vencimento
+                            <input type="date" id="approveFirstDueDate" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                        </label>
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Forma de pagamento
+                            <select id="approveDefaultMethod" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm">
+                                <option value="pix">PIX</option>
+                                <option value="boleto">Boleto</option>
+                                <option value="credit">Cartão de crédito</option>
+                                <option value="debit">Cartão de débito</option>
+                                <option value="cash">Dinheiro</option>
+                                <option value="transfer">Transferência</option>
+                            </select>
+                        </label>
+                        <button type="button" id="btnApproveSplit" class="rounded-lg px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium">Distribuir parcelas</button>
+                    </div>
+                    <div class="overflow-x-auto border border-gray-200 dark:border-slate-700 rounded-lg">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-50 dark:bg-slate-900/50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Parcela</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Valor (R$)</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Vencimento</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Forma</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approveInstallmentsTable" class="divide-y divide-gray-100 dark:divide-slate-700"></tbody>
+                        </table>
+                    </div>
+                    <p class="text-sm text-gray-700 dark:text-gray-200">Soma das parcelas: <strong id="approveInstallmentsSum">R$ 0,00</strong> <span id="approveInstallmentsDiff" class="ml-2 text-xs"></span></p>
+                </div>
+                <div class="flex justify-end gap-2 px-5 py-4 border-t dark:border-slate-700">
+                    <button type="button" id="btnApproveCancel" class="rounded-xl px-5 py-2 border border-gray-300 dark:border-slate-600 text-sm text-gray-700 dark:text-gray-200">Cancelar</button>
+                    <button type="button" id="btnApproveConfirm" class="rounded-xl px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-semibold">Aprovar e gerar parcelas</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- ── MODAL: Visualizar Orçamento PDF/Impressão ───────────────────────────── -->
     <div id="pdfModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -265,7 +325,7 @@
 
     <script src="/js/api.js?v=20260608172500"></script>
     <script src="/js/components/crud-manager.js?v=20260608172500"></script>
-    <script src="/js/quotes.js?v=20260609211500"></script>
+    <script src="/js/quotes.js?v=20261002210000"></script>
     <script src="/js/components/navbar.js?v=20260614201900"></script>
 
     <div id="app-footer" class="shrink-0"></div>

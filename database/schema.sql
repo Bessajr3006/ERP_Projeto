@@ -515,6 +515,7 @@ CREATE TABLE IF NOT EXISTS sales_items (
     unit_price DECIMAL(10, 2) NOT NULL,
     total_price DECIMAL(15, 2) NOT NULL,
     xml_item_data LONGTEXT DEFAULT NULL,
+    description VARCHAR(255) NULL DEFAULT NULL COMMENT 'Descrição livre do item (ex.: odontograma)',
     is_deleted TINYINT(1) NOT NULL DEFAULT 0,
     
     FOREIGN KEY (sale_id) REFERENCES sales_orders(id) ON DELETE CASCADE,
@@ -561,6 +562,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     barcode VARCHAR(255) NULL,
     pix_code TEXT NULL,
     billet_url VARCHAR(255) NULL,
+    installment_number INT NULL DEFAULT NULL COMMENT 'Número da parcela (1..N)',
+    installment_count INT NULL DEFAULT NULL COMMENT 'Total de parcelas',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -748,4 +751,74 @@ CREATE TABLE IF NOT EXISTS price_tables (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
     INDEX idx_company_id (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Odontograma: um por paciente (customer)
+CREATE TABLE IF NOT EXISTS dental_charts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    public_id CHAR(36) NOT NULL UNIQUE,
+    company_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    dentition ENUM('permanent', 'deciduous', 'mixed') NOT NULL DEFAULT 'permanent',
+    notes TEXT DEFAULT NULL,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dental_charts_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dental_charts_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_dental_charts_company_customer (company_id, customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Odontograma: condição de cada dente (numeração FDI)
+CREATE TABLE IF NOT EXISTS dental_chart_teeth (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    public_id CHAR(36) NOT NULL UNIQUE,
+    company_id INT NOT NULL,
+    chart_id INT NOT NULL,
+    tooth_code TINYINT UNSIGNED NOT NULL COMMENT 'Numeração FDI (11-48 permanentes, 51-85 decíduos)',
+    `condition` ENUM('present', 'absent', 'extracted', 'implant', 'unerupted', 'retained') NOT NULL DEFAULT 'present',
+    notes TEXT DEFAULT NULL,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dental_chart_teeth_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dental_chart_teeth_chart FOREIGN KEY (chart_id) REFERENCES dental_charts(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_dental_chart_teeth_chart_tooth (chart_id, tooth_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Odontograma: procedimentos por dente/região
+CREATE TABLE IF NOT EXISTS dental_procedures (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    public_id CHAR(36) NOT NULL UNIQUE,
+    company_id INT NOT NULL,
+    chart_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    tooth_code TINYINT UNSIGNED DEFAULT NULL,
+    region ENUM('tooth', 'upper_arch', 'lower_arch', 'quadrant', 'mouth') NOT NULL DEFAULT 'tooth',
+    faces SET('M', 'D', 'O', 'I', 'V', 'L', 'P') DEFAULT NULL,
+    service_id INT DEFAULT NULL,
+    unit_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    status ENUM('existing', 'planned', 'quoted', 'approved', 'done', 'cancelled') NOT NULL DEFAULT 'planned',
+    sales_order_id INT DEFAULT NULL,
+    sales_item_id INT DEFAULT NULL,
+    professional_user_id INT DEFAULT NULL,
+    planned_at DATE DEFAULT NULL,
+    performed_at DATETIME DEFAULT NULL,
+    notes TEXT DEFAULT NULL,
+    created_by_user_id INT DEFAULT NULL,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dental_procedures_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dental_procedures_chart FOREIGN KEY (chart_id) REFERENCES dental_charts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dental_procedures_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dental_procedures_service FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_dental_procedures_sales_order FOREIGN KEY (sales_order_id) REFERENCES sales_orders(id) ON DELETE SET NULL,
+    CONSTRAINT fk_dental_procedures_sales_item FOREIGN KEY (sales_item_id) REFERENCES sales_items(id) ON DELETE SET NULL,
+    CONSTRAINT fk_dental_procedures_professional FOREIGN KEY (professional_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_dental_procedures_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_dental_procedures_chart (company_id, chart_id, is_deleted),
+    INDEX idx_dental_procedures_customer (company_id, customer_id),
+    INDEX idx_dental_procedures_status (company_id, status),
+    INDEX idx_dental_procedures_sales_order (sales_order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -93,6 +93,8 @@ import { runMigration96FinanceCategoryTypes } from './run_migration_96_finance_c
 import { runMigration97BankAccountsWebhookBoleto } from './run_migration_97_bank_accounts_webhook_boleto';
 import { runMigration98BankStatements } from './run_migration_98_bank_statements';
 import { runMigration99AddAdminBasicRole } from './run_migration_99_add_admin_basic_role';
+import runMigration100DentalCharts from './run_migration_100_dental_charts';
+import runMigration101OdontogramPermissions from './run_migration_101_odontogram_permissions';
 
 
 
@@ -480,6 +482,8 @@ async function runInitDb(): Promise<void> {
     await runMigration97BankAccountsWebhookBoleto();
     await runMigration98BankStatements();
     await runMigration99AddAdminBasicRole();
+    await runMigration100DentalCharts();
+    await runMigration101OdontogramPermissions();
 
 
 

@@ -1,6 +1,6 @@
 import { FinanceBankStatementRepository } from '../../repositories/financeBankStatementRepository';
 import pool from '../../config/db';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import logger from '../../config/logger';
 import * as https from 'https';
 
@@ -11,6 +11,43 @@ export class InterService {
     private static getSanitizedAccountNumber(account: any): string {
         const raw = String(account?.account_number || '').replace(/\D/g, '').replace(/^0+/, '');
         return raw || String(account?.account_number || '').trim();
+    }
+
+    /**
+     * Gera um transaction_id garantidamente único e determinístico para o extrato bancário
+     * Evita que códigos genéricos como "0", "0000", "-" colidam e sobrescrevam transações legítimas (ex: múltiplos PIX)
+     */
+    private static generateTransactionId(tx: any, safeDate: string, type: string, amount: number, description: string, txIndex: number): string {
+        // 1. Identificadores PIX legítimos do Banco Central / Inter (EndToEndId tem 32+ caracteres)
+        const rawE2E = tx.detalhes?.endToEndId || tx.detalhes?.endtoEndId || tx.detalhes?.e2eId || tx.endToEndId || tx.endtoEndId || tx.e2eId;
+        if (rawE2E && String(rawE2E).trim().length >= 8 && !/^[0_\- ]+$/.test(String(rawE2E).trim())) {
+            return String(rawE2E).trim().slice(0, 100);
+        }
+
+        // 2. ID da transação / Código de transação
+        const rawTxId = tx.detalhes?.txid || tx.txid || tx.detalhes?.codigoTransacao || tx.codigoTransacao || tx.detalhes?.idTransacao || tx.idTransacao;
+        if (rawTxId && String(rawTxId).trim().length >= 6 && !/^[0_\- ]+$/.test(String(rawTxId).trim())) {
+            return String(rawTxId).trim().slice(0, 100);
+        }
+
+        // 3. Nosso Número de boleto
+        const rawNossoNumero = tx.detalhes?.nossoNumero || tx.nossoNumero;
+        if (rawNossoNumero && String(rawNossoNumero).trim().length >= 6 && !/^[0_\- ]+$/.test(String(rawNossoNumero).trim())) {
+            return `bol_${String(rawNossoNumero).trim().slice(0, 90)}`;
+        }
+
+        // 4. NSU / Documento específico (se não for "0", "0000", etc.)
+        const rawNsu = tx.detalhes?.nsu || tx.nsu || tx.numDocumento || tx.numeroDocumento || tx.referencia;
+        if (rawNsu && String(rawNsu).trim().length >= 6 && !/^[0_\- ]+$/.test(String(rawNsu).trim())) {
+            return `doc_${String(rawNsu).trim().slice(0, 90)}`;
+        }
+
+        // 5. Hash determinístico único por lançamento para evitar qualquer colisão entre transações de mesmo valor
+        const timeStr = tx.horario || tx.hora || tx.dataHoraMovimento || '';
+        const hash = createHash('md5')
+            .update(`${safeDate}|${timeStr}|${type}|${amount.toFixed(2)}|${description.trim()}|${txIndex}`)
+            .digest('hex');
+        return `tx_${safeDate}_${hash}`;
     }
 
     /**
@@ -45,8 +82,8 @@ export class InterService {
 
     /**
      * Sincroniza o extrato do Banco Inter usando o Host Validado pelo Teste de Conexão.
-     * Suporta qualquer período de datas através de particionamento automático em lotes de até 89 dias
-     * e paginação completa da API para garantir que nenhum lançamento seja perdido.
+     * Suporta qualquer período de datas através de particionamento automático em lotes de até 89 dias,
+     * paginação completa da API de extrato e sincronização complementar da API Pix.
      */
     static async syncStatements(companyId: number, bankAccount: any, startDate: string, endDate: string): Promise<number> {
         const { api_client_id, api_client_secret, api_certificate, api_key } = bankAccount;
@@ -75,7 +112,7 @@ export class InterService {
         }
 
         try {
-            // 1. Obter Token mTLS
+            // 1. Obter Token mTLS com escopo extrato.read
             const token = await this.getAccessToken(bankAccount, 'extrato.read');
 
             // 2. Particionar intervalo em blocos de até 89 dias
@@ -90,7 +127,7 @@ export class InterService {
                 while (hasMorePages) {
                     let path = '';
                     if (isCompletoEndpoint) {
-                        path = `/banking/v2/extrato/completo?dataInicio=${chunk.start}&dataFim=${chunk.end}&pagina=${page}&tamanhoPagina=1000`;
+                        path = `/banking/v2/extrato/completo?dataInicio=${chunk.start}&dataFim=${chunk.end}&pagina=${page}&tamanhoPagina=100`;
                     } else {
                         path = `/banking/v2/extrato?dataInicio=${chunk.start}&dataFim=${chunk.end}`;
                     }
@@ -197,21 +234,8 @@ export class InterService {
                             description = description.substring(0, 255);
                         }
 
-                        // ID Único da transação no Inter
-                        const candidateTxId = tx.codigoTransacao || 
-                                              tx.idTransacao || 
-                                              tx.nsu || 
-                                              tx.referencia || 
-                                              tx.numDocumento || 
-                                              tx.numeroDocumento || 
-                                              tx.detalhes?.endToEndId || 
-                                              tx.detalhes?.codigoTransacao || 
-                                              tx.detalhes?.nsu || 
-                                              tx.detalhes?.nossoNumero;
-
-                        const txId = candidateTxId 
-                            ? String(candidateTxId).trim() 
-                            : `${safeDate}_${tx.horario || tx.hora || ''}_${type}_${amount}_${chunk.start}_${page}_${txIndex}`;
+                        // ID Único da transação no Inter (evita colisão de códigos genéricos como "0")
+                        const txId = this.generateTransactionId(tx, safeDate, type, amount, description, txIndex);
 
                         const publicId = randomUUID();
                         const rawData = JSON.stringify(tx);
@@ -249,6 +273,70 @@ export class InterService {
                         hasMorePages = false;
                     }
                 }
+            }
+
+            // 3. Sincronização complementar via API Pix (/pix/v2/pix) para garantir captura de 100% dos Pix Recebidos
+            try {
+                const pixToken = await this.getAccessToken(bankAccount, 'pix.read');
+                const startIso = `${safeStartDate}T00:00:00.000Z`;
+                const endIso = `${safeEndDate}T23:59:59.999Z`;
+                const pixPath = `/pix/v2/pix?inicio=${encodeURIComponent(startIso)}&fim=${encodeURIComponent(endIso)}`;
+
+                const pixResponse = await this.httpsRequest('cdpj.partners.bancointer.com.br', pixPath, 'GET', {
+                    'Authorization': `Bearer ${pixToken}`,
+                    'x-inter-conta-corrente': accountNumber
+                }, bankAccount);
+
+                if (pixResponse && pixResponse.trim().startsWith('{')) {
+                    const pixData = JSON.parse(pixResponse);
+                    const pixList = Array.isArray(pixData.pix) ? pixData.pix : [];
+                    let pixIdx = 0;
+
+                    for (const p of pixList) {
+                        pixIdx++;
+                        const rawHorario = p.horario || p.dataHora || '';
+                        const pDate = rawHorario ? String(rawHorario).slice(0, 10) : safeStartDate;
+                        const rawVal = p.valor || '0';
+                        const pAmount = Math.abs(parseFloat(String(rawVal).replace(',', '.')));
+                        if (!pAmount || isNaN(pAmount)) continue;
+
+                        const pagadorNome = p.pagador?.nome || p.infoPagador || '';
+                        let pDesc = '';
+                        if (pagadorNome) {
+                            pDesc = `PIX RECEBIDO - ${pagadorNome}`;
+                        } else if (p.chave) {
+                            pDesc = `PIX RECEBIDO (${p.chave})`;
+                        } else {
+                            pDesc = 'PIX RECEBIDO';
+                        }
+
+                        const pTxId = (p.endToEndId && String(p.endToEndId).trim().length >= 8)
+                            ? String(p.endToEndId).trim()
+                            : (p.txid && String(p.txid).trim().length >= 6 ? String(p.txid).trim() : `pix_${pDate}_${pAmount}_${pixIdx}`);
+
+                        const publicId = randomUUID();
+                        const rawData = JSON.stringify(p);
+
+                        const affected = await FinanceBankStatementRepository.upsertBankStatement(
+                            pool,
+                            companyId,
+                            bankAccount.id,
+                            publicId,
+                            pTxId.slice(0, 100),
+                            pDate,
+                            pDesc.slice(0, 255),
+                            pAmount,
+                            'income',
+                            rawData
+                        );
+
+                        if (affected === 1) {
+                            syncedCount++;
+                        }
+                    }
+                }
+            } catch (pixErr: any) {
+                logger.info({ err: pixErr.message }, '[InterService] Consulta complementar Pix (/pix/v2/pix) não disponível ou sem escopo pix.read, seguindo com extrato bancário');
             }
 
             return syncedCount;

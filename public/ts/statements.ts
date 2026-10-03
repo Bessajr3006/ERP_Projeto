@@ -38,7 +38,18 @@
     const tablePagContainer = getById('statementsPaginationContainer');
     const gridPagContainer = getById('statementsGridPaginationContainer');
 
-    if (!btnList || !btnGrid || !tableSection || !gridSection) return;
+    if (tableSection) {
+      tableSection.style.display = '';
+      tableSection.classList.remove('hidden');
+    }
+    if (gridSection) {
+      gridSection.style.display = 'none';
+      gridSection.classList.add('hidden');
+    }
+    if (tablePagContainer) tablePagContainer.classList.remove('hidden');
+    if (gridPagContainer) gridPagContainer.classList.add('hidden');
+
+    if (!btnList || !btnGrid) return;
 
     const inactive =
       'flex items-center justify-center px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1';
@@ -53,21 +64,9 @@
     if (currentView === 'list') {
       btnList.className = active;
       btnList.querySelector('.check-icon')?.classList.remove('hidden');
-      tableSection.style.display = '';
-      tableSection.classList.remove('hidden');
-      gridSection.style.display = 'none';
-      gridSection.classList.add('hidden');
-      if (tablePagContainer) tablePagContainer.classList.remove('hidden');
-      if (gridPagContainer) gridPagContainer.classList.add('hidden');
     } else {
       btnGrid.className = active;
       btnGrid.querySelector('.check-icon')?.classList.remove('hidden');
-      tableSection.style.display = 'none';
-      tableSection.classList.add('hidden');
-      gridSection.style.display = 'flex';
-      gridSection.classList.remove('hidden');
-      if (tablePagContainer) tablePagContainer.classList.add('hidden');
-      if (gridPagContainer) gridPagContainer.classList.remove('hidden');
     }
   }
 

@@ -25,6 +25,7 @@ const createExpenseSchema = z.object({
     fine: z.number().optional().nullable(),
     interest: z.number().optional().nullable(),
     date: z.string(), // YYYY-MM-DD
+    received_at: z.string().optional().nullable(),
     category_public_id: z.string().uuid('Invalid category ID'),
     bank_account_public_id: z.string().uuid('Invalid bank account ID'),
     payment_method: z.string().max(50).optional().nullable(),

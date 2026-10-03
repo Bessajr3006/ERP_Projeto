@@ -482,8 +482,17 @@
             radioRevenue.checked = !isExpense;
         }
         updateModalTypeVisuals(initialType);
+        const stmtDateStr = stmt.date ? String(stmt.date).split('T')[0] : '';
+        const dateBadge = getById('stmtCreateStatementDateBadge');
+        if (dateBadge) {
+            dateBadge.textContent = stmt.date ? formatDate(stmt.date) : '';
+        }
+        const sameDateCheckbox = getById('stmtCreateSameDateAsStatement');
+        if (sameDateCheckbox) {
+            sameDateCheckbox.checked = true;
+        }
         if (dateInput) {
-            dateInput.value = stmt.date ? String(stmt.date).split('T')[0] : '';
+            dateInput.value = stmtDateStr;
         }
         if (amountInput) {
             const absVal = Math.abs(rawAmount);
@@ -1365,6 +1374,28 @@
                 e.target.value = 'R$ ' + formatted;
             });
         }
+        getById('stmtCreateSameDateAsStatement')?.addEventListener('change', (e) => {
+            const dateInput = getById('stmtCreateDate');
+            if (e.target.checked && selectedBankStatementForCreate?.date && dateInput) {
+                dateInput.value = String(selectedBankStatementForCreate.date).split('T')[0];
+            }
+        });
+        getById('btnUseStatementDate')?.addEventListener('click', () => {
+            const dateInput = getById('stmtCreateDate');
+            const sameDateCheckbox = getById('stmtCreateSameDateAsStatement');
+            if (selectedBankStatementForCreate?.date && dateInput) {
+                dateInput.value = String(selectedBankStatementForCreate.date).split('T')[0];
+                if (sameDateCheckbox)
+                    sameDateCheckbox.checked = true;
+            }
+        });
+        getById('stmtCreateDate')?.addEventListener('input', (e) => {
+            const sameDateCheckbox = getById('stmtCreateSameDateAsStatement');
+            const currentStmtDate = selectedBankStatementForCreate?.date ? String(selectedBankStatementForCreate.date).split('T')[0] : '';
+            if (sameDateCheckbox) {
+                sameDateCheckbox.checked = (e.target.value === currentStmtDate);
+            }
+        });
         getById('createFromStatementForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = getById('btnSubmitCreateFromStatement');
@@ -1395,6 +1426,7 @@
                         description,
                         amount,
                         date,
+                        received_at: date,
                         bank_account_public_id,
                         category_public_id,
                         payment_method,

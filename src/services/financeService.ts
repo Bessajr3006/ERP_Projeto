@@ -170,7 +170,7 @@ export class FinanceService {
     static async createExpense(
         companyId: number,
         userId: string,
-        data: { description: string; amount: number; date: string; category_public_id: string; bank_account_public_id: string; payment_method?: string | null | undefined; status?: string | undefined; entity_type?: string | null | undefined; entity_public_id?: string | null | undefined; cost_center_public_id?: string | null | undefined; barcode?: string | null | undefined; pix_code?: string | null | undefined; pix_key?: string | null | undefined }
+        data: { description: string; amount: number; date: string; category_public_id: string; bank_account_public_id: string; payment_method?: string | null | undefined; status?: string | undefined; received_at?: string | null | undefined; entity_type?: string | null | undefined; entity_public_id?: string | null | undefined; cost_center_public_id?: string | null | undefined; barcode?: string | null | undefined; pix_code?: string | null | undefined; pix_key?: string | null | undefined }
     ): Promise<{ public_id: string }> {
         let createdTransactionPublicId: string | null = null;
         await FinanceTransactionRepository.withTransaction(async (conn: PoolConnection) => {
@@ -217,7 +217,10 @@ export class FinanceService {
                 payment_method: data.payment_method,
                 date: data.date,
                 status: txStatus,
-                received_at: txStatus === 'paid' ? new Date() : null,
+                received_at: txStatus === 'paid'
+                    ? (data.received_at ? toBrazilDbDateTime(data.received_at) : (data.date ? toBrazilDbDateTime(data.date) : toBrazilDbDateTime(new Date())))
+                    : null,
+                date_launch: toBrazilDbDateTime(data.date || new Date()),
                 scheduled_at: txStatus === 'scheduled' ? new Date() : null,
                 barcode: data.barcode,
                 pix_code: data.pix_code,

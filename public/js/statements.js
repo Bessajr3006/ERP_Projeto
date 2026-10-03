@@ -966,20 +966,20 @@
                 ? `<div class="w-4 h-4 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"><svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>`
                 : `<input type="checkbox" class="chk-bank rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600" data-id="${t.public_id}" data-amount="${t.amount}" data-type="${t.type}">`;
             const actionHtml = isReconciled
-                ? `<div class="flex flex-col items-center gap-1">
-                 <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 gap-1 border border-emerald-300 dark:border-emerald-700/50">
-                     <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                     Conciliado
+                ? `<div class="flex items-center justify-center gap-1.5">
+                 <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/50 shadow-xs" title="Lançamento já Conciliado">
+                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                  </span>
-                 <button type="button" class="text-[10px] font-semibold text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-2 transition-colors btn-unreconcile cursor-pointer" data-id="${t.public_id}">Desconciliar</button>
-               </div>`
-                : `<div class="flex items-center justify-center gap-1.5">
-                 <button type="button" class="inline-flex items-center gap-1 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-2.5 py-1 rounded-md shadow-sm transition-all btn-create-from-statement cursor-pointer" data-id="${t.public_id}" title="Fazer lançamento no sistema a partir deste extrato">
-                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                     <span>Lançar</span>
+                 <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 active:bg-red-200 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/60 shadow-xs transition-all btn-unreconcile cursor-pointer group" data-id="${t.public_id}" title="Desfazer conciliação">
+                     <svg class="w-3.5 h-3.5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                  </button>
-                 <button type="button" class="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-2.5 py-1 rounded-md shadow-sm transition-all btn-conciliate-single cursor-pointer" data-id="${t.public_id}" title="Conciliar com lançamento do ERP">
-                     <span>Conciliar</span>
+             </div>`
+                : `<div class="flex items-center justify-center gap-1.5">
+                 <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-xs transition-all btn-create-from-statement cursor-pointer group" data-id="${t.public_id}" title="Lançar no ERP (Criar ${isRevenue ? 'Receita' : 'Despesa'})">
+                     <svg class="w-3.5 h-3.5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                 </button>
+                 <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs transition-all btn-conciliate-single cursor-pointer group" data-id="${t.public_id}" title="Conciliar com lançamento do ERP">
+                     <svg class="w-3.5 h-3.5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                  </button>
              </div>`;
             return `
@@ -1144,15 +1144,16 @@
                     openCreateFromStatementModal(public_id);
                 return;
             }
-            if (target?.matches?.('.btn-unreconcile')) {
+            const unreconcileBtn = target?.closest?.('.btn-unreconcile');
+            if (unreconcileBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                const public_id = target?.dataset?.id;
+                const public_id = unreconcileBtn.dataset.id;
                 if (!confirm('Deseja realmente remover a conciliação deste lançamento?'))
                     return;
                 try {
-                    target.innerHTML = 'Desfazendo...';
-                    target.disabled = true;
+                    unreconcileBtn.disabled = true;
+                    unreconcileBtn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
                     await api('/finance/reconcile/undo', {
                         method: 'POST',
                         body: JSON.stringify({ bank_statement_id: public_id }),
@@ -1162,15 +1163,17 @@
                     void loadBankStatements();
                 }
                 catch (err) {
-                    target.innerHTML = 'Desconciliar';
-                    target.disabled = false;
+                    unreconcileBtn.disabled = false;
+                    unreconcileBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>`;
                     UI.showAlert('alertMessage', err?.message || 'Erro ao desconciliar registro', 'error');
                 }
+                return;
             }
-            if (target?.matches?.('.btn-conciliate-single')) {
+            const conciliateBtn = target?.closest?.('.btn-conciliate-single');
+            if (conciliateBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                const public_id = target?.dataset?.id;
+                const public_id = conciliateBtn.dataset.id;
                 // Find the statement row's data
                 const stmt = bankStatementsData.find((s) => s.public_id === public_id);
                 if (!stmt)
@@ -1204,8 +1207,8 @@
                     if (matches.length === 1) {
                         // Exactly one match! Let's automatically check them and reconcile
                         try {
-                            target.innerHTML = 'Processando...';
-                            target.disabled = true;
+                            conciliateBtn.disabled = true;
+                            conciliateBtn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
                             await api('/finance/reconcile', {
                                 method: 'POST',
                                 body: JSON.stringify({ system_ids: [matches[0].public_id], bank_statement_ids: [public_id] }),
@@ -1215,8 +1218,8 @@
                             await loadBankStatements();
                         }
                         catch (err) {
-                            target.innerHTML = 'Conciliar';
-                            target.disabled = false;
+                            conciliateBtn.disabled = false;
+                            conciliateBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>`;
                             UI.showAlert('alertMessage', err?.message || 'Erro ao conciliar registro', 'error');
                         }
                     }

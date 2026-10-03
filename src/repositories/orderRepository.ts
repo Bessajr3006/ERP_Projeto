@@ -375,11 +375,14 @@ export class OrderRepository {
 
             const quoteNumber = String(saleId).padStart(4, '0');
             const count = installments.length;
+            // Diferença de arredondamento (até 0,01) é absorvida pela última parcela para fechar o total exato.
+            const roundingDiff = Math.round((totalAmount - installmentsSum) * 100) / 100;
             const transactions: any[] = [];
             for (let index = 0; index < count; index++) {
                 const inst = installments[index]!;
                 const transactionPublicId = randomUUID();
-                const amount = Math.round(Number(inst.amount) * 100) / 100;
+                let amount = Math.round(Number(inst.amount) * 100) / 100;
+                if (index === count - 1 && roundingDiff !== 0) amount = Math.round((amount + roundingDiff) * 100) / 100;
                 const description = `Parcela ${index + 1}/${count} - Orçamento #${quoteNumber}${quote.customer_name ? ` - ${quote.customer_name}` : ''}`.slice(0, 255);
                 const dueDate = toBrazilDate(inst.due_date);
                 await conn.query(

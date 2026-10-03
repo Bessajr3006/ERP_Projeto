@@ -33,13 +33,18 @@
   function setupFilters(): void {
     if (!FilterPanel) return;
 
+    // 1. Filtro dos Lançamentos do Sistema ERP (Coluna Esquerda)
     FilterPanel.mount({
-      storageKey: 'card_statements_filters',
+      afterElementId: 'systemFilterAnchor',
+      panelId: 'system-card-statements-filter-panel',
+      title: 'Filtro - Lançamentos do Sistema',
+      storageKey: 'system_card_statements_filters',
+      defaultOpen: false,
       fields: [
-        { id: 'filterStart', label: 'Data Início', type: 'date' },
-        { id: 'filterEnd', label: 'Data Fim', type: 'date' },
+        { id: 'filterSysStart', label: 'Data Início', type: 'date' },
+        { id: 'filterSysEnd', label: 'Data Fim', type: 'date' },
         {
-          id: 'filterType',
+          id: 'filterSysType',
           label: 'Tipo',
           type: 'select',
           options: [
@@ -49,23 +54,133 @@
           ],
         },
         {
-          id: 'filterApplyTo',
-          label: 'Aplicar em:',
+          id: 'filterSysMethod',
+          label: 'Forma Pgto',
           type: 'select',
           options: [
-            { value: 'both', label: 'Sistema + Extrato' },
-            { value: 'system', label: 'Apenas Sistema' },
-            { value: 'bank', label: 'Apenas Extrato' },
+            { value: '', label: 'Todos' },
+            { value: 'credit', label: 'Crédito' },
+            { value: 'debit', label: 'Débito' },
           ],
         },
-        { id: 'filterSearch', label: 'Busca', type: 'text', placeholder: 'Descrição ou conta' },
+        {
+          id: 'filterSysStatus',
+          label: 'Status',
+          type: 'select',
+          options: [
+            { value: '', label: 'Todos' },
+            { value: 'paid', label: 'Pagos / Recebidos' },
+            { value: 'pending', label: 'Pendentes' },
+          ],
+        },
+        { id: 'filterSysSearch', label: 'Busca', type: 'text', placeholder: 'Descrição, conta, categoria...' },
       ],
-      gridClass: 'grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-3 items-end',
+      gridClass: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end',
+    });
+
+    // 2. Filtro do Extrato de Cartão (Coluna Direita)
+    FilterPanel.mount({
+      afterElementId: 'cardFilterAnchor',
+      panelId: 'card-statements-filter-panel',
+      title: 'Filtro - Extrato de Cartão',
+      storageKey: 'card_statements_filters',
+      defaultOpen: false,
+      fields: [
+        { id: 'filterCardStart', label: 'Data Início', type: 'date' },
+        { id: 'filterCardEnd', label: 'Data Fim', type: 'date' },
+        {
+          id: 'filterCardType',
+          label: 'Tipo',
+          type: 'select',
+          options: [
+            { value: '', label: 'Todos' },
+            { value: 'income', label: 'Entradas' },
+            { value: 'expense', label: 'Saídas' },
+          ],
+        },
+        {
+          id: 'filterCardReconciled',
+          label: 'Status',
+          type: 'select',
+          options: [
+            { value: '', label: 'Todos' },
+            { value: 'unreconciled', label: 'Não Conciliados' },
+            { value: 'reconciled', label: 'Conciliados' },
+          ],
+        },
+        { id: 'filterCardSearch', label: 'Busca', type: 'text', placeholder: 'Descrição no extrato...' },
+      ],
+      gridClass: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end',
     });
 
     restoreFilters();
+    setDefaultPeriods();
 
-    // Default period setup if empty
+    // Eventos do Sistema
+    ['filterSysStart', 'filterSysEnd', 'filterSysType', 'filterSysMethod', 'filterSysStatus'].forEach((id) => {
+      getById(id)?.addEventListener('change', () => {
+        saveFilters();
+        renderSystemTable();
+        updateConciliationBar();
+      });
+    });
+
+    let sysSearchTimer: any = null;
+    getById('filterSysSearch')?.addEventListener('input', () => {
+      if (sysSearchTimer) clearTimeout(sysSearchTimer);
+      sysSearchTimer = setTimeout(() => {
+        saveFilters();
+        renderSystemTable();
+        updateConciliationBar();
+      }, 180);
+    });
+
+    // Eventos do Extrato de Cartão
+    ['filterCardStart', 'filterCardEnd', 'filterCardType', 'filterCardReconciled'].forEach((id) => {
+      getById(id)?.addEventListener('change', () => {
+        saveFilters();
+        renderCardTable();
+        updateConciliationBar();
+      });
+    });
+
+    let cardSearchTimer: any = null;
+    getById('filterCardSearch')?.addEventListener('input', () => {
+      if (cardSearchTimer) clearTimeout(cardSearchTimer);
+      cardSearchTimer = setTimeout(() => {
+        saveFilters();
+        renderCardTable();
+        updateConciliationBar();
+      }, 180);
+    });
+
+    // Clear filters events
+    const clearSysBtn = getById('system_card_statements_filters-filter-panel-clear');
+    if (clearSysBtn) {
+      clearSysBtn.addEventListener('click', () => {
+        setTimeout(() => {
+          setDefaultPeriods();
+          saveFilters();
+          renderSystemTable();
+          updateConciliationBar();
+        }, 50);
+      });
+    }
+
+    const clearCardBtn = getById('card_statements_filters-filter-panel-clear');
+    if (clearCardBtn) {
+      clearCardBtn.addEventListener('click', () => {
+        setTimeout(() => {
+          setDefaultPeriods();
+          saveFilters();
+          renderCardTable();
+          updateConciliationBar();
+        }, 50);
+      });
+    }
+  }
+
+  function setDefaultPeriods(): void {
     const now = new Date();
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -73,97 +188,114 @@
     const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
     const end = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
 
-    const startEl = getById('filterStart');
-    const endEl = getById('filterEnd');
-    if (startEl && !startEl.value) startEl.value = start;
-    if (endEl && !endEl.value) endEl.value = end;
+    const sysStart = getById('filterSysStart');
+    const sysEnd = getById('filterSysEnd');
+    if (sysStart && !sysStart.value) sysStart.value = start;
+    if (sysEnd && !sysEnd.value) sysEnd.value = end;
 
-    // Listen to changes
-    ['filterStart', 'filterEnd', 'filterType', 'filterApplyTo'].forEach((id) => {
-      getById(id)?.addEventListener('change', () => {
-        saveFilters();
-        renderAll();
-      });
-    });
-
-    let searchDebounceTimer: any = null;
-    getById('filterSearch')?.addEventListener('input', () => {
-      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-      searchDebounceTimer = setTimeout(() => {
-        saveFilters();
-        renderAll();
-      }, 300);
-    });
-
-    // Clear filters event
-    const clearBtn = getById('card_statements_filters-filter-panel-clear');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        setTimeout(() => {
-          if (startEl) startEl.value = start;
-          if (endEl) endEl.value = end;
-          saveFilters();
-          renderAll();
-        }, 50);
-      });
-    }
+    const cardStart = getById('filterCardStart');
+    const cardEnd = getById('filterCardEnd');
+    if (cardStart && !cardStart.value) cardStart.value = start;
+    if (cardEnd && !cardEnd.value) cardEnd.value = end;
   }
 
   function saveFilters(): void {
-    const values = {
-      filterStart: getById('filterStart')?.value || '',
-      filterEnd: getById('filterEnd')?.value || '',
-      filterType: getById('filterType')?.value || '',
-      filterApplyTo: getById('filterApplyTo')?.value || 'both',
-      filterSearch: getById('filterSearch')?.value || '',
+    const sysFilters = {
+      filterSysStart: getById('filterSysStart')?.value || '',
+      filterSysEnd: getById('filterSysEnd')?.value || '',
+      filterSysType: getById('filterSysType')?.value || '',
+      filterSysMethod: getById('filterSysMethod')?.value || '',
+      filterSysStatus: getById('filterSysStatus')?.value || '',
+      filterSysSearch: getById('filterSysSearch')?.value || '',
     };
-    localStorage.setItem('card_statements_filters_values', JSON.stringify(values));
+    const cardFilters = {
+      filterCardStart: getById('filterCardStart')?.value || '',
+      filterCardEnd: getById('filterCardEnd')?.value || '',
+      filterCardType: getById('filterCardType')?.value || '',
+      filterCardReconciled: getById('filterCardReconciled')?.value || '',
+      filterCardSearch: getById('filterCardSearch')?.value || '',
+    };
+
+    if ((window as any).CompanyStorage) {
+      (window as any).CompanyStorage.setItem('system_card_statements_filters_values', JSON.stringify(sysFilters));
+      (window as any).CompanyStorage.setItem('card_statements_filters_values', JSON.stringify(cardFilters));
+    } else {
+      localStorage.setItem('system_card_statements_filters_values', JSON.stringify(sysFilters));
+      localStorage.setItem('card_statements_filters_values', JSON.stringify(cardFilters));
+    }
   }
 
   function restoreFilters(): void {
-    const saved = localStorage.getItem('card_statements_filters_values');
-    if (!saved) return;
-    try {
-      const filters = JSON.parse(saved);
-      if (getById('filterStart')) getById('filterStart').value = filters.filterStart || '';
-      if (getById('filterEnd')) getById('filterEnd').value = filters.filterEnd || '';
-      if (getById('filterType')) getById('filterType').value = filters.filterType || '';
-      if (getById('filterApplyTo')) getById('filterApplyTo').value = filters.filterApplyTo || 'both';
-      if (getById('filterSearch')) getById('filterSearch').value = filters.filterSearch || '';
-    } catch (e) {
-      console.error('Erro ao restaurar filtros:', e);
+    const savedSys = (window as any).CompanyStorage?.getItem('system_card_statements_filters_values') ?? localStorage.getItem('system_card_statements_filters_values');
+    if (savedSys) {
+      try {
+        const filters = JSON.parse(savedSys);
+        if (getById('filterSysStart')) getById('filterSysStart').value = filters.filterSysStart || '';
+        if (getById('filterSysEnd')) getById('filterSysEnd').value = filters.filterSysEnd || '';
+        if (getById('filterSysType')) getById('filterSysType').value = filters.filterSysType || '';
+        if (getById('filterSysMethod')) getById('filterSysMethod').value = filters.filterSysMethod || '';
+        if (getById('filterSysStatus')) getById('filterSysStatus').value = filters.filterSysStatus || '';
+        if (getById('filterSysSearch')) getById('filterSysSearch').value = filters.filterSysSearch || '';
+      } catch (e) {
+        console.error('Erro ao restaurar filtros do sistema:', e);
+      }
+    }
+
+    const savedCard = (window as any).CompanyStorage?.getItem('card_statements_filters_values') ?? localStorage.getItem('card_statements_filters_values');
+    if (savedCard) {
+      try {
+        const filters = JSON.parse(savedCard);
+        if (getById('filterCardStart')) getById('filterCardStart').value = filters.filterCardStart || '';
+        if (getById('filterCardEnd')) getById('filterCardEnd').value = filters.filterCardEnd || '';
+        if (getById('filterCardType')) getById('filterCardType').value = filters.filterCardType || '';
+        if (getById('filterCardReconciled')) getById('filterCardReconciled').value = filters.filterCardReconciled || '';
+        if (getById('filterCardSearch')) getById('filterCardSearch').value = filters.filterCardSearch || '';
+      } catch (e) {
+        console.error('Erro ao restaurar filtros do cartão:', e);
+      }
     }
   }
 
   // ─── Filter Calculations ─────────────────────────────────────────────────────
   function getFilteredSystemTransactions(): any[] {
-    const startFilter = getById('filterStart')?.value || '';
-    const endFilter = getById('filterEnd')?.value || '';
-    const typeFilter = getById('filterType')?.value || '';
-    const applyTo = getById('filterApplyTo')?.value || 'both';
-    const searchFilter = getById('filterSearch')?.value || '';
+    const startFilter = getById('filterSysStart')?.value || '';
+    const endFilter = getById('filterSysEnd')?.value || '';
+    const typeFilter = getById('filterSysType')?.value || '';
+    const methodFilter = getById('filterSysMethod')?.value || '';
+    const statusFilter = getById('filterSysStatus')?.value || '';
+    const searchFilter = getById('filterSysSearch')?.value || '';
 
     return systemTransactions.filter((t: any) => {
       // Filter by type
       if (typeFilter && t.type !== typeFilter) return false;
 
+      // Filter by payment method
+      if (methodFilter && t.payment_method !== methodFilter) return false;
+
+      // Filter by status
+      if (statusFilter && t.status !== statusFilter) return false;
+
       // Filter by date
-      if (applyTo === 'both' || applyTo === 'system') {
-        if (startFilter || endFilter) {
-          const tDate = t.date ? String(t.date).split('T')[0] : '';
-          if (startFilter && tDate < startFilter) return false;
-          if (endFilter && tDate > endFilter) return false;
-        }
+      if (startFilter || endFilter) {
+        const tDate = t.date ? String(t.date).split('T')[0] : '';
+        if (startFilter && tDate < startFilter) return false;
+        if (endFilter && tDate > endFilter) return false;
       }
 
       // Filter by search
-      if ((applyTo === 'both' || applyTo === 'system') && searchFilter) {
-        const query = searchFilter.toLowerCase().trim();
-        const desc = String(t.description || '').toLowerCase();
-        const bankName = String(t.bank_account_name || '').toLowerCase();
-        const cat = String(t.category_name || '').toLowerCase();
-        if (!desc.includes(query) && !bankName.includes(query) && !cat.includes(query)) {
-          return false;
+      if (searchFilter) {
+        if (FilterPanel && typeof FilterPanel.matchesSearch === 'function') {
+          if (!FilterPanel.matchesSearch(t, ['description', 'category_name', 'bank_account_name'], searchFilter)) {
+            return false;
+          }
+        } else {
+          const query = searchFilter.toLowerCase().trim();
+          const desc = String(t.description || '').toLowerCase();
+          const bankName = String(t.bank_account_name || '').toLowerCase();
+          const cat = String(t.category_name || '').toLowerCase();
+          if (!desc.includes(query) && !bankName.includes(query) && !cat.includes(query)) {
+            return false;
+          }
         }
       }
 
@@ -172,30 +304,41 @@
   }
 
   function getFilteredCardStatements(): any[] {
-    const startFilter = getById('filterStart')?.value || '';
-    const endFilter = getById('filterEnd')?.value || '';
-    const typeFilter = getById('filterType')?.value || '';
-    const applyTo = getById('filterApplyTo')?.value || 'both';
-    const searchFilter = getById('filterSearch')?.value || '';
+    const startFilter = getById('filterCardStart')?.value || '';
+    const endFilter = getById('filterCardEnd')?.value || '';
+    const typeFilter = getById('filterCardType')?.value || '';
+    const reconciledFilter = getById('filterCardReconciled')?.value || '';
+    const searchFilter = getById('filterCardSearch')?.value || '';
 
     return cardStatements.filter((t: any) => {
       // Filter by type
       if (typeFilter && t.type !== typeFilter) return false;
 
+      // Filter by reconciled status
+      if (reconciledFilter) {
+        const isReconciled = t.status === 'reconciled';
+        if (reconciledFilter === 'reconciled' && !isReconciled) return false;
+        if (reconciledFilter === 'unreconciled' && isReconciled) return false;
+      }
+
       // Filter by date
-      if (applyTo === 'both' || applyTo === 'bank') {
-        if (startFilter || endFilter) {
-          const tDate = t.date ? String(t.date).split('T')[0] : '';
-          if (startFilter && tDate < startFilter) return false;
-          if (endFilter && tDate > endFilter) return false;
-        }
+      if (startFilter || endFilter) {
+        const tDate = t.date ? String(t.date).split('T')[0] : '';
+        if (startFilter && tDate < startFilter) return false;
+        if (endFilter && tDate > endFilter) return false;
       }
 
       // Filter by search
-      if ((applyTo === 'both' || applyTo === 'bank') && searchFilter) {
-        const query = searchFilter.toLowerCase().trim();
-        const desc = String(t.description || '').toLowerCase();
-        if (!desc.includes(query)) return false;
+      if (searchFilter) {
+        if (FilterPanel && typeof FilterPanel.matchesSearch === 'function') {
+          if (!FilterPanel.matchesSearch(t, ['description'], searchFilter)) {
+            return false;
+          }
+        } else {
+          const query = searchFilter.toLowerCase().trim();
+          const desc = String(t.description || '').toLowerCase();
+          if (!desc.includes(query)) return false;
+        }
       }
 
       return true;

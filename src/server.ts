@@ -19,7 +19,7 @@ import https from 'https';
 import fs from 'fs';
 import path from 'path';
 
-const PORT = Number(process.env.PORT) || 3030;
+const PORT = Number(process.env.PORT) || 3000;
 const HTTPS_PORT = Number(process.env.HTTPS_PORT) || 8443;
 let isShuttingDown = false;
 let server: ReturnType<typeof app.listen> | ReturnType<typeof https.createServer> | null = null;
@@ -98,7 +98,7 @@ process.on('SIGINT', () => {
 const certPath = path.join(process.cwd(), 'certs', 'cert.pem');
 const keyPath  = path.join(process.cwd(), 'certs', 'key.pem');
 const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
-const useHttps = hasCerts;
+const useHttps = process.env.USE_HTTPS === 'true' && hasCerts;
 
 console.log(`[BOOT] NODE_ENV is: ${process.env.NODE_ENV}`);
 console.log(`[BOOT] hasCerts: ${hasCerts} | useHttps: ${useHttps}`);

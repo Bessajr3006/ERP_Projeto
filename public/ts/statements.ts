@@ -11,6 +11,7 @@
   // Banco
   let bankStatementsData: any[] = [];
   let categoriesData: any[] = [];
+  let categoryTypesData: any[] = [];
   let selectedBankStatementForCreate: any = null;
 
   const getById = (id: string): any => document.getElementById(id);
@@ -478,7 +479,8 @@
 
     selCat.innerHTML = '<option value="">Selecione a categoria...</option>';
     filtered.forEach((c: any) => {
-      selCat.innerHTML += `<option value="${c.public_id}">${c.name}</option>`;
+      const typeSuffix = c.finance_category_type_name ? ` (${c.finance_category_type_name})` : '';
+      selCat.innerHTML += `<option value="${c.public_id}">${c.name}${typeSuffix}</option>`;
     });
 
     if (filtered.length === 1) {
@@ -594,14 +596,25 @@
     selectedBankStatementForCreate = null;
   }
 
+  function populateQuickCategoryTypeDropdown(): void {
+    const sel = getById('quickCategoryFinanceType') as HTMLSelectElement | null;
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Nenhum</option>' +
+      categoryTypesData.map((t: any) => `<option value="${t.public_id}">${t.name}</option>`).join('');
+  }
+
   function openQuickCategoryModal(): void {
     const isRevenue = (getById('stmtTypeRevenue') as HTMLInputElement | null)?.checked;
     const catType = isRevenue ? 'income' : 'expense';
 
     const typeSelect = getById('quickCategoryType') as HTMLSelectElement | null;
     const nameInput = getById('quickCategoryName') as HTMLInputElement | null;
+    const finTypeSelect = getById('quickCategoryFinanceType') as HTMLSelectElement | null;
+
+    populateQuickCategoryTypeDropdown();
 
     if (typeSelect) typeSelect.value = catType;
+    if (finTypeSelect) finTypeSelect.value = '';
     if (nameInput) {
       nameInput.value = '';
       setTimeout(() => nameInput.focus(), 50);
@@ -620,15 +633,17 @@
 
   async function fetchStatements(): Promise<void> {
     try {
-      const [expRes, revRes, bankRes, catRes] = await Promise.all([
+      const [expRes, revRes, bankRes, catRes, catTypeRes] = await Promise.all([
         (api as any)('/finance/expenses'),
         (api as any)('/finance/revenues'),
         (api as any)('/bank-accounts'),
         (api as any)('/finance/categories'),
+        (api as any)('/finance/category-types').catch(() => ({ data: [] })),
       ]);
 
       banksData = bankRes.data || [];
       categoriesData = catRes.data || [];
+      categoryTypesData = catTypeRes?.data || [];
       populateBankFilters();
       populateCreateModalBanks();
 
@@ -1410,9 +1425,11 @@
       const submitBtn = getById('btnSubmitQuickCategory');
       const nameInput = getById('quickCategoryName') as HTMLInputElement | null;
       const typeSelect = getById('quickCategoryType') as HTMLSelectElement | null;
+      const finTypeSelect = getById('quickCategoryFinanceType') as HTMLSelectElement | null;
 
       const name = nameInput?.value?.trim();
       const type = typeSelect?.value || 'expense';
+      const finance_category_type_public_id = finTypeSelect?.value || null;
 
       if (!name || name.length < 2) {
         (UI as any).showAlert('alertMessage', 'Informe um nome com pelo menos 2 caracteres para a categoria.', 'warning');
@@ -1427,7 +1444,7 @@
 
         const res = await (api as any)('/finance/categories', {
           method: 'POST',
-          body: JSON.stringify({ name, type }),
+          body: JSON.stringify({ name, type, finance_category_type_public_id }),
         });
 
         const createdCategory = res?.data;

@@ -878,8 +878,8 @@ export class FinanceService {
         return FinanceTransactionRepository.listRecentPaidRevenues(companyId, minutesAgo);
     }
 
-    static async listBankStatements(companyId: number, bankAccountPublicId?: string): Promise<any[]> {
-        return FinanceBankStatementRepository.listBankStatements(companyId, bankAccountPublicId);
+    static async listBankStatements(companyId: number, bankAccountPublicId?: string, startDate?: string, endDate?: string): Promise<any[]> {
+        return FinanceBankStatementRepository.listBankStatements(companyId, bankAccountPublicId, startDate, endDate);
     }
 
     static async reconcile(companyId: number, systemIds: string[], bankStatementIds: string[]): Promise<void> {

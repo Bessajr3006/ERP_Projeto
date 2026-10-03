@@ -45,7 +45,8 @@ export class InterService {
 
     /**
      * Sincroniza o extrato do Banco Inter usando o Host Validado pelo Teste de Conexão.
-     * Suporta qualquer período de datas através de particionamento automático em lotes de até 89 dias.
+     * Suporta qualquer período de datas através de particionamento automático em lotes de até 89 dias
+     * e paginação completa da API para garantir que nenhum lançamento seja perdido.
      */
     static async syncStatements(companyId: number, bankAccount: any, startDate: string, endDate: string): Promise<number> {
         const { api_client_id, api_client_secret, api_certificate, api_key } = bankAccount;
@@ -75,75 +76,177 @@ export class InterService {
 
         try {
             // 1. Obter Token mTLS
-            const token = await this.getAccessToken(bankAccount);
+            const token = await this.getAccessToken(bankAccount, 'extrato.read');
 
             // 2. Particionar intervalo em blocos de até 89 dias
             const dateChunks = this.splitDateRange(safeStartDate, safeEndDate, 89);
             let syncedCount = 0;
 
             for (const chunk of dateChunks) {
-                const path = `/banking/v2/extrato?dataInicio=${chunk.start}&dataFim=${chunk.end}`;
-                
-                const response = await this.httpsRequest('cdpj.partners.bancointer.com.br', path, 'GET', {
-                    'Authorization': `Bearer ${token}`,
-                    'x-inter-conta-corrente': accountNumber
-                }, bankAccount);
+                let page = 0;
+                let hasMorePages = true;
+                let isCompletoEndpoint = true;
 
-                let data: any;
-                try {
-                    data = JSON.parse(response);
-                } catch (e: any) {
-                    throw new Error(`Erro ao interpretar resposta do Banco Inter: ${e.message}. Resposta: ${response.substring(0, 200)}`);
-                }
-
-                if (data && !Array.isArray(data)) {
-                    if (data.violacoes || data.erros || data.title || data.mensagem || data.error) {
-                        const errMsg = this.extractErrorMessage(data, 'Erro na consulta do extrato');
-                        logger.error({ chunk, data, errMsg }, '[InterService] Erro retornado pela API do Inter');
-                        throw new Error(errMsg);
-                    }
-                }
-
-                let transactions: any[] = [];
-                if (Array.isArray(data)) {
-                    transactions = data;
-                } else if (data && Array.isArray(data.transacoes)) {
-                    transactions = data.transacoes;
-                }
-
-                for (const tx of transactions) {
-                    const safeDate = this.normalizeTransactionDate(tx);
-                    if (!safeDate) {
-                        logger.warn({ tx }, '[InterService] Ignorando lançamento sem data válida');
-                        continue;
+                while (hasMorePages) {
+                    let path = '';
+                    if (isCompletoEndpoint) {
+                        path = `/banking/v2/extrato/completo?dataInicio=${chunk.start}&dataFim=${chunk.end}&pagina=${page}&tamanhoPagina=1000`;
+                    } else {
+                        path = `/banking/v2/extrato?dataInicio=${chunk.start}&dataFim=${chunk.end}`;
                     }
 
-                    const publicId = randomUUID();
-                    const type = (tx.tipoLancamento === 'CREDITO' || tx.tipoOperacao === 'C') ? 'income' : 'expense';
-                    const amount = Math.abs(parseFloat(tx.valor || '0'));
-                    const description = tx.descricao || tx.historico || 'Sem descrição';
-                    
-                    const exists = await FinanceBankStatementRepository.checkStatementExists(pool, companyId, bankAccount.id, {
-                        date: safeDate,
-                        amount: amount,
-                        description,
-                        type: type
-                    });
+                    let response = '';
+                    try {
+                        response = await this.httpsRequest('cdpj.partners.bancointer.com.br', path, 'GET', {
+                            'Authorization': `Bearer ${token}`,
+                            'x-inter-conta-corrente': accountNumber
+                        }, bankAccount);
+                    } catch (reqErr: any) {
+                        // Se falhar no endpoint completo na primeira página, tenta o endpoint padrão de extrato
+                        if (isCompletoEndpoint && page === 0) {
+                            logger.warn({ reqErr: reqErr.message }, '[InterService] Endpoint /banking/v2/extrato/completo falhou, tentando fallback para /banking/v2/extrato');
+                            isCompletoEndpoint = false;
+                            continue;
+                        }
+                        throw reqErr;
+                    }
 
-                    if (!exists) {
-                        await FinanceBankStatementRepository.upsertBankStatement(
+                    let data: any;
+                    try {
+                        data = JSON.parse(response);
+                    } catch (e: any) {
+                        if (isCompletoEndpoint && page === 0) {
+                            logger.warn('[InterService] Resposta não-JSON em /banking/v2/extrato/completo, tentando fallback para /banking/v2/extrato');
+                            isCompletoEndpoint = false;
+                            continue;
+                        }
+                        throw new Error(`Erro ao interpretar resposta do Banco Inter: ${e.message}. Resposta: ${response.substring(0, 200)}`);
+                    }
+
+                    if (data && !Array.isArray(data)) {
+                        if (data.violacoes || data.erros || data.title || data.mensagem || data.error) {
+                            if (isCompletoEndpoint && page === 0) {
+                                logger.warn({ data }, '[InterService] Erro em /banking/v2/extrato/completo, tentando fallback para /banking/v2/extrato');
+                                isCompletoEndpoint = false;
+                                continue;
+                            }
+                            const errMsg = this.extractErrorMessage(data, 'Erro na consulta do extrato');
+                            logger.error({ chunk, page, data, errMsg }, '[InterService] Erro retornado pela API do Inter');
+                            throw new Error(errMsg);
+                        }
+                    }
+
+                    let transactions: any[] = [];
+                    if (Array.isArray(data)) {
+                        transactions = data;
+                    } else if (data && Array.isArray(data.transacoes)) {
+                        transactions = data.transacoes;
+                    }
+
+                    let txIndex = 0;
+                    for (const tx of transactions) {
+                        txIndex++;
+                        const safeDate = this.normalizeTransactionDate(tx);
+                        if (!safeDate) {
+                            logger.warn({ tx }, '[InterService] Ignorando lançamento sem data válida');
+                            continue;
+                        }
+
+                        // Tipo de operação
+                        const tipoLancamento = String(tx.tipoLancamento || tx.tipoOperacao || tx.tipo || '').toUpperCase();
+                        const isCredit = tipoLancamento.includes('CRED') || tipoLancamento === 'C' || tipoLancamento === 'RECEITA' || tipoLancamento === 'ENTRADA';
+                        const isDebit = tipoLancamento.includes('DEB') || tipoLancamento === 'D' || tipoLancamento === 'DESPESA' || tipoLancamento === 'SAIDA';
+                        
+                        let rawAmount = tx.valor !== undefined && tx.valor !== null ? tx.valor : (tx.valorLancamento || tx.amount || '0');
+                        let numAmount = 0;
+                        if (typeof rawAmount === 'string') {
+                            if (rawAmount.includes(',') && !rawAmount.includes('.')) {
+                                numAmount = parseFloat(rawAmount.replace(',', '.'));
+                            } else if (rawAmount.includes('.') && rawAmount.includes(',')) {
+                                numAmount = parseFloat(rawAmount.replace(/\./g, '').replace(',', '.'));
+                            } else {
+                                numAmount = parseFloat(rawAmount);
+                            }
+                        } else {
+                            numAmount = Number(rawAmount || 0);
+                        }
+                        if (isNaN(numAmount)) numAmount = 0;
+
+                        let type: 'income' | 'expense' = 'expense';
+                        if (isCredit) {
+                            type = 'income';
+                        } else if (isDebit) {
+                            type = 'expense';
+                        } else if (numAmount > 0) {
+                            type = 'income';
+                        } else {
+                            type = 'expense';
+                        }
+                        const amount = Math.abs(numAmount);
+
+                        // Descrição / Título
+                        const titulo = String(tx.titulo || tx.tipoTransacao || '').trim();
+                        const descricao = String(tx.descricao || tx.historico || tx.detalhe || tx.detalhes?.descricao || '').trim();
+                        let description = '';
+                        if (titulo && descricao && titulo.toLowerCase() !== descricao.toLowerCase()) {
+                            description = `${titulo} - ${descricao}`;
+                        } else {
+                            description = descricao || titulo || 'Lançamento Inter';
+                        }
+                        if (description.length > 255) {
+                            description = description.substring(0, 255);
+                        }
+
+                        // ID Único da transação no Inter
+                        const candidateTxId = tx.codigoTransacao || 
+                                              tx.idTransacao || 
+                                              tx.nsu || 
+                                              tx.referencia || 
+                                              tx.numDocumento || 
+                                              tx.numeroDocumento || 
+                                              tx.detalhes?.endToEndId || 
+                                              tx.detalhes?.codigoTransacao || 
+                                              tx.detalhes?.nsu || 
+                                              tx.detalhes?.nossoNumero;
+
+                        const txId = candidateTxId 
+                            ? String(candidateTxId).trim() 
+                            : `${safeDate}_${tx.horario || tx.hora || ''}_${type}_${amount}_${chunk.start}_${page}_${txIndex}`;
+
+                        const publicId = randomUUID();
+                        const rawData = JSON.stringify(tx);
+
+                        const affected = await FinanceBankStatementRepository.upsertBankStatement(
                             pool,
                             companyId,
                             bankAccount.id,
                             publicId,
-                            tx.nsu || tx.referencia || publicId,
+                            txId,
                             safeDate,
                             description,
                             amount,
                             type,
-                            JSON.stringify(tx)
+                            rawData
                         );
-                        syncedCount++;
+
+                        if (affected === 1) {
+                            syncedCount++;
+                        }
+                    }
+
+                    // Controle de paginação
+                    if (isCompletoEndpoint && data && !Array.isArray(data)) {
+                        const totalPages = Number(data.totalPaginas ?? 1);
+                        const isLastPage = Boolean(data.ultimaPagina ?? (page >= totalPages - 1));
+                        
+                        if (!isLastPage && page < totalPages - 1 && transactions.length > 0) {
+                            page++;
+                            hasMorePages = true;
+                        } else {
+                            hasMorePages = false;
+                        }
+                    } else {
+                        hasMorePages = false;
                     }
                 }
             }
@@ -264,13 +367,52 @@ export class InterService {
     }
 
     private static normalizeTransactionDate(tx: any): string | null {
-        const candidate = tx.dataEntrada || tx.dataLancamento || tx.dataMovimento || tx.data || tx.data_extrato || tx.date;
-        if (!candidate) return null;
+        const raw = tx.dataEntrada || 
+                    tx.dataLancamento || 
+                    tx.dataHoraMovimento || 
+                    tx.dataMovimento || 
+                    tx.data || 
+                    tx.dataHora || 
+                    tx.data_extrato || 
+                    tx.date || 
+                    tx.inclusao ||
+                    tx.detalhes?.dataHora ||
+                    tx.detalhes?.dataLancamento;
+        if (raw === undefined || raw === null) return null;
 
-        const parsed = new Date(candidate);
-        if (Number.isNaN(parsed.getTime())) return null;
+        if (typeof raw === 'number') {
+            const d = new Date(raw);
+            if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+            return null;
+        }
 
-        return parsed.toISOString().slice(0, 10);
+        const str = String(raw).trim();
+        if (!str) return null;
+
+        // Match YYYY-MM-DD (e.g. "2026-10-03" or "2026-10-03T14:30:00" or "2026-10-03 14:30:00")
+        const ymdMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+        if (ymdMatch && ymdMatch[1] && ymdMatch[2] && ymdMatch[3]) {
+            const y = ymdMatch[1];
+            const m = ymdMatch[2].padStart(2, '0');
+            const d = ymdMatch[3].padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // Match DD/MM/YYYY or DD-MM-YYYY (e.g. "03/10/2026" or "03-10-2026" or "03/10/2026 14:30:00")
+        const dmyMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+        if (dmyMatch && dmyMatch[1] && dmyMatch[2] && dmyMatch[3]) {
+            const d = dmyMatch[1].padStart(2, '0');
+            const m = dmyMatch[2].padStart(2, '0');
+            const y = dmyMatch[3];
+            return `${y}-${m}-${d}`;
+        }
+
+        const parsed = new Date(str);
+        if (!isNaN(parsed.getTime())) {
+            return parsed.toISOString().slice(0, 10);
+        }
+
+        return null;
     }
 
     private static extractErrorMessage(data: any, defaultMsg: string): string {

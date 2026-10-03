@@ -44,6 +44,17 @@ export class FinanceBankStatementRepository {
     }
 
     static async checkStatementExists(client: DBClient, companyId: number, bankAccountId: number, data: any): Promise<boolean> {
+        const txId = data.transaction_id || data.transactionId;
+        if (txId) {
+            const [existing] = await client.query<RowDataPacket[]>(
+                `SELECT id FROM bank_statements 
+                 WHERE company_id = ? AND bank_account_id = ? AND transaction_id = ?
+                 LIMIT 1`,
+                [companyId, bankAccountId, String(txId)]
+            );
+            return existing.length > 0;
+        }
+
         const [existing] = await client.query<RowDataPacket[]>(
             `SELECT id FROM bank_statements 
              WHERE company_id = ? AND bank_account_id = ? AND date = ? AND amount = ? AND description = ? AND type = ?
@@ -53,11 +64,25 @@ export class FinanceBankStatementRepository {
         return existing.length > 0;
     }
 
-    static async listBankStatements(companyId: number, bankAccountPublicId?: string): Promise<RowDataPacket[]> {
+    static async listBankStatements(companyId: number, bankAccountPublicId?: string, startDate?: string, endDate?: string): Promise<RowDataPacket[]> {
         const params: any[] = [companyId];
         let query = `
             SELECT 
-                bs.*, acc.name as bank_name,
+                bs.id,
+                bs.public_id,
+                bs.company_id,
+                bs.bank_account_id,
+                bs.transaction_id,
+                DATE_FORMAT(bs.date, '%Y-%m-%d') as date,
+                bs.description,
+                bs.amount,
+                bs.type,
+                bs.raw_data,
+                bs.status,
+                bs.reconciled_transaction_id,
+                bs.created_at,
+                bs.updated_at,
+                acc.name as bank_name,
                 tx.public_id as reconciled_transaction_public_id,
                 tx.description as reconciled_transaction_description,
                 tx.type as reconciled_transaction_type
@@ -70,6 +95,16 @@ export class FinanceBankStatementRepository {
         if (bankAccountPublicId) {
             query += ' AND acc.public_id = ?';
             params.push(bankAccountPublicId);
+        }
+
+        if (startDate) {
+            query += ' AND bs.date >= ?';
+            params.push(startDate);
+        }
+
+        if (endDate) {
+            query += ' AND bs.date <= ?';
+            params.push(endDate);
         }
 
         query += ' ORDER BY bs.date DESC, bs.id DESC';

@@ -761,15 +761,17 @@ export class FinanceController {
         try {
             const companyId = req.user!.company_id;
             const bankAccountPublicId = req.query.bankAccountPublicId as string;
+            const startDate = req.query.startDate as string;
+            const endDate = req.query.endDate as string;
             
-            const result = await FinanceService.listBankStatements(companyId, bankAccountPublicId);
+            const result = await FinanceService.listBankStatements(companyId, bankAccountPublicId, startDate, endDate);
             res.status(200).json({ status: 'success', data: result });
         } catch (error: any) {
             if (error instanceof Error) {
                 res.status(400).json({ status: 'error', message: error.message });
                 return;
             }
-            throw error;
+            res.status(500).json({ status: 'error', message: 'Erro ao listar extratos bancários.' });
         }
     }
 

@@ -383,8 +383,8 @@ export const DEFAULT_COMPANY_USERS: Array<{ fullName: string; role: Exclude<Seed
 function makeBaseConnectionConfig(): ConnectionOptions {
     const config: ConnectionOptions = {
         host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
+        user: process.env.DB_MIGRATION_USER || process.env.MARIADB_ROOT_USER || process.env.DB_USER || 'root',
+        password: process.env.DB_MIGRATION_PASSWORD || process.env.MARIADB_ROOT_PASSWORD || process.env.DB_PASSWORD || '',
         port: parseInt(process.env.DB_PORT || '3306', 10),
     };
 

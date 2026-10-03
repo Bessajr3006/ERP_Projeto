@@ -433,6 +433,36 @@ export class CompanyService {
     }
 
     /**
+     * Obtém as credenciais do certificado digital A1 da empresa com a senha já descriptografada.
+     */
+    static async getCertificateCredentials(companyId: number): Promise<{ pfxPath: string; password: string } | null> {
+        const company = await this.getById(companyId);
+        if (!company || !company.certificate_url || !company.certificate_password) {
+            return null;
+        }
+
+        const fs = await import('fs');
+        const path = await import('path');
+
+        const cleanUrl = company.certificate_url.startsWith('/') ? company.certificate_url.slice(1) : company.certificate_url;
+        let pfxPath = path.join(process.cwd(), 'public', cleanUrl);
+        if (!fs.existsSync(pfxPath)) {
+            pfxPath = path.join(process.cwd(), cleanUrl);
+        }
+
+        if (!fs.existsSync(pfxPath)) {
+            return null;
+        }
+
+        const decryptedPassword = decrypt(company.certificate_password) || company.certificate_password;
+
+        return {
+            pfxPath,
+            password: decryptedPassword
+        };
+    }
+
+    /**
      * Exclui permanentemente uma empresa e todos os seus dados.
      */
     static async delete(publicId: string): Promise<void> {

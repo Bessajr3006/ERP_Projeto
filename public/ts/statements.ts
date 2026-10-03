@@ -141,42 +141,50 @@
     return { totalIn, totalOut, balance };
   }
 
-  function getFiltered(): any[] {
-    const bankFilter = getById('filterBank')?.value || '';
-    const typeFilter = getById('filterType')?.value || '';
-    const startFilter = getById('filterStart')?.value || '';
-    const endFilter = getById('filterEnd')?.value || '';
-    const searchFilter = getById('filterSearch')?.value || '';
-    const applyTo = getById('filterApplyTo')?.value || 'both';
+  function getFilteredSystemStatements(): any[] {
+    const bankFilter = getById('filterSysBank')?.value || '';
+    const typeFilter = getById('filterSysType')?.value || '';
+    const statusFilter = getById('filterSysStatus')?.value || '';
+    const startFilter = getById('filterSysStart')?.value || '';
+    const endFilter = getById('filterSysEnd')?.value || '';
+    const searchFilter = getById('filterSysSearch')?.value || '';
 
     return statementsData.filter((t: any) => {
       if (bankFilter && t.bank_account_public_id !== bankFilter) return false;
       if (typeFilter && t.type !== typeFilter) return false;
 
-      // SÓ aplica filtro de data no ERP se a opção for 'both' ou 'system'
-      if (applyTo === 'both' || applyTo === 'system') {
-        if (startFilter || endFilter) {
-          const tDate = t.date ? String(t.date).split('T')[0] : '';
-          const tReceived = t.received_at ? String(t.received_at).split('T')[0] : '';
-          const tScheduled = t.scheduled_at ? String(t.scheduled_at).split('T')[0] : '';
+      if (statusFilter) {
+        const isPaid = t.status === 'paid';
+        const isOverdue = !isPaid && DateUtilsRef?.isBeforeToday?.(t.date);
+        const isPending = !isPaid && !isOverdue;
 
-          const matchDate = (d: string) => {
-            if (!d) return false;
-            if (startFilter && d < startFilter) return false;
-            if (endFilter && d > endFilter) return false;
-            return true;
-          };
-
-          const hasAnyDateMatch = matchDate(tDate) || matchDate(tReceived) || matchDate(tScheduled);
-          if (!hasAnyDateMatch) return false;
-        }
+        if (statusFilter === 'paid' && !isPaid) return false;
+        if (statusFilter === 'pending' && !isPending) return false;
+        if (statusFilter === 'overdue' && !isOverdue) return false;
       }
-      const shouldFilterSearch = applyTo === 'both' || applyTo === 'system';
-      if (shouldFilterSearch && searchFilter) {
-        if (!FilterPanel.matchesSearch(t, ['description', 'category_name', 'bank_account_name'], searchFilter)) {
+
+      if (startFilter || endFilter) {
+        const tDate = t.date ? String(t.date).split('T')[0] : '';
+        const tReceived = t.received_at ? String(t.received_at).split('T')[0] : '';
+        const tScheduled = t.scheduled_at ? String(t.scheduled_at).split('T')[0] : '';
+
+        const matchDate = (d: string) => {
+          if (!d) return false;
+          if (startFilter && d < startFilter) return false;
+          if (endFilter && d > endFilter) return false;
+          return true;
+        };
+
+        const hasAnyDateMatch = matchDate(tDate) || matchDate(tReceived) || matchDate(tScheduled);
+        if (!hasAnyDateMatch) return false;
+      }
+
+      if (searchFilter) {
+        if (!FilterPanel.matchesSearch(t, ['description', 'category_name', 'bank_account_name', 'entity_name'], searchFilter)) {
           return false;
         }
       }
+
       return true;
     });
   }
@@ -250,7 +258,7 @@
     if (!tbody) return;
 
     if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+      tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
             Nenhuma movimentação encontrada para os filtros selecionados.</td></tr>`;
       return;
     }
@@ -399,29 +407,47 @@
       .join('');
   }
 
-  // ─── Render principal ─────────────────────────────────────────────────────────
+  // ─── Render principal do Sistema ──────────────────────────────────────────────
 
-  function renderAll(): void {
-    const items = getFiltered();
+  function renderAllSystem(): void {
+    const items = getFilteredSystemStatements();
     updateFooter(items);
     renderTable(items);
     renderGrid(items);
     updateViewToggle();
+  }
+
+  function renderAll(): void {
+    renderAllSystem();
     renderBankStatements();
   }
 
-  // ─── Carregar filtros dinâmicos ────────────────────────────────────────────────
+  // ─── Carregar filtros dinâmicos de bancos ──────────────────────────────────────
 
-  function populateBankFilter(): void {
-    const sel = getById('filterBank') as HTMLSelectElement;
-    if (!sel) return;
-    const previousValue = sel.value;
-    sel.innerHTML = '<option value="">Todas as contas</option>';
-    banksData.forEach((b: any) => {
-      sel.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
-    });
-    if (previousValue) {
-      sel.value = previousValue;
+  function populateBankFilters(): void {
+    const selSys = getById('filterSysBank') as HTMLSelectElement | null;
+    const selBank = getById('filterBankSelect') as HTMLSelectElement | null;
+
+    if (selSys) {
+      const prevSys = selSys.value;
+      selSys.innerHTML = '<option value="">Todas as contas</option>';
+      banksData.forEach((b: any) => {
+        selSys.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+      });
+      if (prevSys) selSys.value = prevSys;
+    }
+
+    if (selBank) {
+      const prevBank = selBank.value;
+      selBank.innerHTML = '<option value="">Selecione uma conta</option>';
+      banksData.forEach((b: any) => {
+        selBank.innerHTML += `<option value="${b.public_id}">${b.name}</option>`;
+      });
+      if (prevBank) {
+        selBank.value = prevBank;
+      } else if (banksData.length === 1) {
+        selBank.value = banksData[0].public_id;
+      }
     }
   }
 
@@ -436,7 +462,7 @@
       ]);
 
       banksData = bankRes.data || [];
-      populateBankFilter();
+      populateBankFilters();
 
       const expenses = (expRes.data || []).map((e: any) => ({ ...e, type: 'expense' }));
       const revenues = (revRes.data || []).map((r: any) => ({ ...r, type: 'revenue' }));
@@ -448,7 +474,7 @@
         return db.localeCompare(da);
       });
 
-      renderAll();
+      renderAllSystem();
     } catch (err) {
       console.error('[Statements] Erro ao carregar movimentações:', err);
       (UI as any).showAlert('alertMessage', 'Erro ao carregar movimentações. Tente novamente.', 'error');
@@ -456,19 +482,24 @@
   }
 
   function setupFilters(): void {
+    // 1. Filtro dos Lançamentos do Sistema ERP (Coluna Esquerda)
     FilterPanel.mount({
-      storageKey: 'statements_filters',
+      afterElementId: 'systemFilterAnchor',
+      panelId: 'system-statements-filter-panel',
+      title: 'Filtro - Lançamentos do Sistema',
+      storageKey: 'system_statements_filters',
+      defaultOpen: false,
       fields: [
-        { id: 'filterStart', label: 'Data Início', type: 'date' },
-        { id: 'filterEnd', label: 'Data Fim', type: 'date' },
+        { id: 'filterSysStart', label: 'Data Início', type: 'date' },
+        { id: 'filterSysEnd', label: 'Data Fim', type: 'date' },
         {
-          id: 'filterBank',
+          id: 'filterSysBank',
           label: 'Conta Bancária',
           type: 'select',
           options: [{ value: '', label: 'Todas as contas' }],
         },
         {
-          id: 'filterType',
+          id: 'filterSysType',
           label: 'Tipo',
           type: 'select',
           options: [
@@ -478,88 +509,170 @@
           ],
         },
         {
-          id: 'filterApplyTo',
-          label: 'Aplicar em:',
+          id: 'filterSysStatus',
+          label: 'Status',
           type: 'select',
           options: [
-            { value: 'both', label: 'Sistema + Banco' },
-            { value: 'system', label: 'Apenas Sistema' },
-            { value: 'bank', label: 'Apenas Banco' },
+            { value: '', label: 'Todos' },
+            { value: 'paid', label: 'Pagos / Recebidos' },
+            { value: 'pending', label: 'Pendentes' },
+            { value: 'overdue', label: 'Vencidos' },
           ],
         },
-        { id: 'filterSearch', label: 'Busca', type: 'text', placeholder: 'Descrição, categoria ou conta' },
+        { id: 'filterSysSearch', label: 'Busca', type: 'text', placeholder: 'Descrição, categoria, entidade...' },
       ],
-      gridClass: 'grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3 items-end',
+      gridClass: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end',
+    });
+
+    // 2. Filtro do Extrato do Banco (Coluna Direita)
+    FilterPanel.mount({
+      afterElementId: 'bankFilterAnchor',
+      panelId: 'bank-statements-filter-panel',
+      title: 'Filtro - Extrato do Banco',
+      storageKey: 'bank_statements_filters',
+      defaultOpen: false,
+      fields: [
+        { id: 'filterBankStart', label: 'Data Início', type: 'date' },
+        { id: 'filterBankEnd', label: 'Data Fim', type: 'date' },
+        {
+          id: 'filterBankSelect',
+          label: 'Conta Bancária',
+          type: 'select',
+          options: [{ value: '', label: 'Selecione uma conta' }],
+        },
+        {
+          id: 'filterBankType',
+          label: 'Tipo',
+          type: 'select',
+          options: [
+            { value: '', label: 'Todos' },
+            { value: 'income', label: 'Entradas' },
+            { value: 'expense', label: 'Saídas' },
+          ],
+        },
+        {
+          id: 'filterBankReconciled',
+          label: 'Status',
+          type: 'select',
+          options: [
+            { value: '', label: 'Todos' },
+            { value: 'unreconciled', label: 'Não Conciliados' },
+            { value: 'reconciled', label: 'Conciliados' },
+          ],
+        },
+        { id: 'filterBankSearch', label: 'Busca', type: 'text', placeholder: 'Descrição no extrato...' },
+      ],
+      gridClass: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end',
     });
 
     restoreFilters();
 
-    ['filterStart', 'filterEnd', 'filterBank', 'filterType', 'filterApplyTo'].forEach((id) => {
+    // Eventos do Sistema
+    ['filterSysStart', 'filterSysEnd', 'filterSysBank', 'filterSysType', 'filterSysStatus'].forEach((id) => {
       getById(id)?.addEventListener('change', () => {
         saveFilters();
-        renderAll();
+        renderAllSystem();
+      });
+    });
+
+    let sysSearchTimer: ReturnType<typeof setTimeout> | null = null;
+    getById('filterSysSearch')?.addEventListener('input', () => {
+      if (sysSearchTimer) clearTimeout(sysSearchTimer);
+      sysSearchTimer = setTimeout(() => {
+        saveFilters();
+        renderAllSystem();
+        sysSearchTimer = null;
+      }, 180);
+    });
+
+    // Eventos do Banco
+    ['filterBankStart', 'filterBankEnd', 'filterBankSelect'].forEach((id) => {
+      getById(id)?.addEventListener('change', () => {
+        saveFilters();
         void loadBankStatements();
       });
     });
-    let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-    getById('filterSearch')?.addEventListener('input', () => {
-      if (searchDebounceTimer) {
-        clearTimeout(searchDebounceTimer);
-      }
-      searchDebounceTimer = setTimeout(() => {
+
+    ['filterBankType', 'filterBankReconciled'].forEach((id) => {
+      getById(id)?.addEventListener('change', () => {
         saveFilters();
-        renderAll();
-        searchDebounceTimer = null;
+        renderBankStatements();
+      });
+    });
+
+    let bankSearchTimer: ReturnType<typeof setTimeout> | null = null;
+    getById('filterBankSearch')?.addEventListener('input', () => {
+      if (bankSearchTimer) clearTimeout(bankSearchTimer);
+      bankSearchTimer = setTimeout(() => {
+        saveFilters();
+        renderBankStatements();
+        bankSearchTimer = null;
       }, 180);
     });
   }
 
   function saveFilters(): void {
-    const filters = {
-      filterStart: getById('filterStart')?.value || '',
-      filterEnd: getById('filterEnd')?.value || '',
-      filterBank: getById('filterBank')?.value || '',
-      filterType: getById('filterType')?.value || '',
-      filterApplyTo: getById('filterApplyTo')?.value || '',
-      filterSearch: getById('filterSearch')?.value || '',
+    const sysFilters = {
+      filterSysStart: getById('filterSysStart')?.value || '',
+      filterSysEnd: getById('filterSysEnd')?.value || '',
+      filterSysBank: getById('filterSysBank')?.value || '',
+      filterSysType: getById('filterSysType')?.value || '',
+      filterSysStatus: getById('filterSysStatus')?.value || '',
+      filterSysSearch: getById('filterSysSearch')?.value || '',
     };
+    const bankFilters = {
+      filterBankStart: getById('filterBankStart')?.value || '',
+      filterBankEnd: getById('filterBankEnd')?.value || '',
+      filterBankSelect: getById('filterBankSelect')?.value || '',
+      filterBankType: getById('filterBankType')?.value || '',
+      filterBankReconciled: getById('filterBankReconciled')?.value || '',
+      filterBankSearch: getById('filterBankSearch')?.value || '',
+    };
+
     if ((window as any).CompanyStorage) {
-      (window as any).CompanyStorage.setItem('statements_filter_values', JSON.stringify(filters));
+      (window as any).CompanyStorage.setItem('system_statements_filters_values', JSON.stringify(sysFilters));
+      (window as any).CompanyStorage.setItem('bank_statements_filters_values', JSON.stringify(bankFilters));
     } else {
-      localStorage.setItem('statements_filter_values', JSON.stringify(filters));
+      localStorage.setItem('system_statements_filters_values', JSON.stringify(sysFilters));
+      localStorage.setItem('bank_statements_filters_values', JSON.stringify(bankFilters));
     }
   }
 
   function restoreFilters(): void {
-    const saved = (window as any).CompanyStorage?.getItem('statements_filter_values') ?? localStorage.getItem('statements_filter_values');
-    if (!saved) return;
-    try {
-      const filters = JSON.parse(saved);
-      const startEl = getById('filterStart');
-      if (startEl) startEl.value = filters.filterStart || '';
+    const savedSys = (window as any).CompanyStorage?.getItem('system_statements_filters_values') ?? localStorage.getItem('system_statements_filters_values');
+    if (savedSys) {
+      try {
+        const filters = JSON.parse(savedSys);
+        if (getById('filterSysStart')) getById('filterSysStart').value = filters.filterSysStart || '';
+        if (getById('filterSysEnd')) getById('filterSysEnd').value = filters.filterSysEnd || '';
+        if (getById('filterSysBank')) getById('filterSysBank').value = filters.filterSysBank || '';
+        if (getById('filterSysType')) getById('filterSysType').value = filters.filterSysType || '';
+        if (getById('filterSysStatus')) getById('filterSysStatus').value = filters.filterSysStatus || '';
+        if (getById('filterSysSearch')) getById('filterSysSearch').value = filters.filterSysSearch || '';
+      } catch (e) {
+        console.error('[Statements] Erro ao restaurar filtros do sistema:', e);
+      }
+    }
 
-      const endEl = getById('filterEnd');
-      if (endEl) endEl.value = filters.filterEnd || '';
-
-      const bankEl = getById('filterBank');
-      if (bankEl) bankEl.value = filters.filterBank || '';
-
-      const typeEl = getById('filterType');
-      if (typeEl) typeEl.value = filters.filterType || '';
-
-      const applyToEl = getById('filterApplyTo');
-      if (applyToEl) applyToEl.value = filters.filterApplyTo || '';
-
-      const searchEl = getById('filterSearch');
-      if (searchEl) searchEl.value = filters.filterSearch || '';
-    } catch (e) {
-      console.error('[Statements] Erro ao restaurar filtros:', e);
+    const savedBank = (window as any).CompanyStorage?.getItem('bank_statements_filters_values') ?? localStorage.getItem('bank_statements_filters_values');
+    if (savedBank) {
+      try {
+        const filters = JSON.parse(savedBank);
+        if (getById('filterBankStart')) getById('filterBankStart').value = filters.filterBankStart || '';
+        if (getById('filterBankEnd')) getById('filterBankEnd').value = filters.filterBankEnd || '';
+        if (getById('filterBankSelect')) getById('filterBankSelect').value = filters.filterBankSelect || '';
+        if (getById('filterBankType')) getById('filterBankType').value = filters.filterBankType || '';
+        if (getById('filterBankReconciled')) getById('filterBankReconciled').value = filters.filterBankReconciled || '';
+        if (getById('filterBankSearch')) getById('filterBankSearch').value = filters.filterBankSearch || '';
+      } catch (e) {
+        console.error('[Statements] Erro ao restaurar filtros do banco:', e);
+      }
     }
   }
 
   // ─── Filtro rápido do mês corrente por default ────────────────────────────────
 
-  function setDefaultPeriod(): void {
+  function setDefaultPeriods(): void {
     const now = new Date();
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -567,10 +680,15 @@
     const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
     const end = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
 
-    const startEl = getById('filterStart');
-    const endEl = getById('filterEnd');
-    if (startEl && !startEl.value) startEl.value = start;
-    if (endEl && !endEl.value) endEl.value = end;
+    const sysStart = getById('filterSysStart');
+    const sysEnd = getById('filterSysEnd');
+    if (sysStart && !sysStart.value) sysStart.value = start;
+    if (sysEnd && !sysEnd.value) sysEnd.value = end;
+
+    const bankStart = getById('filterBankStart');
+    const bankEnd = getById('filterBankEnd');
+    if (bankStart && !bankStart.value) bankStart.value = start;
+    if (bankEnd && !bankEnd.value) bankEnd.value = end;
   }
 
   // ─── Integração API Banco ─────────────────────────────────────────────────────
@@ -585,7 +703,7 @@
     let totalIn = 0,
       totalOut = 0;
     items.forEach((t: any) => {
-      if (t.type === 'income') totalIn += Number(t.amount);
+      if (t.type === 'income' || t.type === 'revenue') totalIn += Number(t.amount);
       else totalOut += Number(t.amount);
     });
     const balance = totalIn - totalOut;
@@ -600,44 +718,45 @@
         : 'mt-0.5 block text-xs font-bold text-red-600 dark:text-red-400';
   }
 
+  function getFilteredBankStatements(data?: any[]): any[] {
+    const statements = Array.isArray(data) ? data : bankStatementsData || [];
+
+    const startDate = getById('filterBankStart')?.value || '';
+    const endDate = getById('filterBankEnd')?.value || '';
+    const typeFilter = getById('filterBankType')?.value || '';
+    const reconciledFilter = getById('filterBankReconciled')?.value || '';
+    const searchFilter = getById('filterBankSearch')?.value || '';
+
+    return statements.filter((s: any) => {
+      if (startDate || endDate) {
+        const dateStr = String(s.date || '').split('T')[0];
+        if (startDate && dateStr < startDate) return false;
+        if (endDate && dateStr > endDate) return false;
+      }
+
+      if (typeFilter && s.type !== typeFilter) return false;
+
+      if (reconciledFilter) {
+        const isReconciled = s.status === 'reconciled';
+        if (reconciledFilter === 'reconciled' && !isReconciled) return false;
+        if (reconciledFilter === 'unreconciled' && isReconciled) return false;
+      }
+
+      if (searchFilter) {
+        if (!FilterPanel.matchesSearch(s, ['description'], searchFilter)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
   function renderBankStatements(data?: any): void {
     const tableBody = getById('bankStatementsTable');
     if (!tableBody) return;
 
-    // Fallback para a variável global se nada for passado
-    const statements = Array.isArray(data) ? data : bankStatementsData || [];
-
-    // Filtros de Data
-    const startDate = getById('filterStart')?.value || '';
-    const endDate = getById('filterEnd')?.value || '';
-    const applyTo = getById('filterApplyTo')?.value || 'both';
-
-    // SÓ FILTRA O BANCO SE A OPÇÃO FOR 'Sistema + Banco' OU 'Apenas Banco'
-    let finalStatements = [...statements];
-    const shouldFilterDate = applyTo === 'both' || applyTo === 'bank';
-
-    if (shouldFilterDate) {
-      if (startDate)
-        finalStatements = finalStatements.filter((s: any) => {
-          const dateStr = String(s.date || '').split('T')[0];
-          return dateStr >= startDate;
-        });
-      if (endDate)
-        finalStatements = finalStatements.filter((s: any) => {
-          const dateStr = String(s.date || '').split('T')[0];
-          return dateStr <= endDate;
-        });
-    }
-
-    // Filtro de Busca no Extrato do Banco
-    const searchFilter = getById('filterSearch')?.value || '';
-    const shouldFilterSearch = applyTo === 'both' || applyTo === 'bank';
-    if (shouldFilterSearch && searchFilter) {
-      finalStatements = finalStatements.filter((s: any) => {
-        return FilterPanel.matchesSearch(s, ['description'], searchFilter);
-      });
-    }
-
+    const finalStatements = getFilteredBankStatements(data);
     updateBankFooter(finalStatements);
 
     if (finalStatements.length === 0) {
@@ -647,7 +766,7 @@
 
     tableBody.innerHTML = finalStatements
       .map((t: any) => {
-        const isRevenue = t.type === 'income';
+        const isRevenue = t.type === 'income' || t.type === 'revenue';
         const amountColor = isRevenue ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400';
         const sign = isRevenue ? '+' : '-';
         const isReconciled = t.status === 'reconciled';
@@ -690,30 +809,26 @@
   }
 
   async function loadBankStatements(): Promise<void> {
-    const bankId = getById('filterBank')?.value;
-    const startDate = getById('filterStart')?.value;
-    const endDate = getById('filterEnd')?.value;
-    const applyTo = getById('filterApplyTo')?.value || 'both';
+    const bankId = getById('filterBankSelect')?.value || getById('filterSysBank')?.value;
+    const startDate = getById('filterBankStart')?.value || '';
+    const endDate = getById('filterBankEnd')?.value || '';
+
+    const emptyState = getById('bankStatementsEmptyState');
+    const table = document.querySelector('#bankStatementsTable')?.closest('table');
 
     if (!bankId) {
-      // Sem conta selecionada, não renderiza tabela do banco
+      if (emptyState) emptyState.style.display = 'flex';
+      if (table) table.classList.add('opacity-30', 'select-none', 'pointer-events-none');
+      bankStatementsData = [];
+      renderBankStatements([]);
       return;
     }
 
-    // Se o filtro de data NÃO se aplica ao banco, carregamos sem datas (ou com um range maior se preferir)
-    const useDates = applyTo === 'both' || applyTo === 'bank';
-    const queryStart = useDates ? startDate || '' : '';
-    const queryEnd = useDates ? endDate || '' : '';
-
     try {
       const res = await (api as any)(
-        `/finance/bank-statements?bankAccountPublicId=${bankId}&startDate=${queryStart}&endDate=${queryEnd}`
+        `/finance/bank-statements?bankAccountPublicId=${bankId}&startDate=${startDate}&endDate=${endDate}`
       );
-      // Remove empty state blur
-      const emptyState = getById('bankStatementsEmptyState');
       if (emptyState) emptyState.style.display = 'none';
-
-      const table = document.querySelector('#bankStatementsTable')?.closest('table');
       if (table) table.classList.remove('opacity-30', 'select-none', 'pointer-events-none');
 
       bankStatementsData = res.data || [];
@@ -724,16 +839,16 @@
   }
 
   async function syncBankStatementsViaApi(): Promise<void> {
-    const bankId = getById('filterBank')?.value;
-    const startDate = getById('filterStart')?.value;
-    const endDate = getById('filterEnd')?.value;
+    const bankId = getById('filterBankSelect')?.value || getById('filterSysBank')?.value;
+    const startDate = getById('filterBankStart')?.value || getById('filterSysStart')?.value;
+    const endDate = getById('filterBankEnd')?.value || getById('filterSysEnd')?.value;
 
     if (!bankId) {
-      (UI as any).showAlert('alertMessage', 'Selecione uma Conta Bancária no filtro antes de sincronizar.', 'warning');
+      (UI as any).showAlert('alertMessage', 'Selecione uma Conta Bancária no filtro do Extrato do Banco antes de sincronizar.', 'warning');
       return;
     }
     if (!startDate || !endDate) {
-      (UI as any).showAlert('alertMessage', 'Defina a Data Início e Fim no filtro para sincronizar.', 'warning');
+      (UI as any).showAlert('alertMessage', 'Defina a Data Início e Fim no filtro do Extrato para sincronizar.', 'warning');
       return;
     }
 
@@ -819,10 +934,7 @@
     updateViewToggle();
 
     setupFilters();
-    setDefaultPeriod();
-
-    // Quando troca o filtro de banco, carrega do banco local também
-    getById('filterBank')?.addEventListener('change', loadBankStatements);
+    setDefaultPeriods();
 
     // Eventos para Select All Checkboxes
     getById('chkAllSystem')?.addEventListener('change', (e: any) => {
@@ -1066,11 +1178,11 @@
 
     if (btnImportOfx && fileOfx) {
       btnImportOfx.addEventListener('click', () => {
-        const bankId = getById('filterBank')?.value;
+        const bankId = getById('filterBankSelect')?.value || getById('filterSysBank')?.value;
         if (!bankId) {
           (UI as any).showAlert(
             'alertMessage',
-            'Selecione uma conta bancária no painel Filtros primeiro para associar a importação.',
+            'Selecione uma conta bancária no painel de Filtros do Extrato primeiro para associar a importação.',
             'warn'
           );
           return;
@@ -1084,7 +1196,7 @@
         const file: File | undefined = e?.target?.files?.[0];
         if (!file) return;
 
-        const bankId = getById('filterBank')?.value;
+        const bankId = getById('filterBankSelect')?.value || getById('filterSysBank')?.value;
         if (!bankId) return;
 
         const reader = new FileReader();

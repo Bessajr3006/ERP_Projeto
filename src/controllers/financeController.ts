@@ -5,6 +5,7 @@ import { WhatsAppBusinessService } from '../services/whatsappBusinessService';
 import { ExternalDbService } from '../services/externalDbService';
 import pool from '../config/db';
 import logger from '../config/logger';
+import { decrypt } from '../utils/crypto';
 
 const createCategorySchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -1460,7 +1461,7 @@ export class FinanceController {
                         host: company.serv_dorsal,
                         database: company.bd_dorsal,
                         user: company.login_dorsal || '',
-                        password: company.senha_dorsal || ''
+                        password: decrypt(company.senha_dorsal) || company.senha_dorsal || ''
                     }, String(startDate), String(endDate), finalCdFilial, true);
 
                     res.status(200).json({
@@ -1477,7 +1478,7 @@ export class FinanceController {
                         host: company.serv_solidcon,
                         database: company.bd_solidcon,
                         user: company.login_solidcon || '',
-                        password: company.senha_solidcon || ''
+                        password: decrypt(company.senha_solidcon) || company.senha_solidcon || ''
                     }, String(startDate), String(endDate), finalCdFilial, false);
 
                     res.status(200).json({
@@ -1686,7 +1687,7 @@ export class FinanceController {
                         host: company.serv_solidcon,
                         database: company.bd_solidcon,
                         user: company.login_solidcon || '',
-                        password: company.senha_solidcon || ''
+                        password: decrypt(company.senha_solidcon) || company.senha_solidcon || ''
                     }, String(startDate), String(endDate), finalCdFilial, String(cdProduto), false);
 
                     res.status(200).json({
@@ -1706,7 +1707,7 @@ export class FinanceController {
                         host: company.serv_dorsal,
                         database: company.bd_dorsal,
                         user: company.login_dorsal || '',
-                        password: company.senha_dorsal || ''
+                        password: decrypt(company.senha_dorsal) || company.senha_dorsal || ''
                     }, String(startDate), String(endDate), finalCdFilial, String(cdProduto), true);
 
                     res.status(200).json({
@@ -1958,7 +1959,7 @@ export class FinanceController {
                         host: company.serv_dorsal,
                         database: company.bd_dorsal,
                         user: company.login_dorsal || '',
-                        password: company.senha_dorsal || ''
+                        password: decrypt(company.senha_dorsal) || company.senha_dorsal || ''
                     }, {
                         cdProduto: String(cdProduto),
                         cdFilial: finalCdFilial,
@@ -1984,7 +1985,7 @@ export class FinanceController {
                         host: company.serv_solidcon,
                         database: company.bd_solidcon,
                         user: company.login_solidcon || '',
-                        password: company.senha_solidcon || ''
+                        password: decrypt(company.senha_solidcon) || company.senha_solidcon || ''
                     }, {
                         cdProduto: String(cdProduto),
                         cdFilial: finalCdFilial,
@@ -2439,7 +2440,7 @@ export class FinanceController {
                         serv_solidcon: comp.serv_solidcon,
                         bd_solidcon: comp.bd_solidcon || 'solidcon',
                         login_solidcon: comp.login_solidcon,
-                        senha_solidcon: comp.senha_solidcon
+                        senha_solidcon: decrypt(comp.senha_solidcon) || comp.senha_solidcon
                     };
                 }
             }
@@ -2456,7 +2457,7 @@ export class FinanceController {
             const host = (solidconConfig.serv_solidcon || '').trim();
             const database = (solidconConfig.bd_solidcon || 'solidcon').trim();
             const user = (solidconConfig.login_solidcon || 'aporttec').trim();
-            const password = solidconConfig.senha_solidcon || '';
+            const password = (solidconConfig.senha_solidcon ? (decrypt(solidconConfig.senha_solidcon) || solidconConfig.senha_solidcon) : '') || '';
 
             const currentYear = new Date().getFullYear();
             const currentMonth = new Date().getMonth() + 1;

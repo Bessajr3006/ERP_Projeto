@@ -4,7 +4,7 @@
   "description": "Bessa ERP API",
   "main": "src/server.ts",
   "scripts": {
-    "test": "tsx --test --test-force-exit src/tests/auth_authorization.test.ts src/tests/secrets_leakage_and_crypto.test.ts src/tests/uploads_webhooks_xss.test.ts",
+    "test": "tsx --test --test-force-exit src/tests/auth_authorization.test.ts src/tests/secrets_leakage_and_crypto.test.ts src/tests/uploads_webhooks_xss.test.ts src/tests/backup_archiver.test.ts",
     "dev": "node --watch --import tsx src/server.ts",
     "worker": "node --watch --import tsx src/worker.ts",
     "patch:wwebjs": "tsx -e \"import { patchWhatsAppWebJs } from './src/utils/patchWhatsAppWebJs'; patchWhatsAppWebJs();\"",

@@ -4,6 +4,7 @@ import { AccountingService } from '../services/accountingService';
 import { SolidconConfigService } from '../services/solidconConfigService';
 import { ExternalDbService } from '../services/externalDbService';
 import pool from '../config/db';
+import { decrypt } from '../utils/crypto';
 
 const accountSchema = z.object({
     code: z.string().min(1, 'Código é obrigatório'),
@@ -160,7 +161,7 @@ export class AccountingController {
                         serv_solidcon: comp.serv_solidcon,
                         bd_solidcon: comp.bd_solidcon || 'solidcon',
                         login_solidcon: comp.login_solidcon,
-                        senha_solidcon: comp.senha_solidcon
+                        senha_solidcon: comp.senha_solidcon ? (decrypt(comp.senha_solidcon) || comp.senha_solidcon) : ''
                     };
                 }
             }
@@ -175,7 +176,7 @@ export class AccountingController {
 
             const database = (solidconConfig?.bd_solidcon || 'solidcon').trim();
             const user = (solidconConfig?.login_solidcon || 'aporttec').trim();
-            const password = solidconConfig?.senha_solidcon || '';
+            const password = (solidconConfig?.senha_solidcon ? (decrypt(solidconConfig.senha_solidcon) || solidconConfig.senha_solidcon) : '') || '';
 
             const planId = cdPlanoContas ? parseInt(String(cdPlanoContas), 10) : undefined;
             const accounts = await ExternalDbService.getSolidconChartOfAccounts({

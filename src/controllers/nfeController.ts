@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 import forge from 'node-forge';
 import { Request, Response } from 'express';
 import { generateAndSignNFe } from '../services/nfeService';
@@ -17,21 +16,15 @@ export const testCertificate = async (req: Request, res: Response): Promise<void
             return;
         }
 
-        const company = await CompanyService.getById(companyId);
-        if (!company?.certificate_url || !company?.certificate_password) {
-            res.status(400).json({ status: 'error', message: 'Nenhum certificado instalado. Faça o upload do arquivo .pfx e informe a senha.' });
+        const credentials = await CompanyService.getCertificateCredentials(companyId);
+        if (!credentials) {
+            res.status(400).json({ status: 'error', message: 'Nenhum certificado válido instalado ou arquivo não encontrado. Faça o upload do arquivo .pfx e informe a senha.' });
             return;
         }
 
-        const certPath = path.join(process.cwd(), 'public', company.certificate_url);
-        if (!fs.existsSync(certPath)) {
-            res.status(400).json({ status: 'error', message: 'Arquivo do certificado não encontrado no servidor.' });
-            return;
-        }
-
-        const pfxBuffer = fs.readFileSync(certPath);
+        const pfxBuffer = fs.readFileSync(credentials.pfxPath);
         const p12Asn1 = forge.asn1.fromDer(pfxBuffer.toString('binary'));
-        const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, company.certificate_password);
+        const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, credentials.password);
 
         const certBags: any = p12.getBags({ bagType: forge.pki.oids.certBag });
         const certBag = certBags[forge.pki.oids.certBag as string];
@@ -78,13 +71,10 @@ export const generateNFe = async (req: Request, res: Response): Promise<void> =>
         if (!pfxBase64 || !password) {
             const companyId = (req as any).user?.company_id;
             if (companyId) {
-                const company = await CompanyService.getById(companyId);
-                if (company && company.certificate_url && company.certificate_password) {
-                    const certPath = path.join(process.cwd(), 'public', company.certificate_url);
-                    if (fs.existsSync(certPath)) {
-                        pfxBuffer = fs.readFileSync(certPath);
-                        password = company.certificate_password;
-                    }
+                const credentials = await CompanyService.getCertificateCredentials(companyId);
+                if (credentials) {
+                    pfxBuffer = fs.readFileSync(credentials.pfxPath);
+                    password = credentials.password;
                 }
             }
         } else {

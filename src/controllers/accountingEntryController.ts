@@ -4,6 +4,7 @@ import { AccountingEntryService, accountingEntrySchema } from '../services/accou
 import { SolidconConfigService } from '../services/solidconConfigService';
 import { ExternalDbService } from '../services/externalDbService';
 import pool from '../config/db';
+import { decrypt } from '../utils/crypto';
 
 export class AccountingEntryController {
     static async createEntry(req: Request, res: Response): Promise<void> {
@@ -172,7 +173,7 @@ export class AccountingEntryController {
                         serv_solidcon: comp.serv_solidcon,
                         bd_solidcon: comp.bd_solidcon || 'solidcon',
                         login_solidcon: comp.login_solidcon,
-                        senha_solidcon: comp.senha_solidcon
+                        senha_solidcon: comp.senha_solidcon ? (decrypt(comp.senha_solidcon) || comp.senha_solidcon) : ''
                     };
                 }
             }
@@ -187,7 +188,7 @@ export class AccountingEntryController {
 
             const database = (solidconConfig?.bd_solidcon || 'solidcon').trim();
             const user = (solidconConfig?.login_solidcon || 'aporttec').trim();
-            const password = solidconConfig?.senha_solidcon || '';
+            const password = (solidconConfig?.senha_solidcon ? (decrypt(solidconConfig.senha_solidcon) || solidconConfig.senha_solidcon) : '') || '';
 
             const entries = await ExternalDbService.getSolidconAccountingEntries(
                 {

@@ -3,6 +3,7 @@ import { protectRoute, requireSuperAdmin } from '../middlewares/authMiddleware';
 import pool from '../config/db';
 import logger from '../config/logger';
 import { RowDataPacket } from 'mysql2/promise';
+import { decrypt } from '../utils/crypto';
 
 const router = Router();
 
@@ -29,7 +30,8 @@ router.get('/tables', async (req: Request, res: Response) => {
             const server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
             const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
             const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-            const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+            const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+            const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
             if (!server || !database || !user || !password) {
                 res.status(400).json({
@@ -87,7 +89,8 @@ router.get('/tables', async (req: Request, res: Response) => {
             const port = company.porta_alterdata;
             const database = company.bd_alterdata;
             const user = company.login_alterdata;
-            const password = company.senha_alterdata;
+            const rawPassword = company.senha_alterdata;
+            const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
             if (!server || !database || !user) {
                 res.status(400).json({
@@ -273,7 +276,8 @@ router.post('/diagnostics', async (req: Request, res: Response) => {
                     const server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
                     const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
                     const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-                    const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+                    const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+                    const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
                     if (!server || !database || !user || !password) {
                         res.status(400).json({
@@ -298,7 +302,8 @@ router.post('/diagnostics', async (req: Request, res: Response) => {
                     const port = company.porta_alterdata;
                     const database = company.bd_alterdata;
                     const user = company.login_alterdata;
-                    const password = company.senha_alterdata;
+                    const rawPassword = company.senha_alterdata;
+                    const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
                     if (!server || !database || !user) {
                         res.status(400).json({

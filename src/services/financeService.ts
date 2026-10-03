@@ -23,6 +23,7 @@ import { CompanyService } from './companyService';
 import { ExternalDbService } from './externalDbService';
 import { WhatsAppBusinessService } from './whatsappBusinessService';
 import { WhatsAppBusinessMessageService } from './whatsappBusinessMessageService';
+import { decrypt } from '../utils/crypto';
 
 export class FinanceService {
     /**
@@ -3696,6 +3697,7 @@ export class FinanceService {
                 bankAccount = bankRows?.[0] || null;
             }
 
+            const solidconPassword = decrypt(company.senha_solidcon) || company.senha_solidcon;
             const jurosInfo = FinanceService.calculateTransactionFineAndInterest(tx, bankAccount);
             if (jurosInfo.totalFineInterest <= 0) {
                 if (tx.solidcon_interest_key) {
@@ -3704,7 +3706,7 @@ export class FinanceService {
                             host: company.serv_solidcon,
                             database: company.bd_solidcon,
                             user: company.login_solidcon,
-                            password: company.senha_solidcon
+                            password: solidconPassword
                         }, {
                             cdConta: tx.solidcon_interest_key,
                             documento: jurosInfo.nrCupom
@@ -3721,7 +3723,7 @@ export class FinanceService {
                 host: company.serv_solidcon,
                 database: company.bd_solidcon,
                 user: company.login_solidcon,
-                password: company.senha_solidcon
+                password: solidconPassword
             }, {
                 totalFineInterest: jurosInfo.totalFineInterest,
                 daysOverdue: jurosInfo.daysOverdue,
@@ -3804,7 +3806,7 @@ export class FinanceService {
             const server = company.serv_solidcon;
             const database = company.bd_solidcon;
             const user = company.login_solidcon;
-            const password = company.senha_solidcon;
+            const password = decrypt(company.senha_solidcon) || company.senha_solidcon;
 
             if (!server || !database || !user || !password) {
                 logger.warn(`Solidcon integration config is incomplete for company ${companyId}. Skipping automatic Solidcon payment/baixa.`);
@@ -4126,7 +4128,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuracao de banco de dados externo incompleta.');
@@ -4665,7 +4668,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -4843,7 +4847,7 @@ export class FinanceService {
         const server = company.serv_solidcon;
         const database = company.bd_solidcon;
         const user = company.login_solidcon;
-        const password = company.senha_solidcon;
+        const password = company.senha_solidcon ? (decrypt(company.senha_solidcon) || company.senha_solidcon) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração de conexão com o banco Solidcon incompleta no cadastro da empresa.');
@@ -5256,7 +5260,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -5507,7 +5512,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -5610,7 +5616,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -5725,7 +5732,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -5837,7 +5845,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -6073,7 +6082,8 @@ export class FinanceService {
         let server = (isSolidcon ? company.serv_solidcon : company.serv_dorsal) || '';
         const database = (isSolidcon ? company.bd_solidcon : company.bd_dorsal) || '';
         const user = (isSolidcon ? company.login_solidcon : company.login_dorsal) || '';
-        const password = (isSolidcon ? company.senha_solidcon : company.senha_dorsal) || '';
+        const rawPassword = (isSolidcon ? company.senha_solidcon : company.senha_dorsal) || '';
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -6259,7 +6269,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -6285,7 +6296,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -6315,7 +6327,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');
@@ -6430,7 +6443,8 @@ export class FinanceService {
         let server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
         const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
         const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-        const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+        const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
         if (!server || !database || !user || !password) {
             throw new Error('Configuração do banco de dados Solidcon incompleta no cadastro da empresa.');

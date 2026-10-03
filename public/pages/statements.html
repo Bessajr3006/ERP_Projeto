@@ -20,13 +20,26 @@
         <div class="px-4 sm:px-0 flex flex-col xl:flex-row gap-5 flex-1 min-h-0">
             <!-- COLUNA ESQUERDA: SISTEMA ERP -->
             <div class="flex-1 flex flex-col min-w-0">
+                <div id="systemFilterAnchor"></div>
                 <div id="statementsSection" class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
                     <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50/50 dark:bg-slate-800/50">
                         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                             <span class="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
                             Lançamentos do Sistema
                         </h3>
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 border border-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:border-brand-800 px-2 py-0.5 rounded-md">ERP</span>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center bg-gray-100 dark:bg-slate-700/60 p-0.5 rounded-lg text-xs">
+                                <button type="button" id="btnListView" class="flex items-center justify-center px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1 bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 shadow-xs" title="Ver como Lista">
+                                    <svg class="w-3.5 h-3.5 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                                    <span>Lista</span>
+                                </button>
+                                <button type="button" id="btnGridView" class="flex items-center justify-center px-2.5 py-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all focus:outline-none gap-1" title="Ver como Cards">
+                                    <svg class="w-3.5 h-3.5 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                                    <span>Cards</span>
+                                </button>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 border border-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:border-brand-800 px-2 py-0.5 rounded-md">ERP</span>
+                        </div>
                     </div>
                     <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
                         <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
@@ -77,6 +90,7 @@
 
             <!-- COLUNA DIREITA: EXTRATO DO BANCO -->
             <div class="flex-1 flex flex-col min-w-0">
+                <div id="bankFilterAnchor"></div>
                 <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
                     <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50/50 dark:bg-slate-800/50">
                         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">

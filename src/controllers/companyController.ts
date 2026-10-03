@@ -11,6 +11,7 @@ import { WhatsAppBusinessMessageService } from '../services/whatsappBusinessMess
 import { FinanceService } from '../services/financeService';
 import { ExternalDbService } from '../services/externalDbService';
 import logger from '../config/logger';
+import { decrypt } from '../utils/crypto';
 import {
     serializeSafeCompany,
     serializeSafeCompanies,
@@ -204,22 +205,8 @@ const companyWritableFieldSchemas = {
     company_group_public_id: z.string().uuid().nullable().optional(),
 };
 
-export const ALLOWED_USER_ROLES = [
-    'super_admin',
-    'admin',
-    'supervisor',
-    'manager',
-    'seller',
-    'accountant',
-    'auxiliar_contador',
-    'socio',
-    'buyer',
-    'service_provider',
-    'solidcon',
-    'user'
-] as const;
-
-export type AllowedUserRole = typeof ALLOWED_USER_ROLES[number];
+import { ALLOWED_USER_ROLES, AllowedUserRole } from '../utils/roleHierarchy';
+export { ALLOWED_USER_ROLES, AllowedUserRole };
 
 const initialUserSchema = z.object({
     full_name: z.string().trim().min(2, 'Nome do usuário deve ter no mínimo 2 caracteres').max(150),
@@ -968,7 +955,8 @@ export class CompanyController {
                 const server = isSolidcon ? company.serv_solidcon : company.serv_dorsal;
                 const database = isSolidcon ? company.bd_solidcon : company.bd_dorsal;
                 const user = isSolidcon ? company.login_solidcon : company.login_dorsal;
-                const password = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+                const rawPassword = isSolidcon ? company.senha_solidcon : company.senha_dorsal;
+                const password = rawPassword ? (decrypt(rawPassword) || rawPassword) : '';
 
                 if (!server || !database || !user || !password) {
                     res.status(400).json({
@@ -1973,9 +1961,10 @@ export class CompanyController {
             const port = body.porta_alterdata !== undefined ? body.porta_alterdata : currentCompany.porta_alterdata;
             const database = body.bd_alterdata !== undefined ? body.bd_alterdata : currentCompany.bd_alterdata;
             const user = body.login_alterdata !== undefined ? body.login_alterdata : currentCompany.login_alterdata;
+            const fallbackPass = currentCompany.senha_alterdata ? (decrypt(currentCompany.senha_alterdata) || currentCompany.senha_alterdata) : '';
             const password = body.senha_alterdata !== undefined && body.senha_alterdata !== '' 
                 ? body.senha_alterdata 
-                : currentCompany.senha_alterdata;
+                : fallbackPass;
 
             const result = await ExternalDbService.testAlterdataConnection({
                 host,

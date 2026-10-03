@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import pool from '../config/db';
 import logger from '../config/logger';
 import { RowDataPacket } from 'mysql2/promise';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 
 const SYSTEM_REFERENCE_TABLES = new Set([
     'ibge_states',
@@ -58,7 +58,7 @@ export const generateBackup = async (req: Request, res: Response): Promise<Respo
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', `attachment; filename="${scopePrefix}-${dateStr}.zip"`);
         
-        const archive = (archiver as any)('zip', {
+        const archive = new ZipArchive({
             zlib: { level: 9 }
         });
         

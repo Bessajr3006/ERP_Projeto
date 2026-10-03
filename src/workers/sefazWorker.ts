@@ -1,6 +1,5 @@
 
 import fs from 'fs';
-import path from 'path';
 import logger from '../config/logger';
 import { SefazJobRepository } from '../repositories/sefazJobRepository';
 import { CompanyService } from '../services/companyService';
@@ -18,16 +17,16 @@ async function processNextJob(): Promise<boolean> {
 
             try {
                 const company = await CompanyService.getById(job.company_id);
-                if (!company || !company.certificate_url || !company.certificate_password || !company.cnpj) {
-                    throw new Error('Empresa sem configuracao completa de CNPJ ou Certificado');
+                if (!company || !company.cnpj) {
+                    throw new Error('Empresa sem configuracao de CNPJ');
                 }
 
-                const pfxPath = path.join(process.cwd(), 'public', company.certificate_url.startsWith('/') ? company.certificate_url.slice(1) : company.certificate_url);
-                if (!fs.existsSync(pfxPath)) {
-                    throw new Error('Arquivo do certificado nao encontrado');
+                const credentials = await CompanyService.getCertificateCredentials(job.company_id);
+                if (!credentials) {
+                    throw new Error('Empresa sem configuracao completa de Certificado ou arquivo nao encontrado');
                 }
 
-                const pfxBuffer = fs.readFileSync(pfxPath);
+                const pfxBuffer = fs.readFileSync(credentials.pfxPath);
                 const env = company.nfe_environment === 1 ? 'producao' : 'homologacao';
                 const uf = company.state || 'SP';
                 const data = typeof job.payload === 'string' ? JSON.parse(job.payload) : job.payload;
@@ -36,7 +35,7 @@ async function processNextJob(): Promise<boolean> {
                 if (job.type === 'consult-destined') {
                     result = await ManifestationService.consultDestinedDocs(
                         pfxBuffer,
-                        company.certificate_password,
+                        credentials.password,
                         env,
                         company.cnpj,
                         uf,
@@ -45,7 +44,7 @@ async function processNextJob(): Promise<boolean> {
                 } else if (job.type === 'manifest') {
                     result = await ManifestationService.sendManifestationEvent(
                         pfxBuffer,
-                        company.certificate_password,
+                        credentials.password,
                         env,
                         company.cnpj,
                         uf,

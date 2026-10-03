@@ -22,7 +22,10 @@ cert.p12
 cert.pem
 .node/
 *.pem
-certs/
+certs/*
+!certs/icp-brasil/
+certs/icp-brasil/*
+!certs/icp-brasil/.gitkeep
 database.sqlite
 query_test.ts
 test_pdf.ts

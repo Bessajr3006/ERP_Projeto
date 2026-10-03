@@ -36,6 +36,8 @@ export const envSchema = z.object({
       .refine((v) => !isPlaceholder(v), {
           message: 'DB_PASSWORD não pode conter valores de exemplo ou senhas inseguras conhecidas'
       }),
+    DB_MIGRATION_USER: z.string().optional(),
+    DB_MIGRATION_PASSWORD: z.string().optional(),
     JWT_SECRET: z.string({
         required_error: 'JWT_SECRET é obrigatória',
     }).min(32, 'JWT_SECRET deve ter no mínimo 32 caracteres')

@@ -467,6 +467,7 @@
         if (!select || typeof win.api !== 'function') return;
 
         try {
+            const previousVal = select.value;
             const res = await win.api('/entities/customers');
             clientesCache = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
 
@@ -485,7 +486,11 @@
                 select.appendChild(opt);
             });
 
-            atualizarComboboxDeclaracoesSalvas();
+            if (previousVal && clientesCache.some(c => String(c.id) === previousVal)) {
+                select.value = previousVal;
+            }
+
+            atualizarComboboxDeclaracoesSalvas(undefined, false, true);
         } catch (e) {
             console.debug('Não foi possível carregar lista de clientes no seletor:', e);
         }
@@ -812,9 +817,30 @@
     function carregarDeclaracoesSalvas(): SavedDeclaracao[] {
         try {
             const key = getSavedDeclaracoesStorageKey();
-            const raw = (win.CompanyStorage?.getItem(key) ?? localStorage.getItem(key)) || '[]';
-            const list = JSON.parse(raw);
-            return Array.isArray(list) ? list : [];
+            const raw = (win.CompanyStorage?.getItem(key) ?? localStorage.getItem(key)) || '';
+            let list: SavedDeclaracao[] = [];
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) list = parsed;
+                } catch {}
+            }
+
+            // Fallback para chave legado sem sufixo se a lista estiver vazia
+            if (list.length === 0) {
+                const legacyKey = '@Keystone:declaracoes_salvas';
+                const legacyRaw = (win.CompanyStorage?.getItem(legacyKey) ?? localStorage.getItem(legacyKey)) || '';
+                if (legacyRaw) {
+                    try {
+                        const legacyParsed = JSON.parse(legacyRaw);
+                        if (Array.isArray(legacyParsed) && legacyParsed.length > 0) {
+                            list = legacyParsed;
+                        }
+                    } catch {}
+                }
+            }
+
+            return list.filter(item => item && typeof item === 'object' && item.id);
         } catch {
             return [];
         }
@@ -828,6 +854,8 @@
                 win.CompanyStorage.setItem(key, val);
             }
             localStorage.setItem(key, val);
+            // Também atualiza chave legada para retrocompatibilidade
+            localStorage.setItem('@Keystone:declaracoes_salvas', val);
         } catch (e) {
             console.warn('Erro ao salvar declarações no storage:', e);
         }
@@ -841,6 +869,14 @@
             .replace(/_+/g, '_')
             .replace(/^_|_$/g, '')
             .substring(0, 40);
+    }
+
+    function normalizarTexto(txt: string): string {
+        return (txt || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .trim();
     }
 
     function obterClienteSelecionadoInfo(): { id: string | null; name: string; cnpj: string; isEmpresaAtiva: boolean } {
@@ -872,27 +908,27 @@
     function filtrarDeclaracoesPorCliente(lista: SavedDeclaracao[], clienteInfo: { id: string | null; name: string; cnpj: string; isEmpresaAtiva: boolean }): SavedDeclaracao[] {
         const cleanCnpj = (doc: string) => (doc || '').toString().replace(/\D/g, '');
         const targetCnpj = cleanCnpj(clienteInfo.cnpj);
-        const targetName = (clienteInfo.name || '').trim().toLowerCase();
+        const targetNameNorm = normalizarTexto(clienteInfo.name);
 
         if (clienteInfo.isEmpresaAtiva) {
-            const filtradas = lista.filter(d => {
+            return lista.filter(d => {
                 if (d.customerId === null || d.customerId === undefined || d.customerId === '' || d.customerId === 'empresa_ativa') return true;
-                if (targetCnpj && cleanCnpj(d.cnpj) === targetCnpj) return true;
-                if (targetName && (d.nomeEmpresa || '').trim().toLowerCase() === targetName) return true;
+                if (targetCnpj && targetCnpj.length >= 8 && cleanCnpj(d.cnpj) === targetCnpj) return true;
+                if (targetNameNorm && normalizarTexto(d.nomeEmpresa) === targetNameNorm && (!d.customerId || d.customerId === 'empresa_ativa')) return true;
                 return false;
             });
-            return filtradas.length > 0 ? filtradas : lista;
         }
 
+        const targetIdStr = String(clienteInfo.id);
         return lista.filter(d => {
-            if (d.customerId && String(d.customerId) === String(clienteInfo.id)) return true;
-            if (targetCnpj && cleanCnpj(d.cnpj) === targetCnpj) return true;
-            if (targetName && ((d.customerName || '').trim().toLowerCase() === targetName || (d.nomeEmpresa || '').trim().toLowerCase() === targetName)) return true;
+            if (d.customerId && String(d.customerId) === targetIdStr) return true;
+            if (targetCnpj && targetCnpj.length >= 8 && cleanCnpj(d.cnpj) === targetCnpj) return true;
+            if (targetNameNorm && (normalizarTexto(d.customerName || '') === targetNameNorm || normalizarTexto(d.nomeEmpresa || '') === targetNameNorm) && d.customerId !== 'empresa_ativa') return true;
             return false;
         });
     }
 
-    function atualizarComboboxDeclaracoesSalvas(selecionarId?: string) {
+    function atualizarComboboxDeclaracoesSalvas(selecionarId?: string, autoCarregarSeHouver = false, isSilent = false) {
         const select = document.getElementById('selectDeclaracoesSalvas') as HTMLSelectElement | null;
         const badge = document.getElementById('badgeQtdSalvas');
         const containerLista = document.getElementById('containerListaDeclaracoesSalvas');
@@ -914,8 +950,13 @@
         if (filtradas.length === 0) {
             const opt = document.createElement('option');
             opt.value = '';
-            opt.textContent = `-- Nenhuma declaração salva encontrada para: ${rotuloCliente} --`;
+            opt.textContent = `-- Nenhuma declaração salva para: ${rotuloCliente} --`;
             select.appendChild(opt);
+            select.value = '';
+
+            if (autoCarregarSeHouver) {
+                zerarValores();
+            }
         } else {
             const defaultOpt = document.createElement('option');
             defaultOpt.value = '';
@@ -927,11 +968,16 @@
                 opt.value = item.id;
                 // Formato: Data, Hora e Nome em PDF
                 opt.textContent = `📅 ${item.dataHora} • 📄 ${item.nomePdf}${item.totalFaturamento ? ` • R$ ${item.totalFaturamento}` : ''}`;
-                if (selecionarId && item.id === selecionarId) {
-                    opt.selected = true;
-                }
                 select.appendChild(opt);
             });
+
+            if (selecionarId && filtradas.some(f => f.id === selecionarId)) {
+                select.value = selecionarId;
+            } else if (autoCarregarSeHouver) {
+                const maisRecente = filtradas[0];
+                select.value = maisRecente.id;
+                carregarDeclaracaoSalva(maisRecente.id, isSilent);
+            }
         }
 
         // Renderiza lista detalhada com Data, Hora e Nome em PDF
@@ -973,7 +1019,7 @@
                         const id = btn.getAttribute('data-id');
                         if (id) {
                             if (select) select.value = id;
-                            carregarDeclaracaoSalva(id);
+                            carregarDeclaracaoSalva(id, false);
                         }
                     });
                 });
@@ -1080,7 +1126,7 @@
         lista.unshift(novaDeclaracao);
         salvarDeclaracoesLista(lista);
 
-        atualizarComboboxDeclaracoesSalvas(id);
+        atualizarComboboxDeclaracoesSalvas(id, false, true);
 
         (win.UI as any)?.showAlert?.(
             'alertMessage',
@@ -1090,20 +1136,24 @@
         );
     }
 
-    function carregarDeclaracaoSalva(id: string): void {
+    function carregarDeclaracaoSalva(id: string, isSilent = false): void {
         if (!id) {
-            (win.UI as any)?.showAlert?.('alertMessage', 'Selecione uma declaração salva no combobox para carregar.', 'info');
+            if (!isSilent) {
+                (win.UI as any)?.showAlert?.('alertMessage', 'Selecione uma declaração salva no combobox para carregar.', 'info');
+            }
             return;
         }
 
         const lista = carregarDeclaracoesSalvas();
         const item = lista.find(d => d.id === id);
         if (!item) {
-            (win.UI as any)?.showAlert?.('alertMessage', 'Declaração não encontrada.', 'error');
+            if (!isSilent) {
+                (win.UI as any)?.showAlert?.('alertMessage', 'Declaração não encontrada.', 'error');
+            }
             return;
         }
 
-        // Sincroniza o seletor de cliente se houver correspondência
+        // Sincroniza o seletor de cliente se houver correspondência sem disparar loop
         const selectCliente = document.getElementById('toolbarSelectCliente') as HTMLSelectElement | null;
         if (selectCliente) {
             if (item.customerId && item.customerId !== 'empresa_ativa') {
@@ -1129,6 +1179,7 @@
 
         // 2. Período e valores
         if (item.valores) {
+            Object.keys(memoriaValores).forEach(k => delete memoriaValores[k]);
             Object.keys(item.valores).forEach(k => {
                 memoriaValores[k] = item.valores[k];
             });
@@ -1212,14 +1263,16 @@
             }
         }
 
-        atualizarComboboxDeclaracoesSalvas(id);
+        atualizarComboboxDeclaracoesSalvas(id, false, true);
 
-        (win.UI as any)?.showAlert?.(
-            'alertMessage',
-            `📂 Declaração de "${item.dataHora}" carregada com sucesso! (${item.nomePdf})`,
-            'success',
-            4000
-        );
+        if (!isSilent) {
+            (win.UI as any)?.showAlert?.(
+                'alertMessage',
+                `📂 Declaração salva carregada com sucesso! (${item.nomePdf} • ${item.dataHora})`,
+                'success',
+                4000
+            );
+        }
     }
 
     function excluirDeclaracaoSalva(id: string): void {
@@ -1684,7 +1737,7 @@
             const select = document.getElementById('toolbarSelectCliente') as HTMLSelectElement | null;
             if (select) select.value = '';
             carregarEmpresaAtivaERP();
-            atualizarComboboxDeclaracoesSalvas();
+            atualizarComboboxDeclaracoesSalvas(undefined, true, false);
         });
 
         // Ações de Salvar e Gerenciar Declarações Salvas (Combobox)
@@ -1695,7 +1748,7 @@
         document.getElementById('btnCarregarDeclaracaoSalva')?.addEventListener('click', () => {
             const select = document.getElementById('selectDeclaracoesSalvas') as HTMLSelectElement | null;
             if (select && select.value) {
-                carregarDeclaracaoSalva(select.value);
+                carregarDeclaracaoSalva(select.value, false);
             } else {
                 (win.UI as any)?.showAlert?.('alertMessage', 'Selecione uma declaração salva no combobox para carregar.', 'info');
             }
@@ -1704,7 +1757,7 @@
         document.getElementById('selectDeclaracoesSalvas')?.addEventListener('change', (e: Event) => {
             const select = e.target as HTMLSelectElement;
             if (select.value) {
-                carregarDeclaracaoSalva(select.value);
+                carregarDeclaracaoSalva(select.value, false);
             }
         });
 
@@ -1720,16 +1773,16 @@
         // Seletor de Cliente / Empresa Cadastrada no Filtro
         document.getElementById('toolbarSelectCliente')?.addEventListener('change', (e: Event) => {
             const select = e.target as HTMLSelectElement;
-            const custId = select.value ? Number(select.value) : null;
+            const custId = select.value ? String(select.value) : '';
             if (!custId) {
                 carregarEmpresaAtivaERP();
             } else {
-                const found = clientesCache.find(c => Number(c.id) === custId);
+                const found = clientesCache.find(c => String(c.id) === custId);
                 if (found) {
                     aplicarDadosCliente(found);
                 }
             }
-            atualizarComboboxDeclaracoesSalvas();
+            atualizarComboboxDeclaracoesSalvas(undefined, true, false);
         });
 
         // Configuração Gov.br e assinaturas
@@ -1742,17 +1795,17 @@
         preencherUltimos12Meses();
         carregarEmpresaAtivaERP();
         carregarClientesNoSeletor();
-        atualizarComboboxDeclaracoesSalvas();
+        atualizarComboboxDeclaracoesSalvas(undefined, true, true);
 
         // Repete o carregamento após pequeno delay para garantir que o navbar.js já concluiu a injeção do contexto
         setTimeout(() => {
             carregarEmpresaAtivaERP();
             carregarClientesNoSeletor();
-            atualizarComboboxDeclaracoesSalvas();
+            atualizarComboboxDeclaracoesSalvas(undefined, false, true);
         }, 300);
         setTimeout(() => {
             carregarEmpresaAtivaERP();
-            atualizarComboboxDeclaracoesSalvas();
+            atualizarComboboxDeclaracoesSalvas(undefined, false, true);
         }, 1000);
     });
 
@@ -1760,7 +1813,7 @@
     window.addEventListener('storage', (e: StorageEvent) => {
         if (e.key === 'keystone_last_company_name' || e.key === 'keystone_last_company_cnpj' || e.key === 'keystone_last_company_public_id') {
             carregarEmpresaAtivaERP();
-            atualizarComboboxDeclaracoesSalvas();
+            atualizarComboboxDeclaracoesSalvas(undefined, false, true);
         }
     });
 })();

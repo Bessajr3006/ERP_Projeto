@@ -1,5 +1,5 @@
 # ── Stage 1: Builder ──────────────────────────────────────────────────────────
-FROM node:22-bookworm-slim@sha256:560c5a2c10b50aa22eb4fbc266ee5b28d0eb9f68ad38753239a51cb684c311c6 AS builder
+FROM node:22-bookworm-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ RUN npm run build && npm run build:css && npm run build:public
 RUN FFMPEG_STATIC_SKIP_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=true npm prune --omit=dev
 
 # ── Stage 2: Runner (Seguro e Não-Root) ────────────────────────────────────────
-FROM node:22-bookworm-slim@sha256:560c5a2c10b50aa22eb4fbc266ee5b28d0eb9f68ad38753239a51cb684c311c6 AS runner
+FROM node:22-bookworm-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c AS runner
 
 WORKDIR /app
 
@@ -39,7 +39,7 @@ RUN mkdir -p /data/uploads /data/runtime /app/public/uploads /app/.runtime \
 # Copiar artefatos de build, schema do banco e ativos estáticos mantendo ownership node:node
 COPY --chown=node:node --from=builder /app/dist ./dist
 COPY --chown=node:node --from=builder /app/public ./public
-COPY --chown=node:node --from=builder /app/database ./database
+COPY --chown=node:node --from=builder /app/certs ./certs
 COPY --chown=node:node --from=builder /app/package.json ./package.json
 COPY --chown=node:node --from=builder /app/package-lock.json ./package-lock.json
 COPY --chown=node:node --from=builder /app/crash-wrapper.js ./crash-wrapper.js

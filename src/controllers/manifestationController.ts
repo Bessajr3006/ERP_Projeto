@@ -15,29 +15,26 @@ export class ManifestationController {
             const lastNSU = (req.query.lastNSU as string) || '0';
 
             const company = await CompanyService.getById(companyId);
-            if (!company.cnpj || !company.certificate_url || !company.certificate_password) {
-                res.status(400).json({ status: 'error', message: 'CNPJ ou Certificado Digital não configurado.' });
+            if (!company?.cnpj) {
+                res.status(400).json({ status: 'error', message: 'CNPJ da empresa não configurado.' });
                 return;
             }
 
-            // Carregar certificado do disco
+            const credentials = await CompanyService.getCertificateCredentials(companyId);
+            if (!credentials) {
+                res.status(400).json({ status: 'error', message: 'Certificado digital não configurado ou arquivo não encontrado.' });
+                return;
+            }
+
             const fs = await import('fs');
-            const path = await import('path');
-            const certPath = path.join(process.cwd(), 'public', company.certificate_url.startsWith('/') ? company.certificate_url.slice(1) : company.certificate_url);
-            
-            if (!fs.existsSync(certPath)) {
-                res.status(400).json({ status: 'error', message: 'Arquivo do certificado não encontrado no servidor.' });
-                return;
-            }
-
-            const pfxBuffer = fs.readFileSync(certPath);
+            const pfxBuffer = fs.readFileSync(credentials.pfxPath);
             const env = (company.nfe_environment as any) === 'producao' ? 'producao' : 'homologacao';
             
             logger.info({ companyId, env, cnpj: company.cnpj }, '[Manifestation] Iniciando consulta síncrona');
 
             const result = await ManifestationService.consultDestinedDocs(
                 pfxBuffer,
-                company.certificate_password,
+                credentials.password,
                 env,
                 company.cnpj,
                 company.state || 'SP',

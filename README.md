@@ -101,10 +101,21 @@ npm run dev
 npm run worker
 ```
 
-## HTTPS local
+## HTTPS local e Certificados ICP-Brasil
 
+### HTTPS Local
 Se `certs/cert.pem` e `certs/key.pem` existirem, o servidor sobe em HTTPS (`HTTPS_PORT`, padrao `8443`).
 Sem certificados, sobe em HTTP (`PORT`, padrao `3030`).
+
+### Certificados da Cadeia ICP-Brasil (SEFAZ / NF-e / Manifestação)
+A comunicação mTLS com a SEFAZ exige a cadeia de Autoridades Certificadoras (ACs) da ICP-Brasil.
+Os certificados devem ser colocados no diretório `certs/icp-brasil/` (formatos suportados: `.crt` ou `.pem`):
+
+1. Acesse o repositório oficial do ITI: [https://www.gov.br/iti/pt-br/assuntos/repositorio](https://www.gov.br/iti/pt-br/assuntos/repositorio)
+2. Baixe os certificados da **AC Raiz Brasileira** (v5, v10 e posteriores) e as **ACs intermediárias da SEFAZ / Receita Federal** (ex: *AC Secretaria da Receita Federal do Brasil*, *AC SERPRO*, etc.).
+3. Salve os arquivos `.crt` ou `.pem` na pasta `certs/icp-brasil/` na raiz do projeto.
+4. Na inicialização do sistema, todos os certificados da pasta são carregados e validados automaticamente via `crypto.X509Certificate` com `rejectUnauthorized: true`.
+
 
 ## Scripts disponiveis
 

@@ -24,8 +24,8 @@ export class InterService {
             return String(rawE2E).trim().slice(0, 100);
         }
 
-        // 2. ID da transação / Código de transação
-        const rawTxId = tx.detalhes?.txid || tx.txid || tx.detalhes?.codigoTransacao || tx.codigoTransacao || tx.detalhes?.idTransacao || tx.idTransacao;
+        // 2. ID da transação do Inter (top-level ou detalhes)
+        const rawTxId = tx.idTransacao || tx.detalhes?.txId || tx.detalhes?.txid || tx.txid || tx.detalhes?.codigoTransacao || tx.codigoTransacao || tx.detalhes?.idTransacao;
         if (rawTxId && String(rawTxId).trim().length >= 6 && !/^[0_\- ]+$/.test(String(rawTxId).trim())) {
             return String(rawTxId).trim().slice(0, 100);
         }
@@ -37,13 +37,13 @@ export class InterService {
         }
 
         // 4. NSU / Documento específico (se não for "0", "0000", etc.)
-        const rawNsu = tx.detalhes?.nsu || tx.nsu || tx.numDocumento || tx.numeroDocumento || tx.referencia;
+        const rawNsu = tx.numeroDocumento || tx.detalhes?.nsu || tx.nsu || tx.numDocumento || tx.referencia;
         if (rawNsu && String(rawNsu).trim().length >= 6 && !/^[0_\- ]+$/.test(String(rawNsu).trim())) {
             return `doc_${String(rawNsu).trim().slice(0, 90)}`;
         }
 
         // 5. Hash determinístico único por lançamento para evitar qualquer colisão entre transações de mesmo valor
-        const timeStr = tx.horario || tx.hora || tx.dataHoraMovimento || '';
+        const timeStr = tx.horario || tx.hora || tx.dataInclusao || tx.dataHoraMovimento || '';
         const hash = createHash('md5')
             .update(`${safeDate}|${timeStr}|${type}|${amount.toFixed(2)}|${description.trim()}|${txIndex}`)
             .digest('hex');
@@ -223,7 +223,8 @@ export class InterService {
 
                         // Descrição / Título
                         const titulo = String(tx.titulo || tx.tipoTransacao || '').trim();
-                        const descricao = String(tx.descricao || tx.historico || tx.detalhe || tx.detalhes?.descricao || '').trim();
+                        const nomePessoa = String(tx.detalhes?.nomePagador || tx.detalhes?.nomeRecebedor || tx.detalhes?.estabelecimento || '').trim();
+                        const descricao = String(tx.descricao || tx.historico || tx.detalhe || tx.detalhes?.descricao || nomePessoa || '').trim();
                         let description = '';
                         if (titulo && descricao && titulo.toLowerCase() !== descricao.toLowerCase()) {
                             description = `${titulo} - ${descricao}`;
@@ -455,7 +456,9 @@ export class InterService {
     }
 
     private static normalizeTransactionDate(tx: any): string | null {
-        const raw = tx.dataEntrada || 
+        const raw = tx.dataTransacao ||
+                    tx.dataInclusao ||
+                    tx.dataEntrada || 
                     tx.dataLancamento || 
                     tx.dataHoraMovimento || 
                     tx.dataMovimento || 
@@ -464,6 +467,10 @@ export class InterService {
                     tx.data_extrato || 
                     tx.date || 
                     tx.inclusao ||
+                    tx.horario ||
+                    tx.hora ||
+                    tx.detalhes?.dataTransacao ||
+                    tx.detalhes?.dataInclusao ||
                     tx.detalhes?.dataHora ||
                     tx.detalhes?.dataLancamento;
         if (raw === undefined || raw === null) return null;

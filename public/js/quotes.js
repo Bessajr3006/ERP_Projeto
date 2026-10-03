@@ -8,6 +8,169 @@
     let allProducts = [];
     let allServices = [];
     let currentQuoteId = null;
+    const quotesById = {};
+    let approveState = { quote: null, total: 0, installments: [] };
+    let financeOptionsLoaded = false;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    const PAYMENT_METHODS = [
+        ['pix', 'PIX'], ['boleto', 'Boleto'], ['credit', 'Cartão de crédito'],
+        ['debit', 'Cartão de débito'], ['cash', 'Dinheiro'], ['transfer', 'Transferência']
+    ];
+
+    function addMonths(dateStr, months) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const base = new Date(Date.UTC(y, m - 1 + months, 1));
+        const lastDay = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0)).getUTCDate();
+        base.setUTCDate(Math.min(d, lastDay));
+        return base.toISOString().slice(0, 10);
+    }
+
+    function todayIso() {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 10);
+    }
+
+    async function loadFinanceOptions() {
+        if (financeOptionsLoaded) return;
+        const [banksRes, catsRes] = await Promise.all([
+            api('/bank-accounts').catch(() => ({ data: [] })),
+            api('/finance/categories').catch(() => ({ data: [] }))
+        ]);
+        const banks = banksRes?.data || [];
+        const cats = (catsRes?.data || []).filter(c => c.type === 'income');
+        getById('approveBankAccount').innerHTML = '<option value="">Selecione...</option>' +
+            banks.map(b => `<option value="${escapeHtml(b.public_id)}">${escapeHtml(b.name)}</option>`).join('');
+        getById('approveCategory').innerHTML = '<option value="">Selecione...</option>' +
+            cats.map(c => `<option value="${escapeHtml(c.public_id)}">${escapeHtml(c.name)}</option>`).join('');
+        if (banks.length === 1) getById('approveBankAccount').value = banks[0].public_id;
+        if (cats.length === 1) getById('approveCategory').value = cats[0].public_id;
+        financeOptionsLoaded = true;
+    }
+
+    function splitInstallments() {
+        const count = Math.min(120, Math.max(1, parseInt(getById('approveInstallmentsCount').value, 10) || 1));
+        getById('approveInstallmentsCount').value = String(count);
+        const firstDue = getById('approveFirstDueDate').value || todayIso();
+        const method = getById('approveDefaultMethod').value || 'pix';
+        const totalCents = Math.round(approveState.total * 100);
+        const baseCents = Math.floor(totalCents / count);
+        approveState.installments = Array.from({ length: count }, (_, i) => ({
+            amount: (i === count - 1 ? totalCents - baseCents * (count - 1) : baseCents) / 100,
+            due_date: addMonths(firstDue, i),
+            payment_method: method
+        }));
+        renderInstallments();
+    }
+
+    function renderInstallments() {
+        const tbody = getById('approveInstallmentsTable');
+        const count = approveState.installments.length;
+        tbody.innerHTML = approveState.installments.map((inst, i) => `
+            <tr>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-200 whitespace-nowrap">${i + 1}/${count}</td>
+                <td class="px-3 py-2"><input type="number" min="0.01" step="0.01" data-inst="${i}" data-field="amount" value="${inst.amount.toFixed(2)}" class="w-32 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-1 px-2 text-sm"></td>
+                <td class="px-3 py-2"><input type="date" data-inst="${i}" data-field="due_date" value="${inst.due_date}" class="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-1 px-2 text-sm"></td>
+                <td class="px-3 py-2"><select data-inst="${i}" data-field="payment_method" class="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 py-1 px-2 text-sm">
+                    ${PAYMENT_METHODS.map(([v, l]) => `<option value="${v}" ${inst.payment_method === v ? 'selected' : ''}>${l}</option>`).join('')}
+                </select></td>
+            </tr>
+        `).join('');
+        updateInstallmentsSum();
+    }
+
+    function updateInstallmentsSum() {
+        const sum = approveState.installments.reduce((acc, inst) => acc + (Number(inst.amount) || 0), 0);
+        const diff = Math.round((approveState.total - sum) * 100) / 100;
+        getById('approveInstallmentsSum').textContent = formatCurrency(sum);
+        const diffEl = getById('approveInstallmentsDiff');
+        const ok = Math.abs(diff) <= 0.01;
+        diffEl.textContent = ok ? 'Confere com o total' : `Diferença: ${formatCurrency(diff)}`;
+        diffEl.className = `ml-2 text-xs ${ok ? 'text-emerald-600' : 'text-red-600'}`;
+        getById('btnApproveConfirm').disabled = !ok || approveState.installments.length === 0;
+    }
+
+    function closeApproveModal() {
+        getById('approveModal').classList.add('hidden');
+        approveState = { quote: null, total: 0, installments: [] };
+    }
+
+    async function openApproveModal(publicId) {
+        const quote = quotesById[publicId];
+        if (!quote) return;
+        approveState.quote = quote;
+        approveState.total = Math.round(Number(quote.total_amount || quote.computed_total || 0) * 100) / 100;
+        getById('approveQuoteNumber').textContent = `#${String(quote.id).padStart(4, '0')}`;
+        getById('approveQuoteTotal').textContent = formatCurrency(approveState.total);
+        getById('approveInstallmentsCount').value = '1';
+        getById('approveFirstDueDate').value = todayIso();
+        if (quote.payment_method && PAYMENT_METHODS.some(([v]) => v === quote.payment_method)) {
+            getById('approveDefaultMethod').value = quote.payment_method;
+        }
+        getById('approveModal').classList.remove('hidden');
+        try {
+            await loadFinanceOptions();
+        } catch (error) {
+            console.error('Failed to load finance options', error);
+        }
+        splitInstallments();
+    }
+
+    async function confirmApprove() {
+        const quote = approveState.quote;
+        if (!quote) return;
+        const bank = getById('approveBankAccount').value;
+        const category = getById('approveCategory').value;
+        if (!bank || !category) {
+            alert('Selecione a conta bancária e a categoria.');
+            return;
+        }
+        if (approveState.installments.some(inst => !(Number(inst.amount) > 0) || !inst.due_date)) {
+            alert('Preencha valor e vencimento de todas as parcelas.');
+            return;
+        }
+        const btn = getById('btnApproveConfirm');
+        btn.disabled = true;
+        btn.textContent = 'Aprovando...';
+        try {
+            await api(`/orders/quotes/${quote.public_id}/approve`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    bank_account_public_id: bank,
+                    category_public_id: category,
+                    installments: approveState.installments.map(inst => ({
+                        amount: Math.round(Number(inst.amount) * 100) / 100,
+                        due_date: inst.due_date,
+                        payment_method: inst.payment_method
+                    }))
+                })
+            });
+            closeApproveModal();
+            quotesManager.loadData();
+            const alertEl = getById('alertMessage');
+            if (alertEl) {
+                alertEl.textContent = 'Orçamento aprovado! A venda foi criada e as parcelas foram lançadas em Receitas.';
+                alertEl.className = 'mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+                alertEl.classList.remove('hidden');
+                setTimeout(() => alertEl.classList.add('hidden'), 6000);
+            }
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Erro ao aprovar orçamento.');
+        } finally {
+            btn.textContent = 'Aprovar e gerar parcelas';
+            updateInstallmentsSum();
+        }
+    }
 
     function formatCurrency(value) {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
@@ -298,6 +461,7 @@
 
                 tbody.innerHTML = items.map(quote => {
                     const total = quote.items ? quote.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) : 0;
+                    quotesById[quote.public_id] = { ...quote, computed_total: total };
                     return `
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap w-10">
@@ -307,7 +471,8 @@
                                 #${String(quote.id).padStart(4, '0')}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                ${quote.customer_name || 'Consumidor Final'}
+                                ${escapeHtml(quote.customer_name || 'Consumidor Final')}
+                                ${Number(quote.dental_procedures_count || 0) > 0 ? '<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300" title="Gerado pelo odontograma">Odontograma</span>' : ''}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 ${quote.seller_name || '-'}
@@ -405,13 +570,17 @@
                     updateItemDropdown();
                     
                     // Carrega items
-                    selectedItems = item.items ? item.items.map(i => ({
-                        product_public_id: i.product_public_id || null,
-                        service_public_id: i.service_public_id || null,
-                        product_name: i.product_name || i.name || i.service_name,
-                        quantity: Number(i.quantity),
-                        unit_price: Number(i.unit_price)
-                    })) : [];
+                    selectedItems = item.items ? item.items.map(i => {
+                        const baseName = i.product_name || i.name || i.service_name || '';
+                        return {
+                            product_public_id: i.product_public_id || null,
+                            service_public_id: i.service_public_id || null,
+                            product_name: i.description ? (baseName ? `${baseName} – ${i.description}` : i.description) : baseName,
+                            description: i.description || null,
+                            quantity: Number(i.quantity),
+                            unit_price: Number(i.unit_price)
+                        };
+                    }) : [];
                     renderQuoteItems();
                 } else {
                     title.textContent = 'Novo Orçamento';
@@ -498,7 +667,8 @@
                     product_public_id: item.product_public_id || null,
                     service_public_id: item.service_public_id || null,
                     quantity: item.quantity,
-                    unit_price: item.unit_price
+                    unit_price: item.unit_price,
+                    description: item.description || null
                 }))
             };
 
@@ -537,10 +707,38 @@
             }
         });
 
-        // Convert to sale stub
+        // Transformar em Venda = aprovar orçamento (gera venda + parcelas em Receitas)
         window.convertToSale = function(quoteId) {
-            alert('A transformação em venda a partir do orçamento será implementada no próximo passo do PDV.');
-        }
+            openApproveModal(quoteId);
+        };
+
+        getById('btnApproveSplit')?.addEventListener('click', splitInstallments);
+        getById('approveInstallmentsCount')?.addEventListener('change', splitInstallments);
+        getById('approveFirstDueDate')?.addEventListener('change', splitInstallments);
+        getById('approveDefaultMethod')?.addEventListener('change', () => {
+            const method = getById('approveDefaultMethod').value;
+            approveState.installments.forEach(inst => { inst.payment_method = method; });
+            renderInstallments();
+        });
+        getById('approveInstallmentsTable')?.addEventListener('input', (e) => {
+            const el = e.target.closest('[data-inst]');
+            if (!el) return;
+            const idx = parseInt(el.getAttribute('data-inst'), 10);
+            const field = el.getAttribute('data-field');
+            const inst = approveState.installments[idx];
+            if (!inst) return;
+            inst[field] = field === 'amount' ? (parseFloat(el.value) || 0) : el.value;
+            if (field === 'amount') updateInstallmentsSum();
+        });
+        getById('approveInstallmentsTable')?.addEventListener('change', (e) => {
+            const el = e.target.closest('select[data-inst]');
+            if (!el) return;
+            const inst = approveState.installments[parseInt(el.getAttribute('data-inst'), 10)];
+            if (inst) inst.payment_method = el.value;
+        });
+        getById('btnApproveConfirm')?.addEventListener('click', confirmApprove);
+        getById('btnApproveCancel')?.addEventListener('click', closeApproveModal);
+        getById('approveModalBackdrop')?.addEventListener('click', closeApproveModal);
 
     });
 })();

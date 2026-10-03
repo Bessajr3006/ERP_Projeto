@@ -1,4 +1,4 @@
-import { PurchaseOrder, CreatePurchaseData, SalesOrder, CreateSalesData } from '../types/Order';
+import { PurchaseOrder, CreatePurchaseData, SalesOrder, CreateSalesData, ApproveQuoteData } from '../types/Order';
 import { OrderRepository } from '../repositories/orderRepository';
 import { DOMParser } from '@xmldom/xmldom';
 import { toBrazilDate } from '../utils/dateTime';
@@ -465,6 +465,10 @@ export class OrderService {
         return OrderRepository.createQuote(companyId, userPublicId, data);
     }
 
+    static async approveQuote(companyId: number, userPublicId: string, quotePublicId: string, data: ApproveQuoteData): Promise<any> {
+        return OrderRepository.approveQuote(companyId, userPublicId, quotePublicId, data);
+    }
+
     static async getQuoteByPublicId(publicId: string, companyId: number): Promise<any> {
         return OrderRepository.getQuoteByPublicId(publicId, companyId);
     }
@@ -602,7 +606,7 @@ export class OrderService {
             totalVal += subtotal;
             return `
                 <tr>
-                    <td>${escapeHtml(item.product_name)}</td>
+                    <td>${escapeHtml(item.product_name || item.description || '')}${item.description && item.product_name && item.description !== item.product_name ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;">${escapeHtml(item.description)}</div>` : ''}</td>
                     <td class="text-right">${Number(item.quantity)}</td>
                     <td class="text-right">${formatCurrency(Number(item.unit_price))}</td>
                     <td class="text-right font-medium">${formatCurrency(subtotal)}</td>

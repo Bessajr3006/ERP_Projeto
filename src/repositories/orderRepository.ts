@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
 import pool from '../config/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-import { PurchaseOrder, CreatePurchaseData, SalesOrder, CreateSalesData } from '../types/Order';
+import { PurchaseOrder, CreatePurchaseData, SalesOrder, CreateSalesData, ApproveQuoteData, CreatedQuoteResult } from '../types/Order';
+import { AppError } from '../errors/AppError';
 import { ProductService } from '../services/productService';
 import { EntityService } from '../services/entityService';
 import { BankAccountService } from '../services/bankAccountService';
@@ -227,70 +228,179 @@ export class OrderRepository {
 
         try {
             await conn.beginTransaction();
+            const created = await this.createQuoteWithConnection(conn, companyId, data);
+            await conn.commit();
+            return this.getSaleById(created.saleId, companyId);
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
+    }
 
-            // const userId = await this.resolveUserIdForContext(conn, companyId, userPublicId);
+    /**
+     * Cria um orçamento (sales_orders.status = 'quote') usando uma conexão/transação externa.
+     * Não faz commit/rollback: quem chama controla a transação.
+     * Retorna os ids internos do pedido e dos itens criados (na mesma ordem de data.items).
+     */
+    static async createQuoteWithConnection(conn: any, companyId: number, data: CreateSalesData): Promise<CreatedQuoteResult> {
+        let customerId = null;
+        if (data.customer_public_id) {
+            const customer = await EntityService.getCustomerByPublicId(data.customer_public_id, companyId);
+            customerId = customer.id;
+        }
 
-            let customerId = null;
-            if (data.customer_public_id) {
-                const customer = await EntityService.getCustomerByPublicId(data.customer_public_id, companyId);
-                customerId = customer.id;
+        let sellerId = null;
+        if (data.seller_public_id) {
+            const [sellerRows] = await conn.query('SELECT id FROM users WHERE public_id = ? AND company_id = ?', [data.seller_public_id, companyId]);
+            if (Array.isArray(sellerRows) && sellerRows.length > 0) {
+                sellerId = (sellerRows[0] as any)?.id;
+            }
+        }
+
+        let totalAmount = 0;
+        const publicId = randomUUID();
+        const orderDate = toBrazilDate(data.date as string);
+        const validityDate = data.validity_date ? toBrazilDate(data.validity_date as string) : null;
+
+        const [orderResult] = await conn.query(
+            `INSERT INTO sales_orders (public_id, company_id, customer_id, seller_id, total_amount, status, date, validity_date, observation, brand, manual_customer_name, payment_method, payment_terms) VALUES (?, ?, ?, ?, ?, 'quote', ?, ?, ?, ?, ?, ?, ?)`,
+            [publicId, companyId, customerId, sellerId, 0, orderDate, validityDate, data.observation || null, data.brand || null, data.manual_customer_name || null, data.payment_method || null, data.payment_terms || null]
+        );
+        const saleId = Number((orderResult as ResultSetHeader).insertId);
+
+        const itemIds: number[] = [];
+        for (const item of data.items) {
+            let productId: number | null = null;
+            let serviceId: number | null = null;
+
+            if (item.product_public_id) {
+                const product = await ProductService.getByPublicId(item.product_public_id, companyId);
+                productId = product.id;
+            } else if (item.service_public_id) {
+                const service = await EstoqueService.getServiceByPublicId(item.service_public_id, companyId);
+                serviceId = service.id;
             }
 
-            let sellerId = null;
-            if (data.seller_public_id) {
-                // Assuming EntityService or UserService has a method, wait we can just query users table
-                const [sellerRows] = await conn.query<RowDataPacket[]>('SELECT id FROM users WHERE public_id = ? AND company_id = ?', [data.seller_public_id, companyId]);
-                if (sellerRows && sellerRows.length > 0) {
-                    sellerId = sellerRows[0]?.id;
-                }
-            }
+            const itemTotal = item.quantity * item.unit_price;
+            totalAmount += itemTotal;
 
-            let totalAmount = 0;
-            const publicId = randomUUID();
-            const orderDate = toBrazilDate(data.date as string);
-            const validityDate = data.validity_date ? toBrazilDate(data.validity_date as string) : null;
-
-            const [orderResult] = await conn.query<ResultSetHeader>(
-                `INSERT INTO sales_orders (public_id, company_id, customer_id, seller_id, total_amount, status, date, validity_date, observation, brand, manual_customer_name, payment_method, payment_terms) VALUES (?, ?, ?, ?, ?, 'quote', ?, ?, ?, ?, ?, ?, ?)`,
-                [publicId, companyId, customerId, sellerId, 0, orderDate, validityDate, data.observation || null, data.brand || null, data.manual_customer_name || null, data.payment_method || null, data.payment_terms || null]
+            const [itemResult] = await conn.query(
+                `INSERT INTO sales_items (sale_id, product_id, service_id, quantity, unit_price, total_price, description) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [saleId, productId, serviceId, item.quantity, item.unit_price, itemTotal, item.description ? String(item.description).slice(0, 255) : null]
             );
-            const saleId = orderResult.insertId;
+            itemIds.push(Number((itemResult as ResultSetHeader).insertId));
+        }
 
-            for (const item of data.items) {
-                let productId: number | null = null;
-                let serviceId: number | null = null;
+        await conn.query('UPDATE sales_orders SET total_amount = ? WHERE id = ?', [Math.round(totalAmount * 100) / 100, saleId]);
 
-                if (item.product_public_id) {
-                    const product = await ProductService.getByPublicId(item.product_public_id, companyId);
-                    productId = product.id;
-                } else if (item.service_public_id) {
-                    const service = await EstoqueService.getServiceByPublicId(item.service_public_id, companyId);
-                    serviceId = service.id;
-                }
+        // Orçamentos não afetam financeiro nem estoque.
+        CacheService.invalidate(`dashboard_${companyId}`);
 
-                const itemTotal = item.quantity * item.unit_price;
-                totalAmount += itemTotal;
+        return { saleId, publicId, itemIds };
+    }
 
-                await conn.query(
-                    `INSERT INTO sales_items (sale_id, product_id, service_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`,
-                    [
-                        saleId,
-                        productId,
-                        serviceId,
-                        item.quantity,
-                        item.unit_price,
-                        itemTotal,
-                    ]
-                );
+    /** Quantidade de procedimentos odontológicos (não excluídos) vinculados a um pedido/orçamento. */
+    static async countLinkedDentalProcedures(conn: any, saleId: number): Promise<number> {
+        const [rows] = await conn.query(
+            'SELECT COUNT(*) AS total FROM dental_procedures WHERE sales_order_id = ? AND is_deleted = 0',
+            [saleId]
+        );
+        return Number((rows as any[])?.[0]?.total || 0);
+    }
+
+    /**
+     * Aprova um orçamento (status 'quote'): passa o pedido para 'progress', gera uma receita
+     * (transactions, status 'pending') por parcela e marca procedimentos odontológicos vinculados como 'approved'.
+     * Itens de produto baixam estoque (mesmo comportamento de createSalesOrder).
+     */
+    static async approveQuote(companyId: number, userPublicId: string, quotePublicId: string, data: ApproveQuoteData): Promise<any> {
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
+
+            const [quoteRows] = await conn.query<RowDataPacket[]>(
+                `SELECT so.id, so.public_id, so.status, so.total_amount, so.customer_id,
+                        COALESCE(c.name, so.manual_customer_name) AS customer_name
+                 FROM sales_orders so
+                 LEFT JOIN customers c ON c.id = so.customer_id
+                 WHERE so.public_id = ? AND so.company_id = ? AND so.is_deleted = 0
+                 LIMIT 1 FOR UPDATE`,
+                [quotePublicId, companyId]
+            );
+            const quote = quoteRows?.[0] as any;
+            if (!quote) throw new AppError('Orçamento não encontrado.', 404);
+            if (quote.status !== 'quote') {
+                throw new AppError('Somente orçamentos com status "quote" podem ser aprovados.', 409);
             }
 
-            await conn.query('UPDATE sales_orders SET total_amount = ? WHERE id = ?', [totalAmount, saleId]);
+            const saleId = Number(quote.id);
+            const totalAmount = Math.round(Number(quote.total_amount || 0) * 100) / 100;
+            if (!(totalAmount > 0)) throw new AppError('Orçamento sem valor total não pode ser aprovado.', 400);
 
-            // Orçamentos não afetam financeiro nem estoque.
+            const installments = data.installments || [];
+            if (installments.length === 0) throw new AppError('Informe ao menos uma parcela.', 400);
+            const installmentsSum = Math.round(installments.reduce((sum, inst) => sum + Number(inst.amount || 0), 0) * 100) / 100;
+            if (Math.abs(installmentsSum - totalAmount) > 0.01) {
+                throw new AppError(`A soma das parcelas (${installmentsSum.toFixed(2)}) difere do total do orçamento (${totalAmount.toFixed(2)}).`, 400);
+            }
+
+            const [bankRows] = await conn.query<RowDataPacket[]>(
+                'SELECT id FROM bank_accounts WHERE public_id = ? AND company_id = ? LIMIT 1',
+                [data.bank_account_public_id, companyId]
+            );
+            if (!bankRows?.[0]) throw new AppError('Conta bancária não encontrada.', 400);
+            const bankAccountId = Number(bankRows[0]!.id);
+
+            const [catRows] = await conn.query<RowDataPacket[]>(
+                'SELECT id FROM categories WHERE public_id = ? AND company_id = ? LIMIT 1',
+                [data.category_public_id, companyId]
+            );
+            if (!catRows?.[0]) throw new AppError('Categoria financeira não encontrada.', 400);
+            const categoryId = Number(catRows[0]!.id);
+
+            const userId = await this.resolveUserIdForContext(conn, companyId, userPublicId);
+
+            // Baixa de estoque para itens de produto (espelha createSalesOrder). Serviços não movimentam estoque.
+            const [itemRows] = await conn.query<RowDataPacket[]>(
+                'SELECT product_id, quantity FROM sales_items WHERE sale_id = ? AND is_deleted = 0 AND product_id IS NOT NULL',
+                [saleId]
+            );
+            for (const item of itemRows || []) {
+                await ProductService.recordMovement(conn, companyId, Number(item.product_id), 'out', Number(item.quantity), null, saleId);
+            }
+
+            await conn.query("UPDATE sales_orders SET status = 'progress' WHERE id = ? AND company_id = ?", [saleId, companyId]);
+
+            const quoteNumber = String(saleId).padStart(4, '0');
+            const count = installments.length;
+            const transactions: any[] = [];
+            for (let index = 0; index < count; index++) {
+                const inst = installments[index]!;
+                const transactionPublicId = randomUUID();
+                const amount = Math.round(Number(inst.amount) * 100) / 100;
+                const description = `Parcela ${index + 1}/${count} - Orçamento #${quoteNumber}${quote.customer_name ? ` - ${quote.customer_name}` : ''}`.slice(0, 255);
+                const dueDate = toBrazilDate(inst.due_date);
+                await conn.query(
+                    `INSERT INTO transactions (public_id, company_id, bank_account_id, category_id, customer_id, user_id, sale_id, description, amount, type, payment_method, date, status, installment_number, installment_count)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'income', ?, ?, 'pending', ?, ?)`,
+                    [transactionPublicId, companyId, bankAccountId, categoryId, quote.customer_id || null, userId, saleId, description, amount, inst.payment_method, dueDate, index + 1, count]
+                );
+                transactions.push({ public_id: transactionPublicId, description, amount, due_date: dueDate, payment_method: inst.payment_method, installment_number: index + 1, installment_count: count, status: 'pending' });
+            }
+
+            const [procResult] = await conn.query<ResultSetHeader>(
+                "UPDATE dental_procedures SET status = 'approved' WHERE sales_order_id = ? AND company_id = ? AND status = 'quoted' AND is_deleted = 0",
+                [saleId, companyId]
+            );
+
             CacheService.invalidate(`dashboard_${companyId}`);
 
             await conn.commit();
-            return this.getSaleById(saleId, companyId);
+
+            const order = await this.getSaleById(saleId, companyId);
+            return { order, transactions, approved_dental_procedures: Number(procResult?.affectedRows || 0) };
         } catch (error) {
             await conn.rollback();
             throw error;
@@ -301,7 +411,8 @@ export class OrderRepository {
 
     static async getQuoteByPublicId(publicId: string, companyId: number): Promise<any> {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT so.*, COALESCE(c.name, so.manual_customer_name) as customer_name, c.public_id as customer_public_id, u.public_id as seller_public_id 
+            `SELECT so.*, COALESCE(c.name, so.manual_customer_name) as customer_name, c.public_id as customer_public_id, u.public_id as seller_public_id,
+                    (SELECT COUNT(*) FROM dental_procedures dp WHERE dp.sales_order_id = so.id AND dp.is_deleted = 0) as dental_procedures_count
              FROM sales_orders so 
              LEFT JOIN customers c ON so.customer_id = c.id 
              LEFT JOIN users u ON so.seller_id = u.id
@@ -379,12 +490,34 @@ export class OrderRepository {
     }
 
     static async deleteQuoteByPublicId(publicId: string, companyId: number): Promise<void> {
-        const [result] = await pool.query<ResultSetHeader>(
-            "UPDATE sales_orders SET is_deleted = 1 WHERE public_id = ? AND company_id = ? AND status = 'quote' AND is_deleted = 0",
-            [publicId, companyId]
-        );
-        if (result.affectedRows === 0) {
-            throw new Error('Orçamento não encontrado ou já excluído');
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
+            const [rows] = await conn.query<RowDataPacket[]>(
+                "SELECT id FROM sales_orders WHERE public_id = ? AND company_id = ? AND status = 'quote' AND is_deleted = 0 LIMIT 1 FOR UPDATE",
+                [publicId, companyId]
+            );
+            const quoteId = rows?.[0]?.id ? Number(rows[0]!.id) : null;
+            if (!quoteId) {
+                throw new Error('Orçamento não encontrado ou já excluído');
+            }
+
+            await conn.query('UPDATE sales_orders SET is_deleted = 1 WHERE id = ? AND company_id = ?', [quoteId, companyId]);
+
+            // Procedimentos do odontograma vinculados voltam a "planejado" e perdem o vínculo.
+            await conn.query(
+                `UPDATE dental_procedures
+                 SET status = 'planned', sales_order_id = NULL, sales_item_id = NULL
+                 WHERE sales_order_id = ? AND company_id = ? AND status IN ('quoted', 'approved')`,
+                [quoteId, companyId]
+            );
+
+            await conn.commit();
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
         }
     }
 
@@ -396,6 +529,30 @@ export class OrderRepository {
             const [quoteRows] = await conn.query<RowDataPacket[]>('SELECT id FROM sales_orders WHERE public_id = ? AND company_id = ? AND status = "quote"', [publicId, companyId]);
             if (quoteRows.length === 0) throw new Error('Quote not found');
             const quoteId = (quoteRows[0] as any).id;
+
+            // Orçamentos gerados pelo odontograma: itens são vinculados a procedimentos e não podem ser alterados aqui.
+            const linkedDental = await this.countLinkedDentalProcedures(conn, quoteId);
+            if (linkedDental > 0) {
+                const [currentItems] = await conn.query<RowDataPacket[]>(
+                    `SELECT si.product_id, si.service_id, si.quantity, si.unit_price, p.public_id AS product_public_id, s.public_id AS service_public_id
+                     FROM sales_items si
+                     LEFT JOIN products p ON p.id = si.product_id
+                     LEFT JOIN services s ON s.id = si.service_id
+                     WHERE si.sale_id = ? AND si.is_deleted = 0
+                     ORDER BY si.id ASC`,
+                    [quoteId]
+                );
+                const sameItems = currentItems.length === data.items.length && currentItems.every((current: any, idx: number) => {
+                    const incoming = data.items[idx]!;
+                    return String(current.product_public_id || '') === String(incoming.product_public_id || '')
+                        && String(current.service_public_id || '') === String(incoming.service_public_id || '')
+                        && Math.abs(Number(current.quantity) - Number(incoming.quantity)) < 0.0001
+                        && Math.abs(Number(current.unit_price) - Number(incoming.unit_price)) < 0.005;
+                });
+                if (!sameItems) {
+                    throw new AppError('Este orçamento foi gerado pelo odontograma e seus itens estão vinculados a procedimentos odontológicos. Não é possível alterar os itens; exclua o orçamento (os procedimentos voltam a "planejado") e gere um novo pelo odontograma.', 409);
+                }
+            }
 
             let customerId = null;
             if (data.customer_public_id) {
@@ -418,6 +575,13 @@ export class OrderRepository {
                 [customerId, sellerId, orderDate, validityDate, data.observation || null, data.brand || null, data.manual_customer_name || null, data.payment_method || null, data.payment_terms || null, quoteId]
             );
 
+            if (linkedDental > 0) {
+                // Somente o cabeçalho foi alterado; itens vinculados ao odontograma são preservados.
+                CacheService.invalidate(`dashboard_${companyId}`);
+                await conn.commit();
+                return this.getSaleById(quoteId, companyId);
+            }
+
             // Delete old items
             await conn.query('DELETE FROM sales_items WHERE sale_id = ?', [quoteId]);
 
@@ -438,8 +602,8 @@ export class OrderRepository {
                 totalAmount += itemTotal;
 
                 await conn.query(
-                    `INSERT INTO sales_items (sale_id, product_id, service_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`,
-                    [quoteId, productId, serviceId, item.quantity, item.unit_price, itemTotal]
+                    `INSERT INTO sales_items (sale_id, product_id, service_id, quantity, unit_price, total_price, description) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    [quoteId, productId, serviceId, item.quantity, item.unit_price, itemTotal, item.description ? String(item.description).slice(0, 255) : null]
                 );
             }
 
@@ -509,7 +673,8 @@ export class OrderRepository {
     static async listQuotes(companyId: number, includeInactive = false): Promise<any[]> {
         const quoteWhere = includeInactive ? 'so.company_id = ? AND so.status = \'quote\'' : 'so.company_id = ? AND so.is_deleted = 0 AND so.status = \'quote\'';
         const [quotesRows] = await pool.query<RowDataPacket[]>(
-            `SELECT so.*, COALESCE(c.name, so.manual_customer_name) as customer_name, c.cnpj_cpf as customer_document, c.public_id as customer_public_id, u.public_id as seller_public_id, u.full_name as seller_name 
+            `SELECT so.*, COALESCE(c.name, so.manual_customer_name) as customer_name, c.cnpj_cpf as customer_document, c.public_id as customer_public_id, u.public_id as seller_public_id, u.full_name as seller_name,
+                    (SELECT COUNT(*) FROM dental_procedures dp WHERE dp.sales_order_id = so.id AND dp.is_deleted = 0) as dental_procedures_count
              FROM sales_orders so 
              LEFT JOIN customers c ON so.customer_id = c.id 
              LEFT JOIN users u ON so.seller_id = u.id
@@ -563,6 +728,14 @@ export class OrderRepository {
             // Remove os lançamentos financeiros vinculados à venda excluída.
             await conn.query<ResultSetHeader>(
                 'DELETE FROM transactions WHERE sale_id = ? AND company_id = ?',
+                [id, companyId]
+            );
+
+            // Procedimentos do odontograma ainda não realizados voltam a "planejado".
+            await conn.query<ResultSetHeader>(
+                `UPDATE dental_procedures
+                 SET status = 'planned', sales_order_id = NULL, sales_item_id = NULL
+                 WHERE sales_order_id = ? AND company_id = ? AND status IN ('quoted', 'approved')`,
                 [id, companyId]
             );
 

@@ -3,12 +3,14 @@ import { z } from 'zod';
 import { OrderService } from '../services/orderService';
 import { UserPayload } from '../types/express';
 import logger from '../config/logger';
+import { AppError } from '../errors/AppError';
 
 const itemSchema = z.object({
     product_public_id: z.string().uuid('Invalid product ID').optional().nullable(),
     service_public_id: z.string().uuid('Invalid service ID').optional().nullable(),
     quantity: z.coerce.number().positive(),
-    unit_price: z.coerce.number().min(0)
+    unit_price: z.coerce.number().min(0),
+    description: z.string().trim().max(255).optional().nullable()
 }).refine(data => data.product_public_id || data.service_public_id, {
     message: "Deve ser fornecido o ID do produto ou do serviço",
     path: ["product_public_id"]
@@ -61,6 +63,16 @@ const importSaleXmlSchema = z.object({
     customer_public_id: z.string().uuid('Invalid customer ID').optional().nullable(),
     delivery_address: z.string().optional().nullable(),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid date format' }).optional().nullable(),
+});
+
+const approveQuoteSchema = z.object({
+    bank_account_public_id: z.string().uuid('Conta bancária inválida'),
+    category_public_id: z.string().uuid('Categoria inválida'),
+    installments: z.array(z.object({
+        amount: z.coerce.number().positive('Valor da parcela deve ser maior que zero'),
+        due_date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Data de vencimento inválida' }),
+        payment_method: z.enum(['pix', 'credit', 'debit', 'cash', 'transfer', 'boleto'])
+    })).min(1, 'Informe ao menos uma parcela').max(120, 'Máximo de 120 parcelas')
 });
 
 const activeStateSchema = z.object({
@@ -201,6 +213,23 @@ export class OrderController {
             if (error instanceof Error) {
                 res.status(400).json({ status: 'error', message: error.message });
                 return;
+            }
+            throw error;
+        }
+    }
+
+    static async approveQuote(req: Request, res: Response): Promise<void> {
+        const user = req.user as UserPayload;
+        const publicId = String(req.params.id || '');
+        if (!publicId) throw new AppError('Informe o orçamento.', 400);
+        const validatedData = approveQuoteSchema.parse(req.body || {});
+        try {
+            const result = await OrderService.approveQuote(Number(user.company_id), String(user.id), publicId, validatedData);
+            res.status(200).json({ status: 'success', data: result });
+        } catch (error: any) {
+            if (error instanceof AppError) throw error;
+            if (error instanceof Error && /not found|stock|estoque/i.test(error.message)) {
+                throw new AppError(error.message, 400);
             }
             throw error;
         }

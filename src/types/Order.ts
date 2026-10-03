@@ -74,6 +74,26 @@ export interface CreateSalesItemData {
     quantity: number;
     unit_price: number;
     xml_item_data?: Record<string, any> | string | null | undefined;
+    /** Descrição livre do item (ex.: "Dente 16 – faces M/O"). Usada em orçamentos. */
+    description?: string | null | undefined;
+}
+
+export interface QuoteInstallmentInput {
+    amount: number;
+    due_date: string;
+    payment_method: 'pix' | 'credit' | 'debit' | 'cash' | 'transfer' | 'boleto';
+}
+
+export interface ApproveQuoteData {
+    bank_account_public_id: string;
+    category_public_id: string;
+    installments: QuoteInstallmentInput[];
+}
+
+export interface CreatedQuoteResult {
+    saleId: number;
+    publicId: string;
+    itemIds: number[];
 }
 
 export interface CreateSalesPaymentData {

@@ -903,6 +903,15 @@ export class FinanceService {
         });
     }
 
+    static async undoReconcileByTransaction(companyId: number, transactionId: string | number, deleteTransaction: boolean = true): Promise<void> {
+        const txs = await FinanceBankStatementRepository.getTransactionsForReconciliation(pool, companyId, [String(transactionId)]);
+        if (txs.length === 0) throw new Error('Lançamento não encontrado');
+        const tx = txs[0]!;
+        await FinanceBankStatementRepository.withTransaction(async (conn) => {
+            await FinanceBankStatementRepository.undoReconcileByTransaction(conn, tx.id, deleteTransaction, companyId);
+        });
+    }
+
     // PDF e Boleto Stubs para corrigir lints (devem ser implementados se necessários ou mantidos como stubs caso movidos)
     static async generateReceiptHTML(companyId: number, transactionPublicId: string): Promise<string> {
         const tx = await FinanceDocumentRepository.getTransactionForDocument(pool, companyId, transactionPublicId);

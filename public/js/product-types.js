@@ -145,6 +145,25 @@
             saveBtn.textContent = 'Salvar';
         }
     });
+    api('/auth/me').then(res => {
+        const company = res?.data?.company || res?.data?.user?.company || res?.data?.user?.company_info;
+        if (company) {
+            const showPoscontrol = company.show_poscontrol !== false && company.show_poscontrol !== 0;
+            const btnImport = getById('btnImportPosControl');
+            if (btnImport) {
+                if (!showPoscontrol) {
+                    btnImport.classList.add('hidden');
+                    btnImport.classList.remove('inline-flex');
+                    btnImport.style.setProperty('display', 'none', 'important');
+                }
+                else {
+                    btnImport.classList.remove('hidden');
+                    btnImport.classList.add('inline-flex');
+                    btnImport.style.display = '';
+                }
+            }
+        }
+    }).catch(console.error);
     // Import from Pos-Control
     getById('btnImportPosControl')?.addEventListener('click', async () => {
         const btn = getById('btnImportPosControl');

@@ -20,6 +20,14 @@
                         if (btn)
                             btn.classList.add('hidden');
                     }
+                    if (company.show_poscontrol === false || company.show_poscontrol === 0) {
+                        const btnImport = getById('btnImportPosControl');
+                        if (btnImport) {
+                            btnImport.classList.add('hidden');
+                            btnImport.classList.remove('inline-flex');
+                            btnImport.style.setProperty('display', 'none', 'important');
+                        }
+                    }
                 }
             }
             catch (err) {

@@ -22,6 +22,14 @@
                     const btn = getById('btnOpenModal');
                     if (btn) btn.classList.add('hidden');
                 }
+                if (company.show_poscontrol === false || company.show_poscontrol === 0) {
+                    const btnImport = getById('btnImportPosControl');
+                    if (btnImport) {
+                        btnImport.classList.add('hidden');
+                        btnImport.classList.remove('inline-flex');
+                        btnImport.style.setProperty('display', 'none', 'important');
+                    }
+                }
             }
         } catch (err) {
             console.error('Failed to check measure button visibility', err);

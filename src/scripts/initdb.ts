@@ -250,6 +250,7 @@ import { runMigration221CompanyGroupMaster } from './run_migration_221_company_g
 import { runMigration223PopulateSolidconKeyInTransactions } from './run_migration_223_populate_solidcon_key_in_transactions';
 import { runMigration100DentalOdontogram } from './run_migration_100_dental_odontogram';
 import { runMigration101DentalPermissions } from './run_migration_101_dental_permissions';
+import { runMigration256CompanyShowPoscontrol } from './run_migration_256_company_show_poscontrol';
 
 
 
@@ -819,6 +820,7 @@ async function runInitDb(): Promise<void> {
     await runMigration223PopulateSolidconKeyInTransactions();
     await runMigration100DentalOdontogram();
     await runMigration101DentalPermissions();
+    await runMigration256CompanyShowPoscontrol();
     await normalizeAllDocuments();
 
     const systemCompany = await ensureSystemCompany();

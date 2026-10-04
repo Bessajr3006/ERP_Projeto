@@ -115,8 +115,9 @@
         }
         const btnPosControl = getById('btnPosControl');
         const posControlCountSpan = getById('posControlCount');
+        const showPoscontrol = window.g_showPoscontrol !== false;
         if (btnPosControl) {
-            if (checkedCount > 0) {
+            if (checkedCount > 0 && showPoscontrol) {
                 btnPosControl.classList.remove('hidden');
                 btnPosControl.classList.add('inline-flex', 'items-center', 'justify-center');
                 if (posControlCountSpan)
@@ -253,6 +254,21 @@
                         btn.classList.remove('hidden');
                         btn.classList.add('inline-flex');
                         btn.style.display = '';
+                    }
+                }
+                const showPoscontrol = company.show_poscontrol !== false && company.show_poscontrol !== 0;
+                window.g_showPoscontrol = showPoscontrol;
+                const btnImportPos = getById('btnImportPosControl');
+                if (btnImportPos) {
+                    if (!showPoscontrol) {
+                        btnImportPos.classList.add('hidden');
+                        btnImportPos.classList.remove('inline-flex');
+                        btnImportPos.style.setProperty('display', 'none', 'important');
+                    }
+                    else {
+                        btnImportPos.classList.remove('hidden');
+                        btnImportPos.classList.add('inline-flex');
+                        btnImportPos.style.display = '';
                     }
                 }
             }

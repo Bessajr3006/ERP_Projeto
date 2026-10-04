@@ -263,6 +263,7 @@ const updateCompanySchema = z.object({
     show_new_measure_button: z.boolean().optional(),
     is_active: z.boolean().optional(),
     show_solidcon: z.any().optional(),
+    show_poscontrol: z.any().optional(),
     default_customer_group_public_id: z.string().nullable().optional(),
     default_bank_account_public_id: z.string().nullable().optional(),
     default_receivable_type_public_id: z.string().nullable().optional(),

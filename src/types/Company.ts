@@ -88,6 +88,7 @@ export interface Company {
     porta_alterdata?: string;
     cdempresa_alterdata?: string;
     show_alterdata?: boolean;
+    show_poscontrol?: boolean;
     auto_generate_billets?: boolean | number;
     auto_generate_billets_time?: string | null;
     auto_send_boleto_whatsapp?: boolean | number;
@@ -202,6 +203,7 @@ export interface UpdateCompanyData {
     porta_alterdata?: string | undefined;
     cdempresa_alterdata?: string | undefined;
     show_alterdata?: boolean | undefined;
+    show_poscontrol?: boolean | undefined;
     auto_generate_billets?: boolean | number | undefined;
     auto_generate_billets_time?: string | null | undefined;
 }

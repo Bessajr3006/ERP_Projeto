@@ -1379,6 +1379,11 @@ async function initCompanyPage() {
                 if (el) el.value = company.show_alterdata ? '1' : '0';
             }
 
+            if (company.show_poscontrol !== undefined && company.show_poscontrol !== null) {
+                const el = document.getElementById('showPoscontrol') as HTMLSelectElement | null;
+                if (el) el.value = company.show_poscontrol ? '1' : '0';
+            }
+
             if (company.default_customer_group_public_id !== undefined && company.default_customer_group_public_id !== null) {
                 const el = document.getElementById('defaultCustomerGroupPublicId') as HTMLSelectElement | null;
                 if (el) el.value = company.default_customer_group_public_id;
@@ -1680,6 +1685,41 @@ async function initCompanyPage() {
                 UI.showAlert('alertMessage', 'Integração Alterdata salva com sucesso!', 'success');
             } catch (err: any) {
                 UI.showAlert('alertMessage', err.message || 'Erro ao salvar integração Alterdata', 'error');
+            } finally {
+                if (btn) { btn.textContent = originalText; btn.disabled = false; }
+            }
+        });
+    }
+
+    const apiForm = document.getElementById('apiForm');
+    if (apiForm) {
+        apiForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveApiBtn') as HTMLButtonElement | null;
+            const originalText = btn ? btn.textContent : '';
+            if (btn) { btn.textContent = 'Salvando...'; btn.disabled = true; }
+
+            try {
+                if (!g_companyPublicId) {
+                    throw new Error('ID da empresa não processado. Tente recarregar a página.');
+                }
+
+                const updateData: any = {};
+                const showPoscontrolEl = document.getElementById('showPoscontrol') as HTMLSelectElement | null;
+                if (showPoscontrolEl) {
+                    updateData['show_poscontrol'] = showPoscontrolEl.value === '1';
+                }
+
+                await api(`/companies/${g_companyPublicId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(updateData)
+                });
+
+                g_companySnapshot = { ...(g_companySnapshot || {}), ...updateData };
+                refreshParameterSummary();
+                UI.showAlert('alertMessage', 'Configurações de API e Pos-Controll salvas com sucesso!', 'success');
+            } catch (err: any) {
+                UI.showAlert('alertMessage', err.message || 'Erro ao salvar configurações de API', 'error');
             } finally {
                 if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }

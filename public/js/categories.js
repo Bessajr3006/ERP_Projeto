@@ -573,6 +573,33 @@
                 btn.innerHTML = originalText;
             }
         });
+        api('/auth/me').then(res => {
+            const company = res?.data?.company || res?.data?.user?.company || res?.data?.user?.company_info;
+            if (company) {
+                const showPoscontrol = company.show_poscontrol !== false && company.show_poscontrol !== 0;
+                const btnImport = getById('btnImportPosControl');
+                if (btnImport) {
+                    if (!showPoscontrol) {
+                        btnImport.classList.add('hidden');
+                        btnImport.classList.remove('inline-flex');
+                        btnImport.style.setProperty('display', 'none', 'important');
+                    }
+                    else {
+                        btnImport.classList.remove('hidden');
+                        btnImport.classList.add('inline-flex');
+                        btnImport.style.display = '';
+                    }
+                }
+                const btnPos = getById('btnPosControl');
+                if (btnPos && !showPoscontrol) {
+                    btnPos.classList.add('hidden');
+                    btnPos.classList.remove('inline-flex');
+                    btnPos.style.setProperty('display', 'none', 'important');
+                }
+            }
+        }).catch(err => {
+            console.error('Falha ao verificar permissões de Pos-Controll', err);
+        });
         let g_importCompanyPublicId = null;
         let g_importConfigId = null;
         getById('btnImportPosControl')?.addEventListener('click', async () => {

@@ -83,7 +83,11 @@
         if (!customerPublicId) {
             currentPatient = null;
             currentChart = null;
-            getById('patientSummaryBar')?.classList.add('hidden');
+            const summaryBar = getById('patientSummaryBar');
+            if (summaryBar) {
+                summaryBar.classList.add('hidden');
+                summaryBar.classList.remove('flex');
+            }
             getById('odontogramEmptyState')?.classList.remove('hidden');
             getById('odontogramSvgContainer')?.classList.add('hidden');
             renderProcedures();
@@ -95,7 +99,11 @@
                 getById('patientDoc').textContent = currentPatient.cnpj_cpf ? `CPF/CNPJ: ${currentPatient.cnpj_cpf}` : 'Sem documento';
                 getById('patientPhone').textContent = currentPatient.phone ? `Tel: ${currentPatient.phone}` : 'Sem telefone';
                 getById('patientEmail').textContent = currentPatient.email ? `Email: ${currentPatient.email}` : 'Sem email';
-                getById('patientSummaryBar')?.classList.remove('hidden');
+                const summaryBar = getById('patientSummaryBar');
+                if (summaryBar) {
+                    summaryBar.classList.remove('hidden');
+                    summaryBar.classList.add('flex');
+                }
             }
             const res = await api(`/dental/charts?customer_public_id=${customerPublicId}`);
             currentChart = res.data;

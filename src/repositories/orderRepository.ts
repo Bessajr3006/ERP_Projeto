@@ -95,6 +95,16 @@ export class OrderRepository {
                     [purchaseId, product.id, item.quantity, item.unit_price, itemTotal]
                 );
 
+                // If reset_stock requested, zero out current stock before adding incoming quantity
+                if (item.reset_stock && Number(product.current_stock) !== 0) {
+                    const prevStock = Number(product.current_stock);
+                    if (prevStock > 0) {
+                        await ProductService.recordMovement(conn, companyId, product.id, 'out', prevStock, null, null);
+                    } else if (prevStock < 0) {
+                        await ProductService.recordMovement(conn, companyId, product.id, 'in', Math.abs(prevStock), null, null);
+                    }
+                }
+
                 await ProductService.recordMovement(conn, companyId, product.id, 'in', item.quantity, purchaseId, null);
             }
 

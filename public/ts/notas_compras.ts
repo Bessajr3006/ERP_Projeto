@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         importPurchasesXmlModalFileName: document.getElementById('importPurchasesXmlModalFileName'),
         importPurchasesXmlBankAccount: document.getElementById('importPurchasesXmlBankAccount'),
         importPurchasesXmlCategory: document.getElementById('importPurchasesXmlCategory'),
+        importPurchasesXmlResetStock: document.getElementById('importPurchasesXmlResetStock') as HTMLInputElement | null,
     };
 
     // --- Helpers ---
@@ -1236,6 +1237,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function openImportModal() {
+        if (els.importPurchasesXmlResetStock) {
+            els.importPurchasesXmlResetStock.checked = false;
+        }
         els.importPurchasesXmlModal.classList.remove('hidden');
         els.importPurchasesXmlModal.classList.add('flex');
     }
@@ -1300,6 +1304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let importedItemsTotal = 0;
             let unmatchedTotal = 0;
             const failedReasons: string[] = [];
+            const resetStock = Boolean(els.importPurchasesXmlResetStock?.checked);
 
             for (const file of state.selectedXmlFiles) {
                 try {
@@ -1308,6 +1313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         xml_content: xmlContent,
                         bank_account_public_id: els.importPurchasesXmlBankAccount.value || null,
                         category_public_id: els.importPurchasesXmlCategory.value || null,
+                        reset_stock: resetStock,
                     });
 
                     successCount += 1;

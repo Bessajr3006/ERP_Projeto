@@ -56,7 +56,7 @@ export class PurchaseService {
     static async importPurchaseFromXml(
         companyId: number,
         userPublicId: string,
-        data: { xml_content: string; bank_account_public_id?: string | null | undefined; category_public_id?: string | null | undefined }
+        data: { xml_content: string; bank_account_public_id?: string | null | undefined; category_public_id?: string | null | undefined; reset_stock?: boolean | null | undefined }
     ): Promise<{ purchase: PurchaseOrder; imported_items: number; unmatched_items: any[] }> {
         const xmlContent = String(data.xml_content || '').trim();
         if (!xmlContent) {
@@ -101,7 +101,7 @@ export class PurchaseService {
 
         // Match or create products
         const allProducts = await ProductRepository.listByCompany(companyId);
-        const matchedItems: Array<{ product_public_id: string; quantity: number; unit_price: number }> = [];
+        const matchedItems: Array<{ product_public_id: string; quantity: number; unit_price: number; reset_stock?: boolean }> = [];
         const unmatchedItems: any[] = [];
 
         for (const item of parsedItems) {
@@ -113,7 +113,8 @@ export class PurchaseService {
             matchedItems.push({
                 product_public_id: product.public_id,
                 quantity: item.quantity,
-                unit_price: item.unitPrice > 0 ? item.unitPrice : Number(product.cost_price || 0)
+                unit_price: item.unitPrice > 0 ? item.unitPrice : Number(product.cost_price || 0),
+                reset_stock: Boolean(data.reset_stock)
             });
         }
 

@@ -18,7 +18,8 @@ const itemSchema = z.object({
 const purchaseItemSchema = z.object({
     product_public_id: z.string().uuid('Invalid product ID'),
     quantity: z.coerce.number().positive(),
-    unit_price: z.coerce.number().min(0)
+    unit_price: z.coerce.number().min(0),
+    reset_stock: z.boolean().optional().nullable()
 });
 
 const createPurchaseSchema = z.object({

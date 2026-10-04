@@ -317,10 +317,18 @@
         const unitPrice = parseFloat(pPrice.value);
         if (!product)
             return;
+        let resetStock = false;
+        const currentStockNum = Number(product.current_stock || 0);
+        if (currentStockNum !== 0) {
+            const formattedStock = currentStockNum.toLocaleString('pt-BR');
+            resetStock = confirm(`O produto "${product.name}" possui estoque atual de ${formattedStock} un.\n\nDeseja ZERAR o estoque anterior antes de dar entrada desta compra?\n\n[OK] = Sim, zerar estoque anterior e somar esta compra (${qty} un)\n[Cancelar] = Não, apenas somar ${qty} un ao estoque atual`);
+        }
         const existingIndex = g_cart.findIndex((i) => i.product_public_id === product.public_id);
         if (existingIndex > -1) {
             g_cart[existingIndex].quantity += qty;
             g_cart[existingIndex].unit_price = unitPrice;
+            if (resetStock)
+                g_cart[existingIndex].reset_stock = true;
         }
         else {
             g_cart.push({
@@ -328,6 +336,7 @@
                 name: product.name,
                 quantity: qty,
                 unit_price: unitPrice,
+                reset_stock: resetStock,
             });
         }
         renderCart();
@@ -453,10 +462,14 @@
             .map((item, index) => {
             const itemTotal = item.quantity * item.unit_price;
             total += itemTotal;
+            const resetBadge = item.reset_stock
+                ? `<span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" title="O estoque anterior será zerado antes de creditar esta compra">Zerar saldo anterior</span>`
+                : '';
             return `
             <li class="py-2 flex justify-between items-center text-sm">
-                <div class="text-gray-900 dark:text-gray-100">
+                <div class="text-gray-900 dark:text-gray-100 flex items-center flex-wrap">
                     <span class="font-bold text-gray-800 dark:text-gray-300 mr-1">${item.quantity}x</span>${item.name}
+                    ${resetBadge}
                 </div>
                 <div class="flex items-center space-x-3">
                     <span class="text-gray-600 dark:text-gray-400 font-medium">${formatCurrency(itemTotal)}</span>
@@ -483,6 +496,7 @@
                 product_public_id: i.product_public_id,
                 quantity: i.quantity,
                 unit_price: parseFloat(i.unit_price),
+                reset_stock: Boolean(i.reset_stock),
             })),
         };
         if (saveBtn) {

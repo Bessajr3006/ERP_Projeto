@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Notas de Compras</title>
-    <link href="/css/style.css?v=20261004014948" rel="stylesheet">
+    <link href="/css/style.css?v=20261004204723" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261004014948"></script>
+    <script src="/js/pwa.js?v=20261004204723"></script>
 </head>
 <body data-required-module="notas_compras" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
     <div id="app-navbar"></div>
@@ -337,6 +337,16 @@
                             <option value="">Automático (categoria de compras)</option>
                         </select>
                     </div>
+
+                    <div class="pt-2 border-t border-gray-100 dark:border-slate-700">
+                        <label class="relative flex items-start gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="importPurchasesXmlResetStock" class="mt-0.5 rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-900">
+                            <div class="text-xs">
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">Zerar estoque anterior dos produtos</span>
+                                <p class="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">Se marcado, o saldo anterior dos produtos desta nota será zerado antes de somar as quantidades importadas.</p>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="px-4 py-3 border-t border-gray-200 dark:border-slate-700 flex items-center justify-end gap-2">
@@ -378,10 +388,10 @@
         </div>
     </main>
 
-    <script src="/js/api.js?v=20261004014948"></script>
-    <script src="/js/notas_compras.js?v=20261004014948"></script>
-    <script src="/js/components/navbar.js?v=20261004014948"></script>
+    <script src="/js/api.js?v=20261004204723"></script>
+    <script src="/js/notas_compras.js?v=20261004204723"></script>
+    <script src="/js/components/navbar.js?v=20261004204723"></script>
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261004014948"></script>
+    <script src="/js/components/footer.js?v=20261004204723"></script>
 </body>
 </html>

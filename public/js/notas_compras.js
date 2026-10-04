@@ -81,6 +81,7 @@
             importPurchasesXmlModalFileName: document.getElementById('importPurchasesXmlModalFileName'),
             importPurchasesXmlBankAccount: document.getElementById('importPurchasesXmlBankAccount'),
             importPurchasesXmlCategory: document.getElementById('importPurchasesXmlCategory'),
+            importPurchasesXmlResetStock: document.getElementById('importPurchasesXmlResetStock'),
         };
         // --- Helpers ---
         const formatCurrency = value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
@@ -1241,6 +1242,9 @@
             }
         }
         function openImportModal() {
+            if (els.importPurchasesXmlResetStock) {
+                els.importPurchasesXmlResetStock.checked = false;
+            }
             els.importPurchasesXmlModal.classList.remove('hidden');
             els.importPurchasesXmlModal.classList.add('flex');
         }
@@ -1300,6 +1304,7 @@
                 let importedItemsTotal = 0;
                 let unmatchedTotal = 0;
                 const failedReasons = [];
+                const resetStock = Boolean(els.importPurchasesXmlResetStock?.checked);
                 for (const file of state.selectedXmlFiles) {
                     try {
                         const xmlContent = await file.text();
@@ -1307,6 +1312,7 @@
                             xml_content: xmlContent,
                             bank_account_public_id: els.importPurchasesXmlBankAccount.value || null,
                             category_public_id: els.importPurchasesXmlCategory.value || null,
+                            reset_stock: resetStock,
                         });
                         successCount += 1;
                         importedItemsTotal += Number(response?.data?.imported_items || 0);

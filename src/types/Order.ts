@@ -29,6 +29,7 @@ export interface CreatePurchaseItemData {
     product_public_id: string;
     quantity: number;
     unit_price: number;
+    reset_stock?: boolean | null | undefined;
 }
 
 export interface CreatePurchaseData {

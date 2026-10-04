@@ -6,7 +6,8 @@ import { UserPayload } from '../types/express';
 const itemSchema = z.object({
     product_public_id: z.string().uuid('Invalid product ID'),
     quantity: z.coerce.number().positive(),
-    unit_price: z.coerce.number().min(0)
+    unit_price: z.coerce.number().min(0),
+    reset_stock: z.boolean().optional().nullable()
 });
 
 const createPurchaseSchema = z.object({
@@ -97,6 +98,7 @@ export class PurchaseController {
                 xml_content: z.string().min(1, 'Conteúdo XML é obrigatório'),
                 bank_account_public_id: z.string().uuid().optional().nullable(),
                 category_public_id: z.string().uuid().optional().nullable(),
+                reset_stock: z.boolean().optional().nullable(),
             });
 
             const validatedData = importPurchaseXmlSchema.parse(req.body);

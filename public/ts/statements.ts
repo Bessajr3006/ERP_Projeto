@@ -480,13 +480,32 @@
     }
   }
 
-  function populateCreateModalCategories(type: 'expense' | 'revenue'): void {
+  function populateCreateModalCategoryTypes(): void {
+    const sel = getById('stmtCreateCategoryType') as HTMLSelectElement | null;
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">Todos os tipos</option>' +
+      categoryTypesData.map((t: any) => `<option value="${t.public_id}">${t.name}</option>`).join('');
+    if (prev && categoryTypesData.some((t: any) => t.public_id === prev)) {
+      sel.value = prev;
+    }
+  }
+
+  function populateCreateModalCategories(type: 'expense' | 'revenue', categoryTypePublicId?: string | null): void {
     const selCat = getById('stmtCreateCategory') as HTMLSelectElement | null;
     if (!selCat) return;
+    const prevVal = selCat.value;
     const targetType = type === 'expense' ? 'expense' : 'income';
+
+    const selectedType = categoryTypePublicId !== undefined ? categoryTypePublicId : (getById('stmtCreateCategoryType') as HTMLSelectElement | null)?.value;
+
     const filtered = categoriesData.filter((c: any) => {
-      if (!c.type || c.type === 'both') return true;
-      return c.type === targetType || c.type === type;
+      const matchesType = !c.type || c.type === 'both' || c.type === targetType || c.type === type;
+      if (!matchesType) return false;
+      if (selectedType && c.finance_category_type_public_id !== selectedType) {
+        return false;
+      }
+      return true;
     });
 
     selCat.innerHTML = '<option value="">Selecione a categoria...</option>';
@@ -495,7 +514,9 @@
       selCat.innerHTML += `<option value="${c.public_id}">${c.name}${typeSuffix}</option>`;
     });
 
-    if (filtered.length === 1) {
+    if (prevVal && filtered.some((c: any) => c.public_id === prevVal)) {
+      selCat.value = prevVal;
+    } else if (filtered.length === 1) {
       selCat.value = filtered[0].public_id;
     }
   }
@@ -592,7 +613,10 @@
       }
     }
 
-    populateCreateModalCategories(initialType);
+    populateCreateModalCategoryTypes();
+    const selCatType = getById('stmtCreateCategoryType') as HTMLSelectElement | null;
+    if (selCatType) selCatType.value = '';
+    populateCreateModalCategories(initialType, '');
 
     const paySelect = getById('stmtCreatePaymentMethod') as HTMLSelectElement | null;
     if (paySelect) {
@@ -654,13 +678,32 @@
 
   // ─── Modais de Edição e Exclusão do Sistema ───────────────────────────────────
 
-  function populateEditModalCategories(type: 'expense' | 'revenue'): void {
+  function populateEditModalCategoryTypes(): void {
+    const sel = getById('editStmtCategoryType') as HTMLSelectElement | null;
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">Todos os tipos</option>' +
+      categoryTypesData.map((t: any) => `<option value="${t.public_id}">${t.name}</option>`).join('');
+    if (prev && categoryTypesData.some((t: any) => t.public_id === prev)) {
+      sel.value = prev;
+    }
+  }
+
+  function populateEditModalCategories(type: 'expense' | 'revenue', categoryTypePublicId?: string | null): void {
     const selCat = getById('editStmtCategory') as HTMLSelectElement | null;
     if (!selCat) return;
+    const prevVal = selCat.value;
     const targetType = type === 'expense' ? 'expense' : 'income';
+
+    const selectedType = categoryTypePublicId !== undefined ? categoryTypePublicId : (getById('editStmtCategoryType') as HTMLSelectElement | null)?.value;
+
     const filtered = categoriesData.filter((c: any) => {
-      if (!c.type || c.type === 'both') return true;
-      return c.type === targetType || c.type === type;
+      const matchesType = !c.type || c.type === 'both' || c.type === targetType || c.type === type;
+      if (!matchesType) return false;
+      if (selectedType && c.finance_category_type_public_id !== selectedType) {
+        return false;
+      }
+      return true;
     });
 
     selCat.innerHTML = '<option value="">Selecione a categoria...</option>';
@@ -668,6 +711,10 @@
       const typeSuffix = c.finance_category_type_name ? ` (${c.finance_category_type_name})` : '';
       selCat.innerHTML += `<option value="${c.public_id}">${c.name}${typeSuffix}</option>`;
     });
+
+    if (prevVal && filtered.some((c: any) => c.public_id === prevVal)) {
+      selCat.value = prevVal;
+    }
   }
 
   function populateEditModalBanks(): void {
@@ -732,7 +779,14 @@
       bankSelect.value = stmt.bank_account_public_id || '';
     }
 
-    populateEditModalCategories(stmt.type);
+    populateEditModalCategoryTypes();
+    const editCatObj = categoriesData.find((c: any) => c.public_id === stmt.category_public_id);
+    const editCatTypeSelect = getById('editStmtCategoryType') as HTMLSelectElement | null;
+    if (editCatTypeSelect) {
+      editCatTypeSelect.value = editCatObj?.finance_category_type_public_id || '';
+    }
+
+    populateEditModalCategories(stmt.type, editCatTypeSelect?.value || '');
     if (catSelect) {
       catSelect.value = stmt.category_public_id || '';
     }
@@ -1605,10 +1659,16 @@
         const catRes = await (api as any)('/finance/categories');
         categoriesData = catRes.data || [];
 
+        populateCreateModalCategoryTypes();
+        const stmtCatTypeSelect = getById('stmtCreateCategoryType') as HTMLSelectElement | null;
+        if (stmtCatTypeSelect && finance_category_type_public_id) {
+          stmtCatTypeSelect.value = finance_category_type_public_id;
+        }
+
         // Atualiza o select de categorias no modal de lançamento
         const isRevenue = (getById('stmtTypeRevenue') as HTMLInputElement | null)?.checked;
         const activeType: 'expense' | 'revenue' = isRevenue ? 'revenue' : 'expense';
-        populateCreateModalCategories(activeType);
+        populateCreateModalCategories(activeType, stmtCatTypeSelect?.value || '');
 
         // Seleciona automaticamente a categoria recém criada
         const stmtCatSelect = getById('stmtCreateCategory') as HTMLSelectElement | null;
@@ -1629,13 +1689,48 @@
       }
     });
 
+    getById('stmtCreateCategoryType')?.addEventListener('change', () => {
+      const isRevenue = (getById('stmtTypeRevenue') as HTMLInputElement | null)?.checked;
+      const activeType: 'expense' | 'revenue' = isRevenue ? 'revenue' : 'expense';
+      const typeVal = (getById('stmtCreateCategoryType') as HTMLSelectElement | null)?.value || '';
+      populateCreateModalCategories(activeType, typeVal);
+    });
+
+    getById('stmtCreateCategory')?.addEventListener('change', () => {
+      const catPublicId = (getById('stmtCreateCategory') as HTMLSelectElement | null)?.value;
+      if (!catPublicId) return;
+      const catObj = categoriesData.find((c: any) => c.public_id === catPublicId);
+      const catTypeSelect = getById('stmtCreateCategoryType') as HTMLSelectElement | null;
+      if (catObj && catTypeSelect && !catTypeSelect.value && catObj.finance_category_type_public_id) {
+        catTypeSelect.value = catObj.finance_category_type_public_id;
+      }
+    });
+
     getById('stmtTypeExpense')?.addEventListener('change', () => {
-      populateCreateModalCategories('expense');
+      const typeVal = (getById('stmtCreateCategoryType') as HTMLSelectElement | null)?.value || '';
+      populateCreateModalCategories('expense', typeVal);
       updateModalTypeVisuals('expense');
     });
     getById('stmtTypeRevenue')?.addEventListener('change', () => {
-      populateCreateModalCategories('revenue');
+      const typeVal = (getById('stmtCreateCategoryType') as HTMLSelectElement | null)?.value || '';
+      populateCreateModalCategories('revenue', typeVal);
       updateModalTypeVisuals('revenue');
+    });
+
+    getById('editStmtCategoryType')?.addEventListener('change', () => {
+      const typeInput = (getById('editStmtType') as HTMLInputElement | null)?.value as 'expense' | 'revenue' || 'expense';
+      const typeVal = (getById('editStmtCategoryType') as HTMLSelectElement | null)?.value || '';
+      populateEditModalCategories(typeInput, typeVal);
+    });
+
+    getById('editStmtCategory')?.addEventListener('change', () => {
+      const catPublicId = (getById('editStmtCategory') as HTMLSelectElement | null)?.value;
+      if (!catPublicId) return;
+      const catObj = categoriesData.find((c: any) => c.public_id === catPublicId);
+      const catTypeSelect = getById('editStmtCategoryType') as HTMLSelectElement | null;
+      if (catObj && catTypeSelect && !catTypeSelect.value && catObj.finance_category_type_public_id) {
+        catTypeSelect.value = catObj.finance_category_type_public_id;
+      }
     });
 
     const stmtAmountInput = getById('stmtCreateAmount') as HTMLInputElement | null;

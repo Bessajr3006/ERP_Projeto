@@ -426,22 +426,42 @@
             selBank.value = banksData[0].public_id;
         }
     }
-    function populateCreateModalCategories(type) {
+    function populateCreateModalCategoryTypes() {
+        const sel = getById('stmtCreateCategoryType');
+        if (!sel)
+            return;
+        const prev = sel.value;
+        sel.innerHTML = '<option value="">Todos os tipos</option>' +
+            categoryTypesData.map((t) => `<option value="${t.public_id}">${t.name}</option>`).join('');
+        if (prev && categoryTypesData.some((t) => t.public_id === prev)) {
+            sel.value = prev;
+        }
+    }
+    function populateCreateModalCategories(type, categoryTypePublicId) {
         const selCat = getById('stmtCreateCategory');
         if (!selCat)
             return;
+        const prevVal = selCat.value;
         const targetType = type === 'expense' ? 'expense' : 'income';
+        const selectedType = categoryTypePublicId !== undefined ? categoryTypePublicId : getById('stmtCreateCategoryType')?.value;
         const filtered = categoriesData.filter((c) => {
-            if (!c.type || c.type === 'both')
-                return true;
-            return c.type === targetType || c.type === type;
+            const matchesType = !c.type || c.type === 'both' || c.type === targetType || c.type === type;
+            if (!matchesType)
+                return false;
+            if (selectedType && c.finance_category_type_public_id !== selectedType) {
+                return false;
+            }
+            return true;
         });
         selCat.innerHTML = '<option value="">Selecione a categoria...</option>';
         filtered.forEach((c) => {
             const typeSuffix = c.finance_category_type_name ? ` (${c.finance_category_type_name})` : '';
             selCat.innerHTML += `<option value="${c.public_id}">${c.name}${typeSuffix}</option>`;
         });
-        if (filtered.length === 1) {
+        if (prevVal && filtered.some((c) => c.public_id === prevVal)) {
+            selCat.value = prevVal;
+        }
+        else if (filtered.length === 1) {
             selCat.value = filtered[0].public_id;
         }
     }
@@ -526,7 +546,11 @@
                 bankSelect.value = banksData[0].public_id;
             }
         }
-        populateCreateModalCategories(initialType);
+        populateCreateModalCategoryTypes();
+        const selCatType = getById('stmtCreateCategoryType');
+        if (selCatType)
+            selCatType.value = '';
+        populateCreateModalCategories(initialType, '');
         const paySelect = getById('stmtCreatePaymentMethod');
         if (paySelect) {
             const descLower = (stmt.description || '').toLowerCase();
@@ -586,21 +610,41 @@
             modal.classList.add('hidden');
     }
     // ─── Modais de Edição e Exclusão do Sistema ───────────────────────────────────
-    function populateEditModalCategories(type) {
+    function populateEditModalCategoryTypes() {
+        const sel = getById('editStmtCategoryType');
+        if (!sel)
+            return;
+        const prev = sel.value;
+        sel.innerHTML = '<option value="">Todos os tipos</option>' +
+            categoryTypesData.map((t) => `<option value="${t.public_id}">${t.name}</option>`).join('');
+        if (prev && categoryTypesData.some((t) => t.public_id === prev)) {
+            sel.value = prev;
+        }
+    }
+    function populateEditModalCategories(type, categoryTypePublicId) {
         const selCat = getById('editStmtCategory');
         if (!selCat)
             return;
+        const prevVal = selCat.value;
         const targetType = type === 'expense' ? 'expense' : 'income';
+        const selectedType = categoryTypePublicId !== undefined ? categoryTypePublicId : getById('editStmtCategoryType')?.value;
         const filtered = categoriesData.filter((c) => {
-            if (!c.type || c.type === 'both')
-                return true;
-            return c.type === targetType || c.type === type;
+            const matchesType = !c.type || c.type === 'both' || c.type === targetType || c.type === type;
+            if (!matchesType)
+                return false;
+            if (selectedType && c.finance_category_type_public_id !== selectedType) {
+                return false;
+            }
+            return true;
         });
         selCat.innerHTML = '<option value="">Selecione a categoria...</option>';
         filtered.forEach((c) => {
             const typeSuffix = c.finance_category_type_name ? ` (${c.finance_category_type_name})` : '';
             selCat.innerHTML += `<option value="${c.public_id}">${c.name}${typeSuffix}</option>`;
         });
+        if (prevVal && filtered.some((c) => c.public_id === prevVal)) {
+            selCat.value = prevVal;
+        }
     }
     function populateEditModalBanks() {
         const selBank = getById('editStmtBank');
@@ -663,7 +707,13 @@
         if (bankSelect) {
             bankSelect.value = stmt.bank_account_public_id || '';
         }
-        populateEditModalCategories(stmt.type);
+        populateEditModalCategoryTypes();
+        const editCatObj = categoriesData.find((c) => c.public_id === stmt.category_public_id);
+        const editCatTypeSelect = getById('editStmtCategoryType');
+        if (editCatTypeSelect) {
+            editCatTypeSelect.value = editCatObj?.finance_category_type_public_id || '';
+        }
+        populateEditModalCategories(stmt.type, editCatTypeSelect?.value || '');
         if (catSelect) {
             catSelect.value = stmt.category_public_id || '';
         }
@@ -1468,10 +1518,15 @@
                 // Recarrega lista completa de categorias
                 const catRes = await api('/finance/categories');
                 categoriesData = catRes.data || [];
+                populateCreateModalCategoryTypes();
+                const stmtCatTypeSelect = getById('stmtCreateCategoryType');
+                if (stmtCatTypeSelect && finance_category_type_public_id) {
+                    stmtCatTypeSelect.value = finance_category_type_public_id;
+                }
                 // Atualiza o select de categorias no modal de lançamento
                 const isRevenue = getById('stmtTypeRevenue')?.checked;
                 const activeType = isRevenue ? 'revenue' : 'expense';
-                populateCreateModalCategories(activeType);
+                populateCreateModalCategories(activeType, stmtCatTypeSelect?.value || '');
                 // Seleciona automaticamente a categoria recém criada
                 const stmtCatSelect = getById('stmtCreateCategory');
                 if (stmtCatSelect && createdCategory?.public_id) {
@@ -1491,13 +1546,46 @@
                 }
             }
         });
+        getById('stmtCreateCategoryType')?.addEventListener('change', () => {
+            const isRevenue = getById('stmtTypeRevenue')?.checked;
+            const activeType = isRevenue ? 'revenue' : 'expense';
+            const typeVal = getById('stmtCreateCategoryType')?.value || '';
+            populateCreateModalCategories(activeType, typeVal);
+        });
+        getById('stmtCreateCategory')?.addEventListener('change', () => {
+            const catPublicId = getById('stmtCreateCategory')?.value;
+            if (!catPublicId)
+                return;
+            const catObj = categoriesData.find((c) => c.public_id === catPublicId);
+            const catTypeSelect = getById('stmtCreateCategoryType');
+            if (catObj && catTypeSelect && !catTypeSelect.value && catObj.finance_category_type_public_id) {
+                catTypeSelect.value = catObj.finance_category_type_public_id;
+            }
+        });
         getById('stmtTypeExpense')?.addEventListener('change', () => {
-            populateCreateModalCategories('expense');
+            const typeVal = getById('stmtCreateCategoryType')?.value || '';
+            populateCreateModalCategories('expense', typeVal);
             updateModalTypeVisuals('expense');
         });
         getById('stmtTypeRevenue')?.addEventListener('change', () => {
-            populateCreateModalCategories('revenue');
+            const typeVal = getById('stmtCreateCategoryType')?.value || '';
+            populateCreateModalCategories('revenue', typeVal);
             updateModalTypeVisuals('revenue');
+        });
+        getById('editStmtCategoryType')?.addEventListener('change', () => {
+            const typeInput = getById('editStmtType')?.value || 'expense';
+            const typeVal = getById('editStmtCategoryType')?.value || '';
+            populateEditModalCategories(typeInput, typeVal);
+        });
+        getById('editStmtCategory')?.addEventListener('change', () => {
+            const catPublicId = getById('editStmtCategory')?.value;
+            if (!catPublicId)
+                return;
+            const catObj = categoriesData.find((c) => c.public_id === catPublicId);
+            const catTypeSelect = getById('editStmtCategoryType');
+            if (catObj && catTypeSelect && !catTypeSelect.value && catObj.finance_category_type_public_id) {
+                catTypeSelect.value = catObj.finance_category_type_public_id;
+            }
         });
         const stmtAmountInput = getById('stmtCreateAmount');
         if (stmtAmountInput) {

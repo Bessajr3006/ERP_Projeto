@@ -90,8 +90,10 @@
         const sysInBox = getById('sysSelectionInBox');
         const sysOutBox = getById('sysSelectionOutBox');
         if (sysChecked > 0) {
-            if (sysBar)
+            if (sysBar) {
                 sysBar.classList.remove('hidden');
+                sysBar.classList.add('flex');
+            }
             if (sysHeaderBadge) {
                 sysHeaderBadge.classList.remove('hidden');
                 sysHeaderBadge.textContent = `${sysChecked} sel. · ${formatCurrency(sysSum)}`;
@@ -126,8 +128,10 @@
             }
         }
         else {
-            if (sysBar)
+            if (sysBar) {
                 sysBar.classList.add('hidden');
+                sysBar.classList.remove('flex');
+            }
             if (sysHeaderBadge)
                 sysHeaderBadge.classList.add('hidden');
         }
@@ -154,8 +158,10 @@
         const bankInBox = getById('bankSelectionInBox');
         const bankOutBox = getById('bankSelectionOutBox');
         if (bankChecked > 0) {
-            if (bankBar)
+            if (bankBar) {
                 bankBar.classList.remove('hidden');
+                bankBar.classList.add('flex');
+            }
             if (bankHeaderBadge) {
                 bankHeaderBadge.classList.remove('hidden');
                 bankHeaderBadge.textContent = `${bankChecked} sel. · ${formatCurrency(bankSum)}`;
@@ -190,8 +196,10 @@
             }
         }
         else {
-            if (bankBar)
+            if (bankBar) {
                 bankBar.classList.add('hidden');
+                bankBar.classList.remove('flex');
+            }
             if (bankHeaderBadge)
                 bankHeaderBadge.classList.add('hidden');
         }

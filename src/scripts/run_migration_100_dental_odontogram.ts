@@ -1,27 +1,22 @@
 import pool from '../config/db';
 import logger from '../config/logger';
 
-async function tableExists(tableName: string): Promise<boolean> {
-    const [rows] = await pool.query<any[]>(
-        `SELECT COUNT(*) AS count
-         FROM INFORMATION_SCHEMA.TABLES
-         WHERE TABLE_SCHEMA = DATABASE()
-           AND TABLE_NAME = ?`,
-        [tableName]
-    );
-    return Array.isArray(rows) && rows[0] && Number(rows[0].count) > 0;
+async function tableExists(conn: any, tableName: string): Promise<boolean> {
+    try {
+        const [rows]: any = await conn.query(`SHOW TABLES LIKE ?`, [tableName]);
+        return Array.isArray(rows) && rows.length > 0;
+    } catch {
+        return false;
+    }
 }
 
-async function columnExists(tableName: string, columnName: string): Promise<boolean> {
-    const [rows] = await pool.query<any[]>(
-        `SELECT COUNT(*) AS count
-         FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = DATABASE()
-           AND TABLE_NAME = ?
-           AND COLUMN_NAME = ?`,
-        [tableName, columnName]
-    );
-    return Array.isArray(rows) && rows[0] && Number(rows[0].count) > 0;
+async function columnExists(conn: any, tableName: string, columnName: string): Promise<boolean> {
+    try {
+        const [rows]: any = await conn.query(`SHOW COLUMNS FROM \`${tableName}\` LIKE ?`, [columnName]);
+        return Array.isArray(rows) && rows.length > 0;
+    } catch {
+        return false;
+    }
 }
 
 export async function runMigration100DentalOdontogram(): Promise<void> {
@@ -114,35 +109,47 @@ export async function runMigration100DentalOdontogram(): Promise<void> {
         `);
 
         // 4. ALTER sales_items.description VARCHAR(255) NULL
-        if (await tableExists('sales_items')) {
-            const hasDesc = await columnExists('sales_items', 'description');
+        if (await tableExists(conn, 'sales_items')) {
+            const hasDesc = await columnExists(conn, 'sales_items', 'description');
             if (!hasDesc) {
-                await conn.query(`
-                    ALTER TABLE sales_items
-                    ADD COLUMN description VARCHAR(255) NULL DEFAULT NULL AFTER service_id;
-                `);
-                logger.info('[OK] Added description column to sales_items');
+                try {
+                    await conn.query(`
+                        ALTER TABLE sales_items
+                        ADD COLUMN description VARCHAR(255) NULL DEFAULT NULL AFTER service_id;
+                    `);
+                    logger.info('[OK] Added description column to sales_items');
+                } catch (e: any) {
+                    if (e.code !== 'ER_DUP_FIELDNAME' && e.errno !== 1060) throw e;
+                }
             }
         }
 
         // 5. ALTER transactions.installment_number and installment_count
-        if (await tableExists('transactions')) {
-            const hasInstNum = await columnExists('transactions', 'installment_number');
+        if (await tableExists(conn, 'transactions')) {
+            const hasInstNum = await columnExists(conn, 'transactions', 'installment_number');
             if (!hasInstNum) {
-                await conn.query(`
-                    ALTER TABLE transactions
-                    ADD COLUMN installment_number INT NULL DEFAULT NULL AFTER payment_method;
-                `);
-                logger.info('[OK] Added installment_number column to transactions');
+                try {
+                    await conn.query(`
+                        ALTER TABLE transactions
+                        ADD COLUMN installment_number INT NULL DEFAULT NULL AFTER payment_method;
+                    `);
+                    logger.info('[OK] Added installment_number column to transactions');
+                } catch (e: any) {
+                    if (e.code !== 'ER_DUP_FIELDNAME' && e.errno !== 1060) throw e;
+                }
             }
 
-            const hasInstCount = await columnExists('transactions', 'installment_count');
+            const hasInstCount = await columnExists(conn, 'transactions', 'installment_count');
             if (!hasInstCount) {
-                await conn.query(`
-                    ALTER TABLE transactions
-                    ADD COLUMN installment_count INT NULL DEFAULT NULL AFTER installment_number;
-                `);
-                logger.info('[OK] Added installment_count column to transactions');
+                try {
+                    await conn.query(`
+                        ALTER TABLE transactions
+                        ADD COLUMN installment_count INT NULL DEFAULT NULL AFTER installment_number;
+                    `);
+                    logger.info('[OK] Added installment_count column to transactions');
+                } catch (e: any) {
+                    if (e.code !== 'ER_DUP_FIELDNAME' && e.errno !== 1060) throw e;
+                }
             }
         }
 

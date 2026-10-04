@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Extrato</title>
-    <link href="/css/style.css?v=20261003215407" rel="stylesheet">
+    <link href="/css/style.css?v=20261003220636" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261003215407"></script>
+    <script src="/js/pwa.js?v=20261003220636"></script>
 </head>
 
 <body class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -27,6 +27,7 @@
                         Lançamentos do Sistema
                     </h3>
                     <div class="flex items-center gap-2">
+                        <span id="sysSelectionHeaderBadge" class="hidden text-xs font-semibold px-2 py-0.5 rounded-md bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700">0 sel. · R$ 0,00</span>
                         <span class="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 border border-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:border-brand-800 px-2 py-0.5 rounded-md">ERP</span>
                     </div>
                 </div>
@@ -150,23 +151,47 @@
                 <div id="statementsGridSection" class="hidden flex-col flex-1 min-h-0">
                     <div id="statementsGridContainer" class="overflow-y-auto flex-1 min-h-0 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 content-start"></div>
                 </div>
-                <div id="statementsFooter" class="shrink-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
-                    <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0">
-                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg>
-                        <span id="footerCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span> mov(s)
-                    </span>
-                    <div class="grid grid-cols-3 gap-2 w-full">
-                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
-                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Entradas</span>
-                            <span id="footerTotalIn" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                <div id="statementsFooter" class="shrink-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-2.5">
+                    <!-- Barra de Seleção Sistema (Visível quando há itens selecionados) -->
+                    <div id="sysSelectionBar" class="hidden w-full bg-brand-50/90 dark:bg-brand-950/50 border border-brand-200/90 dark:border-brand-800/70 rounded-lg px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2 shadow-xs transition-all">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-bold bg-brand-600 text-white shadow-xs" id="sysSelectionCount">0</span>
+                            <span class="font-bold text-brand-900 dark:text-brand-200 text-xs">Lançamento(s) Selecionado(s)</span>
                         </div>
-                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
-                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saídas</span>
-                            <span id="footerTotalOut" class="mt-0.5 block text-xs font-bold text-red-600 dark:text-red-400">R$ 0,00</span>
+                        <div class="flex items-center gap-3 text-xs">
+                            <div id="sysSelectionInBox" class="hidden items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Entradas:</span>
+                                <span id="sysSelectionIn">R$ 0,00</span>
+                            </div>
+                            <div id="sysSelectionOutBox" class="hidden items-center gap-1 text-red-600 dark:text-red-400 font-semibold">
+                                <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Saídas:</span>
+                                <span id="sysSelectionOut">R$ 0,00</span>
+                            </div>
+                            <div class="flex items-center gap-1 pl-2 border-l border-brand-200 dark:border-brand-800">
+                                <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Total Selecionado:</span>
+                                <span id="sysSelectionTotal" class="font-extrabold text-brand-700 dark:text-brand-300 text-xs">R$ 0,00</span>
+                            </div>
                         </div>
-                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
-                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saldo</span>
-                            <span id="footerBalance" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                    </div>
+
+                    <div class="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+                        <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg>
+                            <span id="footerCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span> mov(s)
+                        </span>
+                        <div class="grid grid-cols-3 gap-2 w-full">
+                            <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                                <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Entradas</span>
+                                <span id="footerTotalIn" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                            </div>
+                            <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                                <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saídas</span>
+                                <span id="footerTotalOut" class="mt-0.5 block text-xs font-bold text-red-600 dark:text-red-400">R$ 0,00</span>
+                            </div>
+                            <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                                <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saldo</span>
+                                <span id="footerBalance" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -181,6 +206,7 @@
                         Extrato do Banco
                     </h3>
                     <div class="flex items-center gap-2">
+                        <span id="bankSelectionHeaderBadge" class="hidden text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700">0 sel. · R$ 0,00</span>
                         <div class="relative inline-block text-left" id="bankApiDropdownContainer">
                             <button id="btnBankActionsToggle" type="button" class="flex items-center justify-center p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors" title="Opções do Extrato">
                                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -365,23 +391,47 @@
                 </div>
 
                 <!-- Footer OFX -->
-                <div id="statementsBankFooter" class="shrink-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
-                    <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0">
-                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg>
-                        <span id="footerBankCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span> mov(s)
-                    </span>
-                    <div class="grid grid-cols-3 gap-2 w-full">
-                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
-                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Entradas</span>
-                            <span id="footerBankTotalIn" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                <div id="statementsBankFooter" class="shrink-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-col gap-2.5">
+                    <!-- Barra de Seleção Banco (Visível quando há itens selecionados) -->
+                    <div id="bankSelectionBar" class="hidden w-full bg-emerald-50/90 dark:bg-emerald-950/50 border border-emerald-200/90 dark:border-emerald-800/70 rounded-lg px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2 shadow-xs transition-all">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white shadow-xs" id="bankSelectionCount">0</span>
+                            <span class="font-bold text-emerald-900 dark:text-emerald-200 text-xs">Extrato Selecionado(s)</span>
                         </div>
-                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
-                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saídas</span>
-                            <span id="footerBankTotalOut" class="mt-0.5 block text-xs font-bold text-red-600 dark:text-red-400">R$ 0,00</span>
+                        <div class="flex items-center gap-3 text-xs">
+                            <div id="bankSelectionInBox" class="hidden items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Entradas:</span>
+                                <span id="bankSelectionIn">R$ 0,00</span>
+                            </div>
+                            <div id="bankSelectionOutBox" class="hidden items-center gap-1 text-red-600 dark:text-red-400 font-semibold">
+                                <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Saídas:</span>
+                                <span id="bankSelectionOut">R$ 0,00</span>
+                            </div>
+                            <div class="flex items-center gap-1 pl-2 border-l border-emerald-200 dark:border-emerald-800">
+                                <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Total Selecionado:</span>
+                                <span id="bankSelectionTotal" class="font-extrabold text-emerald-700 dark:text-emerald-300 text-xs">R$ 0,00</span>
+                            </div>
                         </div>
-                        <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
-                            <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saldo</span>
-                            <span id="footerBankBalance" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                    </div>
+
+                    <div class="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+                        <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 shrink-0">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg>
+                            <span id="footerBankCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span> mov(s)
+                        </span>
+                        <div class="grid grid-cols-3 gap-2 w-full">
+                            <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                                <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Entradas</span>
+                                <span id="footerBankTotalIn" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                            </div>
+                            <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                                <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saídas</span>
+                                <span id="footerBankTotalOut" class="mt-0.5 block text-xs font-bold text-red-600 dark:text-red-400">R$ 0,00</span>
+                            </div>
+                            <div class="rounded-lg bg-gray-50 dark:bg-slate-900/40 px-2 py-1.5 text-center">
+                                <span class="block text-[10px] font-medium uppercase tracking-wide text-gray-500">Saldo</span>
+                                <span id="footerBankBalance" class="mt-0.5 block text-xs font-bold text-emerald-600 dark:text-emerald-400">R$ 0,00</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -853,14 +903,14 @@
         </div>
     </div>
 
-    <script src="/js/api.js?v=20261003215407"></script>
-    <script src="/js/filter-panel.js?v=20261003215407"></script>
-    <script src="/js/pagination.js?v=20261003215407"></script>
-    <script src="/js/statements.js?v=20261003215407"></script>
-    <script src="/js/components/navbar.js?v=20261003215407"></script>
+    <script src="/js/api.js?v=20261003220636"></script>
+    <script src="/js/filter-panel.js?v=20261003220636"></script>
+    <script src="/js/pagination.js?v=20261003220636"></script>
+    <script src="/js/statements.js?v=20261003220636"></script>
+    <script src="/js/components/navbar.js?v=20261003220636"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261003215407"></script>
+    <script src="/js/components/footer.js?v=20261003220636"></script>
 </body>
 
 </html>

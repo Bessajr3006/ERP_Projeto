@@ -78,9 +78,141 @@
   // ─── Actions Action Bar ───────────────────────────────────────────────────────
 
   function updateConciliationBar(): void {
-    const sysChecked = document.querySelectorAll('.chk-system:checked').length;
-    const bankChecked = document.querySelectorAll('.chk-bank:checked').length;
+    const sysCheckboxes = document.querySelectorAll('.chk-system:checked');
+    const bankCheckboxes = document.querySelectorAll('.chk-bank:checked');
+    const sysChecked = sysCheckboxes.length;
+    const bankChecked = bankCheckboxes.length;
 
+    // ─── 1. Atualizar Seleção Grid Sistema (ERP) ───
+    let sysIn = 0;
+    let sysOut = 0;
+    sysCheckboxes.forEach((chk: any) => {
+      const amt = parseFloat(chk.dataset.amount) || 0;
+      const type = chk.dataset.type;
+      if (type === 'revenue' || type === 'income') {
+        sysIn += amt;
+      } else {
+        sysOut += amt;
+      }
+    });
+    const sysSum = sysIn - sysOut;
+
+    const sysBar = getById('sysSelectionBar');
+    const sysHeaderBadge = getById('sysSelectionHeaderBadge');
+    const sysCountEl = getById('sysSelectionCount');
+    const sysInEl = getById('sysSelectionIn');
+    const sysOutEl = getById('sysSelectionOut');
+    const sysTotalEl = getById('sysSelectionTotal');
+    const sysInBox = getById('sysSelectionInBox');
+    const sysOutBox = getById('sysSelectionOutBox');
+
+    if (sysChecked > 0) {
+      if (sysBar) sysBar.classList.remove('hidden');
+      if (sysHeaderBadge) {
+        sysHeaderBadge.classList.remove('hidden');
+        sysHeaderBadge.textContent = `${sysChecked} sel. · ${formatCurrency(sysSum)}`;
+      }
+      if (sysCountEl) sysCountEl.textContent = String(sysChecked);
+      if (sysInEl) sysInEl.textContent = formatCurrency(sysIn);
+      if (sysOutEl) sysOutEl.textContent = formatCurrency(sysOut);
+      if (sysTotalEl) sysTotalEl.textContent = formatCurrency(sysSum);
+
+      if (sysInBox) {
+        if (sysIn > 0 && sysOut > 0) {
+          sysInBox.classList.remove('hidden');
+          sysInBox.classList.add('flex');
+        } else {
+          sysInBox.classList.add('hidden');
+          sysInBox.classList.remove('flex');
+        }
+      }
+      if (sysOutBox) {
+        if (sysIn > 0 && sysOut > 0) {
+          sysOutBox.classList.remove('hidden');
+          sysOutBox.classList.add('flex');
+        } else {
+          sysOutBox.classList.add('hidden');
+          sysOutBox.classList.remove('flex');
+        }
+      }
+    } else {
+      if (sysBar) sysBar.classList.add('hidden');
+      if (sysHeaderBadge) sysHeaderBadge.classList.add('hidden');
+    }
+
+    // ─── 2. Atualizar Seleção Grid Extrato do Banco ───
+    let bankIn = 0;
+    let bankOut = 0;
+    bankCheckboxes.forEach((chk: any) => {
+      const amt = parseFloat(chk.dataset.amount) || 0;
+      const type = chk.dataset.type;
+      if (type === 'revenue' || type === 'income') {
+        bankIn += amt;
+      } else {
+        bankOut += amt;
+      }
+    });
+    const bankSum = bankIn - bankOut;
+
+    const bankBar = getById('bankSelectionBar');
+    const bankHeaderBadge = getById('bankSelectionHeaderBadge');
+    const bankCountEl = getById('bankSelectionCount');
+    const bankInEl = getById('bankSelectionIn');
+    const bankOutEl = getById('bankSelectionOut');
+    const bankTotalEl = getById('bankSelectionTotal');
+    const bankInBox = getById('bankSelectionInBox');
+    const bankOutBox = getById('bankSelectionOutBox');
+
+    if (bankChecked > 0) {
+      if (bankBar) bankBar.classList.remove('hidden');
+      if (bankHeaderBadge) {
+        bankHeaderBadge.classList.remove('hidden');
+        bankHeaderBadge.textContent = `${bankChecked} sel. · ${formatCurrency(bankSum)}`;
+      }
+      if (bankCountEl) bankCountEl.textContent = String(bankChecked);
+      if (bankInEl) bankInEl.textContent = formatCurrency(bankIn);
+      if (bankOutEl) bankOutEl.textContent = formatCurrency(bankOut);
+      if (bankTotalEl) bankTotalEl.textContent = formatCurrency(bankSum);
+
+      if (bankInBox) {
+        if (bankIn > 0 && bankOut > 0) {
+          bankInBox.classList.remove('hidden');
+          bankInBox.classList.add('flex');
+        } else {
+          bankInBox.classList.add('hidden');
+          bankInBox.classList.remove('flex');
+        }
+      }
+      if (bankOutBox) {
+        if (bankIn > 0 && bankOut > 0) {
+          bankOutBox.classList.remove('hidden');
+          bankOutBox.classList.add('flex');
+        } else {
+          bankOutBox.classList.add('hidden');
+          bankOutBox.classList.remove('flex');
+        }
+      }
+    } else {
+      if (bankBar) bankBar.classList.add('hidden');
+      if (bankHeaderBadge) bankHeaderBadge.classList.add('hidden');
+    }
+
+    // ─── 3. Sincronizar Checkboxes Globais (Select All) ───
+    const allSysCheckboxes = document.querySelectorAll('.chk-system');
+    const chkAllSys = getById('chkAllSystem') as HTMLInputElement | null;
+    if (chkAllSys && allSysCheckboxes.length > 0) {
+      chkAllSys.checked = sysChecked === allSysCheckboxes.length;
+      chkAllSys.indeterminate = sysChecked > 0 && sysChecked < allSysCheckboxes.length;
+    }
+
+    const allBankCheckboxes = document.querySelectorAll('.chk-bank');
+    const chkAllBank = getById('chkAllBank') as HTMLInputElement | null;
+    if (chkAllBank && allBankCheckboxes.length > 0) {
+      chkAllBank.checked = bankChecked === allBankCheckboxes.length;
+      chkAllBank.indeterminate = bankChecked > 0 && bankChecked < allBankCheckboxes.length;
+    }
+
+    // ─── 4. Atualizar Barra Flutuante de Conciliação ───
     const bar = getById('conciliationActionBar');
     const btn = getById('btnConciliate');
     if (!bar || !btn) return;
@@ -95,27 +227,13 @@
 
     const sysCount = getById('concilSystemCount');
     const bankCount = getById('concilBankCount');
-    if (sysCount) sysCount.textContent = `${sysChecked} ERP`;
-    if (bankCount) bankCount.textContent = `${bankChecked} Banco`;
+    if (sysCount) sysCount.textContent = `${sysChecked} ERP (${formatCurrency(sysSum)})`;
+    if (bankCount) bankCount.textContent = `${bankChecked} Banco (${formatCurrency(bankSum)})`;
 
     getById('concilSystemDotActive')?.classList.toggle('hidden', sysChecked === 0);
     getById('concilSystemDotInactive')?.classList.toggle('hidden', sysChecked > 0);
     getById('concilBankDotActive')?.classList.toggle('hidden', bankChecked === 0);
     getById('concilBankDotInactive')?.classList.toggle('hidden', bankChecked > 0);
-
-    let sysSum = 0;
-    document.querySelectorAll('.chk-system:checked').forEach((chk: any) => {
-      const amt = parseFloat(chk.dataset.amount) || 0;
-      const type = chk.dataset.type;
-      sysSum += type === 'revenue' || type === 'income' ? amt : -amt;
-    });
-
-    let bankSum = 0;
-    document.querySelectorAll('.chk-bank:checked').forEach((chk: any) => {
-      const amt = parseFloat(chk.dataset.amount) || 0;
-      const type = chk.dataset.type;
-      bankSum += type === 'revenue' || type === 'income' ? amt : -amt;
-    });
 
     const diff = Math.abs(sysSum - bankSum);
     const isValid = sysChecked > 0 && bankChecked > 0 && diff < 0.01;
@@ -256,6 +374,7 @@
     if (items.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
             Nenhuma movimentação encontrada para os filtros selecionados.</td></tr>`;
+      updateConciliationBar();
       return;
     }
 
@@ -322,6 +441,7 @@
         </tr>`;
       })
       .join('');
+    updateConciliationBar();
   }
 
   // ─── Render: cards (grid view) ─────────────────────────────────────────────────
@@ -1272,6 +1392,7 @@
 
     if (finalStatements.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum lançamento no extrato para este período/conta.</td></tr>`;
+      updateConciliationBar();
       return;
     }
 
@@ -1333,6 +1454,7 @@
         </tr>`;
       })
       .join('');
+    updateConciliationBar();
   }
 
   async function loadBankStatements(): Promise<void> {

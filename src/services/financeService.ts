@@ -2084,15 +2084,26 @@ export class FinanceService {
         return imported;
     }
 
-    static async batchDeleteBankStatements(companyId: number, ids: number[], _email?: string, _password?: string): Promise<void> {
-        if (ids.length === 0) return;
-        const placeholders = ids.map(() => '?').join(',');
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT public_id FROM bank_statements WHERE company_id = ? AND id IN (${placeholders})`,
-            [companyId, ...ids]
-        );
-        const publicIds = rows.map(r => r.public_id);
-        await FinanceBankStatementRepository.deleteBankStatementsByPublicIds(pool, companyId, publicIds);
+    static async batchDeleteBankStatements(companyId: number, ids: Array<string | number>, _email?: string, _password?: string): Promise<void> {
+        if (!ids || ids.length === 0) return;
+        const stringIds = ids.map(id => String(id));
+        const hasUuids = stringIds.some(id => isNaN(Number(id)) || id.includes('-'));
+
+        let publicIdsToDelete: string[] = [];
+        if (hasUuids) {
+            publicIdsToDelete = stringIds;
+        } else {
+            const placeholders = ids.map(() => '?').join(',');
+            const [rows] = await pool.query<RowDataPacket[]>(
+                `SELECT public_id FROM bank_statements WHERE company_id = ? AND id IN (${placeholders})`,
+                [companyId, ...ids]
+            );
+            publicIdsToDelete = rows.map(r => r.public_id);
+        }
+
+        if (publicIdsToDelete.length > 0) {
+            await FinanceBankStatementRepository.deleteBankStatementsByPublicIds(pool, companyId, publicIdsToDelete);
+        }
     }
 
     // Card Statements Methods

@@ -1826,21 +1826,18 @@
         return;
       }
 
-      const email = prompt(
-        `Você está tentando excluir ${selected.length} registro(s) do extrato.\n\nInforme o E-MAIL do Administrador:`
-      );
-      if (!email) return;
+      const bankActionsMenu = getById('bankActionsMenu');
+      if (bankActionsMenu) bankActionsMenu.classList.add('hidden');
 
-      const password = prompt('Informe a SENHA do Administrador:');
-      if (!password) return;
+      if (!confirm(`Deseja realmente excluir ${selected.length} lançamento(s) selecionado(s) do extrato bancário?`)) {
+        return;
+      }
 
       try {
         const res = await (api as any)('/finance/bank-statements/batch-delete', {
           method: 'POST',
           body: JSON.stringify({
             ids: selected,
-            email: email,
-            password: password,
           }),
         });
         (UI as any).showAlert('alertMessage', res.message || 'Lançamentos excluídos com sucesso.', 'success');
@@ -1848,11 +1845,16 @@
         const chkAll = getById('chkAllBank');
         if (chkAll) chkAll.checked = false;
 
+        document.querySelectorAll('.chk-bank:checked').forEach((chk: any) => {
+          chk.checked = false;
+        });
+        updateConciliationBar();
+
         void loadBankStatements();
       } catch (error: any) {
         (UI as any).showAlert(
           'alertMessage',
-          error?.message || 'Falha ao excluir os lançamentos. Verifique suas credenciais.',
+          error?.message || 'Falha ao excluir os lançamentos do extrato.',
           'error'
         );
       }

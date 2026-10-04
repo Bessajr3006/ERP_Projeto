@@ -1674,29 +1674,31 @@
                 UI.showAlert('alertMessage', 'Selecione pelo menos um lançamento no extrato para excluir.', 'warn');
                 return;
             }
-            const email = prompt(`Você está tentando excluir ${selected.length} registro(s) do extrato.\n\nInforme o E-MAIL do Administrador:`);
-            if (!email)
+            const bankActionsMenu = getById('bankActionsMenu');
+            if (bankActionsMenu)
+                bankActionsMenu.classList.add('hidden');
+            if (!confirm(`Deseja realmente excluir ${selected.length} lançamento(s) selecionado(s) do extrato bancário?`)) {
                 return;
-            const password = prompt('Informe a SENHA do Administrador:');
-            if (!password)
-                return;
+            }
             try {
                 const res = await api('/finance/bank-statements/batch-delete', {
                     method: 'POST',
                     body: JSON.stringify({
                         ids: selected,
-                        email: email,
-                        password: password,
                     }),
                 });
                 UI.showAlert('alertMessage', res.message || 'Lançamentos excluídos com sucesso.', 'success');
                 const chkAll = getById('chkAllBank');
                 if (chkAll)
                     chkAll.checked = false;
+                document.querySelectorAll('.chk-bank:checked').forEach((chk) => {
+                    chk.checked = false;
+                });
+                updateConciliationBar();
                 void loadBankStatements();
             }
             catch (error) {
-                UI.showAlert('alertMessage', error?.message || 'Falha ao excluir os lançamentos. Verifique suas credenciais.', 'error');
+                UI.showAlert('alertMessage', error?.message || 'Falha ao excluir os lançamentos do extrato.', 'error');
             }
         });
         // Toggle para o Menu de Ações do Extrato

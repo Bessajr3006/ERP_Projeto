@@ -697,13 +697,13 @@ export class FinanceController {
         try {
             const companyId = req.user!.company_id;
             const { ids, email, password } = req.body;
-            if (!ids || !Array.isArray(ids) || !email || !password) {
-                res.status(400).json({ status: 'error', message: 'Dados inválidos. Requer ids, email e login de admin.' });
+            if (!ids || !Array.isArray(ids) || ids.length === 0) {
+                res.status(400).json({ status: 'error', message: 'Selecione pelo menos um lançamento para excluir.' });
                 return;
             }
-            const uniqueIds = Array.from(new Set(ids)) as number[];
+            const uniqueIds = Array.from(new Set(ids)) as string[];
             await FinanceService.batchDeleteBankStatements(companyId, uniqueIds, email, password);
-            res.status(200).json({ status: 'success', message: 'Lançamentos do extrato removidos com sucesso. ' });
+            res.status(200).json({ status: 'success', message: 'Lançamentos do extrato removidos com sucesso.' });
         } catch (error: any) {
             if (error instanceof Error) {
                 res.status(400).json({ status: 'error', message: error.message });

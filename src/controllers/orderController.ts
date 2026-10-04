@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { OrderService } from '../services/orderService';
 import { UserPayload } from '../types/express';
 import logger from '../config/logger';
+import { AppError } from '../errors/AppError';
 
 const itemSchema = z.object({
     product_public_id: z.string().uuid('Invalid product ID').optional().nullable(),
@@ -54,6 +55,18 @@ const createQuoteSchema = z.object({
     date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
     validity_date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }).optional().nullable(),
     items: z.array(itemSchema).min(1, 'Quote must contain at least one item')
+});
+
+const approveQuoteSchema = z.object({
+    bank_account_public_id: z.string().uuid('ID de conta bancária inválido'),
+    category_public_id: z.string().uuid('ID de categoria inválido'),
+    installments: z.array(z.object({
+        amount: z.coerce.number().min(0.01, 'Valor da parcela deve ser maior que zero'),
+        due_date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Data de vencimento inválida' }),
+        payment_method: z.enum(['pix', 'credit', 'debit', 'cash', 'transfer', 'boleto'], {
+            errorMap: () => ({ message: 'Forma de pagamento inválida' })
+        })
+    })).min(1, 'Pelo menos uma parcela é obrigatória')
 });
 
 const importSaleXmlSchema = z.object({
@@ -198,6 +211,40 @@ export class OrderController {
                 const msgs = error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(' | ');
                 logger.warn({ zodErrors: error.errors, companyId: (req.user as UserPayload)?.company_id }, '[ZodError] updateQuote');
                 res.status(400).json({ status: 'error', message: `Dados inválidos: ${msgs}`, errors: error.errors });
+                return;
+            }
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ status: 'error', message: error.message });
+                return;
+            }
+            if (error instanceof Error) {
+                res.status(400).json({ status: 'error', message: error.message });
+                return;
+            }
+            throw error;
+        }
+    }
+
+    static async approveQuote(req: Request, res: Response): Promise<void> {
+        try {
+            const user = req.user as UserPayload;
+            const validatedData = approveQuoteSchema.parse(req.body);
+            const sale = await OrderService.approveQuote(
+                Number(user.company_id),
+                Number(user.id),
+                req.params.id as string,
+                validatedData
+            );
+            res.status(200).json({ status: 'success', data: sale });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                const msgs = error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(' | ');
+                logger.warn({ zodErrors: error.errors, companyId: (req.user as UserPayload)?.company_id }, '[ZodError] approveQuote');
+                res.status(400).json({ status: 'error', message: `Dados inválidos: ${msgs}`, errors: error.errors });
+                return;
+            }
+            if (error instanceof AppError) {
+                res.status(error.statusCode).json({ status: 'error', message: error.message });
                 return;
             }
             if (error instanceof Error) {

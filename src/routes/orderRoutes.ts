@@ -181,6 +181,72 @@ router.post('/sales', (req, res, next) => OrderController.createSale(req, res).c
  */
 router.post('/quotes', (req, res, next) => OrderController.createQuote(req, res).catch(next));
 
+/**
+ * @openapi
+ * /orders/quotes/{id}/approve:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Aprovar orçamento transformando em venda e gerando parcelas financeiras
+ *     description: |
+ *       Aprova um orçamento com status 'quote', alterando seu status para 'progress',
+ *       gerando os lançamentos financeiros pendentes de cada parcela, movimentando estoque (se produtos)
+ *       e aprovando procedimentos odontológicos vinculados.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: UUID do orçamento
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - bank_account_public_id
+ *               - category_public_id
+ *               - installments
+ *             properties:
+ *               bank_account_public_id:
+ *                 type: string
+ *                 format: uuid
+ *               category_public_id:
+ *                 type: string
+ *                 format: uuid
+ *               installments:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - amount
+ *                     - due_date
+ *                     - payment_method
+ *                   properties:
+ *                     amount:
+ *                       type: number
+ *                       minimum: 0.01
+ *                     due_date:
+ *                       type: string
+ *                       format: date
+ *                     payment_method:
+ *                       type: string
+ *                       enum: [pix, credit, debit, cash, transfer, boleto]
+ *     responses:
+ *       200:
+ *         description: Orçamento aprovado com sucesso
+ *       400:
+ *         description: Dados inválidos ou divergência de valores
+ *       404:
+ *         description: Orçamento não encontrado
+ */
+router.post('/quotes/:id/approve', (req, res, next) => OrderController.approveQuote(req, res).catch(next));
+
 router.post('/sales/import-xml', (req, res, next) => OrderController.importSaleFromXml(req, res).catch(next));
 router.get('/sales', (req, res, next) => OrderController.listSales(req, res).catch(next));
 router.get('/quotes/:id', (req, res, next) => OrderController.getQuoteById(req, res).catch(next));

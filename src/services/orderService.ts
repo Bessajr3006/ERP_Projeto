@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { PurchaseOrder, CreatePurchaseData, SalesOrder, CreateSalesData } from '../types/Order';
+import { ApproveQuoteData } from '../types/Dental';
 import { OrderRepository } from '../repositories/orderRepository';
 import { DOMParser } from '@xmldom/xmldom';
 import { toBrazilDate } from '../utils/dateTime';
@@ -542,6 +543,15 @@ export class OrderService {
         return OrderRepository.listPurchasesBySupplier(supplierPublicId, companyId);
     }
 
+    static async approveQuote(
+        companyId: number,
+        userId: string | number,
+        publicId: string,
+        data: ApproveQuoteData
+    ): Promise<SalesOrder> {
+        return OrderRepository.approveQuote(companyId, String(userId), publicId, data);
+    }
+
     static async deleteQuoteByPublicId(publicId: string, companyId: number): Promise<void> {
         return OrderRepository.deleteQuoteByPublicId(publicId, companyId);
     }
@@ -621,9 +631,10 @@ export class OrderService {
         const itemsHtml = items.map((item: any) => {
             const subtotal = Number(item.quantity) * Number(item.unit_price);
             totalVal += subtotal;
+            const displayName = item.description ? `${item.description} (${item.product_name})` : item.product_name;
             return `
                 <tr>
-                    <td>${escapeHtml(item.product_name)}</td>
+                    <td>${escapeHtml(displayName)}</td>
                     <td class="text-right">${Number(item.quantity)}</td>
                     <td class="text-right">${formatCurrency(Number(item.unit_price))}</td>
                     <td class="text-right font-medium">${formatCurrency(subtotal)}</td>

@@ -55,6 +55,7 @@ import censusRoutes from './routes/censusRoutes';
 import mecRoutes from './routes/mecRoutes';
 import maintenanceRoutes from './routes/maintenanceRoutes';
 import documentRoutes from './routes/documentRoutes';
+import dentalRoutes from './routes/dentalRoutes';
 import { StorageService } from './utils/storageService';
 import { toBrazilIsoDateTime } from './utils/dateTime';
 import httpLogger from './middlewares/httpLogger';
@@ -356,6 +357,7 @@ app.use('/public', publicRoutes);
 app.use('/api/v1/census', censusRoutes);
 app.use('/api/v1/mec', mecRoutes);
 app.use('/api/v1/documents', documentRoutes);
+app.use('/api/v1/dental', dentalRoutes);
 app.use('/api/v1/maintenance', maintenanceRoutes);
 
 // ── Utility Routes ────────────────────────────────────────────────────────────

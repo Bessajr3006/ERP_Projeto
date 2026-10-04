@@ -248,6 +248,8 @@ import { runMigration219SingleSessionPerUser } from './run_migration_219_single_
 import { runMigration220FechamentosFecp } from './run_migration_220_fechamentos_fecp';
 import { runMigration221CompanyGroupMaster } from './run_migration_221_company_group_master';
 import { runMigration223PopulateSolidconKeyInTransactions } from './run_migration_223_populate_solidcon_key_in_transactions';
+import { runMigration100DentalOdontogram } from './run_migration_100_dental_odontogram';
+import { runMigration101DentalPermissions } from './run_migration_101_dental_permissions';
 
 
 
@@ -342,7 +344,8 @@ const ALL_MODULES = [
     'rel_rafael',
     'rel_pedido_dorsal',
     'rel_saldo_banco',
-    'cost_centers'
+    'cost_centers',
+    'odontogram'
 ] as const;
 
 const ROLE_MODULES: Record<SeedRole, readonly string[]> = {
@@ -814,6 +817,8 @@ async function runInitDb(): Promise<void> {
     await runMigration253CreateErpAppUser();
     await runMigration254EncryptCredentialsAndDropRawPassword();
     await runMigration223PopulateSolidconKeyInTransactions();
+    await runMigration100DentalOdontogram();
+    await runMigration101DentalPermissions();
     await normalizeAllDocuments();
 
     const systemCompany = await ensureSystemCompany();

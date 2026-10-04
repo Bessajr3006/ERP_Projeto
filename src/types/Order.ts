@@ -69,7 +69,9 @@ export interface SalesOrder {
 export interface SalesItem {
     id: number;
     sale_id: number;
-    product_id: number;
+    product_id: number | null;
+    service_id?: number | null;
+    description?: string | null;
     quantity: number;
     unit_price: number;
     total_price: number;
@@ -79,6 +81,7 @@ export interface SalesItem {
 export interface CreateSalesItemData {
     product_public_id?: string | null | undefined;
     service_public_id?: string | null | undefined;
+    description?: string | null | undefined;
     quantity: number;
     unit_price: number;
     xml_item_data?: Record<string, any> | string | null | undefined;

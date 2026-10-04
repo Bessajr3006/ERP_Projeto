@@ -29,6 +29,30 @@ export class PurchaseService {
         return PurchaseRepository.cancelPurchaseOrder(publicId, companyId);
     }
 
+    static async deletePurchase(publicId: string, companyId: number): Promise<void> {
+        if (publicId.startsWith('sped-')) {
+            return PurchaseRepository.deleteSpedPurchaseDoc(publicId, companyId);
+        }
+        return PurchaseRepository.deletePurchaseOrder(publicId, companyId);
+    }
+
+    static async batchDeletePurchases(publicIds: string[], companyId: number): Promise<{ success: number; failed: number; errors: string[] }> {
+        let success = 0;
+        let failed = 0;
+        const errors: string[] = [];
+
+        for (const id of publicIds) {
+            try {
+                await this.deletePurchase(id, companyId);
+                success++;
+            } catch (err: any) {
+                failed++;
+                errors.push(`ID ${id.slice(0, 8)}: ${err.message}`);
+            }
+        }
+        return { success, failed, errors };
+    }
+
     static async importPurchaseFromXml(
         companyId: number,
         userPublicId: string,
@@ -55,8 +79,11 @@ export class PurchaseService {
             throw new Error('Não foi possível identificar o CNPJ do destinatário no XML da NF.');
         }
 
-        if (recipientDigits !== companyCnpj) {
-            throw new Error('CNPJ do destinatário da NF diferente do CNPJ da empresa. Importação não permitida.');
+        const recipientClean = recipientDigits.replace(/\D/g, '');
+        const companyClean = companyCnpj.replace(/\D/g, '');
+
+        if (recipientClean !== companyClean && recipientClean.slice(0, 8) !== companyClean.slice(0, 8)) {
+            throw new Error(`CNPJ do destinatário da NF (${recipientDigits}) diferente do CNPJ da empresa (${companyCnpj}). Importação não permitida.`);
         }
 
         // Assert NFe not duplicated

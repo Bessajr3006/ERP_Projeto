@@ -189,11 +189,20 @@
                 <div class="flex flex-wrap items-center gap-3 justify-between">
                     <div class="flex flex-wrap items-center gap-3">
                         <span id="batchSelectedCount" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">0 selecionado(s)</span>
+                        <button id="btnClearSelection" type="button" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline cursor-pointer">
+                            Desmarcar todas
+                        </button>
                     </div>
-                    <button id="btnEmitBatch" type="button" title="Emitir selecionadas" class="inline-flex items-center gap-2 justify-center rounded-lg shadow-sm px-4 py-2 bg-brand-600 text-white hover:bg-brand-700 transition-colors font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Emitir em Lote
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="btnDeleteBatch" type="button" title="Excluir selecionadas" class="inline-flex items-center gap-1.5 justify-center rounded-lg shadow-sm px-3.5 py-2 bg-red-600 text-white hover:bg-red-700 transition-colors font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            Excluir em Lote
+                        </button>
+                        <button id="btnEmitBatch" type="button" title="Emitir selecionadas" class="inline-flex items-center gap-1.5 justify-center rounded-lg shadow-sm px-3.5 py-2 bg-brand-600 text-white hover:bg-brand-700 transition-colors font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Emitir em Lote
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -9,6 +9,8 @@
             generatingId: null,
             transmittingId: null,
             cancelingId: null,
+            deletingId: null,
+            deletingBatch: false,
             emitting: false,
             danfeData: { purchaseId: null, xml: '', html: '' },
             xmlViewMode: 'danfe',
@@ -44,6 +46,8 @@
             batchToolbar: document.getElementById('batchToolbar'),
             batchSelectAll: document.getElementById('batchSelectAll'),
             batchSelectedCount: document.getElementById('batchSelectedCount'),
+            btnClearSelection: document.getElementById('btnClearSelection'),
+            btnDeleteBatch: document.getElementById('btnDeleteBatch'),
             btnEmitBatch: document.getElementById('btnEmitBatch'),
             alertMessage: document.getElementById('alertMessage'),
             footerCount: document.getElementById('footerCount'),
@@ -182,10 +186,10 @@
                 if (res && res.status === 'success') {
                     state.purchases = (res.data || []).filter(p => p.status === 'completed' || p.status === 'cancelled');
                     // Cleanup selected
-                    const eligibleIds = new Set(getBatchEligiblePurchases().map(p => p.public_id));
+                    const availableIds = new Set(state.purchases.map(p => p.public_id));
                     const newSelected = new Set();
                     state.selectedBatchPurchaseIds.forEach(id => {
-                        if (eligibleIds.has(id))
+                        if (availableIds.has(id))
                             newSelected.add(id);
                     });
                     state.selectedBatchPurchaseIds = newSelected;
@@ -289,14 +293,35 @@
             }
         }
         function renderBatchToolbar() {
-            const eligibles = getBatchEligiblePurchases();
-            if (eligibles.length > 0) {
-                els.batchToolbar.classList.remove('hidden');
-                els.batchSelectedCount.textContent = `${state.selectedBatchPurchaseIds.size} selecionada(s)`;
-                els.batchSelectAll.checked = eligibles.length === state.selectedBatchPurchaseIds.size && eligibles.length > 0;
+            const selectedCount = state.selectedBatchPurchaseIds.size;
+            if (selectedCount > 0) {
+                els.batchToolbar?.classList.remove('hidden');
+                if (els.batchSelectedCount) {
+                    els.batchSelectedCount.textContent = `${selectedCount} selecionada(s)`;
+                }
+                if (els.batchSelectAll) {
+                    const visibleIds = state.filteredPurchases.map((p) => p.public_id);
+                    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => state.selectedBatchPurchaseIds.has(id));
+                    els.batchSelectAll.checked = allSelected;
+                }
+                if (els.btnEmitBatch) {
+                    const hasEligible = Array.from(state.selectedBatchPurchaseIds).some((id) => {
+                        const p = state.purchases.find((x) => x.public_id === id);
+                        return p && !p.is_sped && p.source !== 'sped' && !String(p.public_id).startsWith('sped-') && p.status === 'completed' && !localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`);
+                    });
+                    if (hasEligible) {
+                        els.btnEmitBatch.classList.remove('hidden');
+                    }
+                    else {
+                        els.btnEmitBatch.classList.add('hidden');
+                    }
+                }
             }
             else {
-                els.batchToolbar.classList.add('hidden');
+                els.batchToolbar?.classList.add('hidden');
+                if (els.batchSelectAll) {
+                    els.batchSelectAll.checked = false;
+                }
             }
         }
         function renderRows() {
@@ -323,10 +348,9 @@
                     }
                     catch (e) { }
                 }
-                const isEligible = !isSped && p.status === 'completed' && !isInvoiced;
-                const checkboxHtml = isEligible
-                    ? `<input type="checkbox" value="${p.public_id}" class="batch-purchase-chk rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" ${state.selectedBatchPurchaseIds.has(p.public_id) ? 'checked' : ''} title="Selecionar compra #${p.public_id.slice(0, 8)}" aria-label="Selecionar compra #${p.public_id.slice(0, 8)}">`
-                    : '';
+                const isChecked = state.selectedBatchPurchaseIds.has(p.public_id);
+                const rowHighlightClass = isChecked ? 'bg-indigo-50/60 dark:bg-indigo-950/20' : '';
+                const checkboxHtml = `<input type="checkbox" value="${p.public_id}" class="batch-purchase-chk rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800 cursor-pointer" ${isChecked ? 'checked' : ''} title="Selecionar compra #${p.public_id.slice(0, 8)}" aria-label="Selecionar compra #${p.public_id.slice(0, 8)}">`;
                 let purchaseNumHtml = '';
                 if (isSped) {
                     purchaseNumHtml = `
@@ -394,6 +418,15 @@
                 const btnCancelIcon = state.cancelingId === p.public_id
                     ? `<svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>`
                     : `Estornar`;
+                const btnDeleteDisabled = state.deletingId === p.public_id ? 'opacity-50 cursor-wait' : '';
+                const btnDeleteIcon = state.deletingId === p.public_id
+                    ? `<svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>`
+                    : `<svg class="w-3.5 h-3.5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+                const deleteBtnHtml = `
+                <button type="button" class="btn-delete-single inline-flex items-center justify-center p-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/60 transition-colors shadow-2xs ${btnDeleteDisabled}" data-id="${p.public_id}" title="Excluir compra #${p.public_id.slice(0, 8)}">
+                    ${btnDeleteIcon}
+                </button>
+            `;
                 let actsHtml = '';
                 if (isSped) {
                     actsHtml = `
@@ -404,11 +437,13 @@
                         </svg>
                         Detalhes SPED
                     </button>
+                    ${deleteBtnHtml}
                 `;
                 }
                 else if (isCancelled) {
                     actsHtml = `
                     <button type="button" class="btn-items bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}">Ver Itens</button>
+                    ${deleteBtnHtml}
                 `;
                 }
                 else if (isInvoiced) {
@@ -417,9 +452,10 @@
                     <button type="button" class="btn-generate bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${btnGenDisabled}" data-id="${p.public_id}" title="Visualizar DANFE">
                         ${btnGenIcon}
                     </button>
-                    <button type="button" class="btn-cancel bg-red-600 hover:bg-red-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}" title="Desfazer Emissão">
+                    <button type="button" class="btn-cancel bg-amber-600 hover:bg-amber-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}" title="Desfazer Emissão">
                         ${btnCancelIcon}
                     </button>
+                    ${deleteBtnHtml}
                 `;
                 }
                 else {
@@ -428,6 +464,7 @@
                     <button type="button" class="btn-emit-single bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-2 py-1 text-xs font-semibold transition-colors" data-id="${p.public_id}" title="Emitir NFe Entrada">
                         Emitir NFe
                     </button>
+                    ${deleteBtnHtml}
                 `;
                 }
                 const actionsCell = `
@@ -436,7 +473,7 @@
                 </div>
             `;
                 return `
-                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40 ${rowHighlightClass}">
                     <td class="px-3 py-2.5 text-left">${checkboxHtml}</td>
                     <td class="px-3 py-2.5 text-sm">${purchaseNumHtml}</td>
                     <td class="px-3 py-2.5 text-center">${originBadge}</td>
@@ -679,6 +716,86 @@
             finally {
                 state.cancelingId = null;
                 renderRows();
+            }
+        }
+        async function deletePurchase(id) {
+            if (!id)
+                return;
+            const isSped = id.startsWith('sped-');
+            const confirmMsg = isSped
+                ? 'Deseja realmente excluir este documento SPED da listagem?'
+                : 'Deseja realmente excluir esta compra? Se ela movimentou estoque ou lançou movimentações financeiras, elas serão estornadas automaticamente.';
+            if (!confirm(confirmMsg))
+                return;
+            state.deletingId = id;
+            renderRows();
+            try {
+                const res = await api('/purchases/' + encodeURIComponent(id), {
+                    method: 'DELETE'
+                });
+                if (res && res.status === 'success') {
+                    showAlert('Compra excluída com sucesso!', 'success');
+                    state.selectedBatchPurchaseIds.delete(id);
+                    await loadPurchases();
+                }
+                else {
+                    showAlert(res?.message || 'Erro ao excluir compra.', 'error');
+                }
+            }
+            catch (e) {
+                showAlert('Erro de conexão ao excluir: ' + e.message, 'error');
+            }
+            finally {
+                state.deletingId = null;
+                renderRows();
+                renderBatchToolbar();
+            }
+        }
+        async function deleteBatchPurchases() {
+            const selectedIds = Array.from(state.selectedBatchPurchaseIds);
+            if (selectedIds.length === 0)
+                return;
+            if (!confirm(`Deseja realmente excluir as ${selectedIds.length} compras selecionadas? Esta ação estornará as movimentações de estoque e financeiras vinculadas a estas compras.`)) {
+                return;
+            }
+            state.deletingBatch = true;
+            const originalBtnHtml = els.btnDeleteBatch?.innerHTML;
+            if (els.btnDeleteBatch) {
+                els.btnDeleteBatch.disabled = true;
+                els.btnDeleteBatch.classList.add('opacity-70', 'cursor-not-allowed');
+                els.btnDeleteBatch.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+                Excluindo...
+            `;
+            }
+            try {
+                const res = await api('/purchases/batch-delete', {
+                    method: 'POST',
+                    body: JSON.stringify({ ids: selectedIds })
+                });
+                if (res && res.status === 'success') {
+                    showAlert(res.message || `${selectedIds.length} compra(s) excluída(s) com sucesso!`, 'success');
+                    state.selectedBatchPurchaseIds.clear();
+                    await loadPurchases();
+                }
+                else {
+                    showAlert(res?.message || 'Erro ao excluir compras em lote.', 'error');
+                }
+            }
+            catch (e) {
+                showAlert('Erro de conexão ao excluir em lote: ' + e.message, 'error');
+            }
+            finally {
+                state.deletingBatch = false;
+                if (els.btnDeleteBatch) {
+                    els.btnDeleteBatch.disabled = false;
+                    els.btnDeleteBatch.classList.remove('opacity-70', 'cursor-not-allowed');
+                    els.btnDeleteBatch.innerHTML = originalBtnHtml;
+                }
+                renderBatchToolbar();
             }
         }
         async function generateAndShowXml(id) {
@@ -964,26 +1081,49 @@
             });
             els.btnRefresh.addEventListener('click', loadPurchases);
             // Batch Select All Checkbox
-            els.batchSelectAll.addEventListener('change', (e) => {
-                const eligibles = getBatchEligiblePurchases();
-                const checked = e.target.checked;
-                eligibles.forEach(p => {
-                    if (checked) {
-                        state.selectedBatchPurchaseIds.add(p.public_id);
-                    }
-                    else {
-                        state.selectedBatchPurchaseIds.delete(p.public_id);
-                    }
+            if (els.batchSelectAll) {
+                els.batchSelectAll.addEventListener('change', (e) => {
+                    const checked = e.target.checked;
+                    state.filteredPurchases.forEach((p) => {
+                        if (checked) {
+                            state.selectedBatchPurchaseIds.add(p.public_id);
+                        }
+                        else {
+                            state.selectedBatchPurchaseIds.delete(p.public_id);
+                        }
+                    });
+                    renderRows();
+                    renderBatchToolbar();
                 });
-                // Sync checkbox elements in tbody
-                els.notesContainer.querySelectorAll('.batch-purchase-chk').forEach((chk) => {
-                    chk.checked = checked;
+            }
+            // Clear Selection Button
+            if (els.btnClearSelection) {
+                els.btnClearSelection.addEventListener('click', () => {
+                    state.selectedBatchPurchaseIds.clear();
+                    if (els.batchSelectAll)
+                        els.batchSelectAll.checked = false;
+                    renderRows();
+                    renderBatchToolbar();
                 });
-                renderBatchToolbar();
-            });
-            els.btnEmitBatch.addEventListener('click', () => {
-                openEmitModal(Array.from(state.selectedBatchPurchaseIds));
-            });
+            }
+            // Batch Delete Button
+            if (els.btnDeleteBatch) {
+                els.btnDeleteBatch.addEventListener('click', deleteBatchPurchases);
+            }
+            // Batch Emit Button
+            if (els.btnEmitBatch) {
+                els.btnEmitBatch.addEventListener('click', () => {
+                    const eligibleIds = Array.from(state.selectedBatchPurchaseIds).filter((id) => {
+                        const p = state.purchases.find((x) => x.public_id === id);
+                        return p && !p.is_sped && p.source !== 'sped' && !String(p.public_id).startsWith('sped-') && p.status === 'completed' && !localStorage.getItem(`mock_purchase_nf_type_${p.public_id}`);
+                    });
+                    if (eligibleIds.length === 0) {
+                        showAlert('Nenhuma das compras selecionadas está pendente para emissão de NF-e.', 'warn');
+                        return;
+                    }
+                    openEmitModal(eligibleIds);
+                });
+            }
             // Event Delegation for Table Rows Actions
             els.notesContainer.addEventListener('click', (e) => {
                 const btnItems = e.target.closest('.btn-items');
@@ -998,6 +1138,9 @@
                 const btnGen = e.target.closest('.btn-generate');
                 if (btnGen)
                     generateAndShowXml(btnGen.dataset.id);
+                const btnDelSingle = e.target.closest('.btn-delete-single');
+                if (btnDelSingle)
+                    deletePurchase(btnDelSingle.dataset.id);
             });
             els.notesContainer.addEventListener('change', (e) => {
                 if (e.target.classList.contains('batch-purchase-chk')) {
@@ -1008,8 +1151,15 @@
                     else {
                         state.selectedBatchPurchaseIds.delete(id);
                     }
-                    const eligibles = getBatchEligiblePurchases();
-                    els.batchSelectAll.checked = eligibles.length === state.selectedBatchPurchaseIds.size && eligibles.length > 0;
+                    const tr = e.target.closest('tr');
+                    if (tr) {
+                        if (e.target.checked) {
+                            tr.classList.add('bg-indigo-50/60', 'dark:bg-indigo-950/20');
+                        }
+                        else {
+                            tr.classList.remove('bg-indigo-50/60', 'dark:bg-indigo-950/20');
+                        }
+                    }
                     renderBatchToolbar();
                 }
             });
@@ -1210,8 +1360,14 @@
             const emitBairro = dom.querySelector('emit > enderEmit > xBairro')?.textContent || '';
             const emitMun = dom.querySelector('emit > enderEmit > xMun')?.textContent || '';
             const emitUF = dom.querySelector('emit > enderEmit > UF')?.textContent || '';
-            const destName = dom.querySelector('dest > xNome')?.textContent || 'MINHA EMPRESA LIMITADA';
-            const rawDestCNPJ = dom.querySelector('dest > CNPJ')?.textContent || dom.querySelector('dest > CPF')?.textContent || '';
+            const cachedCompany = (() => { try {
+                return JSON.parse(localStorage.getItem('current_company') || sessionStorage.getItem('current_company') || '{}');
+            }
+            catch (e) {
+                return {};
+            } })();
+            const destName = dom.querySelector('dest > xNome')?.textContent || cachedCompany.name || cachedCompany.razao_social || 'EMPRESA DESTINATÁRIA';
+            const rawDestCNPJ = dom.querySelector('dest > CNPJ')?.textContent || dom.querySelector('dest > CPF')?.textContent || cachedCompany.cnpj || '';
             const destLgr = dom.querySelector('dest > enderDest > xLgr')?.textContent || 'S/N';
             const destNro = dom.querySelector('dest > enderDest > nro')?.textContent || 'S/N';
             const destBairro = dom.querySelector('dest > enderDest > xBairro')?.textContent || '';

@@ -58,9 +58,36 @@ export class PurchaseController {
     }
 
     static async delete(req: Request, res: Response): Promise<void> {
-        const user = req.user as UserPayload;
-        await PurchaseService.cancelPurchaseOrder(req.params.id as string, user.company_id);
-        res.json({ status: 'success', message: 'Compra cancelada e transações revertidas.' });
+        try {
+            const user = req.user as UserPayload;
+            await PurchaseService.deletePurchase(req.params.id as string, user.company_id);
+            res.json({ status: 'success', message: 'Compra excluída com sucesso e transações revertidas.' });
+        } catch (error: any) {
+            res.status(error.statusCode || 400).json({ status: 'error', message: error.message || 'Erro ao excluir compra' });
+        }
+    }
+
+    static async batchDelete(req: Request, res: Response): Promise<void> {
+        try {
+            const user = req.user as UserPayload;
+            const schema = z.object({
+                ids: z.array(z.string()).min(1, 'Pelo menos um ID de compra deve ser fornecido')
+            });
+            const { ids } = schema.parse(req.body);
+
+            const result = await PurchaseService.batchDeletePurchases(ids, user.company_id);
+            res.json({
+                status: 'success',
+                message: `${result.success} compra(s) excluída(s) com sucesso.`,
+                data: result
+            });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                res.status(400).json({ status: 'error', errors: error.errors });
+                return;
+            }
+            res.status(500).json({ status: 'error', message: error.message || 'Erro ao excluir compras em lote' });
+        }
     }
 
     static async importPurchaseFromXml(req: Request, res: Response): Promise<void> {

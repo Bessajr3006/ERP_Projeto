@@ -28,6 +28,13 @@ export class PurchaseRepository {
             return rows;
         }
 
+        // Fetch company CNPJ to guarantee strict multi-tenant isolation for SPED
+        const [compRows] = await pool.query<RowDataPacket[]>(
+            `SELECT cnpj FROM companies WHERE id = ? LIMIT 1`,
+            [companyId]
+        );
+        const companyCnpjDigits = compRows[0]?.cnpj ? String(compRows[0].cnpj).replace(/\D/g, '') : '';
+
         // Fetch SPED Fiscal imported purchase notes from fechamentos
         let spedPurchases: any[] = [];
         try {
@@ -54,6 +61,12 @@ export class PurchaseRepository {
                 }
 
                 if (!parsedSped || !Array.isArray(parsedSped.documents)) continue;
+
+                // Strict company isolation: only include SPED if CNPJ matches the company
+                const spedCnpjDigits = parsedSped.header?.cnpj ? String(parsedSped.header.cnpj).replace(/\D/g, '') : (parsedSped.header?.cpf ? String(parsedSped.header.cpf).replace(/\D/g, '') : '');
+                if (companyCnpjDigits && spedCnpjDigits && spedCnpjDigits !== companyCnpjDigits && spedCnpjDigits.slice(0, 8) !== companyCnpjDigits.slice(0, 8)) {
+                    continue;
+                }
 
                 const participantsMap = new Map<string, any>();
                 if (Array.isArray(parsedSped.participants)) {
@@ -414,6 +427,98 @@ export class PurchaseRepository {
             throw error;
         } finally {
             conn.release();
+        }
+    }
+
+    static async deletePurchaseOrder(publicId: string, companyId: number): Promise<void> {
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
+
+            const [rows] = await conn.query<RowDataPacket[]>(
+                'SELECT id, status, total_amount FROM purchase_orders WHERE public_id = ? AND company_id = ? LIMIT 1 FOR UPDATE',
+                [publicId, companyId]
+            );
+            if (rows.length === 0) throw new AppError('Nota de compra não encontrada', 404);
+            const order = rows[0] as any;
+
+            // 1. If completed (not yet cancelled), reverse inventory and financial impacts
+            if (order.status !== 'cancelled') {
+                const [items] = await conn.query<RowDataPacket[]>(
+                    'SELECT product_id, quantity FROM purchase_items WHERE purchase_id = ?',
+                    [order.id]
+                );
+                for (const item of items) {
+                    await ProductService.recordMovement(conn, companyId, item.product_id, 'out', item.quantity, null, null);
+                }
+
+                const [txRows] = await conn.query<RowDataPacket[]>(
+                    'SELECT id, bank_account_id, amount FROM transactions WHERE purchase_id = ? AND company_id = ? AND status != "cancelled"',
+                    [order.id, companyId]
+                );
+                for (const tx of txRows) {
+                    await BankAccountService.updateBalance(conn, (tx as any).bank_account_id, companyId, Number((tx as any).amount));
+                }
+            }
+
+            // 2. Remove financial transactions associated with this purchase
+            await conn.query('DELETE FROM transactions WHERE purchase_id = ? AND company_id = ?', [order.id, companyId]);
+
+            // 3. Remove inventory movements with purchase_id
+            await conn.query('DELETE FROM inventory_movements WHERE purchase_id = ? AND company_id = ?', [order.id, companyId]);
+
+            // 4. Remove purchase items
+            await conn.query('DELETE FROM purchase_items WHERE purchase_id = ?', [order.id]);
+
+            // 5. Delete the purchase order record
+            await conn.query('DELETE FROM purchase_orders WHERE id = ? AND company_id = ?', [order.id, companyId]);
+
+            await conn.commit();
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
+    }
+
+    static async deleteSpedPurchaseDoc(publicId: string, companyId: number): Promise<void> {
+        const parts = publicId.split('-');
+        const fechId = parseInt(parts[1] || '0', 10);
+
+        const [fechRows] = await pool.query<RowDataPacket[]>(
+            'SELECT id, sped_data_json FROM fechamentos WHERE id = ? AND company_id = ? LIMIT 1',
+            [fechId, companyId]
+        );
+        if (!fechRows || fechRows.length === 0 || !fechRows[0]?.sped_data_json) {
+            throw new AppError('Documento SPED não encontrado no fechamento.', 404);
+        }
+
+        let parsedSped: any = null;
+        try {
+            parsedSped = typeof fechRows[0].sped_data_json === 'string' ? JSON.parse(fechRows[0].sped_data_json) : fechRows[0].sped_data_json;
+        } catch (e) {
+            throw new AppError('Erro ao ler dados do SPED.', 500);
+        }
+
+        if (!parsedSped || !Array.isArray(parsedSped.documents)) {
+            throw new AppError('Documentos não encontrados no SPED.', 404);
+        }
+
+        const beforeLen = parsedSped.documents.length;
+        parsedSped.documents = parsedSped.documents.filter((doc: any, idx: number) => {
+            const expectedDocId = `sped-${fechId}-${doc.chvDoc || (doc.numDoc + '_' + (doc.serie || '1')) || idx}`;
+            if (expectedDocId === publicId || (doc.chvDoc && publicId.includes(doc.chvDoc)) || (doc.numDoc && publicId.includes(doc.numDoc))) {
+                return false;
+            }
+            return true;
+        });
+
+        if (parsedSped.documents.length !== beforeLen) {
+            await pool.query(
+                'UPDATE fechamentos SET sped_data_json = ? WHERE id = ? AND company_id = ?',
+                [JSON.stringify(parsedSped), fechId, companyId]
+            );
         }
     }
 }

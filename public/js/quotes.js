@@ -73,6 +73,32 @@
         }
     }
 
+    async function loadBankAccounts() {
+        try {
+            const response = await api('/bank-accounts');
+            const select = getById('approveBankAccount');
+            if (select && response.data) {
+                select.innerHTML = '<option value="">Selecione a conta...</option>' +
+                    response.data.map(b => `<option value="${b.public_id}">${b.name || b.bank_name || 'Conta'}</option>`).join('');
+            }
+        } catch (error) {
+            console.error('Failed to load bank accounts', error);
+        }
+    }
+
+    async function loadIncomeCategories() {
+        try {
+            const response = await api('/finance/categories?type=income');
+            const select = getById('approveCategory');
+            if (select && response.data) {
+                select.innerHTML = '<option value="">Selecione a categoria...</option>' +
+                    response.data.map(c => `<option value="${c.public_id}">${c.name}</option>`).join('');
+            }
+        } catch (error) {
+            console.error('Failed to load income categories', error);
+        }
+    }
+
     function updateItemDropdown() {
         const type = getById('quoteItemType').value;
         const select = getById('quoteItemSelect');
@@ -134,7 +160,7 @@
             return;
         }
 
-        await Promise.all([loadCustomers(), loadProducts(), loadServices(), loadSellers()]);
+        await Promise.all([loadCustomers(), loadProducts(), loadServices(), loadSellers(), loadBankAccounts(), loadIncomeCategories()]);
 
         // Initial populate of dropdown
         updateItemDropdown();
@@ -598,10 +624,251 @@
             }
         });
 
-        // Convert to sale stub
-        window.convertToSale = function(quoteId) {
-            alert('A transformação em venda a partir do orçamento será implementada no próximo passo do PDV.');
+        // ── Aprovação de Orçamento (Transformar em Venda) ───────────────────────────
+        function closeApproveModal() {
+            getById('approveQuoteModal')?.classList.add('hidden');
         }
+
+        getById('btnCancelApproveModal')?.addEventListener('click', closeApproveModal);
+        getById('closeApproveModalCross')?.addEventListener('click', closeApproveModal);
+        getById('approveQuoteBackdrop')?.addEventListener('click', closeApproveModal);
+
+        function recalculateApproveValidation() {
+            const totalRaw = parseFloat(getById('approveQuoteTotalRaw')?.value || '0');
+            const amountInputs = document.querySelectorAll('.approve-inst-amount');
+            let currentSum = 0;
+            amountInputs.forEach(input => {
+                const val = parseFloat(input.value.replace(/[^\d]/g, '') || '0') / 100;
+                currentSum += val;
+            });
+
+            currentSum = Math.round(currentSum * 100) / 100;
+            const diff = Math.round((currentSum - totalRaw) * 100) / 100;
+
+            const sumDisplay = getById('approveSumCurrentDisplay');
+            const diffBadge = getById('approveSumDiffBadge');
+            const confirmBtn = getById('btnConfirmApproveQuote');
+
+            if (sumDisplay) sumDisplay.textContent = formatCurrency(currentSum);
+
+            if (Math.abs(diff) <= 0.01) {
+                if (diffBadge) {
+                    diffBadge.textContent = 'Total confere';
+                    diffBadge.className = 'font-semibold text-emerald-600 dark:text-emerald-400';
+                }
+                if (confirmBtn) confirmBtn.disabled = false;
+            } else {
+                if (diffBadge) {
+                    const diffText = diff > 0 ? `Diferença: +${formatCurrency(diff)}` : `Diferença: -${formatCurrency(Math.abs(diff))}`;
+                    diffBadge.textContent = diffText;
+                    diffBadge.className = 'font-semibold text-red-600 dark:text-red-400';
+                }
+                if (confirmBtn) confirmBtn.disabled = true;
+            }
+        }
+
+        function generateInstallmentRows(count) {
+            const totalRaw = parseFloat(getById('approveQuoteTotalRaw')?.value || '0');
+            const defaultMethod = getById('approveDefaultPaymentMethod')?.value || 'pix';
+            const tbody = getById('approveInstallmentsTableBody');
+            if (!tbody) return;
+
+            const n = Math.max(1, parseInt(count, 10) || 1);
+            const baseAmount = Math.floor((totalRaw / n) * 100) / 100;
+            let sumSoFar = 0;
+            const amounts = [];
+
+            for (let i = 0; i < n; i++) {
+                if (i === n - 1) {
+                    const lastAmount = Math.round((totalRaw - sumSoFar) * 100) / 100;
+                    amounts.push(lastAmount);
+                } else {
+                    amounts.push(baseAmount);
+                    sumSoFar += baseAmount;
+                }
+            }
+
+            const today = new Date();
+
+            tbody.innerHTML = amounts.map((amt, idx) => {
+                const dueDate = new Date(today);
+                dueDate.setMonth(today.getMonth() + idx);
+                const dateStr = dueDate.toISOString().slice(0, 10);
+                const formattedAmt = formatCurrency(amt);
+
+                return `
+                    <tr class="installment-row" data-index="${idx}">
+                        <td class="px-3 py-2 text-xs font-mono font-medium text-gray-700 dark:text-gray-300">
+                            ${idx + 1}/${n}
+                        </td>
+                        <td class="px-3 py-2">
+                            <input type="text" value="${formattedAmt}" data-raw="${amt}"
+                                class="approve-inst-amount w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg px-2.5 py-1 text-xs font-medium focus:ring-brand-500 focus:border-brand-500 text-right">
+                        </td>
+                        <td class="px-3 py-2">
+                            <input type="date" value="${dateStr}"
+                                class="approve-inst-date w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg px-2 py-1 text-xs focus:ring-brand-500 focus:border-brand-500">
+                        </td>
+                        <td class="px-3 py-2">
+                            <select class="approve-inst-method w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg px-2 py-1 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                <option value="pix" ${defaultMethod === 'pix' ? 'selected' : ''}>Pix</option>
+                                <option value="credit" ${defaultMethod === 'credit' ? 'selected' : ''}>Cartão de Crédito</option>
+                                <option value="debit" ${defaultMethod === 'debit' ? 'selected' : ''}>Cartão de Débito</option>
+                                <option value="cash" ${defaultMethod === 'cash' ? 'selected' : ''}>Dinheiro</option>
+                                <option value="transfer" ${defaultMethod === 'transfer' ? 'selected' : ''}>Transferência</option>
+                                <option value="boleto" ${defaultMethod === 'boleto' ? 'selected' : ''}>Boleto</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Attach input event listeners for currency formatting and validation
+            tbody.querySelectorAll('.approve-inst-amount').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const target = e.target;
+                    let digits = target.value.replace(/\D/g, '');
+                    if (digits === '') digits = '0';
+                    const numVal = parseInt(digits, 10) / 100;
+                    target.value = formatCurrency(numVal);
+                    recalculateApproveValidation();
+                });
+            });
+
+            recalculateApproveValidation();
+        }
+
+        getById('approveInstallmentCount')?.addEventListener('input', (e) => {
+            generateInstallmentRows(e.target.value);
+        });
+
+        getById('approveDefaultPaymentMethod')?.addEventListener('change', () => {
+            const defaultMethod = getById('approveDefaultPaymentMethod')?.value || 'pix';
+            document.querySelectorAll('.approve-inst-method').forEach(select => {
+                select.value = defaultMethod;
+            });
+        });
+
+        getById('btnRecalculateInstallments')?.addEventListener('click', () => {
+            const count = getById('approveInstallmentCount')?.value || 1;
+            generateInstallmentRows(count);
+        });
+
+        window.convertToSale = async function(quotePublicId) {
+            try {
+                const response = await api(`/orders/quotes/${quotePublicId}`);
+                const quote = response.data;
+                if (!quote) {
+                    alert('Orçamento não encontrado.');
+                    return;
+                }
+
+                if (quote.status !== 'quote') {
+                    alert('Este orçamento já foi transformado em venda ou concluído.');
+                    return;
+                }
+
+                const total = quote.items ? quote.items.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unit_price)), 0) : Number(quote.total_amount || 0);
+
+                getById('approveQuotePublicId').value = quote.public_id;
+                getById('approveQuoteTotalRaw').value = total.toFixed(2);
+                getById('approveModalTitle').textContent = `Aprovar Orçamento #${String(quote.id).padStart(4, '0')}`;
+                getById('approveCustomerName').textContent = quote.customer_name || quote.manual_customer_name || 'Consumidor Final';
+                getById('approveTotalDisplay').textContent = formatCurrency(total);
+
+                // Set default payment method if quote had one
+                if (quote.payment_method && getById('approveDefaultPaymentMethod')) {
+                    getById('approveDefaultPaymentMethod').value = quote.payment_method;
+                }
+
+                // Reset installment count
+                if (getById('approveInstallmentCount')) {
+                    getById('approveInstallmentCount').value = 1;
+                }
+
+                generateInstallmentRows(1);
+                getById('approveQuoteModal')?.classList.remove('hidden');
+            } catch (error) {
+                console.error('Erro ao abrir aprovação do orçamento:', error);
+                alert(error.message || 'Erro ao carregar detalhes do orçamento para aprovação.');
+            }
+        };
+
+        // Submit Approval Form
+        getById('approveQuoteForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const quotePublicId = getById('approveQuotePublicId')?.value;
+            const bankAccountPublicId = getById('approveBankAccount')?.value;
+            const categoryPublicId = getById('approveCategory')?.value;
+
+            if (!bankAccountPublicId) {
+                alert('Selecione uma conta bancária.');
+                return;
+            }
+
+            if (!categoryPublicId) {
+                alert('Selecione uma categoria financeira.');
+                return;
+            }
+
+            const rows = document.querySelectorAll('.installment-row');
+            if (rows.length === 0) {
+                alert('Configure ao menos uma parcela.');
+                return;
+            }
+
+            const installments = [];
+            rows.forEach(row => {
+                const amountInput = row.querySelector('.approve-inst-amount');
+                const dateInput = row.querySelector('.approve-inst-date');
+                const methodSelect = row.querySelector('.approve-inst-method');
+
+                const amount = parseFloat(amountInput.value.replace(/[^\d]/g, '') || '0') / 100;
+                const dueDate = dateInput.value;
+                const paymentMethod = methodSelect.value;
+
+                installments.push({
+                    amount,
+                    due_date: dueDate,
+                    payment_method: paymentMethod
+                });
+            });
+
+            const confirmBtn = getById('btnConfirmApproveQuote');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Aprovando...';
+
+            try {
+                await api(`/orders/quotes/${quotePublicId}/approve`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        bank_account_public_id: bankAccountPublicId,
+                        category_public_id: categoryPublicId,
+                        installments
+                    })
+                });
+
+                closeApproveModal();
+                quotesManager.loadData();
+
+                const alertEl = getById('alertMessage');
+                if (alertEl) {
+                    alertEl.textContent = 'Orçamento aprovado e transformado em venda com sucesso!';
+                    alertEl.className = 'mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+                    alertEl.classList.remove('hidden');
+                    setTimeout(() => alertEl.classList.add('hidden'), 4000);
+                } else {
+                    alert('Orçamento aprovado com sucesso!');
+                }
+            } catch (error) {
+                console.error('Erro ao aprovar orçamento:', error);
+                alert(error.message || 'Erro ao aprovar orçamento.');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Aprovar e Gerar Venda';
+            }
+        });
 
     });
 })();

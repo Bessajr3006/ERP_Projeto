@@ -127,6 +127,7 @@
                 links: [
                     { id: 'sales', label: 'PDV / Vendas' },
                     { id: 'quotes', label: 'Orçamentos' },
+                    { id: 'odontogram', label: 'Odontograma' },
                     { id: 'service_launches', label: 'Serviço' },
                     { id: 'restaurant', label: 'Restaurante' },
                     { id: 'gera-pix', label: 'Gera PIX' }

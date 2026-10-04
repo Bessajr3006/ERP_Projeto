@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>KEYSTONE - Odontograma</title>
+    <link href="/css/style.css?v=20261003222428" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
+    <script src="/js/pwa.js?v=20261003222428"></script>
+    <style>
+        .tooth-face {
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+        }
+        .tooth-face:hover {
+            opacity: 0.85;
+            filter: brightness(1.15);
+        }
+        .tooth-face.selected {
+            fill: #0284c7 !important;
+            stroke: #0369a1 !important;
+        }
+        .tooth-face.face-planned {
+            fill: #38bdf8 !important;
+        }
+        .tooth-face.face-quoted {
+            fill: #818cf8 !important;
+        }
+        .tooth-face.face-approved {
+            fill: #f59e0b !important;
+        }
+        .tooth-face.face-done {
+            fill: #10b981 !important;
+        }
+        .tooth-face.face-existing {
+            fill: #94a3b8 !important;
+        }
+        .tooth-group {
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        .tooth-group:hover {
+            transform: scale(1.04);
+        }
+    </style>
+</head>
+
+<body data-required-module="odontogram" class="bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-gray-100 font-sans flex flex-col h-dvh overflow-hidden">
+
+    <div id="app-navbar"></div>
+
+    <main class="pt-3 pb-3 max-w-7xl mx-auto w-full sm:px-4 lg:px-6 flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div id="alertMessage" class="hidden mb-3 p-3.5 rounded-xl text-sm shadow-sm"></div>
+
+        <!-- ── Top Header / Patient Selection Card ── -->
+        <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 p-3.5 mb-3 shrink-0">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3 flex-1 min-w-[280px]">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 border border-brand-100 dark:border-brand-800/60">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <label for="selectCustomer" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Paciente / Cliente
+                        </label>
+                        <select id="selectCustomer"
+                            class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-1.5 px-3 text-sm focus:ring-brand-500 focus:border-brand-500 font-medium">
+                            <option value="">Selecione o paciente para carregar o odontograma...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dentição e Ações de Cabeçalho -->
+                <div class="flex items-center flex-wrap gap-2">
+                    <!-- Dentição Segmented Button -->
+                    <div class="inline-flex rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-900/60 p-0.5 text-xs font-medium" role="group">
+                        <button type="button" id="btnDentitionPermanent" data-dentition="permanent"
+                            class="dentition-toggle-btn px-2.5 py-1 rounded-md bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm font-semibold transition-all">
+                            Permanente
+                        </button>
+                        <button type="button" id="btnDentitionDeciduous" data-dentition="deciduous"
+                            class="dentition-toggle-btn px-2.5 py-1 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">
+                            Decídua
+                        </button>
+                        <button type="button" id="btnDentitionMixed" data-dentition="mixed"
+                            class="dentition-toggle-btn px-2.5 py-1 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">
+                            Mista
+                        </button>
+                    </div>
+
+                    <button type="button" id="btnChartNotes" title="Observações Clínicas do Paciente"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-colors">
+                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Notas
+                    </button>
+
+                    <button type="button" id="btnOpenNewProcedureModal"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition-colors focus:ring-2 focus:ring-brand-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Novo Procedimento
+                    </button>
+                </div>
+            </div>
+
+            <!-- Patient Metadata Summary Row (hidden until selected) -->
+            <div id="patientSummaryBar" class="hidden mt-2 pt-2 border-t border-gray-100 dark:border-slate-700/60 flex flex-wrap items-center justify-between text-xs text-gray-500 dark:text-gray-400 gap-2">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <span id="patientDoc" class="font-mono">CPF: -</span>
+                    <span id="patientPhone">Tel: -</span>
+                    <span id="patientEmail">Email: -</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Odontograma Ativo
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Main Workspace: SVG Chart (Top) & Procedures Grid (Bottom) ── -->
+        <div class="flex flex-col lg:flex-row gap-3 flex-1 min-h-0 overflow-hidden">
+            
+            <!-- Left/Top Section: Interactive SVG Odontogram -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div class="px-4 py-2.5 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between bg-gray-50/70 dark:bg-slate-900/40 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Mapa Anatômico (FDI)</h4>
+                        <span class="text-[11px] text-gray-500 dark:text-gray-400 hidden sm:inline">• Clique no dente para condição ou faces para procedimento</span>
+                    </div>
+                    <!-- Legenda Rápida -->
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-sky-400 inline-block"></span> Planejado</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-indigo-400 inline-block"></span> Cotado</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block"></span> Aprovado</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block"></span> Realizado</span>
+                    </div>
+                </div>
+
+                <!-- SVG Odontogram Canvas Wrapper -->
+                <div id="odontogramCanvasWrapper" class="flex-1 p-3 overflow-auto flex items-center justify-center bg-gray-50/30 dark:bg-slate-900/30">
+                    <div id="odontogramEmptyState" class="flex flex-col items-center justify-center p-8 text-center text-gray-400 dark:text-gray-500">
+                        <svg class="w-12 h-12 mb-2 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="text-sm font-medium">Selecione um paciente para exibir o odontograma interativo.</p>
+                    </div>
+                    <div id="odontogramSvgContainer" class="hidden w-full max-w-4xl"></div>
+                </div>
+            </div>
+
+            <!-- Right/Bottom Section: Procedures List & Plan Generation -->
+            <div class="bg-white dark:bg-slate-800 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col w-full lg:w-[460px] xl:w-[500px] min-h-0 overflow-hidden shrink-0">
+                <div class="px-4 py-2.5 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between bg-gray-50/70 dark:bg-slate-900/40 shrink-0">
+                    <h4 class="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>Procedimentos & Tratamentos</span>
+                        <span id="proceduresCountBadge" class="px-1.5 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 text-[10px] font-bold">0</span>
+                    </h4>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" id="btnGenerateQuote" disabled
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-sm transition-all">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h3M7 3h8l4 4v14H7a2 2 0 01-2-2V5a2 2 0 012-2z" /></svg>
+                            <span>Gerar Orçamento</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Procedure Status Filter Tabs -->
+                <div class="px-3 py-1.5 border-b border-gray-100 dark:border-slate-700/60 flex items-center gap-1.5 overflow-x-auto text-[11px] shrink-0">
+                    <button type="button" class="proc-filter-btn px-2 py-0.5 rounded-md font-semibold bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 border border-brand-200 dark:border-brand-800/60" data-filter="all">Todos</button>
+                    <button type="button" class="proc-filter-btn px-2 py-0.5 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" data-filter="planned">Planejados</button>
+                    <button type="button" class="proc-filter-btn px-2 py-0.5 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" data-filter="quoted">Cotados</button>
+                    <button type="button" class="proc-filter-btn px-2 py-0.5 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" data-filter="approved">Aprovados</button>
+                    <button type="button" class="proc-filter-btn px-2 py-0.5 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" data-filter="done">Realizados</button>
+                </div>
+
+                <!-- Procedures Scrollable List -->
+                <div id="proceduresListContainer" class="flex-1 overflow-y-auto p-3 space-y-2 divide-y divide-transparent">
+                    <div class="text-center text-xs text-gray-400 dark:text-gray-500 py-8">
+                        Nenhum procedimento registrado para este paciente.
+                    </div>
+                </div>
+
+                <!-- Footer Summary of Selected Procedures -->
+                <div id="proceduresSelectedFooter" class="px-4 py-2.5 border-t border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/40 flex items-center justify-between text-xs shrink-0">
+                    <label class="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 cursor-pointer">
+                        <input type="checkbox" id="selectAllPlannedProcedures" class="rounded border-gray-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500">
+                        <span>Selecionar planejados</span>
+                    </label>
+                    <span class="text-gray-500 dark:text-gray-400">Total Selecionado: <strong id="selectedTotalAmountDisplay" class="text-emerald-600 dark:text-emerald-400 font-bold">R$ 0,00</strong></span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ── MODAL: Detalhes do Dente / Condição ───────────────────────────────────── -->
+    <div id="toothDetailModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="tooth-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" id="toothDetailBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-200 dark:border-slate-700">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                    <div>
+                        <h3 id="toothModalTitle" class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                            Dente --
+                        </h3>
+                        <p id="toothModalSubtitle" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            Selecione a condição anatômica ou adicione procedimento.
+                        </p>
+                    </div>
+                    <button type="button" id="closeToothModalCross" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="p-5 space-y-4">
+                    <input type="hidden" id="modalToothCode" value="">
+
+                    <!-- Condição Anatômica Buttons -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                            Condição do Dente
+                        </label>
+                        <div class="grid grid-cols-3 gap-2" id="toothConditionGrid">
+                            <button type="button" data-condition="present" class="tooth-cond-btn px-2.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-all text-center">
+                                Presente
+                            </button>
+                            <button type="button" data-condition="absent" class="tooth-cond-btn px-2.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-all text-center">
+                                Ausente
+                            </button>
+                            <button type="button" data-condition="extracted" class="tooth-cond-btn px-2.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-all text-center text-red-600 dark:text-red-400">
+                                Extraído
+                            </button>
+                            <button type="button" data-condition="implant" class="tooth-cond-btn px-2.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-all text-center text-blue-600 dark:text-blue-400">
+                                Implante
+                            </button>
+                            <button type="button" data-condition="unerupted" class="tooth-cond-btn px-2.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-all text-center text-amber-600 dark:text-amber-400">
+                                Incluso
+                            </button>
+                            <button type="button" data-condition="retained" class="tooth-cond-btn px-2.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-all text-center text-purple-600 dark:text-purple-400">
+                                Retido
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="toothNotesInput" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Observação do Dente
+                        </label>
+                        <textarea id="toothNotesInput" rows="2" placeholder="Observações clínicas específicas deste dente..."
+                            class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm p-2 text-xs focus:ring-brand-500 focus:border-brand-500"></textarea>
+                    </div>
+                </div>
+
+                <div class="px-5 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 flex items-center justify-between gap-2">
+                    <button type="button" id="btnQuickAddProcedureForTooth"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 text-xs font-semibold hover:bg-brand-100 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Procedimento
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="btnCancelToothModal"
+                            class="px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-all">
+                            Fechar
+                        </button>
+                        <button type="button" id="btnSaveToothCondition"
+                            class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition-all">
+                            Salvar Condição
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL: Cadastro / Edição de Procedimento ─────────────────────────────── -->
+    <div id="procedureModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="proc-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" id="procedureBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="procedureForm">
+                    <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                        <div>
+                            <h3 id="procedureModalTitle" class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                                Novo Procedimento Odontológico
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Adicione procedimentos ao plano de tratamento do paciente.
+                            </p>
+                        </div>
+                        <button type="button" id="closeProcedureModalCross" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="p-5 space-y-3.5 max-h-[75vh] overflow-y-auto">
+                        <input type="hidden" id="procEditPublicId" value="">
+
+                        <!-- Região e Dente -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="procRegion" class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Região <span class="text-red-500">*</span>
+                                </label>
+                                <select id="procRegion" required
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-1.5 px-3 text-sm focus:ring-brand-500 focus:border-brand-500">
+                                    <option value="tooth">Dente Individual</option>
+                                    <option value="upper_arch">Arcada Superior</option>
+                                    <option value="lower_arch">Arcada Inferior</option>
+                                    <option value="quadrant">Quadrante</option>
+                                    <option value="mouth">Boca Toda</option>
+                                </select>
+                            </div>
+
+                            <div id="procToothCodeContainer">
+                                <label for="procToothCode" class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Dente (FDI)
+                                </label>
+                                <input type="number" id="procToothCode" placeholder="Ex: 16, 21, 54..."
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-1.5 px-3 text-sm focus:ring-brand-500 focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <!-- Faces Selecionáveis -->
+                        <div id="procFacesContainer">
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                Faces do Dente
+                            </label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button type="button" data-face="M" class="face-pill px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-all">M (Mesial)</button>
+                                <button type="button" data-face="D" class="face-pill px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-all">D (Distal)</button>
+                                <button type="button" data-face="O" class="face-pill px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-all">O (Oclusal)</button>
+                                <button type="button" data-face="I" class="face-pill px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-all">I (Incisal)</button>
+                                <button type="button" data-face="V" class="face-pill px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-all">V (Vestibular)</button>
+                                <button type="button" data-face="L" class="face-pill px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-all">L (Lingual)</button>
+                                <button type="button" data-face="P" class="face-pill px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-all">P (Palatina)</button>
+                            </div>
+                        </div>
+
+                        <!-- Serviço e Preço -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2">
+                                <label for="procService" class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Serviço / Procedimento <span class="text-red-500">*</span>
+                                </label>
+                                <select id="procService" required
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-1.5 px-3 text-sm focus:ring-brand-500 focus:border-brand-500">
+                                    <option value="">Selecione o serviço...</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="procUnitPrice" class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Valor (R$) <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="procUnitPrice" placeholder="R$ 0,00" required
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-1.5 px-3 text-sm focus:ring-brand-500 focus:border-brand-500 text-right font-medium">
+                            </div>
+                        </div>
+
+                        <!-- Profissional e Status -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="procProfessional" class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Dentista / Profissional
+                                </label>
+                                <select id="procProfessional"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-1.5 px-3 text-sm focus:ring-brand-500 focus:border-brand-500">
+                                    <option value="">Selecione o profissional...</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="procStatus" class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    Status Inicial
+                                </label>
+                                <select id="procStatus"
+                                    class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-1.5 px-3 text-sm focus:ring-brand-500 focus:border-brand-500">
+                                    <option value="planned">Planejado</option>
+                                    <option value="existing">Já Existente (Prévio)</option>
+                                    <option value="done">Já Realizado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="procNotes" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Observações do Procedimento
+                            </label>
+                            <textarea id="procNotes" rows="2" placeholder="Observações específicas deste procedimento..."
+                                class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm p-2 text-xs focus:ring-brand-500 focus:border-brand-500"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="px-5 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 flex items-center justify-end gap-2">
+                        <button type="button" id="btnCancelProcedureModal"
+                            class="px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnSaveProcedure"
+                            class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all focus:ring-2 focus:ring-brand-500">
+                            Salvar Procedimento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL: Realizar Procedimento ─────────────────────────────────────────── -->
+    <div id="performProcedureModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="perform-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" id="performBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="performProcedureForm">
+                    <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                                Registrar Realização do Procedimento
+                            </h3>
+                            <p id="performProcedureDesc" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Procedimento
+                            </p>
+                        </div>
+                        <button type="button" id="closePerformModalCross" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <input type="hidden" id="performProcPublicId" value="">
+
+                        <div>
+                            <label for="performProfessional" class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Dentista / Profissional Executor
+                            </label>
+                            <select id="performProfessional"
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-2 px-3 text-sm focus:ring-brand-500 focus:border-brand-500">
+                                <option value="">Selecione o profissional...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="performDate" class="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Data e Hora da Realização
+                            </label>
+                            <input type="datetime-local" id="performDate" required
+                                class="mt-1 block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm py-2 px-3 text-sm focus:ring-brand-500 focus:border-brand-500">
+                        </div>
+                    </div>
+
+                    <div class="px-5 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 flex items-center justify-end gap-2">
+                        <button type="button" id="btnCancelPerformModal"
+                            class="px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnConfirmPerformProcedure"
+                            class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-sm transition-all focus:ring-2 focus:ring-emerald-500">
+                            Confirmar Realização
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL: Observações Clínicas do Paciente ──────────────────────────────── -->
+    <div id="chartNotesModal" class="fixed z-10000 inset-0 hidden overflow-y-auto" aria-labelledby="notes-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" id="chartNotesBackdrop"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200 dark:border-slate-700">
+                <form id="chartNotesForm">
+                    <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                            Observações Clínicas / Anamnese Odontológica
+                        </h3>
+                        <button type="button" id="closeChartNotesCross" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="p-5">
+                        <textarea id="chartNotesTextarea" rows="6" placeholder="Anotações clínicas do odontograma, histórico odontológico, alergias, queixas principais..."
+                            class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm p-3 text-sm focus:ring-brand-500 focus:border-brand-500"></textarea>
+                    </div>
+
+                    <div class="px-5 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 flex items-center justify-end gap-2">
+                        <button type="button" id="btnCancelChartNotes"
+                            class="px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-all">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btnSaveChartNotes"
+                            class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all">
+                            Salvar Notas
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js?v=20261003222428"></script>
+    <script src="/js/odontogram.js?v=20261003222428"></script>
+    <script src="/js/components/navbar.js?v=20261003222428"></script>
+    <div id="app-footer" class="shrink-0"></div>
+    <script src="/js/components/footer.js?v=20261003222428"></script>
+</body>
+
+</html>

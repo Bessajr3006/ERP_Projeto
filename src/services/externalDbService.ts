@@ -7007,18 +7007,9 @@ export class ExternalDbService {
                             SELECT 
                                 COUNT(DISTINCT p.cdCrediarioCupom) as qtd_cupons,
                                 SUM(ISNULL(p.vlPago, 0)) as total_quitado,
-                                SUM(ISNULL(p.vlJuros, 0)) as total_juros_cupom,
-                                (SELECT SUM(ISNULL(cc.vlCrediario, 0)) 
-                                 FROM tbCrediarioCupom cc WITH (NOLOCK) 
-                                 WHERE EXISTS (
-                                     SELECT 1 FROM tbCrediarioCupomPagamento _p WITH (NOLOCK) 
-                                     WHERE _p.cdCrediarioCupom = cc.cdCrediarioCupom 
-                                       AND _p.cdFilial = cc.cdFilial 
-                                       AND YEAR(_p.dtPago) = @ano 
-                                       AND MONTH(_p.dtPago) = @mes
-                                 ) ${filialClauseCupom}
-                                ) as total_emitido
+                                SUM(ISNULL(cc.vlCrediario, 0)) as total_emitido
                             FROM tbCrediarioCupomPagamento p WITH (NOLOCK)
+                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom
                             WHERE YEAR(p.dtPago) = @ano AND MONTH(p.dtPago) = @mes
                               ${filialClausePagamento}
                         `);
@@ -7112,7 +7103,7 @@ export class ExternalDbService {
                                 SUM(ISNULL(p.vlPago, 0)) as total_quitado,
                                 SUM(ISNULL(cc.vlCrediario, 0)) as total_valor
                             FROM tbCrediarioCupomPagamento p WITH (NOLOCK)
-                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom AND cc.cdFilial = p.cdFilial
+                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom
                             LEFT JOIN tbCrediario c WITH (NOLOCK) ON c.cdCrediario = cc.cdCrediario
                             WHERE YEAR(p.dtPago) = @ano AND MONTH(p.dtPago) = @mes
                               ${filialClausePagamento}
@@ -7213,7 +7204,7 @@ export class ExternalDbService {
                                 ISNULL(cc.cdPDV, 0) as pdv,
                                 ISNULL(cc.cdFilial, 1) as filial
                             FROM tbCrediarioCupomPagamento p WITH (NOLOCK)
-                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom AND cc.cdFilial = p.cdFilial
+                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom
                             LEFT JOIN tbCrediario c WITH (NOLOCK) ON c.cdCrediario = cc.cdCrediario
                             WHERE YEAR(p.dtPago) = @ano AND MONTH(p.dtPago) = @mes
                               ${filialClausePagamento}
@@ -7280,7 +7271,7 @@ export class ExternalDbService {
                                 SUM(ISNULL(cc.vlCrediario, 0)) as total_emitido,
                                 SUM(ISNULL(p.vlPago, 0)) as total_quitado
                             FROM tbCrediarioCupomPagamento p WITH (NOLOCK)
-                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom AND cc.cdFilial = p.cdFilial
+                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom
                             WHERE YEAR(p.dtPago) = @ano AND MONTH(p.dtPago) = @mes
                               ${filialClausePagamento}
                             GROUP BY DAY(p.dtPago), CONVERT(VARCHAR(10), p.dtPago, 120)
@@ -7352,7 +7343,7 @@ export class ExternalDbService {
                                 SUM(ISNULL(cc.vlCrediario, 0)) as total_emitido,
                                 SUM(ISNULL(p.vlPago, 0)) as total_quitado
                             FROM tbCrediarioCupomPagamento p WITH (NOLOCK)
-                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom AND cc.cdFilial = p.cdFilial
+                            INNER JOIN tbCrediarioCupom cc WITH (NOLOCK) ON cc.cdCrediarioCupom = p.cdCrediarioCupom
                             WHERE YEAR(p.dtPago) = @ano
                               ${filialClausePagamento}
                             GROUP BY MONTH(p.dtPago)

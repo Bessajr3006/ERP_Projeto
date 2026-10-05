@@ -4942,7 +4942,6 @@ export class FinanceService {
 
                     if (jurosInfo.totalFineInterest > 0) {
                         if (tx.solidcon_interest_key) {
-                            // Já registrado no Solidcon
                             continue;
                         }
                         try {

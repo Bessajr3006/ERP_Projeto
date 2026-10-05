@@ -708,6 +708,165 @@
             }
         }
     };
+    // ─── Render Sales by Modality (PDV / Caixa / Boletim) ────────────────────
+    const getModalityStyle = (modalityName) => {
+        const name = (modalityName || '').toUpperCase();
+        if (name.includes('DINHEIRO') || name.includes('ESPECIE') || name.includes('ESPÉCIE')) {
+            return {
+                icon: `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
+                badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                barColor: 'bg-emerald-500'
+            };
+        }
+        if (name.includes('PIX')) {
+            return {
+                icon: `<svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
+                badgeClass: 'bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+                barColor: 'bg-teal-500'
+            };
+        }
+        if (name.includes('VISA')) {
+            return {
+                icon: `<svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>`,
+                badgeClass: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                barColor: 'bg-blue-500'
+            };
+        }
+        if (name.includes('MASTER') || name.includes('MAESTRO')) {
+            return {
+                icon: `<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>`,
+                badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+                barColor: 'bg-amber-500'
+            };
+        }
+        if (name.includes('ELO')) {
+            return {
+                icon: `<svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>`,
+                badgeClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/60 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800',
+                barColor: 'bg-yellow-500'
+            };
+        }
+        if (name.includes('CONVENIO') || name.includes('CONVÊNIO') || name.includes('CONV')) {
+            return {
+                icon: `<svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
+                badgeClass: 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+                barColor: 'bg-purple-500'
+            };
+        }
+        if (name.includes('AMEX')) {
+            return {
+                icon: `<svg class="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>`,
+                badgeClass: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+                barColor: 'bg-cyan-500'
+            };
+        }
+        return {
+            icon: `<svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>`,
+            badgeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+            barColor: 'bg-indigo-500'
+        };
+    };
+    const renderSalesByModality = (data) => {
+        const tbody = getEl('salesModalityTableBody');
+        const countBadge = getEl('salesModalitiesCountBadge');
+        const totalLiquidoBadge = getEl('salesTotalLiquidoBadge');
+        const kpiBruto = getEl('salesKpiTotalBruto');
+        const kpiLiquido = getEl('salesKpiTotalLiquido');
+        const kpiQtd = getEl('salesKpiQtdTotal');
+        const kpiTicket = getEl('salesKpiTicketMedio');
+        const footQtd = getEl('salesFootQtd');
+        const footTicket = getEl('salesFootTicket');
+        const footBruto = getEl('salesFootBruto');
+        const footLiquido = getEl('salesFootLiquido');
+        const modalities = data?.salesByModality || [];
+        const summary = data?.salesSummary || {
+            totalBruto: modalities.reduce((acc, m) => acc + (m.valor_bruto || 0), 0),
+            totalLiquido: modalities.reduce((acc, m) => acc + (m.valor_liquido || 0), 0),
+            qtdOperacoes: modalities.reduce((acc, m) => acc + (m.qtd_operacoes || 0), 0),
+            ticketMedio: 0
+        };
+        if (!summary.ticketMedio && summary.qtdOperacoes > 0) {
+            summary.ticketMedio = summary.totalLiquido / summary.qtdOperacoes;
+        }
+        // Update KPIs
+        if (kpiBruto)
+            kpiBruto.textContent = formatCurrency(summary.totalBruto);
+        if (kpiLiquido)
+            kpiLiquido.textContent = formatCurrency(summary.totalLiquido);
+        if (kpiQtd)
+            kpiQtd.textContent = Number(summary.qtdOperacoes || 0).toLocaleString('pt-BR');
+        if (kpiTicket)
+            kpiTicket.textContent = formatCurrency(summary.ticketMedio);
+        // Update Footers
+        if (footQtd)
+            footQtd.textContent = Number(summary.qtdOperacoes || 0).toLocaleString('pt-BR');
+        if (footTicket)
+            footTicket.textContent = formatCurrency(summary.ticketMedio);
+        if (footBruto)
+            footBruto.textContent = formatCurrency(summary.totalBruto);
+        if (footLiquido)
+            footLiquido.textContent = formatCurrency(summary.totalLiquido);
+        // Update Badges
+        if (countBadge)
+            countBadge.textContent = `${modalities.length} modalidades`;
+        if (totalLiquidoBadge)
+            totalLiquidoBadge.textContent = `Total Líquido: ${formatCurrency(summary.totalLiquido)}`;
+        if (!tbody)
+            return;
+        if (modalities.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-8 text-center text-gray-400">
+                        Nenhuma venda registrada na tabela de boletim para o período selecionado.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        tbody.innerHTML = modalities.map((m) => {
+            const style = getModalityStyle(m.modalidade);
+            const pct = typeof m.percentual === 'number' ? m.percentual : 0;
+            const ticket = m.ticket_medio || (m.qtd_operacoes > 0 ? m.valor_liquido / m.qtd_operacoes : 0);
+            return `
+                <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
+                    <td class="py-2.5 px-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="p-1.5 rounded-lg border flex items-center justify-center shrink-0 ${style.badgeClass}">
+                                ${style.icon}
+                            </span>
+                            <div>
+                                <span class="font-bold text-gray-900 dark:text-white">${escapeHtml(m.modalidade)}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-2.5 px-3 text-center">
+                        <span class="inline-block px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 font-mono font-semibold text-gray-700 dark:text-gray-300">
+                            ${Number(m.qtd_operacoes || 0).toLocaleString('pt-BR')}
+                        </span>
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-300">
+                        ${formatCurrency(ticket)}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-mono text-gray-500 dark:text-gray-400">
+                        ${formatCurrency(m.valor_bruto)}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        ${formatCurrency(m.valor_liquido)}
+                    </td>
+                    <td class="py-2.5 px-3">
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between text-[11px] font-mono">
+                                <span class="font-bold text-gray-700 dark:text-gray-200">${pct.toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-500 ${style.barColor}" style="width: ${Math.min(100, Math.max(pct > 0 ? 2 : 0, pct))}%;"></div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
     // ─── Render Separated Category Checklist Panels ──────────────────────────
     const renderCategoryDistribution = () => {
         const recTbody = getEl('recCategoryTableBody');
@@ -1126,6 +1285,7 @@
         renderAnnualChart(res.activeData);
         renderBankDistribution(res.activeData);
         renderTopRankings(res.activeData);
+        renderSalesByModality(res.activeData);
         renderCategoryDistribution();
         renderTransactionsTable();
     };

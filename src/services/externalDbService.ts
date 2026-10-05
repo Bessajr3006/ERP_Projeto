@@ -6808,6 +6808,119 @@ export class ExternalDbService {
                     filiais = [{ id: 1, nome: 'Filial 1' }];
                 }
 
+                // 7. Vendas por Modalidade (PDV / Caixa) - tbBoletimItemMovimento + tbBoletimItem
+                let filialClauseBoletim = '';
+                if (cdFilial) {
+                    const filialNum = parseInt(cdFilial, 10);
+                    if (!isNaN(filialNum)) {
+                        filialClauseBoletim = ` AND (bim.cdPessoaFilial = ${filialNum} OR bim.cdPessoaFilialDeposito = ${filialNum})`;
+                    }
+                }
+
+                let salesByModality: any[] = [];
+                let salesSummary = {
+                    totalBruto: 0,
+                    totalLiquido: 0,
+                    qtdOperacoes: 0,
+                    ticketMedio: 0
+                };
+                let annualSalesByModality: any[] = [];
+
+                try {
+                    const reqSales = pool.request();
+                    reqSales.input('ano', sql.Int, ano);
+                    reqSales.input('mes', sql.Int, mes);
+
+                    const querySales = `
+                        SELECT 
+                            ISNULL(bi.nmBoletimItem, 'Outros') as modalidade,
+                            SUM(ISNULL(bim.vlBruto, 0)) as valor_bruto,
+                            SUM(ISNULL(bim.vlLiquido, 0)) as valor_liquido,
+                            SUM(ISNULL(bim.qtMovimento, 1)) as qtd_operacoes
+                        FROM tbBoletimItemMovimento bim WITH (NOLOCK)
+                        INNER JOIN tbBoletimItem bi WITH (NOLOCK) ON bim.cdBoletimItem = bi.cdBoletimItem AND bim.cdEmpresa = bi.cdEmpresa
+                        LEFT JOIN tbBoletimMovimento bm WITH (NOLOCK) ON bm.cdBoletimMovimento = bim.cdBoletimMovimento AND bm.cdPessoaFilial = bim.cdPessoaFilial
+                        WHERE YEAR(COALESCE(bm.dtMovimento, bim.dtPrevisao)) = @ano 
+                          AND MONTH(COALESCE(bm.dtMovimento, bim.dtPrevisao)) = @mes
+                          ${filialClauseBoletim}
+                        GROUP BY bi.nmBoletimItem
+                        ORDER BY valor_liquido DESC
+                    `;
+
+                    const resSales = await reqSales.query(querySales);
+                    const rawSales = resSales.recordset || [];
+
+                    let sumBruto = 0;
+                    let sumLiquido = 0;
+                    let sumQtd = 0;
+
+                    rawSales.forEach((r: any) => {
+                        sumBruto += Number(r.valor_bruto || 0);
+                        sumLiquido += Number(r.valor_liquido || 0);
+                        sumQtd += Number(r.qtd_operacoes || 0);
+                    });
+
+                    salesSummary = {
+                        totalBruto: sumBruto,
+                        totalLiquido: sumLiquido,
+                        qtdOperacoes: sumQtd,
+                        ticketMedio: sumQtd > 0 ? sumLiquido / sumQtd : 0
+                    };
+
+                    salesByModality = rawSales.map((r: any) => {
+                        const vBruto = Number(r.valor_bruto || 0);
+                        const vLiquido = Number(r.valor_liquido || 0);
+                        const qtd = Number(r.qtd_operacoes || 0);
+                        const pct = sumLiquido > 0 ? (vLiquido / sumLiquido) * 100 : 0;
+                        const ticket = qtd > 0 ? vLiquido / qtd : 0;
+
+                        return {
+                            modalidade: String(r.modalidade || 'Outros').trim(),
+                            valor_bruto: vBruto,
+                            valor_liquido: vLiquido,
+                            qtd_operacoes: qtd,
+                            ticket_medio: ticket,
+                            percentual: Number(pct.toFixed(2))
+                        };
+                    });
+                } catch (salesErr: any) {
+                    console.warn('Falha ao consultar vendas por modalidade (tbBoletimItemMovimento):', salesErr?.message || salesErr);
+                    salesByModality = [];
+                }
+
+                // Vendas Anuais por Modalidade (12 Meses)
+                try {
+                    const reqAnnualSales = pool.request();
+                    reqAnnualSales.input('ano', sql.Int, ano);
+
+                    const queryAnnualSales = `
+                        SELECT 
+                            MONTH(COALESCE(bm.dtMovimento, bim.dtPrevisao)) as mes,
+                            ISNULL(bi.nmBoletimItem, 'Outros') as modalidade,
+                            SUM(ISNULL(bim.vlBruto, 0)) as valor_bruto,
+                            SUM(ISNULL(bim.vlLiquido, 0)) as valor_liquido,
+                            SUM(ISNULL(bim.qtMovimento, 1)) as qtd_operacoes
+                        FROM tbBoletimItemMovimento bim WITH (NOLOCK)
+                        INNER JOIN tbBoletimItem bi WITH (NOLOCK) ON bim.cdBoletimItem = bi.cdBoletimItem AND bim.cdEmpresa = bi.cdEmpresa
+                        LEFT JOIN tbBoletimMovimento bm WITH (NOLOCK) ON bm.cdBoletimMovimento = bim.cdBoletimMovimento AND bm.cdPessoaFilial = bim.cdPessoaFilial
+                        WHERE YEAR(COALESCE(bm.dtMovimento, bim.dtPrevisao)) = @ano
+                          ${filialClauseBoletim}
+                        GROUP BY MONTH(COALESCE(bm.dtMovimento, bim.dtPrevisao)), bi.nmBoletimItem
+                        ORDER BY mes ASC, valor_liquido DESC
+                    `;
+
+                    const resAnnualSales = await reqAnnualSales.query(queryAnnualSales);
+                    annualSalesByModality = (resAnnualSales.recordset || []).map((r: any) => ({
+                        mes: Number(r.mes),
+                        modalidade: String(r.modalidade || 'Outros').trim(),
+                        valor_bruto: Number(r.valor_bruto || 0),
+                        valor_liquido: Number(r.valor_liquido || 0),
+                        qtd_operacoes: Number(r.qtd_operacoes || 0)
+                    }));
+                } catch {
+                    annualSalesByModality = [];
+                }
+
                 // Resumo do Mês
                 const currentMonthData = monthlyComparison[mes - 1] || {
                     receita: 0,
@@ -6853,6 +6966,9 @@ export class ExternalDbService {
                         ticketMedioReceita: currentMonthData.qtd_receita > 0 ? totalReceita / currentMonthData.qtd_receita : 0,
                         ticketMedioDespesa: currentMonthData.qtd_despesa > 0 ? totalDespesa / currentMonthData.qtd_despesa : 0
                     },
+                    salesSummary,
+                    salesByModality,
+                    annualSalesByModality,
                     monthlyComparison,
                     annualByCategory,
                     dailyEvolution,

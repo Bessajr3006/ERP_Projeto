@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Visão Fin_Solidcon</title>
-    <link href="/css/style.css?v=20261005100326" rel="stylesheet">
+    <link href="/css/style.css?v=20261005144535" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261005100326"></script>
+    <script src="/js/pwa.js?v=20261005144535"></script>
 </head>
 <body data-required-module="fin_solidcon_vision" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -332,6 +332,81 @@
             </div>
         </div>
 
+        <!-- ── VENDAS POR MODALIDADE (PDV / CAIXA / BOLETIM) ────────── -->
+        <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-sm p-5 mb-6">
+            <!-- Header do Card -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100 dark:border-slate-700/60">
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="p-1.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        </span>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
+                            <span>Vendas por Modalidade de Pagamento</span>
+                            <span id="salesModalitiesCountBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-semibold font-mono" title="Quantidade de modalidades identificadas">0 modalidades</span>
+                            <span id="salesTotalLiquidoBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold font-mono">Total Líquido: R$ 0,00</span>
+                        </h3>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Consolidação das vendas do PDV por forma de pagamento (Dinheiro, PIX, Cartão de Crédito/Débito, Convênio, etc.) da tabela de boletim do Solidcon.
+                    </p>
+                </div>
+
+                <!-- Resumo Rápido em Chips / Badges -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200/80 dark:border-slate-700 flex items-center gap-2 text-xs">
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">Bruto:</span>
+                        <span id="salesKpiTotalBruto" class="font-bold text-gray-800 dark:text-gray-200 font-mono">R$ 0,00</span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center gap-2 text-xs">
+                        <span class="text-emerald-600 dark:text-emerald-400 font-medium">Líquido:</span>
+                        <span id="salesKpiTotalLiquido" class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">R$ 0,00</span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/40 flex items-center gap-2 text-xs">
+                        <span class="text-indigo-600 dark:text-indigo-400 font-medium">Operações:</span>
+                        <span id="salesKpiQtdTotal" class="font-bold text-indigo-600 dark:text-indigo-400 font-mono">0</span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 flex items-center gap-2 text-xs">
+                        <span class="text-amber-600 dark:text-amber-400 font-medium">Ticket Médio:</span>
+                        <span id="salesKpiTicketMedio" class="font-bold text-amber-600 dark:text-amber-400 font-mono">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela e Grid de Modalidades -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-slate-900/30">
+                            <th class="py-2.5 px-3">Modalidade / Forma de Pagamento</th>
+                            <th class="py-2.5 px-3 text-center">Operações</th>
+                            <th class="py-2.5 px-3 text-right">Ticket Médio</th>
+                            <th class="py-2.5 px-3 text-right">Valor Bruto</th>
+                            <th class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400">Valor Líquido</th>
+                            <th class="py-2.5 px-3 text-left w-36 sm:w-48">Participação (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesModalityTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-gray-400">Carregando modalidades de vendas...</td>
+                        </tr>
+                    </tbody>
+                    <tfoot id="salesModalityTableFoot" class="border-t-2 border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/50 font-bold text-xs">
+                        <tr>
+                            <td class="py-3 px-3 text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px]">
+                                Total Consolidado das Vendas:
+                            </td>
+                            <td class="py-3 px-3 text-center font-mono" id="salesFootQtd">0</td>
+                            <td class="py-3 px-3 text-right font-mono" id="salesFootTicket">R$ 0,00</td>
+                            <td class="py-3 px-3 text-right font-mono" id="salesFootBruto">R$ 0,00</td>
+                            <td class="py-3 px-3 text-right font-mono text-sm font-black text-emerald-600 dark:text-emerald-400" id="salesFootLiquido">R$ 0,00</td>
+                            <td class="py-3 px-3 text-left font-mono font-bold text-gray-700 dark:text-gray-300">100.0%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
         <!-- ── DISTRIBUIÇÃO POR TIPO DE CONTA / CATEGORIA (RECEITAS E DESPESAS SEPARADAS) ─── -->
         <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-sm p-5 mb-6">
             <!-- Header Global do Card -->
@@ -563,10 +638,10 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261005100326"></script>
-    <script src="/js/fin_solidcon_vision.js?v=20261005100326"></script>
-    <script src="/js/components/navbar.js?v=20261005100326"></script>
+    <script src="/js/api.js?v=20261005144535"></script>
+    <script src="/js/fin_solidcon_vision.js?v=20261005144535"></script>
+    <script src="/js/components/navbar.js?v=20261005144535"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261005100326"></script>
+    <script src="/js/components/footer.js?v=20261005144535"></script>
 </body>
 </html>

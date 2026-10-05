@@ -65,6 +65,7 @@
         nrCupom: number;
         dtEmissao: string;
         dtVencimento: string;
+        dtBaixa: string | null;
         vlCrediario: number;
         vlQuitado: number;
         saldoPendente: number;
@@ -1312,7 +1313,7 @@
             if (filteredCupons.length === 0) {
                 cuponsTbody.innerHTML = `
                     <tr>
-                        <td colspan="10" class="py-8 text-center text-gray-400">
+                        <td colspan="11" class="py-8 text-center text-gray-400">
                             ${term ? 'Nenhum cupom encontrado para o filtro.' : 'Nenhum cupom emitido no período.'}
                         </td>
                     </tr>
@@ -1329,6 +1330,9 @@
                         <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
                             <td class="py-2.5 px-3 whitespace-nowrap font-mono text-gray-600 dark:text-gray-300">
                                 ${formatDate(cp.dtEmissao)}
+                            </td>
+                            <td class="py-2.5 px-3 whitespace-nowrap font-mono text-xs">
+                                ${cp.dtBaixa ? `<span class="text-emerald-600 dark:text-emerald-400 font-semibold">${formatDate(cp.dtBaixa)}</span>` : '<span class="text-gray-400 dark:text-gray-500 font-mono text-xs">-</span>'}
                             </td>
                             <td class="py-2.5 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">
                                 #${cp.nrCupom}
@@ -2246,7 +2250,7 @@
                 if (clientCupons.length === 0) {
                     tableBody.innerHTML = `
                         <tr>
-                            <td colspan="9" class="py-8 text-center text-gray-400">
+                            <td colspan="10" class="py-8 text-center text-gray-400">
                                 Nenhum cupom individual encontrado para este cliente.
                             </td>
                         </tr>
@@ -2263,6 +2267,9 @@
                             <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
                                 <td class="py-2.5 px-3 whitespace-nowrap font-mono text-gray-600 dark:text-gray-300">
                                     ${formatDate(cp.dtEmissao)}
+                                </td>
+                                <td class="py-2.5 px-3 whitespace-nowrap font-mono text-xs">
+                                    ${cp.dtBaixa ? `<span class="text-emerald-600 dark:text-emerald-400 font-semibold">${formatDate(cp.dtBaixa)}</span>` : '<span class="text-gray-400 dark:text-gray-500 font-mono text-xs">-</span>'}
                                 </td>
                                 <td class="py-2.5 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">
                                     #${cp.nrCupom}

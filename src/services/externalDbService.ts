@@ -7072,6 +7072,10 @@ export class ExternalDbService {
                             cc.nrCupom,
                             CONVERT(VARCHAR(10), cc.dtCrediario, 120) as dtEmissao,
                             CONVERT(VARCHAR(10), cc.dtVencimento, 120) as dtVencimento,
+                            (SELECT TOP 1 CONVERT(VARCHAR(10), p.dtPago, 120) 
+                             FROM tbCrediarioCupomPagamento p WITH (NOLOCK) 
+                             WHERE p.cdCrediarioCupom = cc.cdCrediarioCupom AND p.cdFilial = cc.cdFilial 
+                             ORDER BY p.dtPago DESC) as dtBaixa,
                             CAST(ISNULL(cc.vlCrediario, 0) AS FLOAT) as vlCrediario,
                             CAST(CASE 
                                 WHEN ISNULL(cc.vlQuitado, 0) > ISNULL(cc.vlCrediario, 0) THEN ISNULL(cc.vlCrediario, 0)
@@ -7100,6 +7104,7 @@ export class ExternalDbService {
                             nrCupom: Number(cp.nrCupom || 0),
                             dtEmissao: cp.dtEmissao,
                             dtVencimento: cp.dtVencimento,
+                            dtBaixa: cp.dtBaixa ? String(cp.dtBaixa) : null,
                             vlCrediario: emit,
                             vlQuitado: quit,
                             saldoPendente: pend,

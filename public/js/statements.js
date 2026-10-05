@@ -10,6 +10,8 @@
     let bankStatementsData = [];
     let categoriesData = [];
     let categoryTypesData = [];
+    let customerGroupsData = [];
+    const peopleCache = {};
     let selectedBankStatementForCreate = null;
     let selectedStatementForEdit = null;
     let selectedStatementForDelete = null;
@@ -713,6 +715,21 @@
         const statusSelect = getById('stmtCreateStatus');
         if (statusSelect)
             statusSelect.value = 'paid';
+        const entityTypeSelect = getById('stmtCreateEntityType');
+        const entitySelect = getById('stmtCreateEntity');
+        const customerGroupContainer = getById('stmtCustomerGroupContainer');
+        const customerGroupSelect = getById('stmtCreateCustomerGroup');
+        if (entityTypeSelect)
+            entityTypeSelect.value = '';
+        if (entitySelect) {
+            entitySelect.disabled = true;
+            entitySelect.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+        }
+        if (customerGroupContainer)
+            customerGroupContainer.classList.add('hidden');
+        if (customerGroupSelect)
+            customerGroupSelect.value = '';
+        loadCustomerGroups();
         if (autoReconcile)
             autoReconcile.checked = true;
         if (modal) {
@@ -753,6 +770,194 @@
     }
     function closeQuickCategoryModal() {
         const modal = getById('quickCategoryModal');
+        if (modal)
+            modal.classList.add('hidden');
+    }
+    // ─── Cadastro Rápido de Pessoa & Seleção de Entidades ────────────────────────
+    function maskDoc(v) {
+        const digits = (v || '').replace(/\D/g, '').slice(0, 14);
+        if (digits.length <= 11) {
+            return digits
+                .replace(/(\d{3})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d)/, '$1.$2')
+                .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        }
+        return digits
+            .replace(/^(\d{2})(\d)/, '$1.$2')
+            .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+            .replace(/\.(\d{3})(\d)/, '.$1/$2')
+            .replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    function maskPhone(v) {
+        const digits = (v || '').replace(/\D/g, '').slice(0, 11);
+        if (digits.length <= 10) {
+            return digits
+                .replace(/(\d{2})(\d)/, '($1) $2')
+                .replace(/(\d{4})(\d)/, '$1-$2');
+        }
+        return digits
+            .replace(/(\d{2})(\d)/, '($1) $2')
+            .replace(/(\d{5})(\d)/, '$1-$2');
+    }
+    async function loadCustomerGroups() {
+        if (customerGroupsData.length > 0)
+            return;
+        try {
+            const res = await api('/customer-groups').catch(() => ({ data: [] }));
+            customerGroupsData = res.data || [];
+        }
+        catch (err) {
+            console.error('Failed to load customer groups:', err);
+        }
+    }
+    async function loadPeopleOfType(type) {
+        if (peopleCache[type])
+            return peopleCache[type];
+        let items = [];
+        try {
+            if (type === 'customer') {
+                const res = await api('/entities/customers');
+                items = (res.data || []).map((x) => ({
+                    public_id: x.public_id,
+                    name: x.name || x.trade_name || 'Sem nome',
+                    customer_group_public_id: x.customer_group_public_id,
+                }));
+            }
+            else if (type === 'supplier') {
+                const res = await api('/entities/suppliers');
+                items = (res.data || []).map((x) => ({
+                    public_id: x.public_id,
+                    name: x.name || x.trade_name || 'Sem nome',
+                }));
+            }
+            else if (type === 'contact') {
+                const res = await api('/entities/contacts');
+                items = (res.data || []).map((x) => ({
+                    public_id: x.public_id,
+                    name: x.name || x.trade_name || 'Sem nome',
+                }));
+            }
+            else if (type === 'seller') {
+                const res = await api('/sellers');
+                items = (res.data || []).map((x) => ({
+                    public_id: x.public_id,
+                    name: x.full_name || x.name || 'Sem nome',
+                }));
+            }
+            else if (['buyer', 'service_provider', 'accountant'].includes(type)) {
+                const res = await api('/users');
+                items = (res.data || [])
+                    .filter((x) => x.role === type)
+                    .map((x) => ({
+                    public_id: x.public_id,
+                    name: x.full_name || x.name || 'Sem nome',
+                }));
+            }
+        }
+        catch (e) {
+            console.error(`Failed to load people of type ${type}`, e);
+        }
+        items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+        peopleCache[type] = items;
+        return items;
+    }
+    function handleCreateEntityTypeChange(selectedEntityPublicId) {
+        const type = getById('stmtCreateEntityType')?.value || '';
+        const entitySelect = getById('stmtCreateEntity');
+        const customerGroupContainer = getById('stmtCustomerGroupContainer');
+        const customerGroupSelect = getById('stmtCreateCustomerGroup');
+        if (!entitySelect)
+            return;
+        entitySelect.innerHTML = '';
+        if (!type) {
+            entitySelect.disabled = true;
+            entitySelect.innerHTML = '<option value="">Selecione o tipo primeiro...</option>';
+            if (customerGroupContainer)
+                customerGroupContainer.classList.add('hidden');
+            if (customerGroupSelect)
+                customerGroupSelect.value = '';
+            return;
+        }
+        if (type === 'customer') {
+            if (customerGroupContainer)
+                customerGroupContainer.classList.remove('hidden');
+            if (customerGroupSelect) {
+                const prevGroup = customerGroupSelect.value;
+                customerGroupSelect.innerHTML = '<option value="">Todos os grupos...</option>' +
+                    customerGroupsData.map((g) => `<option value="${g.public_id}">${g.name}</option>`).join('');
+                if (prevGroup && customerGroupsData.some((g) => g.public_id === prevGroup)) {
+                    customerGroupSelect.value = prevGroup;
+                }
+            }
+        }
+        else {
+            if (customerGroupContainer)
+                customerGroupContainer.classList.add('hidden');
+            if (customerGroupSelect)
+                customerGroupSelect.value = '';
+        }
+        entitySelect.disabled = false;
+        entitySelect.innerHTML = '<option value="">Carregando...</option>';
+        loadPeopleOfType(type).then((items) => {
+            const selectedGroup = customerGroupSelect?.value || '';
+            let filteredItems = items;
+            if (type === 'customer' && selectedGroup) {
+                filteredItems = items.filter((x) => x.customer_group_public_id === selectedGroup);
+            }
+            entitySelect.innerHTML = '<option value="">Selecione a pessoa...</option>' +
+                filteredItems.map((x) => `<option value="${x.public_id}">${x.name}</option>`).join('');
+            if (selectedEntityPublicId) {
+                entitySelect.value = selectedEntityPublicId;
+            }
+        });
+    }
+    function openQuickPersonModal(defaultType) {
+        const isRevenue = getById('stmtTypeRevenue')?.checked;
+        const currentEntityType = getById('stmtCreateEntityType')?.value;
+        const initialType = defaultType || (currentEntityType && ['customer', 'supplier', 'contact'].includes(currentEntityType)
+            ? currentEntityType
+            : (isRevenue ? 'customer' : 'supplier'));
+        const typeSelect = getById('quickPersonType');
+        const nameInput = getById('quickPersonName');
+        const tradeNameInput = getById('quickPersonTradeName');
+        const docInput = getById('quickPersonDoc');
+        const phoneInput = getById('quickPersonPhone');
+        const emailInput = getById('quickPersonEmail');
+        const groupContainer = getById('quickPersonCustomerGroupContainer');
+        const groupSelect = getById('quickPersonCustomerGroup');
+        if (typeSelect)
+            typeSelect.value = initialType;
+        if (nameInput)
+            nameInput.value = '';
+        if (tradeNameInput)
+            tradeNameInput.value = '';
+        if (docInput)
+            docInput.value = '';
+        if (phoneInput)
+            phoneInput.value = '';
+        if (emailInput)
+            emailInput.value = '';
+        if (groupSelect) {
+            groupSelect.innerHTML = '<option value="">Sem grupo</option>' +
+                customerGroupsData.map((g) => `<option value="${g.public_id}">${g.name}</option>`).join('');
+            groupSelect.value = '';
+        }
+        if (groupContainer) {
+            if (initialType === 'customer') {
+                groupContainer.classList.remove('hidden');
+            }
+            else {
+                groupContainer.classList.add('hidden');
+            }
+        }
+        const modal = getById('quickPersonModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            setTimeout(() => nameInput?.focus(), 50);
+        }
+    }
+    function closeQuickPersonModal() {
+        const modal = getById('quickPersonModal');
         if (modal)
             modal.classList.add('hidden');
     }
@@ -907,16 +1112,18 @@
     // ─── Busca de dados ───────────────────────────────────────────────────────────
     async function fetchStatements() {
         try {
-            const [expRes, revRes, bankRes, catRes, catTypeRes] = await Promise.all([
+            const [expRes, revRes, bankRes, catRes, catTypeRes, custGroupRes] = await Promise.all([
                 api('/finance/expenses'),
                 api('/finance/revenues'),
                 api('/bank-accounts'),
                 api('/finance/categories'),
                 api('/finance/category-types').catch(() => ({ data: [] })),
+                api('/customer-groups').catch(() => ({ data: [] })),
             ]);
             banksData = bankRes.data || [];
             categoriesData = catRes.data || [];
             categoryTypesData = catTypeRes?.data || [];
+            customerGroupsData = custGroupRes?.data || [];
             populateBankFilters();
             populateCreateModalBanks();
             const expenses = (expRes.data || []).map((e) => ({ ...e, type: 'expense' }));
@@ -1722,6 +1929,107 @@
                 }
             }
         });
+        // Event listeners para Seleção e Cadastro Rápido de Pessoa
+        getById('stmtCreateEntityType')?.addEventListener('change', () => handleCreateEntityTypeChange());
+        getById('stmtCreateCustomerGroup')?.addEventListener('change', () => handleCreateEntityTypeChange());
+        getById('btnOpenQuickPersonModal')?.addEventListener('click', () => openQuickPersonModal());
+        getById('btnOpenQuickPersonModalIcon')?.addEventListener('click', () => openQuickPersonModal());
+        getById('btnCloseQuickPersonModal')?.addEventListener('click', closeQuickPersonModal);
+        getById('btnCancelQuickPersonModal')?.addEventListener('click', closeQuickPersonModal);
+        getById('quickPersonModalBackdrop')?.addEventListener('click', closeQuickPersonModal);
+        getById('quickPersonType')?.addEventListener('change', (e) => {
+            const type = e.target.value;
+            const groupContainer = getById('quickPersonCustomerGroupContainer');
+            if (groupContainer) {
+                if (type === 'customer') {
+                    groupContainer.classList.remove('hidden');
+                }
+                else {
+                    groupContainer.classList.add('hidden');
+                }
+            }
+        });
+        const quickDocInput = getById('quickPersonDoc');
+        if (quickDocInput) {
+            quickDocInput.addEventListener('input', (e) => {
+                e.target.value = maskDoc(e.target.value);
+            });
+        }
+        const quickPhoneInput = getById('quickPersonPhone');
+        if (quickPhoneInput) {
+            quickPhoneInput.addEventListener('input', (e) => {
+                e.target.value = maskPhone(e.target.value);
+            });
+        }
+        getById('quickPersonForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = getById('btnSubmitQuickPerson');
+            const typeSelect = getById('quickPersonType');
+            const nameInput = getById('quickPersonName');
+            const tradeNameInput = getById('quickPersonTradeName');
+            const docInput = getById('quickPersonDoc');
+            const phoneInput = getById('quickPersonPhone');
+            const emailInput = getById('quickPersonEmail');
+            const groupSelect = getById('quickPersonCustomerGroup');
+            const type = typeSelect?.value || 'customer';
+            const name = nameInput?.value?.trim();
+            const trade_name = tradeNameInput?.value?.trim() || null;
+            const cnpj_cpf = docInput?.value?.trim() || null;
+            const phone = phoneInput?.value?.trim() || null;
+            const email = emailInput?.value?.trim() || null;
+            const customer_group_public_id = type === 'customer' ? (groupSelect?.value || null) : null;
+            if (!name || name.length < 2) {
+                UI.showAlert('alertMessage', 'Informe um nome com pelo menos 2 caracteres.', 'warning');
+                return;
+            }
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<svg class="w-4 h-4 animate-spin inline-block mr-1.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Salvando...</span>';
+                }
+                const payload = {
+                    name,
+                    trade_name,
+                    cnpj_cpf,
+                    phone,
+                    email,
+                };
+                if (type === 'customer' && customer_group_public_id) {
+                    payload.customer_group_public_id = customer_group_public_id;
+                }
+                let endpoint = '/entities/customers';
+                if (type === 'supplier')
+                    endpoint = '/entities/suppliers';
+                else if (type === 'contact')
+                    endpoint = '/entities/contacts';
+                const res = await api(endpoint, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                });
+                const createdPerson = res?.data;
+                // Limpa cache daquele tipo para recarregar com o novo item
+                delete peopleCache[type];
+                // Atualiza o select de tipo no modal de lançamento
+                const stmtEntityTypeSelect = getById('stmtCreateEntityType');
+                if (stmtEntityTypeSelect) {
+                    stmtEntityTypeSelect.value = type;
+                }
+                // Recarrega e seleciona a pessoa recém criada
+                handleCreateEntityTypeChange(createdPerson?.public_id);
+                UI.showAlert('alertMessage', `Pessoa "${name}" cadastrada com sucesso!`, 'success');
+                closeQuickPersonModal();
+            }
+            catch (err) {
+                console.error('Erro ao cadastrar pessoa:', err);
+                UI.showAlert('alertMessage', err?.message || 'Erro ao cadastrar pessoa.', 'error');
+            }
+            finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <span>Salvar Pessoa</span>';
+                }
+            }
+        });
         getById('stmtCreateCategoryType')?.addEventListener('change', () => {
             const isRevenue = getById('stmtTypeRevenue')?.checked;
             const activeType = isRevenue ? 'revenue' : 'expense';
@@ -1810,6 +2118,8 @@
             const payment_method = getById('stmtCreatePaymentMethod')?.value || null;
             const status = getById('stmtCreateStatus')?.value || 'paid';
             const autoReconcile = getById('stmtCreateAutoReconcile')?.checked;
+            const entity_type = getById('stmtCreateEntityType')?.value || null;
+            const entity_public_id = getById('stmtCreateEntity')?.value || null;
             const cleanAmount = amountStr.replace(/[^\d,]/g, '').replace(',', '.');
             const amount = parseFloat(cleanAmount);
             if (!date || isNaN(amount) || amount <= 0 || !description || !bank_account_public_id || !category_public_id) {
@@ -1833,6 +2143,10 @@
                         payment_method,
                         status,
                     };
+                    if (entity_type && entity_public_id) {
+                        payload.entity_type = entity_type;
+                        payload.entity_public_id = entity_public_id;
+                    }
                     const res = await api('/finance/expenses', {
                         method: 'POST',
                         body: JSON.stringify(payload),
@@ -1850,6 +2164,10 @@
                         payment_method,
                         status,
                     };
+                    if (entity_type && entity_public_id) {
+                        payload.entity_type = entity_type;
+                        payload.entity_public_id = entity_public_id;
+                    }
                     const res = await api('/finance/revenues', {
                         method: 'POST',
                         body: JSON.stringify(payload),

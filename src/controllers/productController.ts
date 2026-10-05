@@ -112,6 +112,31 @@ export class ProductController {
         }
     }
 
+    static async getMovements(req: Request, res: Response): Promise<void> {
+        try {
+            const id = req.params.id as string;
+            const companyId = req.user!.company_id;
+
+            if (!id) {
+                res.status(400).json({ status: 'error', message: 'Missing product ID' });
+                return;
+            }
+
+            const movements = await ProductService.getMovements(id, companyId);
+
+            res.status(200).json({
+                status: 'success',
+                data: movements
+            });
+        } catch (error: any) {
+            if (error instanceof Error && error.message === 'Product not found') {
+                res.status(404).json({ status: 'error', message: error.message });
+                return;
+            }
+            throw error;
+        }
+    }
+
     static async update(req: Request, res: Response): Promise<void> {
         try {
             const id = req.params.id as string;

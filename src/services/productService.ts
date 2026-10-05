@@ -46,6 +46,10 @@ export class ProductService {
         return ProductRepository.delete(publicId, companyId);
     }
 
+    static async getMovements(publicId: string, companyId: number): Promise<any[]> {
+        return ProductRepository.getMovements(companyId, publicId);
+    }
+
     static async bulkUpdate(companyId: number, data: {
         productIds: string[],
         category_id?: number | null | undefined,

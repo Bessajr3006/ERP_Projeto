@@ -145,6 +145,27 @@ router.delete('/product-types/:id', (req, res, next) => ProductTypeController.de
 
 /**
  * @openapi
+ * /products/{id}/movements:
+ *   get:
+ *     tags: [Products]
+ *     summary: Obter movimentações de estoque do produto
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Movimentações do produto recuperadas com sucesso
+ *       404:
+ *         description: Produto não encontrado
+ */
+router.get('/:id/movements', (req, res, next) => ProductController.getMovements(req, res).catch(next));
+
+/**
+ * @openapi
  * /products/{id}:
  *   get:
  *     tags: [Products]

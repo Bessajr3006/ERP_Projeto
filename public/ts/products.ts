@@ -1114,6 +1114,178 @@ document.addEventListener('DOMContentLoaded', () => {
     getById('btnClosePosControlSyncResultModal')?.addEventListener('click', closePosControlSyncResultModal);
     getById('posControlSyncResultModalBackdrop')?.addEventListener('click', closePosControlSyncResultModal);
 
+    // ==========================================
+    // Inventory Movements Modal Logic
+    // ==========================================
+    let g_currentProductMovements: any[] = [];
+    let g_currentProductMovementsUnit: string = 'UN';
+
+    const formatMovementDateTime = (dateStr: string | null | undefined): string => {
+        if (!dateStr) return '-';
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '-';
+            return d.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return '-';
+        }
+    };
+
+    const renderMovementsTable = (movements: any[], unit: string = 'UN') => {
+        const tableBody = getById('movementsTableBody');
+        const countText = getById('movementsCountText');
+        if (!tableBody) return;
+
+        if (countText) {
+            countText.textContent = `${movements.length} movimentação(ões) encontrada(s)`;
+        }
+
+        if (movements.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
+                        Nenhuma movimentação registrada para este produto.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tableBody.innerHTML = movements.map(m => {
+            const isIn = m.type === 'in';
+            const formattedQty = Number(m.quantity || 0).toFixed(2).replace(/\.?0+$/, '');
+            const dateStr = formatMovementDateTime(m.date);
+
+            return `
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300 font-mono">${dateStr}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                        ${isIn
+                            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                                Entrada
+                               </span>`
+                            : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                                Saída
+                               </span>`
+                        }
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right font-bold font-mono ${isIn ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}">
+                        ${isIn ? '+' : '-'}${formattedQty} <span class="text-[10px] font-normal text-gray-400">${unit}</span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-800 dark:text-gray-200">
+                        ${m.document_ref || '-'}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
+                        ${m.entity_name || '-'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
+
+    const closeMovementsModal = () => {
+        const modal = getById('inventoryMovementsModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    getById('btnCloseMovementsModalX')?.addEventListener('click', closeMovementsModal);
+    getById('btnCloseMovementsModal')?.addEventListener('click', closeMovementsModal);
+    getById('inventoryMovementsModalBackdrop')?.addEventListener('click', closeMovementsModal);
+
+    getById('searchMovementsInput')?.addEventListener('input', (e: any) => {
+        const query = (e.target?.value || '').toLowerCase().trim();
+        if (!query) {
+            renderMovementsTable(g_currentProductMovements, g_currentProductMovementsUnit);
+            return;
+        }
+        const filtered = g_currentProductMovements.filter(m => {
+            const dateStr = formatMovementDateTime(m.date).toLowerCase();
+            const typeStr = m.type === 'in' ? 'entrada' : 'saída saida';
+            const docStr = (m.document_ref || '').toLowerCase();
+            const entStr = (m.entity_name || '').toLowerCase();
+            const qtyStr = String(m.quantity || '');
+            return dateStr.includes(query) || typeStr.includes(query) || docStr.includes(query) || entStr.includes(query) || qtyStr.includes(query);
+        });
+        renderMovementsTable(filtered, g_currentProductMovementsUnit);
+    });
+
+    window.openMovementsModal = async (publicId: string, name: string, sku: string, stock: string, unit: string) => {
+        const modal = getById('inventoryMovementsModal');
+        if (!modal) return;
+
+        g_currentProductMovementsUnit = unit || 'UN';
+        const productNameEl = getById('movementsProductName');
+        const productSkuEl = getById('movementsProductSku');
+        const kpiInEl = getById('kpiMovementsIn');
+        const kpiOutEl = getById('kpiMovementsOut');
+        const kpiStockEl = getById('kpiMovementsStock');
+        const tableBody = getById('movementsTableBody');
+        const searchInput = getById('searchMovementsInput') as HTMLInputElement | null;
+        const countText = getById('movementsCountText');
+
+        if (productNameEl) productNameEl.textContent = name;
+        if (productSkuEl) productSkuEl.textContent = sku ? `(SKU: ${sku})` : '';
+        if (kpiStockEl) kpiStockEl.textContent = `${stock} ${g_currentProductMovementsUnit}`;
+        if (kpiInEl) kpiInEl.textContent = '...';
+        if (kpiOutEl) kpiOutEl.textContent = '...';
+        if (searchInput) searchInput.value = '';
+        if (countText) countText.textContent = 'Carregando...';
+
+        modal.classList.remove('hidden');
+
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500 font-mono">
+                        <div class="inline-flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Carregando movimentações...
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        try {
+            const res = await api(`/products/${publicId}/movements`);
+            g_currentProductMovements = res.data || [];
+
+            let totalIn = 0;
+            let totalOut = 0;
+            g_currentProductMovements.forEach((m: any) => {
+                const qty = Number(m.quantity || 0);
+                if (m.type === 'in') totalIn += qty;
+                else if (m.type === 'out') totalOut += qty;
+            });
+
+            if (kpiInEl) kpiInEl.textContent = `+${totalIn.toFixed(2).replace(/\.?0+$/, '')} ${g_currentProductMovementsUnit}`;
+            if (kpiOutEl) kpiOutEl.textContent = `-${totalOut.toFixed(2).replace(/\.?0+$/, '')} ${g_currentProductMovementsUnit}`;
+
+            renderMovementsTable(g_currentProductMovements, g_currentProductMovementsUnit);
+        } catch (err: any) {
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-red-500 font-medium">
+                            Erro ao carregar movimentações: ${err.message || 'Erro desconhecido'}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    };
+
     getById('btnCopyPosControlJson')?.addEventListener('click', () => {
         const textarea = getById('posControlJsonTextarea');
         if (textarea && textarea.value) {
@@ -1794,6 +1966,9 @@ function renderTable(elementId, items) {
                     : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Inativo</span>'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button type="button" title="Movimentações do Estoque" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3 view-movements-btn" data-id="${p.public_id}" data-name="${(p.name || '').replace(/"/g, '&quot;')}" data-sku="${(p.sku || '').replace(/"/g, '&quot;')}" data-stock="${p.current_stock || 0}" data-unit="${p.measure_abbreviation || 'UN'}">
+                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
                 <button type="button" title="Editar" class="text-brand-600 hover:text-brand-900 dark:hover:text-brand-400 mr-3 edit-btn" data-item='${JSON.stringify(p).replace(/'/g, "&#39;")}'>
                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                 </button>
@@ -1841,6 +2016,9 @@ function renderGrid(elementId, items) {
                         <span class="ml-2 text-xs font-mono font-medium text-gray-500 dark:text-gray-400 truncate">#${String(product.id).padStart(4, '0')}</span>
                     </label>
                     <div class="flex gap-1 shrink-0">
+                        <button type="button" title="Movimentações do Estoque" class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-300 dark:hover:bg-indigo-900/30 rounded-md transition-colors view-movements-btn" data-id="${product.public_id}" data-name="${(product.name || '').replace(/"/g, '&quot;')}" data-sku="${(product.sku || '').replace(/"/g, '&quot;')}" data-stock="${product.current_stock || 0}" data-unit="${product.measure_abbreviation || 'UN'}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
                         <button type="button" title="Editar" class="p-1.5 text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:text-brand-300 dark:hover:bg-brand-900/30 rounded-md transition-colors edit-btn" data-item='${productJson}'>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         </button>
@@ -1921,6 +2099,19 @@ function renderGrid(elementId, items) {
 }
 
 function bindActionEvents() {
+    // Bind Movements (Eye button)
+    qsa('.view-movements-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const current = e.currentTarget;
+            const publicId = current.getAttribute('data-id');
+            const productName = current.getAttribute('data-name') || 'Produto';
+            const productSku = current.getAttribute('data-sku') || '';
+            const productStock = current.getAttribute('data-stock') || '0';
+            const productUnit = current.getAttribute('data-unit') || 'UN';
+            window.openMovementsModal?.(publicId, productName, productSku, productStock, productUnit);
+        });
+    });
+
     // Bind Edit
     qsa('.edit-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {

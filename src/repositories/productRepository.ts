@@ -367,4 +367,52 @@ export class ProductRepository {
 
         return { deletedCount, failedCount };
     }
+
+    static async getMovements(companyId: number, productPublicId: string): Promise<any[]> {
+        const product = await this.getByPublicId(productPublicId, companyId);
+        if (!product) {
+            throw new Error('Product not found');
+        }
+
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT 
+                im.id,
+                im.type,
+                im.quantity,
+                im.purchase_id,
+                im.sale_id,
+                im.date,
+                po.public_id AS purchase_public_id,
+                s.name AS supplier_name,
+                so.public_id AS sale_public_id,
+                c.name AS customer_name
+            FROM inventory_movements im
+            LEFT JOIN purchase_orders po ON im.purchase_id = po.id AND po.company_id = im.company_id
+            LEFT JOIN suppliers s ON po.supplier_id = s.id
+            LEFT JOIN sales_orders so ON im.sale_id = so.id AND so.company_id = im.company_id
+            LEFT JOIN customers c ON so.customer_id = c.id
+            WHERE im.company_id = ? AND im.product_id = ?
+            ORDER BY im.date DESC, im.id DESC`,
+            [companyId, product.id]
+        );
+
+        return rows.map(r => ({
+            id: r.id,
+            type: r.type,
+            quantity: Number(r.quantity),
+            date: r.date,
+            purchase_id: r.purchase_id,
+            purchase_public_id: r.purchase_public_id,
+            supplier_name: r.supplier_name,
+            sale_id: r.sale_id,
+            sale_public_id: r.sale_public_id,
+            customer_name: r.customer_name,
+            document_ref: r.purchase_id
+                ? `Compra #${String(r.purchase_id).padStart(4, '0')}`
+                : r.sale_id
+                    ? `Venda #${String(r.sale_id).padStart(4, '0')}`
+                    : 'Ajuste / Saldo Inicial',
+            entity_name: r.supplier_name || r.customer_name || '-'
+        }));
+    }
 }

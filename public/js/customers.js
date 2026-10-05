@@ -73,6 +73,23 @@
         }
         return `<span class="px-2.5 py-0.5 inline-flex text-[10px] leading-5 font-semibold rounded-full ${colors}">${regime}</span>`;
     };
+    const getIsCompanyBadge = (item) => {
+        const isCompany = item.is_registered_as_company === 1 ||
+            item.is_registered_as_company === true ||
+            Boolean(item.registered_company_id) ||
+            Boolean(item.registered_company_name);
+        if (!isCompany)
+            return '';
+        const title = item.registered_company_name
+            ? `Cliente também cadastrado como Empresa no ERP: ${item.registered_company_name}`
+            : 'Cliente também cadastrado como Empresa no ERP';
+        return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 gap-1 shadow-xs" title="${title}">
+        <svg class="w-3 h-3 text-indigo-600 dark:text-indigo-400 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+        Empresa
+    </span>`;
+    };
     const getDocCount = (docUrlField) => {
         if (!docUrlField)
             return 0;
@@ -2071,6 +2088,16 @@
                         ]
                     },
                     {
+                        id: 'filterIsCompany',
+                        type: 'select',
+                        label: 'Empresa Vinculada',
+                        options: [
+                            { value: '', label: 'Todos' },
+                            { value: 'company', label: 'Cadastrado como Empresa' },
+                            { value: 'not_company', label: 'Apenas Clientes (Não Empresa)' }
+                        ]
+                    },
+                    {
                         id: 'filterSortOrder',
                         type: 'select',
                         label: 'Ordenar Por',
@@ -2129,6 +2156,14 @@
                             if (item.tax_regime !== taxRegimeFilter)
                                 return false;
                         }
+                    }
+                    const isCompanyFilter = getById('filterIsCompany')?.value;
+                    if (isCompanyFilter) {
+                        const isCompany = item.is_registered_as_company === 1 || item.is_registered_as_company === true || Boolean(item.registered_company_id) || Boolean(item.registered_company_name);
+                        if (isCompanyFilter === 'company' && !isCompany)
+                            return false;
+                        if (isCompanyFilter === 'not_company' && isCompany)
+                            return false;
                     }
                     const onlyPixFilter = getById('filterOnlyPix')?.value;
                     if (onlyPixFilter) {
@@ -2205,6 +2240,7 @@
                         <div class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5 flex-wrap">
                             <span>${item.name}</span>
                             <span class="text-[10px] font-mono bg-gray-100 text-gray-600 dark:bg-slate-700/60 dark:text-gray-300 px-1.5 py-0.5 rounded">ID: ${item.public_id}</span>
+                            ${getIsCompanyBadge(item)}
                             ${(item.only_pix === 1 || item.only_pix === true) ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 gap-1" title="Emissão de boleto travada (Somente PIX)"><svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Somente PIX</span>` : ''}
                             ${(item.only_solidcon_baixa === 1 || item.only_solidcon_baixa === true) ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 gap-1" title="Baixa manual no Keystone travada (Exclusiva Solidcon)"><svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Baixa Solidcon</span>` : ''}
                             ${(item.exempt_interest_fine === 1 || item.exempt_interest_fine === true) ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 gap-1" title="Cliente isento de cobrança de juros e multa"><svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Isento Juros/Multa</span>` : ''}
@@ -2293,6 +2329,7 @@
                             <h4 class="text-[16px] font-bold text-gray-900 dark:text-gray-100 leading-tight mb-2 wrap-break-word flex-1 flex items-center gap-1.5 flex-wrap" title="${item.name}">
                                 <span>${item.name}</span>
                                 <span class="text-[10px] font-mono font-normal bg-gray-100 text-gray-600 dark:bg-slate-700/60 dark:text-gray-300 px-1.5 py-0.5 rounded">ID: ${item.public_id}</span>
+                                ${getIsCompanyBadge(item)}
                                 ${(item.only_pix === 1 || item.only_pix === true) ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 gap-1" title="Emissão de boleto travada (Somente PIX)"><svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Somente PIX</span>` : ''}
                                 ${(item.only_solidcon_baixa === 1 || item.only_solidcon_baixa === true) ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 gap-1" title="Baixa manual no Keystone travada (Exclusiva Solidcon)"><svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>Baixa Solidcon</span>` : ''}
                                 ${(item.exempt_interest_fine === 1 || item.exempt_interest_fine === true) ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 gap-1" title="Cliente isento de cobrança de juros e multa"><svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Isento Juros/Multa</span>` : ''}

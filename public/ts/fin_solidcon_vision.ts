@@ -46,6 +46,65 @@
         ticketMedio: number;
     }
 
+    interface ConvenioSummary {
+        totalEmitido: number;
+        totalQuitado: number;
+        totalPendente: number;
+        qtdCupons: number;
+        ticketMedio: number;
+        totalRecebidoBaixas: number;
+        totalJuros: number;
+        qtdBaixas: number;
+        pctQuitado: number;
+    }
+
+    interface ConvenioClienteItem {
+        cliente: string;
+        qtd_operacoes: number;
+        ticket_medio: number;
+        total_valor: number;
+        total_quitado: number;
+        saldo_pendente: number;
+        pct_pago: number;
+    }
+
+    interface ConvenioDailyItem {
+        dia: number;
+        data: string;
+        qtd_cupons: number;
+        total_emitido: number;
+        total_quitado: number;
+        saldo_pendente: number;
+    }
+
+    interface ConvenioBaixaItem {
+        id: number | string;
+        data: string;
+        documento: string;
+        historico: string;
+        valor: number;
+        banco: string;
+    }
+
+    interface ConvenioAnnualItem {
+        mes: number;
+        mesNome: string;
+        mesSigla: string;
+        total_emitido: number;
+        total_quitado: number;
+        saldo_pendente: number;
+        qtd_cupons: number;
+        pct_pago: number;
+    }
+
+    interface ConvenioData {
+        summary: ConvenioSummary;
+        topClientes: Array<ConvenioClienteItem>;
+        dailyEvolution: Array<ConvenioDailyItem>;
+        recentBaixas: Array<ConvenioBaixaItem>;
+        annualSummary: Array<ConvenioAnnualItem>;
+    }
+
     interface VisionData {
         params: {
             ano: number;
@@ -74,6 +133,7 @@
             valor_liquido: number;
             qtd_operacoes: number;
         }>;
+        convenioData?: ConvenioData;
         monthlyComparison: Array<{
             mes: number;
             mesNome: string;
@@ -1066,6 +1126,235 @@
         }).join('');
     };
 
+    // ─── Render Recebimento de Convênio do Período ────────────────────────────
+    let activeConvTab: 'clientes' | 'baixas' | 'diario' = 'clientes';
+    let convSearchTerm: string = '';
+
+    const renderConvenioCard = (data: VisionData) => {
+        const convData = data?.convenioData;
+        const summary = convData?.summary || {
+            totalEmitido: 0,
+            totalQuitado: 0,
+            totalPendente: 0,
+            qtdCupons: 0,
+            ticketMedio: 0,
+            totalRecebidoBaixas: 0,
+            totalJuros: 0,
+            qtdBaixas: 0,
+            pctQuitado: 0
+        };
+
+        const periodBadge = getEl('convenioPeriodBadge');
+        const totalRecBadge = getEl('convenioTotalRecebidoBadge');
+
+        const kpiEmitido = getEl('convKpiTotalEmitido');
+        const kpiQuitado = getEl('convKpiTotalQuitado');
+        const kpiPendente = getEl('convKpiTotalPendente');
+        const kpiBaixas = getEl('convKpiTotalBaixas');
+
+        const kpiQtdCupons = getEl('convKpiQtdCupons');
+        const kpiTicketMedio = getEl('convKpiTicketMedio');
+        const kpiPctQuitado = getEl('convKpiPctQuitado');
+        const kpiPctBar = getEl('convKpiPctBar');
+        const kpiTotalJuros = getEl('convKpiTotalJuros');
+        const kpiQtdBaixas = getEl('convKpiQtdBaixas');
+
+        // Period Badges
+        const mesNome = data?.params?.mesNome || '';
+        const ano = data?.params?.ano || '';
+        if (periodBadge) periodBadge.textContent = `${mesNome}/${ano}`;
+        if (totalRecBadge) {
+            const liquidadoVal = summary.totalRecebidoBaixas || summary.totalQuitado;
+            totalRecBadge.textContent = `Total Liquidado: ${formatCurrency(liquidadoVal)}`;
+        }
+
+        // Top Chips
+        if (kpiEmitido) kpiEmitido.textContent = formatCurrency(summary.totalEmitido);
+        if (kpiQuitado) kpiQuitado.textContent = formatCurrency(summary.totalQuitado);
+        if (kpiPendente) kpiPendente.textContent = formatCurrency(summary.totalPendente);
+        if (kpiBaixas) kpiBaixas.textContent = formatCurrency(summary.totalRecebidoBaixas);
+
+        // Mini KPIs
+        if (kpiQtdCupons) kpiQtdCupons.textContent = Number(summary.qtdCupons || 0).toLocaleString('pt-BR');
+        if (kpiTicketMedio) kpiTicketMedio.textContent = formatCurrency(summary.ticketMedio);
+        if (kpiPctQuitado) kpiPctQuitado.textContent = `${summary.pctQuitado.toFixed(1)}%`;
+        if (kpiPctBar) kpiPctBar.style.width = `${Math.min(100, Math.max(summary.pctQuitado > 0 ? 2 : 0, summary.pctQuitado))}%`;
+        if (kpiTotalJuros) kpiTotalJuros.textContent = formatCurrency(summary.totalJuros);
+        if (kpiQtdBaixas) kpiQtdBaixas.textContent = `${Number(summary.qtdBaixas || 0).toLocaleString('pt-BR')} baixas efetuadas`;
+
+        // Render Tab 1: Clientes / Convênios
+        const clientsTbody = getEl('convClientsTableBody');
+        const footQtd = getEl('convFootQtd');
+        const footTicket = getEl('convFootTicket');
+        const footEmitido = getEl('convFootEmitido');
+        const footQuitado = getEl('convFootQuitado');
+        const footPendente = getEl('convFootPendente');
+        const footPct = getEl('convFootPct');
+
+        const allClients = convData?.topClientes || [];
+        const term = convSearchTerm.trim().toLowerCase();
+        const filteredClients = term
+            ? allClients.filter(c => c.cliente.toLowerCase().includes(term))
+            : allClients;
+
+        if (footQtd) footQtd.textContent = Number(summary.qtdCupons || 0).toLocaleString('pt-BR');
+        if (footTicket) footTicket.textContent = formatCurrency(summary.ticketMedio);
+        if (footEmitido) footEmitido.textContent = formatCurrency(summary.totalEmitido);
+        if (footQuitado) footQuitado.textContent = formatCurrency(summary.totalQuitado);
+        if (footPendente) footPendente.textContent = formatCurrency(summary.totalPendente);
+        if (footPct) footPct.textContent = `${summary.pctQuitado.toFixed(1)}%`;
+
+        if (clientsTbody) {
+            if (filteredClients.length === 0) {
+                clientsTbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-gray-400">
+                            ${term ? 'Nenhum convênio encontrado para a busca.' : 'Nenhum cupom ou convênio emitido no período.'}
+                        </td>
+                    </tr>
+                `;
+            } else {
+                clientsTbody.innerHTML = filteredClients.map(c => {
+                    const pct = c.pct_pago || 0;
+                    const isFullyPaid = pct >= 99.9;
+                    const statusBadge = isFullyPaid
+                        ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">100% Quitado</span>'
+                        : pct > 0
+                        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">${pct.toFixed(1)}% Pago</span>`
+                        : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Pendente</span>';
+
+                    return `
+                        <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
+                            <td class="py-2.5 px-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xs shrink-0">
+                                        ${escapeHtml(c.cliente.charAt(0).toUpperCase())}
+                                    </div>
+                                    <span class="font-bold text-gray-900 dark:text-white truncate max-w-64" title="${escapeHtml(c.cliente)}">
+                                        ${escapeHtml(c.cliente)}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="py-2.5 px-3 text-center">
+                                <span class="inline-block px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-700 font-mono font-semibold text-gray-700 dark:text-gray-300 text-xs">
+                                    ${Number(c.qtd_operacoes || 0).toLocaleString('pt-BR')}
+                                </span>
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-300">
+                                ${formatCurrency(c.ticket_medio)}
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-mono font-medium text-gray-800 dark:text-gray-200">
+                                ${formatCurrency(c.total_valor)}
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                ${formatCurrency(c.total_quitado)}
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-mono font-semibold text-amber-600 dark:text-amber-400">
+                                ${formatCurrency(c.saldo_pendente)}
+                            </td>
+                            <td class="py-2.5 px-3">
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        ${statusBadge}
+                                    </div>
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-500 ${isFullyPaid ? 'bg-emerald-500' : 'bg-blue-500'}" style="width: ${Math.min(100, Math.max(pct > 0 ? 2 : 0, pct))}%;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Render Tab 2: Baixas Recentes
+        const baixasTbody = getEl('convBaixasTableBody');
+        const recentBaixas = convData?.recentBaixas || [];
+        if (baixasTbody) {
+            if (recentBaixas.length === 0) {
+                baixasTbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-gray-400">
+                            Nenhum registro de baixa/liquidação financeira de convênio para este período.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                baixasTbody.innerHTML = recentBaixas.map(b => `
+                    <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
+                        <td class="py-2.5 px-3 whitespace-nowrap font-mono text-gray-600 dark:text-gray-300">
+                            ${formatDate(b.data)}
+                        </td>
+                        <td class="py-2.5 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">
+                            #${escapeHtml(b.id)}
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-gray-500 dark:text-gray-400">
+                            ${escapeHtml(b.documento)}
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-800 dark:text-gray-200">
+                            ${escapeHtml(b.historico)}
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-600 dark:text-gray-400">
+                            ${escapeHtml(b.banco)}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400">
+                            ${formatCurrency(b.valor)}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Render Tab 3: Diário
+        const dailyTbody = getEl('convDailyTableBody');
+        const dailyEvolution = convData?.dailyEvolution || [];
+        if (dailyTbody) {
+            if (dailyEvolution.length === 0) {
+                dailyTbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-gray-400">
+                            Nenhuma movimentação diária de convênio registrada no mês.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                dailyTbody.innerHTML = dailyEvolution.map(d => {
+                    const emit = d.total_emitido || 0;
+                    const quit = d.total_quitado || 0;
+                    const pct = emit > 0 ? (quit / emit) * 100 : 0;
+                    return `
+                        <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
+                            <td class="py-2 px-3 font-bold text-gray-900 dark:text-white">
+                                Dia ${d.dia} <span class="text-xs font-normal text-gray-400">(${formatDate(d.data)})</span>
+                            </td>
+                            <td class="py-2 px-3 text-center font-mono">
+                                ${Number(d.qtd_cupons || 0).toLocaleString('pt-BR')}
+                            </td>
+                            <td class="py-2 px-3 text-right font-mono font-medium text-gray-800 dark:text-gray-200">
+                                ${formatCurrency(emit)}
+                            </td>
+                            <td class="py-2 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                ${formatCurrency(quit)}
+                            </td>
+                            <td class="py-2 px-3 text-right font-mono font-semibold text-amber-600 dark:text-amber-400">
+                                ${formatCurrency(d.saldo_pendente)}
+                            </td>
+                            <td class="py-2 px-3">
+                                <div class="space-y-1">
+                                    <span class="text-[11px] font-mono font-bold text-gray-700 dark:text-gray-300">${pct.toFixed(1)}%</span>
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${Math.min(100, Math.max(pct > 0 ? 2 : 0, pct))}%;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+    };
+
     // ─── Render Separated Category Checklist Panels ──────────────────────────
     const renderCategoryDistribution = () => {
         const recTbody = getEl('recCategoryTableBody');
@@ -1506,6 +1795,7 @@
         renderBankDistribution(res.activeData);
         renderTopRankings(res.activeData);
         renderSalesByModality(res.activeData);
+        renderConvenioCard(res.activeData);
         renderCategoryDistribution();
         renderTransactionsTable();
     };
@@ -1749,6 +2039,59 @@
         });
     };
 
+    // ─── Setup Convenio Action Handlers ──────────────────────────────────────
+    const setupConvenioActions = () => {
+        const btnClientes = getEl('btnConvTabClientes');
+        const btnBaixas = getEl('btnConvTabBaixas');
+        const btnDiario = getEl('btnConvTabDiario');
+
+        const tabClientes = getEl('convTabContentClientes');
+        const tabBaixas = getEl('convTabContentBaixas');
+        const tabDiario = getEl('convTabContentDiario');
+        const searchWrap = getEl('convClientSearchWrap');
+
+        const switchTab = (tab: 'clientes' | 'baixas' | 'diario') => {
+            activeConvTab = tab;
+
+            // Reset buttons
+            [btnClientes, btnBaixas, btnDiario].forEach(b => {
+                if (!b) return;
+                b.className = 'px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 transition-all cursor-pointer';
+            });
+
+            // Hide tabs
+            tabClientes?.classList.add('hidden');
+            tabBaixas?.classList.add('hidden');
+            tabDiario?.classList.add('hidden');
+
+            if (tab === 'clientes') {
+                if (btnClientes) btnClientes.className = 'px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer';
+                tabClientes?.classList.remove('hidden');
+                if (searchWrap) searchWrap.style.display = 'block';
+            } else if (tab === 'baixas') {
+                if (btnBaixas) btnBaixas.className = 'px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer';
+                tabBaixas?.classList.remove('hidden');
+                if (searchWrap) searchWrap.style.display = 'none';
+            } else if (tab === 'diario') {
+                if (btnDiario) btnDiario.className = 'px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer';
+                tabDiario?.classList.remove('hidden');
+                if (searchWrap) searchWrap.style.display = 'none';
+            }
+        };
+
+        btnClientes?.addEventListener('click', () => switchTab('clientes'));
+        btnBaixas?.addEventListener('click', () => switchTab('baixas'));
+        btnDiario?.addEventListener('click', () => switchTab('diario'));
+
+        getEl('convClientSearchInput')?.addEventListener('input', (e) => {
+            convSearchTerm = (e.target as HTMLInputElement).value;
+            if (rawData) {
+                const res = getRecalculatedData();
+                if (res) renderConvenioCard(res.activeData);
+            }
+        });
+    };
+
     // ─── DOMContentLoaded Init ───────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
         populateYearDropdown();
@@ -1783,6 +2126,7 @@
         }
 
         setupChecklistActions();
+        setupConvenioActions();
 
         await loadCompanies();
         const initialCompany = getEl<HTMLSelectElement>('filterCompany')?.value || '';

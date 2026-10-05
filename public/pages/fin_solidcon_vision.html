@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Visão Fin_Solidcon</title>
-    <link href="/css/style.css?v=20261005153334" rel="stylesheet">
+    <link href="/css/style.css?v=20261005161240" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261005153334"></script>
+    <script src="/js/pwa.js?v=20261005161240"></script>
 </head>
 <body data-required-module="fin_solidcon_vision" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -407,6 +407,170 @@
             </div>
         </div>
 
+        <!-- ── RECEBIMENTO DE CONVÊNIO DO PERÍODO (SOLIDCON) ────────── -->
+        <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-sm p-5 mb-6">
+            <!-- Header do Card -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100 dark:border-slate-700/60">
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="p-1.5 bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </span>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
+                            <span>Recebimento de Convênio do Período</span>
+                            <span id="convenioPeriodBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold font-mono">Período</span>
+                            <span id="convenioTotalRecebidoBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold font-mono">Total Liquidado: R$ 0,00</span>
+                        </h3>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Acompanhamento detalhado de vendas a convênio (cupons/crediário), liquidações financeiras e saldo pendente por cliente/empresa parceira.
+                    </p>
+                </div>
+
+                <!-- Resumo Rápido em Chips / Badges -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="px-3 py-1.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 flex items-center gap-2 text-xs" title="Total de cupons emitidos no período">
+                        <span class="text-blue-600 dark:text-blue-400 font-medium">Emitido PDV:</span>
+                        <span id="convKpiTotalEmitido" class="font-bold text-blue-700 dark:text-blue-300 font-mono">R$ 0,00</span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center gap-2 text-xs" title="Total baixado / quitado nos cupons de convênio">
+                        <span class="text-emerald-600 dark:text-emerald-400 font-medium">Quitado:</span>
+                        <span id="convKpiTotalQuitado" class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">R$ 0,00</span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 flex items-center gap-2 text-xs" title="Saldo pendente de recebimento">
+                        <span class="text-amber-600 dark:text-amber-400 font-medium">Pendente:</span>
+                        <span id="convKpiTotalPendente" class="font-bold text-amber-600 dark:text-amber-400 font-mono">R$ 0,00</span>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl bg-purple-50/60 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-800/40 flex items-center gap-2 text-xs" title="Recebimentos financeiros efetivos na conta">
+                        <span class="text-purple-600 dark:text-purple-400 font-medium">Baixas no Caixa:</span>
+                        <span id="convKpiTotalBaixas" class="font-bold text-purple-600 dark:text-purple-400 font-mono">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-Cards de Destaque / Mini KPIs -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                <div class="p-3 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700/60">
+                    <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Cupons / Operações</span>
+                    <span id="convKpiQtdCupons" class="text-lg font-black text-gray-900 dark:text-white font-mono">0</span>
+                    <span class="text-[11px] text-gray-400 block mt-0.5">no período selecionado</span>
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700/60">
+                    <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Ticket Médio</span>
+                    <span id="convKpiTicketMedio" class="text-lg font-black text-blue-600 dark:text-blue-400 font-mono">R$ 0,00</span>
+                    <span class="text-[11px] text-gray-400 block mt-0.5">por cupom de convênio</span>
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700/60">
+                    <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">% Quitado</span>
+                    <span id="convKpiPctQuitado" class="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">0.0%</span>
+                    <div class="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full mt-1.5 overflow-hidden">
+                        <div id="convKpiPctBar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700/60">
+                    <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Juros / Acréscimos</span>
+                    <span id="convKpiTotalJuros" class="text-lg font-black text-amber-600 dark:text-amber-400 font-mono">R$ 0,00</span>
+                    <span id="convKpiQtdBaixas" class="text-[11px] text-gray-400 block mt-0.5">0 baixas efetuadas</span>
+                </div>
+            </div>
+
+            <!-- Navegação em Abas do Card de Convênio -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-gray-100 dark:border-slate-700/60">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btnConvTabClientes" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer">
+                        Maiores Clientes / Convênios
+                    </button>
+                    <button type="button" id="btnConvTabBaixas" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 transition-all cursor-pointer">
+                        Baixas Financeiras Recentes
+                    </button>
+                    <button type="button" id="btnConvTabDiario" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 transition-all cursor-pointer">
+                        Evolução Diária
+                    </button>
+                </div>
+                <div class="relative" id="convClientSearchWrap">
+                    <input type="text" id="convClientSearchInput" placeholder="Buscar cliente convênio..." class="bg-gray-50 dark:bg-slate-900/70 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl py-1.5 pl-7 pr-2.5 text-xs focus:ring-2 focus:ring-blue-500/30 w-48 sm:w-60">
+                    <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+            </div>
+
+            <!-- Conteúdo da Aba 1: Tabela de Maiores Clientes / Convênios -->
+            <div id="convTabContentClientes" class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-slate-900/30">
+                            <th class="py-2.5 px-3">Cliente / Empresa Parceira</th>
+                            <th class="py-2.5 px-3 text-center">Operações</th>
+                            <th class="py-2.5 px-3 text-right">Ticket Médio</th>
+                            <th class="py-2.5 px-3 text-right">Total Emitido</th>
+                            <th class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400">Total Quitado</th>
+                            <th class="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400">Saldo Pendente</th>
+                            <th class="py-2.5 px-3 text-left w-36 sm:w-44">Status / Quitação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="convClientsTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-gray-400">Carregando convênios...</td>
+                        </tr>
+                    </tbody>
+                    <tfoot id="convClientsTableFoot" class="border-t-2 border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/50 font-bold text-xs">
+                        <tr>
+                            <td class="py-3 px-3 text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px]">
+                                Total do Período:
+                            </td>
+                            <td class="py-3 px-3 text-center font-mono" id="convFootQtd">0</td>
+                            <td class="py-3 px-3 text-right font-mono" id="convFootTicket">R$ 0,00</td>
+                            <td class="py-3 px-3 text-right font-mono" id="convFootEmitido">R$ 0,00</td>
+                            <td class="py-3 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400" id="convFootQuitado">R$ 0,00</td>
+                            <td class="py-3 px-3 text-right font-mono text-amber-600 dark:text-amber-400" id="convFootPendente">R$ 0,00</td>
+                            <td class="py-3 px-3 text-left font-mono font-bold text-gray-700 dark:text-gray-300" id="convFootPct">0.0%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Conteúdo da Aba 2: Baixas Financeiras Recentes -->
+            <div id="convTabContentBaixas" class="overflow-x-auto hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-slate-900/30">
+                            <th class="py-2.5 px-3">Data Baixa</th>
+                            <th class="py-2.5 px-3 font-mono">cdContaBaixa</th>
+                            <th class="py-2.5 px-3">Documento</th>
+                            <th class="py-2.5 px-3">Histórico / Descrição</th>
+                            <th class="py-2.5 px-3">Banco / Conta</th>
+                            <th class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400">Valor Liquidado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="convBaixasTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-gray-400">Carregando baixas...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Conteúdo da Aba 3: Evolução Diária de Convênio -->
+            <div id="convTabContentDiario" class="overflow-x-auto hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-slate-900/30">
+                            <th class="py-2.5 px-3">Dia / Data</th>
+                            <th class="py-2.5 px-3 text-center">Cupons</th>
+                            <th class="py-2.5 px-3 text-right">Total Emitido</th>
+                            <th class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400">Total Quitado</th>
+                            <th class="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400">Saldo Aberto</th>
+                            <th class="py-2.5 px-3 text-left w-36 sm:w-44">% Quitado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="convDailyTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-gray-400">Carregando dias...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- ── DISTRIBUIÇÃO POR TIPO DE CONTA / CATEGORIA (RECEITAS E DESPESAS SEPARADAS) ─── -->
         <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-sm p-5 mb-6">
             <!-- Header Global do Card -->
@@ -638,10 +802,10 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261005153334"></script>
-    <script src="/js/fin_solidcon_vision.js?v=20261005153334"></script>
-    <script src="/js/components/navbar.js?v=20261005153334"></script>
+    <script src="/js/api.js?v=20261005161240"></script>
+    <script src="/js/fin_solidcon_vision.js?v=20261005161240"></script>
+    <script src="/js/components/navbar.js?v=20261005161240"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261005153334"></script>
+    <script src="/js/components/footer.js?v=20261005161240"></script>
 </body>
 </html>

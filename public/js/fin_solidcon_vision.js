@@ -47,18 +47,62 @@
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
+    // ─── Persistence Helpers ──────────────────────────────────────────────────
+    const saveCategorySelection = (targetCompany) => {
+        const companyParam = targetCompany || getEl('filterCompany')?.value || 'default';
+        try {
+            localStorage.setItem(`fin_solidcon_vision_cat_saved_${companyParam}`, 'true');
+            localStorage.setItem(`fin_solidcon_vision_categories_${companyParam}`, JSON.stringify(Array.from(selectedCategoryKeys)));
+        }
+        catch (e) {
+            console.warn('Falha ao salvar categorias no localStorage:', e);
+        }
+    };
+    const restoreCategorySelection = (companyParam, allCategories) => {
+        const compKey = companyParam || 'default';
+        const hasSaved = localStorage.getItem(`fin_solidcon_vision_cat_saved_${compKey}`) === 'true';
+        selectedCategoryKeys = new Set();
+        if (hasSaved) {
+            try {
+                const raw = localStorage.getItem(`fin_solidcon_vision_categories_${compKey}`);
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) {
+                        arr.forEach((k) => selectedCategoryKeys.add(k));
+                    }
+                }
+            }
+            catch (e) {
+                console.warn('Falha ao restaurar categorias do localStorage:', e);
+                allCategories.forEach(c => selectedCategoryKeys.add(makeKey(c.tipo, c.tipoconta)));
+            }
+        }
+        else {
+            // Padrão na primeira vez: seleciona todas as categorias
+            allCategories.forEach(c => selectedCategoryKeys.add(makeKey(c.tipo, c.tipoconta)));
+        }
+    };
     const populateYearDropdown = () => {
         const select = getEl('filterAno');
         if (!select)
             return;
         const currentYear = new Date().getFullYear();
+        const savedYear = localStorage.getItem('fin_solidcon_vision_ano');
         select.innerHTML = '';
         for (let y = currentYear; y >= currentYear - 4; y--) {
             const opt = document.createElement('option');
             opt.value = String(y);
             opt.textContent = String(y);
-            if (y === currentYear)
+            if (savedYear ? String(y) === savedYear : y === currentYear) {
                 opt.selected = true;
+            }
+            select.appendChild(opt);
+        }
+        if (savedYear && !select.querySelector(`option[value="${savedYear}"]`)) {
+            const opt = document.createElement('option');
+            opt.value = savedYear;
+            opt.textContent = savedYear;
+            opt.selected = true;
             select.appendChild(opt);
         }
     };
@@ -877,6 +921,7 @@
                 else {
                     selectedCategoryKeys.delete(key);
                 }
+                saveCategorySelection();
                 recalculateAndRenderAll();
             });
         });
@@ -1155,6 +1200,26 @@
         const filial = getEl('filterFilial')?.value || '';
         const source = getEl('filterSource')?.value || 'conta_baixa';
         const connId = getEl('filterConnection')?.value || '';
+        // Persist filter settings
+        try {
+            if (companyParam)
+                localStorage.setItem('fin_solidcon_vision_company', companyParam);
+            if (ano)
+                localStorage.setItem('fin_solidcon_vision_ano', ano);
+            if (mes)
+                localStorage.setItem('fin_solidcon_vision_mes', mes);
+            if (source)
+                localStorage.setItem('fin_solidcon_vision_source', source);
+            if (connId !== undefined) {
+                localStorage.setItem(`fin_solidcon_vision_conn_${companyParam || 'default'}`, connId);
+            }
+            if (filial !== undefined) {
+                localStorage.setItem(`fin_solidcon_vision_filial_${companyParam || 'default'}`, filial);
+            }
+        }
+        catch (e) {
+            console.warn('Falha ao salvar filtros no localStorage:', e);
+        }
         const filterBtn = getEl('btnFilterApply');
         const filterIcon = getEl('btnFilterIcon');
         if (filterBtn)
@@ -1179,15 +1244,14 @@
             const { revenues, expenses } = extractSeparatedCategories(data);
             revenueCategoriesList = revenues;
             expenseCategoriesList = expenses;
-            // Select all keys by default on initial fetch
-            selectedCategoryKeys = new Set();
-            revenues.forEach(r => selectedCategoryKeys.add(makeKey('receita', r.tipoconta)));
-            expenses.forEach(e => selectedCategoryKeys.add(makeKey('despesa', e.tipoconta)));
+            // Restore saved categories or select all by default
+            restoreCategorySelection(companyParam, [...revenues, ...expenses]);
             // Update Filial select if new filiais returned
             if (data.filiais && data.filiais.length > 0) {
                 const filialSelect = getEl('filterFilial');
                 if (filialSelect) {
                     const currentVal = filialSelect.value;
+                    const savedFilial = localStorage.getItem(`fin_solidcon_vision_filial_${companyParam || 'default'}`);
                     filialSelect.innerHTML = '<option value="">Todas as Filiais</option>';
                     data.filiais.forEach((f) => {
                         const opt = document.createElement('option');
@@ -1195,10 +1259,12 @@
                         const fNome = typeof f === 'object' ? (f.nome || `Filial ${f.id}`) : `Filial ${f}`;
                         opt.value = fId;
                         opt.textContent = fNome;
-                        if (fId === currentVal)
-                            opt.selected = true;
                         filialSelect.appendChild(opt);
                     });
+                    const targetFilial = currentVal || savedFilial || '';
+                    if (targetFilial && filialSelect.querySelector(`option[value="${targetFilial}"]`)) {
+                        filialSelect.value = targetFilial;
+                    }
                 }
             }
             if (getEl('connectionBadge')) {
@@ -1229,11 +1295,13 @@
         getEl('btnSelectAllCategories')?.addEventListener('click', () => {
             revenueCategoriesList.forEach(r => selectedCategoryKeys.add(makeKey('receita', r.tipoconta)));
             expenseCategoriesList.forEach(e => selectedCategoryKeys.add(makeKey('despesa', e.tipoconta)));
+            saveCategorySelection();
             recalculateAndRenderAll();
         });
         // Global "Desmarcar Todos"
         getEl('btnDeselectAllCategories')?.addEventListener('click', () => {
             selectedCategoryKeys.clear();
+            saveCategorySelection();
             recalculateAndRenderAll();
         });
         // Master Receitas Checkbox
@@ -1245,16 +1313,19 @@
             else {
                 revenueCategoriesList.forEach(r => selectedCategoryKeys.delete(makeKey('receita', r.tipoconta)));
             }
+            saveCategorySelection();
             recalculateAndRenderAll();
         });
         // Receitas "Todas" button
         getEl('btnSelectAllRecCategories')?.addEventListener('click', () => {
             revenueCategoriesList.forEach(r => selectedCategoryKeys.add(makeKey('receita', r.tipoconta)));
+            saveCategorySelection();
             recalculateAndRenderAll();
         });
         // Receitas "Nenhuma" button
         getEl('btnDeselectAllRecCategories')?.addEventListener('click', () => {
             revenueCategoriesList.forEach(r => selectedCategoryKeys.delete(makeKey('receita', r.tipoconta)));
+            saveCategorySelection();
             recalculateAndRenderAll();
         });
         // Master Despesas Checkbox
@@ -1266,16 +1337,19 @@
             else {
                 expenseCategoriesList.forEach(e => selectedCategoryKeys.delete(makeKey('despesa', e.tipoconta)));
             }
+            saveCategorySelection();
             recalculateAndRenderAll();
         });
         // Despesas "Todas" button
         getEl('btnSelectAllDespCategories')?.addEventListener('click', () => {
             expenseCategoriesList.forEach(e => selectedCategoryKeys.add(makeKey('despesa', e.tipoconta)));
+            saveCategorySelection();
             recalculateAndRenderAll();
         });
         // Despesas "Nenhuma" button
         getEl('btnDeselectAllDespCategories')?.addEventListener('click', () => {
             expenseCategoriesList.forEach(e => selectedCategoryKeys.delete(makeKey('despesa', e.tipoconta)));
+            saveCategorySelection();
             recalculateAndRenderAll();
         });
         // Category Search Input
@@ -1287,10 +1361,32 @@
     // ─── DOMContentLoaded Init ───────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
         populateYearDropdown();
-        // Set current month in select
+        // Set saved or current month in select
         const mesSelect = getEl('filterMes');
         if (mesSelect) {
-            mesSelect.value = String(new Date().getMonth() + 1);
+            const savedMes = localStorage.getItem('fin_solidcon_vision_mes');
+            if (savedMes && mesSelect.querySelector(`option[value="${savedMes}"]`)) {
+                mesSelect.value = savedMes;
+            }
+            else {
+                mesSelect.value = String(new Date().getMonth() + 1);
+            }
+        }
+        // Set saved data source
+        const sourceSelect = getEl('filterSource');
+        if (sourceSelect) {
+            const savedSource = localStorage.getItem('fin_solidcon_vision_source');
+            if (savedSource && sourceSelect.querySelector(`option[value="${savedSource}"]`)) {
+                sourceSelect.value = savedSource;
+            }
+        }
+        // Set saved transaction type filter
+        const transTypeSelect = getEl('transTypeFilter');
+        if (transTypeSelect) {
+            const savedTransType = localStorage.getItem('fin_solidcon_vision_trans_type');
+            if (savedTransType && transTypeSelect.querySelector(`option[value="${savedTransType}"]`)) {
+                transTypeSelect.value = savedTransType;
+            }
         }
         setupChecklistActions();
         await loadCompanies();
@@ -1312,11 +1408,33 @@
             localStorage.setItem(`fin_solidcon_vision_conn_${companyParam || 'default'}`, connVal);
             void loadFinanceVision();
         });
-        getEl('filterAno')?.addEventListener('change', () => void loadFinanceVision());
-        getEl('filterMes')?.addEventListener('change', () => void loadFinanceVision());
-        getEl('filterSource')?.addEventListener('change', () => void loadFinanceVision());
-        getEl('filterFilial')?.addEventListener('change', () => void loadFinanceVision());
+        getEl('filterAno')?.addEventListener('change', () => {
+            const val = getEl('filterAno')?.value || '';
+            if (val)
+                localStorage.setItem('fin_solidcon_vision_ano', val);
+            void loadFinanceVision();
+        });
+        getEl('filterMes')?.addEventListener('change', () => {
+            const val = getEl('filterMes')?.value || '';
+            if (val)
+                localStorage.setItem('fin_solidcon_vision_mes', val);
+            void loadFinanceVision();
+        });
+        getEl('filterSource')?.addEventListener('change', () => {
+            const val = getEl('filterSource')?.value || '';
+            if (val)
+                localStorage.setItem('fin_solidcon_vision_source', val);
+            void loadFinanceVision();
+        });
+        getEl('filterFilial')?.addEventListener('change', () => {
+            const companyParam = getEl('filterCompany')?.value || '';
+            const val = getEl('filterFilial')?.value || '';
+            localStorage.setItem(`fin_solidcon_vision_filial_${companyParam || 'default'}`, val);
+            void loadFinanceVision();
+        });
         getEl('transTypeFilter')?.addEventListener('change', () => {
+            const val = getEl('transTypeFilter')?.value || 'all';
+            localStorage.setItem('fin_solidcon_vision_trans_type', val);
             populateAccountTypeFilter();
             renderTransactionsTable();
         });

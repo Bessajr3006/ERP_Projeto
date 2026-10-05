@@ -308,8 +308,17 @@
       }
 
       if (searchFilter) {
-        if (!FilterPanel.matchesSearch(t, ['description', 'category_name', 'bank_account_name', 'entity_name'], searchFilter)) {
-          return false;
+        if (FilterPanel && typeof FilterPanel.matchesSearch === 'function') {
+          if (!FilterPanel.matchesSearch(t, ['description', 'category_name', 'bank_account_name', 'entity_name'], searchFilter)) {
+            return false;
+          }
+        } else {
+          const q = searchFilter.toLowerCase();
+          const matches = (t.description || '').toLowerCase().includes(q)
+            || (t.category_name || '').toLowerCase().includes(q)
+            || (t.bank_account_name || '').toLowerCase().includes(q)
+            || (t.entity_name || '').toLowerCase().includes(q);
+          if (!matches) return false;
         }
       }
 
@@ -1179,23 +1188,35 @@
   async function fetchStatements(): Promise<void> {
     try {
       const [expRes, revRes, bankRes, catRes, catTypeRes, custGroupRes] = await Promise.all([
-        (api as any)('/finance/expenses'),
-        (api as any)('/finance/revenues'),
-        (api as any)('/bank-accounts'),
-        (api as any)('/finance/categories'),
+        (api as any)('/finance/expenses').catch((err: any) => {
+          console.warn('[Statements] Erro ao carregar despesas:', err);
+          return { data: [] };
+        }),
+        (api as any)('/finance/revenues').catch((err: any) => {
+          console.warn('[Statements] Erro ao carregar receitas:', err);
+          return { data: [] };
+        }),
+        (api as any)('/bank-accounts').catch((err: any) => {
+          console.warn('[Statements] Erro ao carregar contas bancárias:', err);
+          return { data: [] };
+        }),
+        (api as any)('/finance/categories').catch((err: any) => {
+          console.warn('[Statements] Erro ao carregar categorias:', err);
+          return { data: [] };
+        }),
         (api as any)('/finance/category-types').catch(() => ({ data: [] })),
         (api as any)('/customer-groups').catch(() => ({ data: [] })),
       ]);
 
-      banksData = bankRes.data || [];
-      categoriesData = catRes.data || [];
+      banksData = bankRes?.data || [];
+      categoriesData = catRes?.data || [];
       categoryTypesData = catTypeRes?.data || [];
       customerGroupsData = custGroupRes?.data || [];
       populateBankFilters();
       populateCreateModalBanks();
 
-      const expenses = (expRes.data || []).map((e: any) => ({ ...e, type: 'expense' }));
-      const revenues = (revRes.data || []).map((r: any) => ({ ...r, type: 'revenue' }));
+      const expenses = (expRes?.data || []).map((e: any) => ({ ...e, type: 'expense' }));
+      const revenues = (revRes?.data || []).map((r: any) => ({ ...r, type: 'revenue' }));
 
       // Ordena cronologico decrescente (mais recente primeiro usando data de efetivação quando pago)
       statementsData = [...expenses, ...revenues].sort((a: any, b: any) => {
@@ -1205,9 +1226,9 @@
       });
 
       renderAllSystem();
-    } catch (err) {
+    } catch (err: any) {
       console.error('[Statements] Erro ao carregar movimentações:', err);
-      (UI as any).showAlert('alertMessage', 'Erro ao carregar movimentações. Tente novamente.', 'error');
+      (UI as any).showAlert('alertMessage', `Erro ao carregar movimentações: ${err?.message || 'Tente novamente.'}`, 'error');
     }
   }
 
@@ -1597,8 +1618,14 @@
       }
 
       if (searchFilter) {
-        if (!FilterPanel.matchesSearch(s, ['description'], searchFilter)) {
-          return false;
+        if (FilterPanel && typeof FilterPanel.matchesSearch === 'function') {
+          if (!FilterPanel.matchesSearch(s, ['description'], searchFilter)) {
+            return false;
+          }
+        } else {
+          if (!(s.description || '').toLowerCase().includes(searchFilter.toLowerCase())) {
+            return false;
+          }
         }
       }
 

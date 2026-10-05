@@ -6678,6 +6678,37 @@ export class ExternalDbService {
                     }
                 }
 
+                // 4.1 Distribuição Anual por Categorias / Tipos de Conta (12 Meses)
+                let annualByCategory: any[] = [];
+                if (source !== 'banco_movimento') {
+                    try {
+                        const reqAnnualCats = pool.request();
+                        reqAnnualCats.input('ano', sql.Int, ano);
+                        const resAnnualCats = await reqAnnualCats.query(`
+                            SELECT 
+                                mes,
+                                CASE WHEN tipo = 'Receitas' THEN 'receita' ELSE 'despesa' END as tipo,
+                                ISNULL(tipoconta, 'Outros') as tipoconta,
+                                SUM(vlbaixa) as valor,
+                                COUNT(*) as qtd
+                            FROM vwaporttec_contas WITH (NOLOCK)
+                            WHERE ano = @ano
+                              ${filialClauseView}
+                            GROUP BY mes, tipo, tipoconta
+                            ORDER BY mes ASC, valor DESC
+                        `);
+                        annualByCategory = (resAnnualCats.recordset || []).map((c: any) => ({
+                            mes: Number(c.mes),
+                            tipo: c.tipo,
+                            tipoconta: c.tipoconta,
+                            valor: Number(c.valor || 0),
+                            qtd: Number(c.qtd || 0)
+                        }));
+                    } catch {
+                        annualByCategory = [];
+                    }
+                }
+
                 // 5. Listagem Detalhada das Movimentações do Mês (Top 500)
                 const reqTrans = pool.request();
                 reqTrans.input('ano', sql.Int, ano);
@@ -6823,6 +6854,7 @@ export class ExternalDbService {
                         ticketMedioDespesa: currentMonthData.qtd_despesa > 0 ? totalDespesa / currentMonthData.qtd_despesa : 0
                     },
                     monthlyComparison,
+                    annualByCategory,
                     dailyEvolution,
                     byBank,
                     byCategory,

@@ -3,6 +3,7 @@
  * fin_solidcon_vision.ts
  * Painel Analítico de Receitas vs Despesas do Banco Solidcon
  * Suporte a Checklist Separado por Receitas e Despesas (vwaporttec_contas)
+ * e Recálculo Dinâmico do Comparativo Anual (12 Meses)
  */
 (() => {
     let rawData = null;
@@ -12,6 +13,10 @@
     let revenueCategoriesList = [];
     let expenseCategoriesList = [];
     let categorySearchTerm = '';
+    const MONTH_NAMES = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
     const getEl = (id) => document.getElementById(id);
     const formatCurrency = (val) => {
         const num = Number(val || 0);
@@ -174,6 +179,7 @@
     const extractSeparatedCategories = (data) => {
         const recMap = new Map();
         const despMap = new Map();
+        // 1. Current month transactions
         (data.transactions || []).forEach(t => {
             const tc = normalizeAccountType(t.tipoconta);
             const val = Number(t.valor || 0);
@@ -192,7 +198,7 @@
                 item.qtd += 1;
             }
         });
-        // Also merge byCategory if exists
+        // 2. Month byCategory
         if (Array.isArray(data.byCategory)) {
             data.byCategory.forEach(c => {
                 const tc = normalizeAccountType(c.tipoconta);
@@ -205,6 +211,24 @@
                 else {
                     if (!despMap.has(tc))
                         despMap.set(tc, { tipoconta: tc, valor: val, qtd });
+                }
+            });
+        }
+        // 3. Annual byCategory (to make sure all categories of the whole year are visible)
+        if (Array.isArray(data.annualByCategory)) {
+            data.annualByCategory.forEach(c => {
+                const tc = normalizeAccountType(c.tipoconta);
+                const val = Number(c.valor || 0);
+                const qtd = c.qtd || 1;
+                if (c.tipo === 'receita') {
+                    if (!recMap.has(tc)) {
+                        recMap.set(tc, { tipoconta: tc, valor: 0, qtd: 0 });
+                    }
+                }
+                else {
+                    if (!despMap.has(tc)) {
+                        despMap.set(tc, { tipoconta: tc, valor: 0, qtd: 0 });
+                    }
                 }
             });
         }
@@ -332,6 +356,46 @@
         // Sort Top Rankings
         topRecs.sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0));
         topDesps.sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0));
+        // ── Recalculate 12-Month Comparison with Checklist Categories ────────
+        let monthlyComparison = rawData.monthlyComparison || [];
+        if (Array.isArray(rawData.annualByCategory) && rawData.annualByCategory.length > 0) {
+            const annualMap = new Map();
+            for (let m = 1; m <= 12; m++) {
+                annualMap.set(m, {
+                    mes: m,
+                    receita: 0,
+                    despesa: 0,
+                    qtd_receita: 0,
+                    qtd_despesa: 0
+                });
+            }
+            rawData.annualByCategory.forEach(c => {
+                const key = makeKey(c.tipo, c.tipoconta);
+                if (selectedCategoryKeys.has(key)) {
+                    const item = annualMap.get(c.mes);
+                    if (item) {
+                        if (c.tipo === 'receita') {
+                            item.receita += Number(c.valor || 0);
+                            item.qtd_receita += Number(c.qtd || 0);
+                        }
+                        else {
+                            item.despesa += Number(c.valor || 0);
+                            item.qtd_despesa += Number(c.qtd || 0);
+                        }
+                    }
+                }
+            });
+            monthlyComparison = Array.from(annualMap.values()).map((m, idx) => ({
+                mes: m.mes,
+                mesNome: MONTH_NAMES[idx] || '',
+                mesSigla: (MONTH_NAMES[idx] || '').slice(0, 3),
+                receita: m.receita,
+                despesa: m.despesa,
+                saldo: m.receita - m.despesa,
+                qtd_receita: m.qtd_receita,
+                qtd_despesa: m.qtd_despesa
+            }));
+        }
         const activeData = {
             ...rawData,
             summary: {
@@ -345,6 +409,7 @@
                 ticketMedioReceita,
                 ticketMedioDespesa
             },
+            monthlyComparison,
             dailyEvolution,
             byBank,
             topReceitas: topRecs.slice(0, 5),
@@ -1013,6 +1078,7 @@
             return;
         renderKPIs(res.activeData);
         renderDailyChart(res.activeData);
+        renderAnnualChart(res.activeData);
         renderBankDistribution(res.activeData);
         renderTopRankings(res.activeData);
         renderCategoryDistribution();
@@ -1109,7 +1175,7 @@
                 throw new Error('Nenhum dado retornado do servidor.');
             }
             rawData = data;
-            // Extract separated categories
+            // Extract separated categories (incorporating month & annual categories)
             const { revenues, expenses } = extractSeparatedCategories(data);
             revenueCategoriesList = revenues;
             expenseCategoriesList = expenses;
@@ -1141,7 +1207,6 @@
                 getEl('connectionBadge').textContent = `• ${compDisplay ? `${compDisplay} | ` : ''}${connDisplay}`;
             }
             updateStatusBadge('success', `Conectado (${data.summary.qtdReceita + data.summary.qtdDespesa} lançamentos)`);
-            renderAnnualChart(data);
             populateAccountTypeFilter();
             recalculateAndRenderAll();
         }

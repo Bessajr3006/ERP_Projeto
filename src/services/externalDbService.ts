@@ -6476,6 +6476,10 @@ export class ExternalDbService {
                     }
                 }
 
+                // Filtro para ocultar bancos/contas inativos (inInativo = 1 ou nome contendo INATIVO)
+                const inactiveBankClauseView = " AND (cdbanco IS NULL OR cdbanco NOT IN (SELECT _bc.cdBancoConta FROM tbBancoConta _bc WITH (NOLOCK) WHERE _bc.inInativo = 1 OR _bc.nmConta LIKE '%INATIV%')) AND (nmbanco IS NULL OR nmbanco NOT LIKE '%INATIV%')";
+                const inactiveBankClauseBcm = " AND (m.cdBancoConta IS NULL OR m.cdBancoConta NOT IN (SELECT _bc.cdBancoConta FROM tbBancoConta _bc WITH (NOLOCK) WHERE _bc.inInativo = 1 OR _bc.nmConta LIKE '%INATIV%')) AND (bc.nmConta IS NULL OR bc.nmConta NOT LIKE '%INATIV%')";
+
                 // 1. Resumo Anual (12 Meses)
                 const reqAnual = pool.request();
                 reqAnual.input('ano', sql.Int, ano);
@@ -6490,9 +6494,11 @@ export class ExternalDbService {
                             COUNT(CASE WHEN ISNULL(m.vlCredito, 0) > 0 THEN 1 END) as qtd_receita,
                             COUNT(CASE WHEN ISNULL(m.vlDebito, 0) > 0 THEN 1 END) as qtd_despesa
                         FROM tbBancoContaMovimento m WITH (NOLOCK)
+                        LEFT JOIN tbBancoConta bc WITH (NOLOCK) ON bc.cdBancoConta = m.cdBancoConta
                         WHERE YEAR(m.dtLancamento) = @ano
                           AND (m.inCancelado IS NULL OR m.inCancelado = 0)
                           ${filialClauseBcm}
+                          ${inactiveBankClauseBcm}
                         GROUP BY MONTH(m.dtLancamento)
                         ORDER BY mes ASC
                     `;
@@ -6508,6 +6514,7 @@ export class ExternalDbService {
                         FROM vwaporttec_contas WITH (NOLOCK)
                         WHERE ano = @ano
                           ${filialClauseView}
+                          ${inactiveBankClauseView}
                         GROUP BY mes
                         ORDER BY mes ASC
                     `;
@@ -6552,9 +6559,11 @@ export class ExternalDbService {
                             COUNT(CASE WHEN ISNULL(m.vlCredito, 0) > 0 THEN 1 END) as qtd_receita,
                             COUNT(CASE WHEN ISNULL(m.vlDebito, 0) > 0 THEN 1 END) as qtd_despesa
                         FROM tbBancoContaMovimento m WITH (NOLOCK)
+                        LEFT JOIN tbBancoConta bc WITH (NOLOCK) ON bc.cdBancoConta = m.cdBancoConta
                         WHERE YEAR(m.dtLancamento) = @ano AND MONTH(m.dtLancamento) = @mes
                           AND (m.inCancelado IS NULL OR m.inCancelado = 0)
                           ${filialClauseBcm}
+                          ${inactiveBankClauseBcm}
                         GROUP BY DAY(m.dtLancamento), CONVERT(VARCHAR(10), m.dtLancamento, 120)
                         ORDER BY dia ASC
                     `;
@@ -6571,6 +6580,7 @@ export class ExternalDbService {
                         FROM vwaporttec_contas WITH (NOLOCK)
                         WHERE ano = @ano AND mes = @mes
                           ${filialClauseView}
+                          ${inactiveBankClauseView}
                         GROUP BY dia, CONVERT(VARCHAR(10), dtbaixa, 120)
                         ORDER BY dia ASC
                     `;
@@ -6617,6 +6627,7 @@ export class ExternalDbService {
                         WHERE YEAR(m.dtLancamento) = @ano AND MONTH(m.dtLancamento) = @mes
                           AND (m.inCancelado IS NULL OR m.inCancelado = 0)
                           ${filialClauseBcm}
+                          ${inactiveBankClauseBcm}
                         GROUP BY ISNULL(bc.nmConta, 'Não Informado'), ISNULL(CAST(bc.ContaNumero AS VARCHAR(50)), '')
                         ORDER BY (SUM(ISNULL(m.vlCredito, 0)) + SUM(ISNULL(m.vlDebito, 0))) DESC
                     `;
@@ -6632,6 +6643,7 @@ export class ExternalDbService {
                         FROM vwaporttec_contas WITH (NOLOCK)
                         WHERE ano = @ano AND mes = @mes
                           ${filialClauseView}
+                          ${inactiveBankClauseView}
                         GROUP BY ISNULL(nmbanco, 'Caixa / Outros'), ISNULL(CAST(cdbanco AS VARCHAR(50)), '')
                         ORDER BY (SUM(CASE WHEN tipo = 'Receitas' THEN vlbaixa ELSE 0 END) + SUM(CASE WHEN tipo = 'Despesas' THEN vlbaixa ELSE 0 END)) DESC
                     `;
@@ -6664,6 +6676,7 @@ export class ExternalDbService {
                             FROM vwaporttec_contas WITH (NOLOCK)
                             WHERE ano = @ano AND mes = @mes
                               ${filialClauseView}
+                              ${inactiveBankClauseView}
                             GROUP BY tipo, tipoconta
                             ORDER BY valor DESC
                         `);
@@ -6694,6 +6707,7 @@ export class ExternalDbService {
                             FROM vwaporttec_contas WITH (NOLOCK)
                             WHERE ano = @ano
                               ${filialClauseView}
+                              ${inactiveBankClauseView}
                             GROUP BY mes, tipo, tipoconta
                             ORDER BY mes ASC, valor DESC
                         `);
@@ -6736,6 +6750,7 @@ export class ExternalDbService {
                           AND (m.inCancelado IS NULL OR m.inCancelado = 0)
                           AND (ISNULL(m.vlDebito, 0) > 0 OR ISNULL(m.vlCredito, 0) > 0)
                           ${filialClauseBcm}
+                          ${inactiveBankClauseBcm}
                         ORDER BY m.dtLancamento DESC, m.cdBancoContaMovimento DESC
                     `;
                 } else {
@@ -6769,6 +6784,7 @@ export class ExternalDbService {
                         FROM vwaporttec_contas WITH (NOLOCK)
                         WHERE ano = @ano AND mes = @mes
                           ${filialClauseView}
+                          ${inactiveBankClauseView}
                         ORDER BY dtbaixa DESC, cdcontabaixa DESC
                     `;
                 }
@@ -6798,6 +6814,7 @@ export class ExternalDbService {
                         SELECT DISTINCT cdfilial as id, ISNULL(filial, CONCAT('Filial ', CAST(cdfilial AS VARCHAR(20)))) as nome
                         FROM vwaporttec_contas WITH (NOLOCK)
                         WHERE cdfilial IS NOT NULL
+                          ${inactiveBankClauseView}
                         ORDER BY cdfilial ASC
                     `);
                     filiais = (resFiliais.recordset || []).map((f: any) => ({

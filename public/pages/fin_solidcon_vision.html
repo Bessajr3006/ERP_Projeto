@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Visão Fin_Solidcon</title>
-    <link href="/css/style.css?v=20261005092546" rel="stylesheet">
+    <link href="/css/style.css?v=20261005093457" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261005092546"></script>
+    <script src="/js/pwa.js?v=20261005093457"></script>
 </head>
 <body data-required-module="fin_solidcon_vision" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -332,74 +332,152 @@
             </div>
         </div>
 
-        <!-- ── DISTRIBUIÇÃO POR TIPO DE CONTA / CATEGORIA (CHECKLIST COMPLETO) ─── -->
+        <!-- ── DISTRIBUIÇÃO POR TIPO DE CONTA / CATEGORIA (RECEITAS E DESPESAS SEPARADAS) ─── -->
         <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-200/80 dark:border-slate-700/80 shadow-sm p-5 mb-6">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-gray-100 dark:border-slate-700/60">
+            <!-- Header Global do Card -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100 dark:border-slate-700/60">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
                         <span>Tipos de Conta (vwaporttec_contas)</span>
                         <span id="categoryCountBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-semibold font-mono" title="Total de tipos de conta">0 tipos</span>
                         <span id="categorySelectedBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold font-mono" title="Tipos selecionados para cálculo">0 selecionados</span>
-                        <span id="categoryTotalSelectedSum" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold font-mono">Total: R$ 0,00</span>
+                        <span id="categoryTotalSelectedSum" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold font-mono">Saldo: R$ 0,00</span>
                     </h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Marque ou desmarque os tipos de conta para recalcular dinamicamente os <strong>totais, indicadores (KPIs), gráficos</strong> e os <strong>lançamentos detalhados</strong> abaixo.</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Marque ou desmarque os tipos de conta de <strong>Receita</strong> e <strong>Despesa</strong> separadamente para recalcular os indicadores, gráficos e lançamentos.
+                    </p>
                 </div>
 
-                <!-- Ações Rápidas do Checklist -->
+                <!-- Ações Globais -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" id="btnSelectAllCategories" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer" title="Marcar todos os tipos de conta">
+                    <button type="button" id="btnSelectAllCategories" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer" title="Marcar todos os tipos">
                         Marcar Todos
                     </button>
                     <button type="button" id="btnDeselectAllCategories" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer" title="Desmarcar todos">
                         Desmarcar Todos
                     </button>
-                    <button type="button" id="btnSelectOnlyRevenueCategories" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer" title="Selecionar somente tipos de receita">
-                        Somente Receitas
-                    </button>
-                    <button type="button" id="btnSelectOnlyExpenseCategories" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer" title="Selecionar somente tipos de despesa">
-                        Somente Despesas
-                    </button>
                     <div class="relative">
-                        <input type="text" id="categorySearchInput" placeholder="Buscar categoria..." class="bg-gray-50 dark:bg-slate-900/70 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl py-1.5 pl-7 pr-2.5 text-xs focus:ring-2 focus:ring-emerald-500/30 w-36 sm:w-44">
+                        <input type="text" id="categorySearchInput" placeholder="Buscar tipo de conta..." class="bg-gray-50 dark:bg-slate-900/70 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl py-1.5 pl-7 pr-2.5 text-xs focus:ring-2 focus:ring-emerald-500/30 w-44 sm:w-56">
                         <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                 </div>
             </div>
 
-            <div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-100 dark:border-slate-700/60">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 sticky top-0 bg-white dark:bg-slate-800 z-10">
-                            <th class="py-2.5 px-3 w-10 text-center">
-                                <input type="checkbox" id="chkSelectAllCategories" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600 cursor-pointer" title="Marcar / Desmarcar todos">
-                            </th>
-                            <th class="py-2.5 px-3">Tipo de Conta / Categoria</th>
-                            <th class="py-2.5 px-3 text-center">Tipo</th>
-                            <th class="py-2.5 px-3 text-center">Lançamentos</th>
-                            <th class="py-2.5 px-3 text-right">Participação</th>
-                            <th class="py-2.5 px-3 text-right">Valor Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="categoryTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
-                        <tr>
-                            <td colspan="6" class="py-6 text-center text-gray-400">Carregando categorias...</td>
-                        </tr>
-                    </tbody>
-                    <tfoot id="categoryTableFoot" class="border-t-2 border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/50 font-bold text-xs sticky bottom-0 z-10">
-                        <tr>
-                            <td colspan="3" class="py-2.5 px-3 text-gray-700 dark:text-gray-200">
-                                <span class="uppercase tracking-wider text-[11px] text-gray-500 dark:text-gray-400 font-semibold">Subtotal Selecionado:</span>
-                                <span id="categoryFootCount" class="ml-1 font-normal text-gray-400 dark:text-gray-500 text-[11px]">(0 itens)</span>
-                            </td>
-                            <td colspan="2" class="py-2.5 px-3 text-right text-gray-500 dark:text-gray-400 text-[11px] font-mono" id="categoryFootBreakdown">
-                                Rec: R$ 0,00 | Desp: R$ 0,00
-                            </td>
-                            <td class="py-2.5 px-3 text-right font-mono text-xs" id="categoryFootTotal">
-                                R$ 0,00
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
+            <!-- Grid com 2 Colunas: Receitas (Esquerda) e Despesas (Direita) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Coluna 1: Tipos de Conta - RECEITAS -->
+                <div class="bg-emerald-50/30 dark:bg-emerald-950/10 rounded-xl border border-emerald-200/60 dark:border-emerald-800/40 p-3.5 sm:p-4 flex flex-col">
+                    <div class="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-emerald-100 dark:border-emerald-900/40">
+                        <div class="flex items-center gap-2">
+                            <span class="p-1.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            </span>
+                            <div>
+                                <h4 class="text-sm font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-2">
+                                    <span>Tipos de Receita</span>
+                                    <span id="recCategoryCountBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 font-semibold font-mono">0 tipos</span>
+                                </h4>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" id="btnSelectAllRecCategories" class="px-2 py-1 text-[11px] font-semibold rounded-lg bg-emerald-100 dark:bg-emerald-900/50 hover:bg-emerald-200 dark:hover:bg-emerald-800/60 text-emerald-800 dark:text-emerald-200 transition-colors cursor-pointer" title="Marcar todas as receitas">
+                                Todas
+                            </button>
+                            <button type="button" id="btnDeselectAllRecCategories" class="px-2 py-1 text-[11px] font-semibold rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer" title="Desmarcar todas as receitas">
+                                Nenhuma
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-80 overflow-y-auto rounded-lg border border-emerald-100 dark:border-emerald-900/40 bg-white dark:bg-slate-800">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 sticky top-0 bg-emerald-50/90 dark:bg-slate-800 z-10">
+                                    <th class="py-2 px-2.5 w-8 text-center">
+                                        <input type="checkbox" id="chkSelectAllRecCategories" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600 cursor-pointer" title="Marcar / Desmarcar todas as receitas">
+                                    </th>
+                                    <th class="py-2 px-2.5">Tipo de Conta</th>
+                                    <th class="py-2 px-2 text-center">Lanç.</th>
+                                    <th class="py-2 px-2.5 text-right">Part.%</th>
+                                    <th class="py-2 px-2.5 text-right text-emerald-600 dark:text-emerald-400">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recCategoryTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
+                                <tr>
+                                    <td colspan="5" class="py-6 text-center text-gray-400">Carregando receitas...</td>
+                                </tr>
+                            </tbody>
+                            <tfoot id="recCategoryTableFoot" class="border-t-2 border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/80 dark:bg-slate-900/70 font-bold text-xs sticky bottom-0 z-10">
+                                <tr>
+                                    <td colspan="3" class="py-2 px-2.5 text-emerald-900 dark:text-emerald-300">
+                                        <span class="text-[11px] font-semibold uppercase">Total Receitas:</span>
+                                        <span id="recCategoryFootCount" class="ml-1 font-normal text-gray-500 dark:text-gray-400 text-[11px]">(0)</span>
+                                    </td>
+                                    <td colspan="2" class="py-2 px-2.5 text-right font-mono text-xs font-black text-emerald-600 dark:text-emerald-400" id="recCategoryFootTotal">
+                                        R$ 0,00
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Coluna 2: Tipos de Conta - DESPESAS -->
+                <div class="bg-rose-50/30 dark:bg-rose-950/10 rounded-xl border border-rose-200/60 dark:border-rose-800/40 p-3.5 sm:p-4 flex flex-col">
+                    <div class="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-rose-100 dark:border-rose-900/40">
+                        <div class="flex items-center gap-2">
+                            <span class="p-1.5 bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                            </span>
+                            <div>
+                                <h4 class="text-sm font-bold text-rose-900 dark:text-rose-300 flex items-center gap-2">
+                                    <span>Tipos de Despesa</span>
+                                    <span id="despCategoryCountBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 font-semibold font-mono">0 tipos</span>
+                                </h4>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" id="btnSelectAllDespCategories" class="px-2 py-1 text-[11px] font-semibold rounded-lg bg-rose-100 dark:bg-rose-900/50 hover:bg-rose-200 dark:hover:bg-rose-800/60 text-rose-800 dark:text-rose-200 transition-colors cursor-pointer" title="Marcar todas as despesas">
+                                Todas
+                            </button>
+                            <button type="button" id="btnDeselectAllDespCategories" class="px-2 py-1 text-[11px] font-semibold rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer" title="Desmarcar todas as despesas">
+                                Nenhuma
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-80 overflow-y-auto rounded-lg border border-rose-100 dark:border-rose-900/40 bg-white dark:bg-slate-800">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 sticky top-0 bg-rose-50/90 dark:bg-slate-800 z-10">
+                                    <th class="py-2 px-2.5 w-8 text-center">
+                                        <input type="checkbox" id="chkSelectAllDespCategories" class="rounded border-gray-300 text-rose-600 focus:ring-rose-500/30 dark:bg-slate-700 dark:border-slate-600 cursor-pointer" title="Marcar / Desmarcar todas as despesas">
+                                    </th>
+                                    <th class="py-2 px-2.5">Tipo de Conta</th>
+                                    <th class="py-2 px-2 text-center">Lanç.</th>
+                                    <th class="py-2 px-2.5 text-right">Part.%</th>
+                                    <th class="py-2 px-2.5 text-right text-rose-600 dark:text-rose-400">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="despCategoryTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
+                                <tr>
+                                    <td colspan="5" class="py-6 text-center text-gray-400">Carregando despesas...</td>
+                                </tr>
+                            </tbody>
+                            <tfoot id="despCategoryTableFoot" class="border-t-2 border-rose-200 dark:border-rose-800/60 bg-rose-50/80 dark:bg-slate-900/70 font-bold text-xs sticky bottom-0 z-10">
+                                <tr>
+                                    <td colspan="3" class="py-2 px-2.5 text-rose-900 dark:text-rose-300">
+                                        <span class="text-[11px] font-semibold uppercase">Total Despesas:</span>
+                                        <span id="despCategoryFootCount" class="ml-1 font-normal text-gray-500 dark:text-gray-400 text-[11px]">(0)</span>
+                                    </td>
+                                    <td colspan="2" class="py-2 px-2.5 text-right font-mono text-xs font-black text-rose-600 dark:text-rose-400" id="despCategoryFootTotal">
+                                        R$ 0,00
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -485,10 +563,10 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261005092546"></script>
-    <script src="/js/fin_solidcon_vision.js?v=20261005092546"></script>
-    <script src="/js/components/navbar.js?v=20261005092546"></script>
+    <script src="/js/api.js?v=20261005093457"></script>
+    <script src="/js/fin_solidcon_vision.js?v=20261005093457"></script>
+    <script src="/js/components/navbar.js?v=20261005093457"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261005092546"></script>
+    <script src="/js/components/footer.js?v=20261005093457"></script>
 </body>
 </html>

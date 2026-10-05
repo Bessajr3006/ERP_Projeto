@@ -2,7 +2,7 @@
 /**
  * fin_solidcon_vision.ts
  * Painel Analítico de Receitas vs Despesas do Banco Solidcon
- * Suporte a Checklist Interativo de Tipos de Conta (vwaporttec_contas)
+ * Suporte a Checklist Separado por Receitas e Despesas (vwaporttec_contas)
  */
 
 (() => {
@@ -23,14 +23,10 @@
     }
 
     interface CategoryItem {
+        tipo: 'receita' | 'despesa';
         tipoconta: string;
-        tipo: 'receita' | 'despesa' | 'misto';
         valor: number;
-        receita: number;
-        despesa: number;
         qtd: number;
-        qtdReceita: number;
-        qtdDespesa: number;
     }
 
     interface VisionData {
@@ -95,9 +91,10 @@
     let rawData: VisionData | null = null;
     let isLoading = false;
 
-    // Checklist State
-    let selectedAccountTypes: Set<string> = new Set();
-    let allCategoriesList: CategoryItem[] = [];
+    // Checklist State: Keys formatted as "receita:TipoDeConta" and "despesa:TipoDeConta"
+    let selectedCategoryKeys: Set<string> = new Set();
+    let revenueCategoriesList: CategoryItem[] = [];
+    let expenseCategoriesList: CategoryItem[] = [];
     let categorySearchTerm: string = '';
 
     const getEl = <T extends HTMLElement = HTMLElement>(id: string): T | null =>
@@ -120,6 +117,10 @@
     const normalizeAccountType = (tc?: string | null): string => {
         if (!tc || !tc.trim()) return '(Sem Tipo)';
         return tc.trim();
+    };
+
+    const makeKey = (tipo: 'receita' | 'despesa', tc: string): string => {
+        return `${tipo}:${normalizeAccountType(tc)}`;
     };
 
     function escapeHtml(value: any): string {
@@ -267,77 +268,60 @@
         if (box) box.classList.add('hidden');
     };
 
-    // ─── Extract & Build Category List from Raw Transactions ─────────────────
-    const buildCategoriesList = (data: VisionData): CategoryItem[] => {
-        const map = new Map<string, {
-            tipoconta: string;
-            receita: number;
-            despesa: number;
-            qtdReceita: number;
-            qtdDespesa: number;
-        }>();
+    // ─── Extract & Separate Categories (Receitas e Despesas) ──────────────────
+    const extractSeparatedCategories = (data: VisionData): {
+        revenues: CategoryItem[];
+        expenses: CategoryItem[];
+    } => {
+        const recMap = new Map<string, { tipoconta: string; valor: number; qtd: number }>();
+        const despMap = new Map<string, { tipoconta: string; valor: number; qtd: number }>();
 
         (data.transactions || []).forEach(t => {
             const tc = normalizeAccountType(t.tipoconta);
-            if (!map.has(tc)) {
-                map.set(tc, {
-                    tipoconta: tc,
-                    receita: 0,
-                    despesa: 0,
-                    qtdReceita: 0,
-                    qtdDespesa: 0
-                });
-            }
-            const item = map.get(tc)!;
             const val = Number(t.valor || 0);
+
             if (t.tipo === 'receita') {
-                item.receita += val;
-                item.qtdReceita += 1;
+                if (!recMap.has(tc)) recMap.set(tc, { tipoconta: tc, valor: 0, qtd: 0 });
+                const item = recMap.get(tc)!;
+                item.valor += val;
+                item.qtd += 1;
             } else {
-                item.despesa += val;
-                item.qtdDespesa += 1;
+                if (!despMap.has(tc)) despMap.set(tc, { tipoconta: tc, valor: 0, qtd: 0 });
+                const item = despMap.get(tc)!;
+                item.valor += val;
+                item.qtd += 1;
             }
         });
 
-        // Also merge any categories from byCategory if present but not in transactions
+        // Also merge byCategory if exists
         if (Array.isArray(data.byCategory)) {
             data.byCategory.forEach(c => {
                 const tc = normalizeAccountType(c.tipoconta);
-                if (!map.has(tc)) {
-                    map.set(tc, {
-                        tipoconta: tc,
-                        receita: c.tipo === 'receita' ? Number(c.valor || 0) : 0,
-                        despesa: c.tipo === 'despesa' ? Number(c.valor || 0) : 0,
-                        qtdReceita: c.tipo === 'receita' ? (c.qtd || 1) : 0,
-                        qtdDespesa: c.tipo === 'despesa' ? (c.qtd || 1) : 0
-                    });
+                const val = Number(c.valor || 0);
+                const qtd = c.qtd || 1;
+                if (c.tipo === 'receita') {
+                    if (!recMap.has(tc)) recMap.set(tc, { tipoconta: tc, valor: val, qtd });
+                } else {
+                    if (!despMap.has(tc)) despMap.set(tc, { tipoconta: tc, valor: val, qtd });
                 }
             });
         }
 
-        const list: CategoryItem[] = [];
-        map.forEach(item => {
-            const totalVal = item.receita + item.despesa;
-            const totalQtd = item.qtdReceita + item.qtdDespesa;
-            let tipo: 'receita' | 'despesa' | 'misto' = 'receita';
-            if (item.receita > 0 && item.despesa > 0) tipo = 'misto';
-            else if (item.despesa > 0) tipo = 'despesa';
+        const revenues: CategoryItem[] = Array.from(recMap.values()).map(r => ({
+            tipo: 'receita',
+            tipoconta: r.tipoconta,
+            valor: r.valor,
+            qtd: r.qtd
+        })).sort((a, b) => b.valor - a.valor);
 
-            list.push({
-                tipoconta: item.tipoconta,
-                tipo,
-                valor: totalVal,
-                receita: item.receita,
-                despesa: item.despesa,
-                qtd: totalQtd,
-                qtdReceita: item.qtdReceita,
-                qtdDespesa: item.qtdDespesa
-            });
-        });
+        const expenses: CategoryItem[] = Array.from(despMap.values()).map(d => ({
+            tipo: 'despesa',
+            tipoconta: d.tipoconta,
+            valor: d.valor,
+            qtd: d.qtd
+        })).sort((a, b) => b.valor - a.valor);
 
-        // Sort by total value descending
-        list.sort((a, b) => b.valor - a.valor);
-        return list;
+        return { revenues, expenses };
     };
 
     // ─── Recalculate Active Data based on Checklist ──────────────────────────
@@ -354,8 +338,8 @@
 
         const allTrans = rawData.transactions || [];
         const activeTransactions = allTrans.filter(t => {
-            const tc = normalizeAccountType(t.tipoconta);
-            return selectedAccountTypes.has(tc);
+            const key = makeKey(t.tipo, t.tipoconta);
+            return selectedCategoryKeys.has(key);
         });
 
         let totalReceita = 0;
@@ -514,7 +498,7 @@
             totalSelectedExpense: totalDespesa,
             totalSelectedBalance: saldoLiquido,
             totalSelectedSum: totalMovimentado,
-            selectedCount: selectedAccountTypes.size
+            selectedCount: selectedCategoryKeys.size
         };
     };
 
@@ -672,7 +656,6 @@
 
         container.innerHTML = html;
 
-        // Click handler to quickly switch month
         container.querySelectorAll('.annual-month-bar').forEach(el => {
             el.addEventListener('click', () => {
                 const mesVal = el.getAttribute('data-mes');
@@ -766,19 +749,25 @@
         }
     };
 
-    // ─── Render Category Checklist Table ─────────────────────────────────────
+    // ─── Render Separated Category Checklist Panels ──────────────────────────
     const renderCategoryDistribution = () => {
-        const tbody = getEl('categoryTableBody');
+        const recTbody = getEl('recCategoryTableBody');
+        const despTbody = getEl('despCategoryTableBody');
+
         const countBadge = getEl('categoryCountBadge');
         const selectedBadge = getEl('categorySelectedBadge');
         const totalSumBadge = getEl('categoryTotalSelectedSum');
-        const chkMaster = getEl<HTMLInputElement>('chkSelectAllCategories');
-        if (!tbody) return;
 
-        const totalCategories = allCategoriesList.length;
-        if (countBadge) countBadge.textContent = `${totalCategories} ${totalCategories === 1 ? 'tipo' : 'tipos'}`;
+        const recCountBadge = getEl('recCategoryCountBadge');
+        const despCountBadge = getEl('despCategoryCountBadge');
 
-        const selectedCount = selectedAccountTypes.size;
+        const chkMasterRec = getEl<HTMLInputElement>('chkSelectAllRecCategories');
+        const chkMasterDesp = getEl<HTMLInputElement>('chkSelectAllDespCategories');
+
+        const totalCategories = revenueCategoriesList.length + expenseCategoriesList.length;
+        if (countBadge) countBadge.textContent = `${totalCategories} tipos`;
+
+        const selectedCount = selectedCategoryKeys.size;
         if (selectedBadge) {
             selectedBadge.textContent = `${selectedCount} selecionado${selectedCount === 1 ? '' : 's'}`;
             if (selectedCount === 0) {
@@ -790,179 +779,220 @@
             }
         }
 
-        // Master Checkbox State
-        if (chkMaster) {
-            if (totalCategories > 0 && selectedCount === totalCategories) {
-                chkMaster.checked = true;
-                chkMaster.indeterminate = false;
-            } else if (selectedCount > 0 && selectedCount < totalCategories) {
-                chkMaster.checked = false;
-                chkMaster.indeterminate = true;
-            } else {
-                chkMaster.checked = false;
-                chkMaster.indeterminate = false;
-            }
-        }
-
-        if (totalCategories === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-gray-400">Nenhum tipo de conta encontrado para este período.</td></tr>';
-            if (getEl('categoryFootCount')) getEl('categoryFootCount')!.textContent = '(0 itens)';
-            if (getEl('categoryFootBreakdown')) getEl('categoryFootBreakdown')!.innerHTML = 'Rec: R$ 0,00 | Desp: R$ 0,00';
-            if (getEl('categoryFootTotal')) getEl('categoryFootTotal')!.textContent = 'R$ 0,00';
-            if (totalSumBadge) totalSumBadge.textContent = 'Total: R$ 0,00';
-            return;
-        }
-
-        // Filter list by categorySearchTerm
         const search = (categorySearchTerm || '').trim().toLowerCase();
-        const displayList = allCategoriesList.filter(c => {
-            if (!search) return true;
-            return c.tipoconta.toLowerCase().includes(search);
-        });
 
-        // Totals of selected categories
-        let sumSelectedRec = 0;
-        let sumSelectedDesp = 0;
-        let sumSelectedTotal = 0;
-        let countSelectedItems = 0;
+        // ── 1. RECEITAS PANEL ─────────────────────────────
+        const filteredRecList = revenueCategoriesList.filter(c => !search || c.tipoconta.toLowerCase().includes(search));
+        if (recCountBadge) recCountBadge.textContent = `${revenueCategoriesList.length} ${revenueCategoriesList.length === 1 ? 'tipo' : 'tipos'}`;
 
-        allCategoriesList.forEach(c => {
-            if (selectedAccountTypes.has(c.tipoconta)) {
-                sumSelectedRec += c.receita;
-                sumSelectedDesp += c.despesa;
-                sumSelectedTotal += c.valor;
-                countSelectedItems += 1;
+        let totalRecSelected = 0;
+        let countRecSelected = 0;
+        revenueCategoriesList.forEach(c => {
+            if (selectedCategoryKeys.has(makeKey('receita', c.tipoconta))) {
+                totalRecSelected += c.valor;
+                countRecSelected += 1;
             }
         });
 
-        const selectedSaldo = sumSelectedRec - sumSelectedDesp;
+        if (chkMasterRec) {
+            if (revenueCategoriesList.length > 0 && countRecSelected === revenueCategoriesList.length) {
+                chkMasterRec.checked = true;
+                chkMasterRec.indeterminate = false;
+            } else if (countRecSelected > 0 && countRecSelected < revenueCategoriesList.length) {
+                chkMasterRec.checked = false;
+                chkMasterRec.indeterminate = true;
+            } else {
+                chkMasterRec.checked = false;
+                chkMasterRec.indeterminate = false;
+            }
+        }
 
+        if (getEl('recCategoryFootCount')) {
+            getEl('recCategoryFootCount')!.textContent = `(${countRecSelected} de ${revenueCategoriesList.length})`;
+        }
+        if (getEl('recCategoryFootTotal')) {
+            getEl('recCategoryFootTotal')!.textContent = formatCurrency(totalRecSelected);
+        }
+
+        if (recTbody) {
+            if (revenueCategoriesList.length === 0) {
+                recTbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-400">Nenhum tipo de receita no período.</td></tr>';
+            } else if (filteredRecList.length === 0) {
+                recTbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-400">Nenhum tipo corresponde à busca.</td></tr>';
+            } else {
+                const maxRec = Math.max(...revenueCategoriesList.map(c => c.valor), 1);
+                const grandTotalRec = revenueCategoriesList.reduce((acc, c) => acc + c.valor, 0) || 1;
+
+                recTbody.innerHTML = filteredRecList.map(c => {
+                    const key = makeKey('receita', c.tipoconta);
+                    const isChecked = selectedCategoryKeys.has(key);
+                    const sharePercent = (c.valor / grandTotalRec) * 100;
+                    const widthPercent = Math.min(Math.round((c.valor / maxRec) * 100), 100);
+                    const rowOpacityClass = isChecked ? '' : 'opacity-40 bg-gray-50/50 dark:bg-slate-900/30';
+                    const textLineClass = isChecked ? '' : 'line-through text-gray-400';
+
+                    return `
+                        <tr class="hover:bg-emerald-50/50 dark:hover:bg-slate-700/40 transition-colors category-row ${rowOpacityClass}" data-tipo="receita" data-tipoconta="${escapeHtml(c.tipoconta)}">
+                            <td class="py-2 px-2.5 text-center">
+                                <input type="checkbox" class="chk-category-item rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600 cursor-pointer" data-tipo="receita" data-tipoconta="${escapeHtml(c.tipoconta)}" ${isChecked ? 'checked' : ''}>
+                            </td>
+                            <td class="py-2 px-2.5">
+                                <div class="font-bold text-gray-900 dark:text-gray-100 ${textLineClass} flex items-center justify-between gap-1">
+                                    <span class="truncate">${escapeHtml(c.tipoconta)}</span>
+                                    <button type="button" class="btn-filter-transactions text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer shrink-0" data-tipoconta="${escapeHtml(c.tipoconta)}" data-tipo="receita" title="Ver lançamentos deste tipo">
+                                        Ver &darr;
+                                    </button>
+                                </div>
+                                <div class="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full mt-1 overflow-hidden">
+                                    <div class="bg-emerald-500 h-full transition-all duration-300" style="width: ${Math.max(widthPercent, 1)}%;"></div>
+                                </div>
+                            </td>
+                            <td class="py-2 px-2 text-center font-mono text-gray-700 dark:text-gray-300 whitespace-nowrap text-[11px]">
+                                ${c.qtd}
+                            </td>
+                            <td class="py-2 px-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                ${sharePercent.toFixed(1)}%
+                            </td>
+                            <td class="py-2 px-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap text-xs ${textLineClass}">
+                                ${formatCurrency(c.valor)}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ── 2. DESPESAS PANEL ─────────────────────────────
+        const filteredDespList = expenseCategoriesList.filter(c => !search || c.tipoconta.toLowerCase().includes(search));
+        if (despCountBadge) despCountBadge.textContent = `${expenseCategoriesList.length} ${expenseCategoriesList.length === 1 ? 'tipo' : 'tipos'}`;
+
+        let totalDespSelected = 0;
+        let countDespSelected = 0;
+        expenseCategoriesList.forEach(c => {
+            if (selectedCategoryKeys.has(makeKey('despesa', c.tipoconta))) {
+                totalDespSelected += c.valor;
+                countDespSelected += 1;
+            }
+        });
+
+        if (chkMasterDesp) {
+            if (expenseCategoriesList.length > 0 && countDespSelected === expenseCategoriesList.length) {
+                chkMasterDesp.checked = true;
+                chkMasterDesp.indeterminate = false;
+            } else if (countDespSelected > 0 && countDespSelected < expenseCategoriesList.length) {
+                chkMasterDesp.checked = false;
+                chkMasterDesp.indeterminate = true;
+            } else {
+                chkMasterDesp.checked = false;
+                chkMasterDesp.indeterminate = false;
+            }
+        }
+
+        if (getEl('despCategoryFootCount')) {
+            getEl('despCategoryFootCount')!.textContent = `(${countDespSelected} de ${expenseCategoriesList.length})`;
+        }
+        if (getEl('despCategoryFootTotal')) {
+            getEl('despCategoryFootTotal')!.textContent = formatCurrency(totalDespSelected);
+        }
+
+        if (despTbody) {
+            if (expenseCategoriesList.length === 0) {
+                despTbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-400">Nenhum tipo de despesa no período.</td></tr>';
+            } else if (filteredDespList.length === 0) {
+                despTbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-400">Nenhum tipo corresponde à busca.</td></tr>';
+            } else {
+                const maxDesp = Math.max(...expenseCategoriesList.map(c => c.valor), 1);
+                const grandTotalDesp = expenseCategoriesList.reduce((acc, c) => acc + c.valor, 0) || 1;
+
+                despTbody.innerHTML = filteredDespList.map(c => {
+                    const key = makeKey('despesa', c.tipoconta);
+                    const isChecked = selectedCategoryKeys.has(key);
+                    const sharePercent = (c.valor / grandTotalDesp) * 100;
+                    const widthPercent = Math.min(Math.round((c.valor / maxDesp) * 100), 100);
+                    const rowOpacityClass = isChecked ? '' : 'opacity-40 bg-gray-50/50 dark:bg-slate-900/30';
+                    const textLineClass = isChecked ? '' : 'line-through text-gray-400';
+
+                    return `
+                        <tr class="hover:bg-rose-50/50 dark:hover:bg-slate-700/40 transition-colors category-row ${rowOpacityClass}" data-tipo="despesa" data-tipoconta="${escapeHtml(c.tipoconta)}">
+                            <td class="py-2 px-2.5 text-center">
+                                <input type="checkbox" class="chk-category-item rounded border-gray-300 text-rose-600 focus:ring-rose-500/30 dark:bg-slate-700 dark:border-slate-600 cursor-pointer" data-tipo="despesa" data-tipoconta="${escapeHtml(c.tipoconta)}" ${isChecked ? 'checked' : ''}>
+                            </td>
+                            <td class="py-2 px-2.5">
+                                <div class="font-bold text-gray-900 dark:text-gray-100 ${textLineClass} flex items-center justify-between gap-1">
+                                    <span class="truncate">${escapeHtml(c.tipoconta)}</span>
+                                    <button type="button" class="btn-filter-transactions text-[10px] text-rose-600 dark:text-rose-400 hover:underline cursor-pointer shrink-0" data-tipoconta="${escapeHtml(c.tipoconta)}" data-tipo="despesa" title="Ver lançamentos deste tipo">
+                                        Ver &darr;
+                                    </button>
+                                </div>
+                                <div class="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full mt-1 overflow-hidden">
+                                    <div class="bg-rose-500 h-full transition-all duration-300" style="width: ${Math.max(widthPercent, 1)}%;"></div>
+                                </div>
+                            </td>
+                            <td class="py-2 px-2 text-center font-mono text-gray-700 dark:text-gray-300 whitespace-nowrap text-[11px]">
+                                ${c.qtd}
+                            </td>
+                            <td class="py-2 px-2.5 text-right font-mono text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                ${sharePercent.toFixed(1)}%
+                            </td>
+                            <td class="py-2 px-2.5 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap text-xs ${textLineClass}">
+                                ${formatCurrency(c.valor)}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Global Combined Header Summary
+        const saldoSelected = totalRecSelected - totalDespSelected;
+        const movSelected = totalRecSelected + totalDespSelected;
         if (totalSumBadge) {
-            if (selectedSaldo >= 0) {
+            if (saldoSelected >= 0) {
                 totalSumBadge.className = 'text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold font-mono';
             } else {
                 totalSumBadge.className = 'text-xs px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold font-mono';
             }
-            totalSumBadge.textContent = `Saldo: ${formatCurrency(selectedSaldo)} (Mov: ${formatCurrency(sumSelectedTotal)})`;
+            totalSumBadge.textContent = `Saldo: ${formatCurrency(saldoSelected)} (Mov: ${formatCurrency(movSelected)})`;
         }
 
-        // Update Foot
-        if (getEl('categoryFootCount')) {
-            getEl('categoryFootCount')!.textContent = `(${countSelectedItems} de ${totalCategories} selecionados)`;
-        }
-        if (getEl('categoryFootBreakdown')) {
-            getEl('categoryFootBreakdown')!.innerHTML = `Rec: <span class="text-emerald-600 dark:text-emerald-400 font-bold">${formatCurrency(sumSelectedRec)}</span> | Desp: <span class="text-rose-600 dark:text-rose-400 font-bold">${formatCurrency(sumSelectedDesp)}</span>`;
-        }
-        if (getEl('categoryFootTotal')) {
-            const footTotal = getEl('categoryFootTotal')!;
-            if (selectedSaldo >= 0) {
-                footTotal.className = 'py-2.5 px-3 text-right font-mono text-xs font-black text-emerald-600 dark:text-emerald-400';
-            } else {
-                footTotal.className = 'py-2.5 px-3 text-right font-mono text-xs font-black text-rose-600 dark:text-rose-400';
-            }
-            footTotal.textContent = formatCurrency(selectedSaldo);
-        }
-
-        if (displayList.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-gray-400">Nenhum tipo de conta corresponde à busca.</td></tr>';
-            return;
-        }
-
-        const maxVal = Math.max(...allCategoriesList.map(c => c.valor), 1);
-        const grandTotalRevenue = allCategoriesList.reduce((acc, c) => acc + c.receita, 0) || 1;
-        const grandTotalExpense = allCategoriesList.reduce((acc, c) => acc + c.despesa, 0) || 1;
-
-        tbody.innerHTML = displayList.map(c => {
-            const isChecked = selectedAccountTypes.has(c.tipoconta);
-            const isRec = c.tipo === 'receita';
-            const isMisto = c.tipo === 'misto';
-
-            let badge = '';
-            let barClass = 'bg-emerald-500';
-            let sharePercent = 0;
-            let shareLabel = '';
-
-            if (isMisto) {
-                badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">Receita & Despesa</span>';
-                barClass = 'bg-purple-500';
-                sharePercent = ((c.receita + c.despesa) / (grandTotalRevenue + grandTotalExpense)) * 100;
-                shareLabel = 'do volume total';
-            } else if (isRec) {
-                badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">Receita</span>';
-                barClass = 'bg-emerald-500';
-                sharePercent = (c.receita / grandTotalRevenue) * 100;
-                shareLabel = 'das receitas';
-            } else {
-                badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">Despesa</span>';
-                barClass = 'bg-rose-500';
-                sharePercent = (c.despesa / grandTotalExpense) * 100;
-                shareLabel = 'das despesas';
-            }
-
-            const widthPercent = Math.min(Math.round((c.valor / maxVal) * 100), 100);
-            const rowOpacityClass = isChecked ? '' : 'opacity-40 bg-gray-50/50 dark:bg-slate-900/30';
-            const textLineClass = isChecked ? '' : 'line-through text-gray-400';
-
-            return `
-                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors category-row ${rowOpacityClass}" data-tipoconta="${escapeHtml(c.tipoconta)}">
-                    <td class="py-2.5 px-3 text-center">
-                        <input type="checkbox" class="chk-account-type rounded border-gray-300 text-emerald-600 focus:ring-emerald-500/30 dark:bg-slate-700 dark:border-slate-600 cursor-pointer" data-tipoconta="${escapeHtml(c.tipoconta)}" ${isChecked ? 'checked' : ''} title="Marcar/desmarcar para incluir nos cálculos">
-                    </td>
-                    <td class="py-2.5 px-3">
-                        <div class="font-bold text-gray-900 dark:text-gray-100 ${textLineClass} flex items-center justify-between gap-2">
-                            <span>${escapeHtml(c.tipoconta)}</span>
-                            <button type="button" class="btn-filter-transactions text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer" data-tipoconta="${escapeHtml(c.tipoconta)}" title="Ver lançamentos deste tipo">
-                                Ver lançamentos &darr;
-                            </button>
-                        </div>
-                        <div class="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                            <div class="${barClass} h-full transition-all duration-300" style="width: ${Math.max(widthPercent, 1)}%;"></div>
-                        </div>
-                    </td>
-                    <td class="py-2.5 px-3 text-center whitespace-nowrap">
-                        ${badge}
-                    </td>
-                    <td class="py-2.5 px-3 text-center font-mono text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        <span class="font-semibold">${c.qtd}</span> <span class="text-[10px] text-gray-400 font-normal">lanç.</span>
-                    </td>
-                    <td class="py-2.5 px-3 text-right font-mono text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                        <span class="font-semibold">${sharePercent.toFixed(1)}%</span>
-                        <span class="text-[10px] text-gray-400 block">${shareLabel}</span>
-                    </td>
-                    <td class="py-2.5 px-3 text-right font-mono font-bold ${isRec ? 'text-emerald-600 dark:text-emerald-400' : (isMisto ? 'text-purple-600 dark:text-purple-400' : 'text-rose-600 dark:text-rose-400')} whitespace-nowrap text-sm ${textLineClass}">
-                        ${formatCurrency(c.valor)}
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        // Wire Row Checkboxes
-        tbody.querySelectorAll<HTMLInputElement>('.chk-account-type').forEach(chk => {
+        // Wire Checkbox Handlers for Both Tables
+        document.querySelectorAll<HTMLInputElement>('.chk-category-item').forEach(chk => {
             chk.addEventListener('change', (e) => {
                 e.stopPropagation();
+                const tipo = chk.dataset.tipo as 'receita' | 'despesa';
                 const tc = chk.dataset.tipoconta;
-                if (!tc) return;
+                if (!tipo || !tc) return;
+                const key = makeKey(tipo, tc);
                 if (chk.checked) {
-                    selectedAccountTypes.add(tc);
+                    selectedCategoryKeys.add(key);
                 } else {
-                    selectedAccountTypes.delete(tc);
+                    selectedCategoryKeys.delete(key);
                 }
                 recalculateAndRenderAll();
             });
         });
 
         // Wire Shortcut to filter transactions table
-        tbody.querySelectorAll<HTMLButtonElement>('.btn-filter-transactions').forEach(btn => {
+        document.querySelectorAll<HTMLButtonElement>('.btn-filter-transactions').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const tc = btn.dataset.tipoconta;
+                const tipo = btn.dataset.tipo;
                 if (!tc) return;
-                const select = getEl<HTMLSelectElement>('transAccountTypeFilter');
-                if (select) {
-                    select.value = tc;
-                    renderTransactionsTable();
-                    getEl('transTableBody')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                const typeSelect = getEl<HTMLSelectElement>('transTypeFilter');
+                if (typeSelect && tipo) {
+                    typeSelect.value = tipo;
+                    populateAccountTypeFilter();
                 }
+
+                const accSelect = getEl<HTMLSelectElement>('transAccountTypeFilter');
+                if (accSelect) {
+                    accSelect.value = tc;
+                }
+
+                renderTransactionsTable();
+                getEl('transTableBody')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
     };
@@ -1011,9 +1041,10 @@
 
         const filtered = (rawData.transactions || []).filter(t => {
             const tc = normalizeAccountType(t.tipoconta);
+            const key = makeKey(t.tipo, tc);
 
             // 1. Must be checked in category checklist
-            if (!selectedAccountTypes.has(tc)) return false;
+            if (!selectedCategoryKeys.has(key)) return false;
 
             // 2. Type filter
             if (filterType !== 'all' && t.tipo !== filterType) return false;
@@ -1103,7 +1134,7 @@
         }
 
         if (filtered.length === 0) {
-            if (selectedAccountTypes.size === 0) {
+            if (selectedCategoryKeys.size === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-400">Nenhum tipo de conta selecionado no checklist acima. Marque os tipos de conta para visualizar os lançamentos.</td></tr>';
             } else {
                 tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-400">Nenhum lançamento corresponde ao filtro.</td></tr>';
@@ -1172,7 +1203,8 @@
 
         const filtered = (rawData.transactions || []).filter(t => {
             const tc = normalizeAccountType(t.tipoconta);
-            if (!selectedAccountTypes.has(tc)) return false;
+            const key = makeKey(t.tipo, tc);
+            if (!selectedCategoryKeys.has(key)) return false;
             if (filterType !== 'all' && t.tipo !== filterType) return false;
             if (filterAccountType !== 'all' && tc.toLowerCase() !== filterAccountType) return false;
             if (search) {
@@ -1253,11 +1285,15 @@
 
             rawData = data;
 
-            // Build categories list
-            allCategoriesList = buildCategoriesList(data);
+            // Extract separated categories
+            const { revenues, expenses } = extractSeparatedCategories(data);
+            revenueCategoriesList = revenues;
+            expenseCategoriesList = expenses;
 
-            // Select all categories by default on new fetch
-            selectedAccountTypes = new Set(allCategoriesList.map(c => c.tipoconta));
+            // Select all keys by default on initial fetch
+            selectedCategoryKeys = new Set<string>();
+            revenues.forEach(r => selectedCategoryKeys.add(makeKey('receita', r.tipoconta)));
+            expenses.forEach(e => selectedCategoryKeys.add(makeKey('despesa', e.tipoconta)));
 
             // Update Filial select if new filiais returned
             if (data.filiais && data.filiais.length > 0) {
@@ -1285,7 +1321,7 @@
 
             updateStatusBadge('success', `Conectado (${data.summary.qtdReceita + data.summary.qtdDespesa} lançamentos)`);
             
-            renderAnnualChart(data); // Static annual overview for reference
+            renderAnnualChart(data);
             populateAccountTypeFilter();
             recalculateAndRenderAll();
         } catch (err: any) {
@@ -1301,48 +1337,62 @@
 
     // ─── Setup Checklist Action Handlers ─────────────────────────────────────
     const setupChecklistActions = () => {
-        // Master Checkbox
-        getEl('chkSelectAllCategories')?.addEventListener('change', (e) => {
+        // Global "Marcar Todos"
+        getEl('btnSelectAllCategories')?.addEventListener('click', () => {
+            revenueCategoriesList.forEach(r => selectedCategoryKeys.add(makeKey('receita', r.tipoconta)));
+            expenseCategoriesList.forEach(e => selectedCategoryKeys.add(makeKey('despesa', e.tipoconta)));
+            recalculateAndRenderAll();
+        });
+
+        // Global "Desmarcar Todos"
+        getEl('btnDeselectAllCategories')?.addEventListener('click', () => {
+            selectedCategoryKeys.clear();
+            recalculateAndRenderAll();
+        });
+
+        // Master Receitas Checkbox
+        getEl('chkSelectAllRecCategories')?.addEventListener('change', (e) => {
             const chk = e.target as HTMLInputElement;
             if (chk.checked) {
-                selectedAccountTypes = new Set(allCategoriesList.map(c => c.tipoconta));
+                revenueCategoriesList.forEach(r => selectedCategoryKeys.add(makeKey('receita', r.tipoconta)));
             } else {
-                selectedAccountTypes.clear();
+                revenueCategoriesList.forEach(r => selectedCategoryKeys.delete(makeKey('receita', r.tipoconta)));
             }
             recalculateAndRenderAll();
         });
 
-        // "Marcar Todos" button
-        getEl('btnSelectAllCategories')?.addEventListener('click', () => {
-            selectedAccountTypes = new Set(allCategoriesList.map(c => c.tipoconta));
+        // Receitas "Todas" button
+        getEl('btnSelectAllRecCategories')?.addEventListener('click', () => {
+            revenueCategoriesList.forEach(r => selectedCategoryKeys.add(makeKey('receita', r.tipoconta)));
             recalculateAndRenderAll();
         });
 
-        // "Desmarcar Todos" button
-        getEl('btnDeselectAllCategories')?.addEventListener('click', () => {
-            selectedAccountTypes.clear();
+        // Receitas "Nenhuma" button
+        getEl('btnDeselectAllRecCategories')?.addEventListener('click', () => {
+            revenueCategoriesList.forEach(r => selectedCategoryKeys.delete(makeKey('receita', r.tipoconta)));
             recalculateAndRenderAll();
         });
 
-        // "Somente Receitas" button
-        getEl('btnSelectOnlyRevenueCategories')?.addEventListener('click', () => {
-            selectedAccountTypes.clear();
-            allCategoriesList.forEach(c => {
-                if (c.tipo === 'receita' || c.receita > 0) {
-                    selectedAccountTypes.add(c.tipoconta);
-                }
-            });
+        // Master Despesas Checkbox
+        getEl('chkSelectAllDespCategories')?.addEventListener('change', (e) => {
+            const chk = e.target as HTMLInputElement;
+            if (chk.checked) {
+                expenseCategoriesList.forEach(e => selectedCategoryKeys.add(makeKey('despesa', e.tipoconta)));
+            } else {
+                expenseCategoriesList.forEach(e => selectedCategoryKeys.delete(makeKey('despesa', e.tipoconta)));
+            }
             recalculateAndRenderAll();
         });
 
-        // "Somente Despesas" button
-        getEl('btnSelectOnlyExpenseCategories')?.addEventListener('click', () => {
-            selectedAccountTypes.clear();
-            allCategoriesList.forEach(c => {
-                if (c.tipo === 'despesa' || c.despesa > 0) {
-                    selectedAccountTypes.add(c.tipoconta);
-                }
-            });
+        // Despesas "Todas" button
+        getEl('btnSelectAllDespCategories')?.addEventListener('click', () => {
+            expenseCategoriesList.forEach(e => selectedCategoryKeys.add(makeKey('despesa', e.tipoconta)));
+            recalculateAndRenderAll();
+        });
+
+        // Despesas "Nenhuma" button
+        getEl('btnDeselectAllDespCategories')?.addEventListener('click', () => {
+            expenseCategoriesList.forEach(e => selectedCategoryKeys.delete(makeKey('despesa', e.tipoconta)));
             recalculateAndRenderAll();
         });
 

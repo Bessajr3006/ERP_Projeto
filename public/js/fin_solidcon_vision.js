@@ -13,6 +13,7 @@
     let revenueCategoriesList = [];
     let expenseCategoriesList = [];
     let categorySearchTerm = '';
+    let currentConvDateFilter = 'baixa';
     const MONTH_NAMES = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -895,11 +896,48 @@
         const kpiPctBar = getEl('convKpiPctBar');
         const kpiTotalJuros = getEl('convKpiTotalJuros');
         const kpiQtdBaixas = getEl('convKpiQtdBaixas');
-        // Period Badges
+        // Period Badges & Date Filter Type Badge
         const mesNome = data?.params?.mesNome || '';
         const ano = data?.params?.ano || '';
         if (periodBadge)
             periodBadge.textContent = `${mesNome}/${ano}`;
+        const filterTypeBadge = getEl('convenioFilterTypeBadge');
+        if (filterTypeBadge) {
+            if (currentConvDateFilter === 'baixa') {
+                filterTypeBadge.className = 'text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold font-mono flex items-center gap-1';
+                filterTypeBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Por Data da Baixa';
+            }
+            else {
+                filterTypeBadge.className = 'text-xs px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold font-mono flex items-center gap-1';
+                filterTypeBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Por Data de Emissão';
+            }
+        }
+        const lblEmitido = getEl('convKpiLabelEmitido');
+        const lblQuitado = getEl('convKpiLabelQuitado');
+        const subQtd = getEl('convKpiSubQtdCupons');
+        if (lblEmitido)
+            lblEmitido.textContent = currentConvDateFilter === 'baixa' ? 'Total Cupons:' : 'Emitido PDV:';
+        if (lblQuitado)
+            lblQuitado.textContent = currentConvDateFilter === 'baixa' ? 'Quitado no Período:' : 'Quitado:';
+        if (subQtd)
+            subQtd.textContent = currentConvDateFilter === 'baixa' ? 'com baixa no período' : 'emitidos no período';
+        // Update Pill Toggle Buttons
+        const btnBaixa = getEl('btnConvFilterBaixa');
+        const btnEmissao = getEl('btnConvFilterEmissao');
+        if (btnBaixa && btnEmissao) {
+            if (currentConvDateFilter === 'baixa') {
+                btnBaixa.className = 'px-2.5 py-1 rounded-lg font-bold text-xs bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm transition-all cursor-pointer flex items-center gap-1.5';
+                btnBaixa.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Data da Baixa</span>';
+                btnEmissao.className = 'px-2.5 py-1 rounded-lg font-semibold text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer flex items-center gap-1.5';
+                btnEmissao.innerHTML = '<span>Data de Emissão</span>';
+            }
+            else {
+                btnBaixa.className = 'px-2.5 py-1 rounded-lg font-semibold text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer flex items-center gap-1.5';
+                btnBaixa.innerHTML = '<span>Data da Baixa</span>';
+                btnEmissao.className = 'px-2.5 py-1 rounded-lg font-bold text-xs bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm transition-all cursor-pointer flex items-center gap-1.5';
+                btnEmissao.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-500"></span><span>Data de Emissão</span>';
+            }
+        }
         if (totalRecBadge) {
             const liquidadoVal = summary.totalRecebidoBaixas || summary.totalQuitado;
             totalRecBadge.textContent = `Total Liquidado: ${formatCurrency(liquidadoVal)}`;
@@ -1699,7 +1737,7 @@
         if (filterIcon)
             filterIcon.classList.add('animate-spin');
         try {
-            let url = `/finance/solidcon-vision?ano=${encodeURIComponent(ano)}&mes=${encodeURIComponent(mes)}&source=${encodeURIComponent(source)}`;
+            let url = `/finance/solidcon-vision?ano=${encodeURIComponent(ano)}&mes=${encodeURIComponent(mes)}&source=${encodeURIComponent(source)}&convDateFilter=${encodeURIComponent(currentConvDateFilter)}`;
             if (companyParam)
                 url += `&targetCompanyId=${encodeURIComponent(companyParam)}`;
             if (filial)
@@ -1890,6 +1928,18 @@
         btnCupons?.addEventListener('click', () => switchTab('cupons'));
         btnBaixas?.addEventListener('click', () => switchTab('baixas'));
         btnDiario?.addEventListener('click', () => switchTab('diario'));
+        getEl('btnConvFilterBaixa')?.addEventListener('click', () => {
+            if (currentConvDateFilter !== 'baixa') {
+                currentConvDateFilter = 'baixa';
+                loadData();
+            }
+        });
+        getEl('btnConvFilterEmissao')?.addEventListener('click', () => {
+            if (currentConvDateFilter !== 'emissao') {
+                currentConvDateFilter = 'emissao';
+                loadData();
+            }
+        });
         getEl('convClientSearchInput')?.addEventListener('input', (e) => {
             convSearchTerm = e.target.value;
             if (rawData) {

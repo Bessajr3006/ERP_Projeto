@@ -58,7 +58,25 @@
         pctQuitado: number;
     }
 
+    interface ConvenioCupomItem {
+        id: number | string;
+        cdCrediario: string;
+        cliente: string;
+        nrCupom: number;
+        dtEmissao: string;
+        dtVencimento: string;
+        vlCrediario: number;
+        vlQuitado: number;
+        saldoPendente: number;
+        status: 'Quitado' | 'Parcial' | 'Pendente';
+        obs: string;
+        operador: string;
+        pdv: number;
+        filial: number;
+    }
+
     interface ConvenioClienteItem {
+        cdCrediario?: string;
         cliente: string;
         qtd_operacoes: number;
         ticket_medio: number;
@@ -100,6 +118,7 @@
     interface ConvenioData {
         summary: ConvenioSummary;
         topClientes: Array<ConvenioClienteItem>;
+        cuponsList?: Array<ConvenioCupomItem>;
         dailyEvolution: Array<ConvenioDailyItem>;
         recentBaixas: Array<ConvenioBaixaItem>;
         annualSummary: Array<ConvenioAnnualItem>;
@@ -1127,7 +1146,7 @@
     };
 
     // ─── Render Recebimento de Convênio do Período ────────────────────────────
-    let activeConvTab: 'clientes' | 'baixas' | 'diario' = 'clientes';
+    let activeConvTab: 'clientes' | 'cupons' | 'baixas' | 'diario' = 'clientes';
     let convSearchTerm: string = '';
 
     const renderConvenioCard = (data: VisionData) => {
@@ -1194,7 +1213,7 @@
         const allClients = convData?.topClientes || [];
         const term = convSearchTerm.trim().toLowerCase();
         const filteredClients = term
-            ? allClients.filter(c => c.cliente.toLowerCase().includes(term))
+            ? allClients.filter(c => c.cliente.toLowerCase().includes(term) || (c.cdCrediario && c.cdCrediario.includes(term)))
             : allClients;
 
         if (footQtd) footQtd.textContent = Number(summary.qtdCupons || 0).toLocaleString('pt-BR');
@@ -1208,7 +1227,7 @@
             if (filteredClients.length === 0) {
                 clientsTbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="py-8 text-center text-gray-400">
+                        <td colspan="8" class="py-8 text-center text-gray-400">
                             ${term ? 'Nenhum convênio encontrado para a busca.' : 'Nenhum cupom ou convênio emitido no período.'}
                         </td>
                     </tr>
@@ -1224,15 +1243,18 @@
                         : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Pendente</span>';
 
                     return `
-                        <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
+                        <tr class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer client-conv-row" data-cliente="${escapeHtml(c.cliente)}" data-cd="${escapeHtml(c.cdCrediario || '')}">
                             <td class="py-2.5 px-3">
                                 <div class="flex items-center gap-2">
                                     <div class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xs shrink-0">
                                         ${escapeHtml(c.cliente.charAt(0).toUpperCase())}
                                     </div>
-                                    <span class="font-bold text-gray-900 dark:text-white truncate max-w-64" title="${escapeHtml(c.cliente)}">
-                                        ${escapeHtml(c.cliente)}
-                                    </span>
+                                    <div class="truncate max-w-64">
+                                        <span class="font-bold text-gray-900 dark:text-white block truncate" title="${escapeHtml(c.cliente)}">
+                                            ${escapeHtml(c.cliente)}
+                                        </span>
+                                        ${c.cdCrediario ? `<span class="text-[10px] text-gray-400 font-mono block">Doc: ${escapeHtml(c.cdCrediario)}</span>` : ''}
+                                    </div>
                                 </div>
                             </td>
                             <td class="py-2.5 px-3 text-center">
@@ -1262,13 +1284,88 @@
                                     </div>
                                 </div>
                             </td>
+                            <td class="py-2.5 px-3 text-center">
+                                <button type="button" class="p-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-blue-600 hover:text-white text-gray-600 dark:text-gray-300 transition-colors btn-view-client-modal" data-cliente="${escapeHtml(c.cliente)}" data-cd="${escapeHtml(c.cdCrediario || '')}" title="Ver cupons detalhados deste cliente">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                </button>
+                            </td>
                         </tr>
                     `;
                 }).join('');
             }
         }
 
-        // Render Tab 2: Baixas Recentes
+        // Render Tab 2: Cupons Emitidos Detalhados
+        const cuponsTbody = getEl('convCuponsTableBody');
+        const allCupons = convData?.cuponsList || [];
+        const filteredCupons = term
+            ? allCupons.filter(cp => 
+                cp.cliente.toLowerCase().includes(term) || 
+                String(cp.nrCupom).includes(term) || 
+                cp.obs.toLowerCase().includes(term) ||
+                cp.operador.toLowerCase().includes(term) ||
+                cp.cdCrediario.includes(term)
+            )
+            : allCupons;
+
+        if (cuponsTbody) {
+            if (filteredCupons.length === 0) {
+                cuponsTbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="py-8 text-center text-gray-400">
+                            ${term ? 'Nenhum cupom encontrado para o filtro.' : 'Nenhum cupom emitido no período.'}
+                        </td>
+                    </tr>
+                `;
+            } else {
+                cuponsTbody.innerHTML = filteredCupons.map(cp => {
+                    const statusBadge = cp.status === 'Quitado'
+                        ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">100% Quitado</span>'
+                        : cp.status === 'Parcial'
+                        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">Parcial</span>`
+                        : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Pendente</span>';
+
+                    return `
+                        <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
+                            <td class="py-2.5 px-3 whitespace-nowrap font-mono text-gray-600 dark:text-gray-300">
+                                ${formatDate(cp.dtEmissao)}
+                            </td>
+                            <td class="py-2.5 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">
+                                #${cp.nrCupom}
+                            </td>
+                            <td class="py-2.5 px-3">
+                                <span class="font-bold text-gray-900 dark:text-white truncate max-w-56 block" title="${escapeHtml(cp.cliente)}">
+                                    ${escapeHtml(cp.cliente)}
+                                </span>
+                            </td>
+                            <td class="py-2.5 px-3 text-center font-mono text-xs text-gray-500">
+                                ${cp.pdv || '-'}
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-mono font-medium text-gray-800 dark:text-gray-200">
+                                ${formatCurrency(cp.vlCrediario)}
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                ${formatCurrency(cp.vlQuitado)}
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-mono font-semibold text-amber-600 dark:text-amber-400">
+                                ${formatCurrency(cp.saldoPendente)}
+                            </td>
+                            <td class="py-2.5 px-3 whitespace-nowrap font-mono text-xs text-gray-500">
+                                ${formatDate(cp.dtVencimento)}
+                            </td>
+                            <td class="py-2.5 px-3 whitespace-nowrap">
+                                ${statusBadge}
+                            </td>
+                            <td class="py-2.5 px-3 text-xs text-gray-500 dark:text-gray-400 truncate max-w-44" title="${escapeHtml(cp.obs || cp.operador || '-')}">
+                                ${escapeHtml(cp.obs || cp.operador || '-')}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Render Tab 3: Baixas Recentes
         const baixasTbody = getEl('convBaixasTableBody');
         const recentBaixas = convData?.recentBaixas || [];
         if (baixasTbody) {
@@ -1306,7 +1403,7 @@
             }
         }
 
-        // Render Tab 3: Diário
+        // Render Tab 4: Diário
         const dailyTbody = getEl('convDailyTableBody');
         const dailyEvolution = convData?.dailyEvolution || [];
         if (dailyTbody) {
@@ -2042,31 +2139,42 @@
     // ─── Setup Convenio Action Handlers ──────────────────────────────────────
     const setupConvenioActions = () => {
         const btnClientes = getEl('btnConvTabClientes');
+        const btnCupons = getEl('btnConvTabCupons');
         const btnBaixas = getEl('btnConvTabBaixas');
         const btnDiario = getEl('btnConvTabDiario');
 
         const tabClientes = getEl('convTabContentClientes');
+        const tabCupons = getEl('convTabContentCupons');
         const tabBaixas = getEl('convTabContentBaixas');
         const tabDiario = getEl('convTabContentDiario');
         const searchWrap = getEl('convClientSearchWrap');
 
-        const switchTab = (tab: 'clientes' | 'baixas' | 'diario') => {
+        const clientModal = getEl('convenioClientModal');
+        const modalCloseBtn = getEl('modalConvCloseBtn');
+        const modalCloseFooterBtn = getEl('modalConvCloseFooterBtn');
+
+        const switchTab = (tab: 'clientes' | 'cupons' | 'baixas' | 'diario') => {
             activeConvTab = tab;
 
             // Reset buttons
-            [btnClientes, btnBaixas, btnDiario].forEach(b => {
+            [btnClientes, btnCupons, btnBaixas, btnDiario].forEach(b => {
                 if (!b) return;
                 b.className = 'px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 transition-all cursor-pointer';
             });
 
             // Hide tabs
             tabClientes?.classList.add('hidden');
+            tabCupons?.classList.add('hidden');
             tabBaixas?.classList.add('hidden');
             tabDiario?.classList.add('hidden');
 
             if (tab === 'clientes') {
                 if (btnClientes) btnClientes.className = 'px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer';
                 tabClientes?.classList.remove('hidden');
+                if (searchWrap) searchWrap.style.display = 'block';
+            } else if (tab === 'cupons') {
+                if (btnCupons) btnCupons.className = 'px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer';
+                tabCupons?.classList.remove('hidden');
                 if (searchWrap) searchWrap.style.display = 'block';
             } else if (tab === 'baixas') {
                 if (btnBaixas) btnBaixas.className = 'px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer';
@@ -2080,6 +2188,7 @@
         };
 
         btnClientes?.addEventListener('click', () => switchTab('clientes'));
+        btnCupons?.addEventListener('click', () => switchTab('cupons'));
         btnBaixas?.addEventListener('click', () => switchTab('baixas'));
         btnDiario?.addEventListener('click', () => switchTab('diario'));
 
@@ -2088,6 +2197,141 @@
             if (rawData) {
                 const res = getRecalculatedData();
                 if (res) renderConvenioCard(res.activeData);
+            }
+        });
+
+        // ─── Client Cupons Modal Logic ───────────────────────────────────────
+        const openClientModal = (clientName: string, cdCrediario?: string) => {
+            if (!rawData) return;
+            const res = getRecalculatedData();
+            const convData = res?.activeData?.convenioData;
+            const allCupons = convData?.cuponsList || [];
+
+            const clientCupons = allCupons.filter(cp => {
+                if (cdCrediario && cp.cdCrediario === cdCrediario) return true;
+                return cp.cliente.toLowerCase() === clientName.toLowerCase();
+            });
+
+            const avatarEl = getEl('modalConvClientAvatar');
+            const nameEl = getEl('modalConvClientName');
+            const metaEl = getEl('modalConvClientMeta');
+
+            const totalEmitEl = getEl('modalConvTotalEmitido');
+            const totalQuitEl = getEl('modalConvTotalQuitado');
+            const saldoPendEl = getEl('modalConvSaldoPendente');
+            const pctPagoEl = getEl('modalConvPctPago');
+            const tableBody = getEl('modalConvCuponsTableBody');
+
+            if (avatarEl) avatarEl.textContent = (clientName || 'C').charAt(0).toUpperCase();
+            if (nameEl) nameEl.textContent = clientName;
+            if (metaEl) {
+                metaEl.textContent = `${cdCrediario ? `Doc: ${cdCrediario} • ` : ''}${clientCupons.length} cupons emitidos no período`;
+            }
+
+            let sumEmit = 0;
+            let sumQuit = 0;
+            clientCupons.forEach(c => {
+                sumEmit += c.vlCrediario || 0;
+                sumQuit += c.vlQuitado || 0;
+            });
+            const sumPend = Math.max(0, sumEmit - sumQuit);
+            const pct = sumEmit > 0 ? (sumQuit / sumEmit) * 100 : 0;
+
+            if (totalEmitEl) totalEmitEl.textContent = formatCurrency(sumEmit);
+            if (totalQuitEl) totalQuitEl.textContent = formatCurrency(sumQuit);
+            if (saldoPendEl) saldoPendEl.textContent = formatCurrency(sumPend);
+            if (pctPagoEl) pctPagoEl.textContent = `${pct.toFixed(1)}%`;
+
+            if (tableBody) {
+                if (clientCupons.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="py-8 text-center text-gray-400">
+                                Nenhum cupom individual encontrado para este cliente.
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    tableBody.innerHTML = clientCupons.map(cp => {
+                        const statusBadge = cp.status === 'Quitado'
+                            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">100% Quitado</span>'
+                            : cp.status === 'Parcial'
+                            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">Parcial</span>`
+                            : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Pendente</span>';
+
+                        return `
+                            <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-700/40 transition-colors">
+                                <td class="py-2.5 px-3 whitespace-nowrap font-mono text-gray-600 dark:text-gray-300">
+                                    ${formatDate(cp.dtEmissao)}
+                                </td>
+                                <td class="py-2.5 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">
+                                    #${cp.nrCupom}
+                                </td>
+                                <td class="py-2.5 px-3 text-center font-mono text-xs text-gray-500">
+                                    ${cp.pdv || '-'}
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono font-medium text-gray-800 dark:text-gray-200">
+                                    ${formatCurrency(cp.vlCrediario)}
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                    ${formatCurrency(cp.vlQuitado)}
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono font-semibold text-amber-600 dark:text-amber-400">
+                                    ${formatCurrency(cp.saldoPendente)}
+                                </td>
+                                <td class="py-2.5 px-3 whitespace-nowrap font-mono text-xs text-gray-500">
+                                    ${formatDate(cp.dtVencimento)}
+                                </td>
+                                <td class="py-2.5 px-3 whitespace-nowrap">
+                                    ${statusBadge}
+                                </td>
+                                <td class="py-2.5 px-3 text-xs text-gray-500 dark:text-gray-400 truncate max-w-44" title="${escapeHtml(cp.obs || cp.operador || '-')}">
+                                    ${escapeHtml(cp.obs || cp.operador || '-')}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+
+            if (clientModal) {
+                clientModal.classList.remove('hidden');
+                clientModal.classList.add('flex');
+            }
+        };
+
+        const closeClientModal = () => {
+            if (clientModal) {
+                clientModal.classList.add('hidden');
+                clientModal.classList.remove('flex');
+            }
+        };
+
+        modalCloseBtn?.addEventListener('click', closeClientModal);
+        modalCloseFooterBtn?.addEventListener('click', closeClientModal);
+
+        clientModal?.addEventListener('click', (e) => {
+            if (e.target === clientModal) {
+                closeClientModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && clientModal && !clientModal.classList.contains('hidden')) {
+                closeClientModal();
+            }
+        });
+
+        // Delegate click on client table to open modal
+        getEl('convClientsTableBody')?.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const row = target.closest('.client-conv-row') as HTMLElement | null;
+            if (row) {
+                const cliente = row.getAttribute('data-cliente') || '';
+                const cd = row.getAttribute('data-cd') || '';
+                if (cliente) {
+                    openClientModal(cliente, cd);
+                }
             }
         });
     };

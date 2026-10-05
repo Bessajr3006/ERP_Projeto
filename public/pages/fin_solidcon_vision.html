@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Visão Fin_Solidcon</title>
-    <link href="/css/style.css?v=20261005163346" rel="stylesheet">
+    <link href="/css/style.css?v=20261005171447" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261005163346"></script>
+    <script src="/js/pwa.js?v=20261005171447"></script>
 </head>
 <body data-required-module="fin_solidcon_vision" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -476,9 +476,12 @@
 
             <!-- Navegação em Abas do Card de Convênio -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-gray-100 dark:border-slate-700/60">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <button type="button" id="btnConvTabClientes" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer">
                         Maiores Clientes / Convênios
+                    </button>
+                    <button type="button" id="btnConvTabCupons" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 transition-all cursor-pointer">
+                        Cupons Emitidos Detalhados
                     </button>
                     <button type="button" id="btnConvTabBaixas" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 transition-all cursor-pointer">
                         Baixas Financeiras Recentes
@@ -488,7 +491,7 @@
                     </button>
                 </div>
                 <div class="relative" id="convClientSearchWrap">
-                    <input type="text" id="convClientSearchInput" placeholder="Buscar cliente convênio..." class="bg-gray-50 dark:bg-slate-900/70 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl py-1.5 pl-7 pr-2.5 text-xs focus:ring-2 focus:ring-blue-500/30 w-48 sm:w-60">
+                    <input type="text" id="convClientSearchInput" placeholder="Buscar cliente ou cupom..." class="bg-gray-50 dark:bg-slate-900/70 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-xl py-1.5 pl-7 pr-2.5 text-xs focus:ring-2 focus:ring-blue-500/30 w-48 sm:w-60">
                     <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
             </div>
@@ -505,11 +508,12 @@
                             <th class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400">Total Quitado</th>
                             <th class="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400">Saldo Pendente</th>
                             <th class="py-2.5 px-3 text-left w-36 sm:w-44">Status / Quitação</th>
+                            <th class="py-2.5 px-3 text-center w-16">Ação</th>
                         </tr>
                     </thead>
                     <tbody id="convClientsTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
                         <tr>
-                            <td colspan="7" class="py-8 text-center text-gray-400">Carregando convênios...</td>
+                            <td colspan="8" class="py-8 text-center text-gray-400">Carregando convênios...</td>
                         </tr>
                     </tbody>
                     <tfoot id="convClientsTableFoot" class="border-t-2 border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/50 font-bold text-xs">
@@ -523,12 +527,38 @@
                             <td class="py-3 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400" id="convFootQuitado">R$ 0,00</td>
                             <td class="py-3 px-3 text-right font-mono text-amber-600 dark:text-amber-400" id="convFootPendente">R$ 0,00</td>
                             <td class="py-3 px-3 text-left font-mono font-bold text-gray-700 dark:text-gray-300" id="convFootPct">0.0%</td>
+                            <td class="py-3 px-3 text-center"></td>
                         </tr>
                     </tfoot>
                 </table>
             </div>
 
-            <!-- Conteúdo da Aba 2: Baixas Financeiras Recentes -->
+            <!-- Conteúdo da Aba 2: Cupons Emitidos Detalhados -->
+            <div id="convTabContentCupons" class="overflow-x-auto hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-slate-900/30">
+                            <th class="py-2.5 px-3">Data Emissão</th>
+                            <th class="py-2.5 px-3 font-mono">Cupom #</th>
+                            <th class="py-2.5 px-3">Cliente / Convênio</th>
+                            <th class="py-2.5 px-3 text-center">PDV</th>
+                            <th class="py-2.5 px-3 text-right">Valor Cupom</th>
+                            <th class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400">Valor Quitado</th>
+                            <th class="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400">Saldo Pendente</th>
+                            <th class="py-2.5 px-3">Vencimento</th>
+                            <th class="py-2.5 px-3">Status</th>
+                            <th class="py-2.5 px-3">Operador / Obs</th>
+                        </tr>
+                    </thead>
+                    <tbody id="convCuponsTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
+                        <tr>
+                            <td colspan="10" class="py-8 text-center text-gray-400">Carregando cupons...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Conteúdo da Aba 3: Baixas Financeiras Recentes -->
             <div id="convTabContentBaixas" class="overflow-x-auto hidden">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -549,7 +579,7 @@
                 </table>
             </div>
 
-            <!-- Conteúdo da Aba 3: Evolução Diária de Convênio -->
+            <!-- Conteúdo da Aba 4: Evolução Diária de Convênio -->
             <div id="convTabContentDiario" class="overflow-x-auto hidden">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -799,13 +829,86 @@
                 </table>
             </div>
         </div>
+
+        <!-- Modal: Detalhes dos Cupons do Cliente Convênio -->
+        <div id="convenioClientModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <!-- Modal Header -->
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700/80 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/80">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 font-black flex items-center justify-center text-sm shadow-sm" id="modalConvClientAvatar">
+                            C
+                        </div>
+                        <div>
+                            <h4 class="text-base font-bold text-gray-900 dark:text-white" id="modalConvClientName">
+                                Cliente Convênio
+                            </h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 font-mono" id="modalConvClientMeta">
+                                CNPJ/Código: - • 0 cupons emitidos no período
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" id="modalConvCloseBtn" class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <!-- Modal KPIs -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-gray-50/30 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-700/60 text-xs">
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200/70 dark:border-slate-700/70">
+                        <span class="text-gray-500 dark:text-gray-400 text-[10px] uppercase font-bold block">Total Emitido</span>
+                        <span class="text-sm font-bold text-gray-900 dark:text-white font-mono" id="modalConvTotalEmitido">R$ 0,00</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200/70 dark:border-slate-700/70">
+                        <span class="text-emerald-600 dark:text-emerald-400 text-[10px] uppercase font-bold block">Total Quitado</span>
+                        <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono" id="modalConvTotalQuitado">R$ 0,00</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200/70 dark:border-slate-700/70">
+                        <span class="text-amber-600 dark:text-amber-400 text-[10px] uppercase font-bold block">Saldo Aberto</span>
+                        <span class="text-sm font-bold text-amber-600 dark:text-amber-400 font-mono" id="modalConvSaldoPendente">R$ 0,00</span>
+                    </div>
+                    <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200/70 dark:border-slate-700/70">
+                        <span class="text-blue-600 dark:text-blue-400 text-[10px] uppercase font-bold block">% Liquidado</span>
+                        <span class="text-sm font-bold text-blue-600 dark:text-blue-400 font-mono" id="modalConvPctPago">0.0%</span>
+                    </div>
+                </div>
+
+                <!-- Modal Table Body -->
+                <div class="overflow-y-auto max-h-[50vh] p-4">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-slate-700 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-slate-900/30">
+                                <th class="py-2 px-3">Data Emissão</th>
+                                <th class="py-2 px-3 font-mono">Cupom #</th>
+                                <th class="py-2 px-3 text-center">PDV</th>
+                                <th class="py-2 px-3 text-right">Valor Cupom</th>
+                                <th class="py-2 px-3 text-right text-emerald-600 dark:text-emerald-400">Valor Quitado</th>
+                                <th class="py-2 px-3 text-right text-amber-600 dark:text-amber-400">Saldo Aberto</th>
+                                <th class="py-2 px-3">Vencimento</th>
+                                <th class="py-2 px-3">Status</th>
+                                <th class="py-2 px-3">Operador / Obs</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalConvCuponsTableBody" class="divide-y divide-gray-100 dark:divide-slate-700/60 font-medium">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="px-6 py-3 border-t border-gray-100 dark:border-slate-700/80 bg-gray-50/50 dark:bg-slate-800/80 flex justify-end">
+                    <button type="button" id="modalConvCloseFooterBtn" class="px-4 py-2 text-xs font-bold rounded-xl bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261005163346"></script>
-    <script src="/js/fin_solidcon_vision.js?v=20261005163346"></script>
-    <script src="/js/components/navbar.js?v=20261005163346"></script>
+    <script src="/js/api.js?v=20261005171447"></script>
+    <script src="/js/fin_solidcon_vision.js?v=20261005171447"></script>
+    <script src="/js/components/navbar.js?v=20261005171447"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261005163346"></script>
+    <script src="/js/components/footer.js?v=20261005171447"></script>
 </body>
 </html>

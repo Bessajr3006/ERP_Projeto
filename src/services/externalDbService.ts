@@ -6973,12 +6973,16 @@ export class ExternalDbService {
                     reqConv.input('ano', sql.Int, ano);
                     reqConv.input('mes', sql.Int, mes);
 
-                    // 8.1 Resumo de Cupons Emitidos no Mês
+                    // 8.1 Resumo de Cupons Emitidos no Mês (com proteção contra valores corrompidos > emitido)
                     const resCupomSummary = await reqConv.query(`
                         SELECT 
                             COUNT(*) as qtd_cupons,
                             SUM(ISNULL(cc.vlCrediario, 0)) as total_emitido,
-                            SUM(ISNULL(cc.vlQuitado, 0)) as total_quitado
+                            SUM(CASE 
+                                WHEN ISNULL(cc.vlQuitado, 0) > ISNULL(cc.vlCrediario, 0) THEN ISNULL(cc.vlCrediario, 0)
+                                WHEN ISNULL(cc.vlQuitado, 0) < 0 THEN 0
+                                ELSE ISNULL(cc.vlQuitado, 0) 
+                            END) as total_quitado
                         FROM tbCrediarioCupom cc WITH (NOLOCK)
                         WHERE YEAR(cc.dtCrediario) = @ano AND MONTH(cc.dtCrediario) = @mes
                           ${filialClauseCupom}
@@ -7021,18 +7025,23 @@ export class ExternalDbService {
                         pctQuitado: Number(cPctQuitado.toFixed(1))
                     };
 
-                    // 8.3 Top Clientes / Empresas Convênio do Mês
+                    // 8.3 Top Clientes / Empresas Convênio do Mês (safe quitado)
                     const resTopClients = await reqConv.query(`
-                        SELECT TOP 25
+                        SELECT TOP 100
+                            cc.cdCrediario,
                             ISNULL(NULLIF(RTRIM(LTRIM(c.Nome)), ''), 'Cliente não identificado') as cliente,
                             COUNT(*) as qtd_operacoes,
                             SUM(ISNULL(cc.vlCrediario, 0)) as total_valor,
-                            SUM(ISNULL(cc.vlQuitado, 0)) as total_quitado
+                            SUM(CASE 
+                                WHEN ISNULL(cc.vlQuitado, 0) > ISNULL(cc.vlCrediario, 0) THEN ISNULL(cc.vlCrediario, 0)
+                                WHEN ISNULL(cc.vlQuitado, 0) < 0 THEN 0
+                                ELSE ISNULL(cc.vlQuitado, 0) 
+                            END) as total_quitado
                         FROM tbCrediarioCupom cc WITH (NOLOCK)
                         LEFT JOIN tbCrediario c WITH (NOLOCK) ON c.cdCrediario = cc.cdCrediario
                         WHERE YEAR(cc.dtCrediario) = @ano AND MONTH(cc.dtCrediario) = @mes
                           ${filialClauseCupom}
-                        GROUP BY c.Nome
+                        GROUP BY cc.cdCrediario, c.Nome
                         ORDER BY total_valor DESC
                     `);
                     convenioData.topClientes = (resTopClients.recordset || []).map((tc: any) => {
@@ -7043,6 +7052,7 @@ export class ExternalDbService {
                         const pct = val > 0 ? (quit / val) * 100 : 0;
                         const ticket = qtd > 0 ? val / qtd : 0;
                         return {
+                            cdCrediario: String(tc.cdCrediario || ''),
                             cliente: String(tc.cliente || 'Convênio').trim(),
                             qtd_operacoes: qtd,
                             ticket_medio: ticket,
@@ -7053,14 +7063,66 @@ export class ExternalDbService {
                         };
                     });
 
-                    // 8.4 Evolução Diária de Convênio no Mês
+                    // 8.4 Lista Detalhada de Cupons Emitidos no Mês
+                    const resCuponsList = await reqConv.query(`
+                        SELECT 
+                            cc.cdCrediarioCupom as id,
+                            cc.cdCrediario,
+                            ISNULL(NULLIF(RTRIM(LTRIM(c.Nome)), ''), 'Cliente não identificado') as cliente,
+                            cc.nrCupom,
+                            CONVERT(VARCHAR(10), cc.dtCrediario, 120) as dtEmissao,
+                            CONVERT(VARCHAR(10), cc.dtVencimento, 120) as dtVencimento,
+                            CAST(ISNULL(cc.vlCrediario, 0) AS FLOAT) as vlCrediario,
+                            CAST(CASE 
+                                WHEN ISNULL(cc.vlQuitado, 0) > ISNULL(cc.vlCrediario, 0) THEN ISNULL(cc.vlCrediario, 0)
+                                WHEN ISNULL(cc.vlQuitado, 0) < 0 THEN 0
+                                ELSE ISNULL(cc.vlQuitado, 0) 
+                            END AS FLOAT) as vlQuitado,
+                            ISNULL(cc.Obs, '') as obs,
+                            ISNULL(cc.nmOperador, '') as operador,
+                            ISNULL(cc.cdPDV, 0) as pdv,
+                            ISNULL(cc.cdFilial, 1) as filial
+                        FROM tbCrediarioCupom cc WITH (NOLOCK)
+                        LEFT JOIN tbCrediario c WITH (NOLOCK) ON c.cdCrediario = cc.cdCrediario
+                        WHERE YEAR(cc.dtCrediario) = @ano AND MONTH(cc.dtCrediario) = @mes
+                          ${filialClauseCupom}
+                        ORDER BY cc.dtCrediario DESC, cc.nrCupom DESC
+                    `);
+                    convenioData.cuponsList = (resCuponsList.recordset || []).map((cp: any) => {
+                        const emit = Number(cp.vlCrediario || 0);
+                        const quit = Number(cp.vlQuitado || 0);
+                        const pend = Math.max(0, emit - quit);
+                        const status = quit >= emit && emit > 0 ? 'Quitado' : (quit > 0 ? 'Parcial' : 'Pendente');
+                        return {
+                            id: cp.id,
+                            cdCrediario: String(cp.cdCrediario || ''),
+                            cliente: String(cp.cliente || 'Convênio').trim(),
+                            nrCupom: Number(cp.nrCupom || 0),
+                            dtEmissao: cp.dtEmissao,
+                            dtVencimento: cp.dtVencimento,
+                            vlCrediario: emit,
+                            vlQuitado: quit,
+                            saldoPendente: pend,
+                            status: status,
+                            obs: String(cp.obs || ''),
+                            operador: String(cp.operador || ''),
+                            pdv: Number(cp.pdv || 0),
+                            filial: Number(cp.filial || 1)
+                        };
+                    });
+
+                    // 8.5 Evolução Diária de Convênio no Mês (safe quitado)
                     const resDailyConv = await reqConv.query(`
                         SELECT 
                             DAY(cc.dtCrediario) as dia,
                             CONVERT(VARCHAR(10), cc.dtCrediario, 120) as data,
                             COUNT(*) as qtd_cupons,
                             SUM(ISNULL(cc.vlCrediario, 0)) as total_emitido,
-                            SUM(ISNULL(cc.vlQuitado, 0)) as total_quitado
+                            SUM(CASE 
+                                WHEN ISNULL(cc.vlQuitado, 0) > ISNULL(cc.vlCrediario, 0) THEN ISNULL(cc.vlCrediario, 0)
+                                WHEN ISNULL(cc.vlQuitado, 0) < 0 THEN 0
+                                ELSE ISNULL(cc.vlQuitado, 0) 
+                            END) as total_quitado
                         FROM tbCrediarioCupom cc WITH (NOLOCK)
                         WHERE YEAR(cc.dtCrediario) = @ano AND MONTH(cc.dtCrediario) = @mes
                           ${filialClauseCupom}
@@ -7076,7 +7138,7 @@ export class ExternalDbService {
                         saldo_pendente: Math.max(0, Number(d.total_emitido || 0) - Number(d.total_quitado || 0))
                     }));
 
-                    // 8.5 Últimas Baixas / Liquidações Financeiras de Convênio
+                    // 8.6 Últimas Baixas / Liquidações Financeiras de Convênio
                     const resRecentBaixas = await reqConv.query(`
                         SELECT TOP 30
                             cb.cdContaBaixa as id,
@@ -7103,7 +7165,7 @@ export class ExternalDbService {
                         banco: b.banco
                     }));
 
-                    // 8.6 Comparativo Anual de Convênio (12 meses)
+                    // 8.7 Comparativo Anual de Convênio (12 meses safe quitado)
                     const reqAnualConv = pool.request();
                     reqAnualConv.input('ano', sql.Int, ano);
                     const resAnualConv = await reqAnualConv.query(`
@@ -7111,7 +7173,11 @@ export class ExternalDbService {
                             MONTH(cc.dtCrediario) as mes,
                             COUNT(*) as qtd_cupons,
                             SUM(ISNULL(cc.vlCrediario, 0)) as total_emitido,
-                            SUM(ISNULL(cc.vlQuitado, 0)) as total_quitado
+                            SUM(CASE 
+                                WHEN ISNULL(cc.vlQuitado, 0) > ISNULL(cc.vlCrediario, 0) THEN ISNULL(cc.vlCrediario, 0)
+                                WHEN ISNULL(cc.vlQuitado, 0) < 0 THEN 0
+                                ELSE ISNULL(cc.vlQuitado, 0) 
+                            END) as total_quitado
                         FROM tbCrediarioCupom cc WITH (NOLOCK)
                         WHERE YEAR(cc.dtCrediario) = @ano
                           ${filialClauseCupom}

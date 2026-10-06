@@ -220,7 +220,6 @@
             if (getEl('cardCartoesQtdAVencer')) getEl('cardCartoesQtdAVencer')!.textContent = 'Defina o período e filtre';
             if (getEl('cardCartoesTotalVencido')) getEl('cardCartoesTotalVencido')!.textContent = 'R$ 0,00';
             if (getEl('cardCartoesQtdVencido')) getEl('cardCartoesQtdVencido')!.textContent = 'Defina o período e filtre';
-            if (getEl('cardCartoesTotalBruto')) getEl('cardCartoesTotalBruto')!.textContent = 'R$ 0,00';
             if (getEl('cardCartoesTotalTaxa')) getEl('cardCartoesTotalTaxa')!.textContent = 'R$ 0,00';
             if (getEl('cardCartoesTaxaPercent')) getEl('cardCartoesTaxaPercent')!.textContent = 'Taxa média: 0.00%';
             if (getEl('cardCartoesTotalOperacoes')) getEl('cardCartoesTotalOperacoes')!.textContent = '-';
@@ -266,9 +265,6 @@
         }
         if (getEl('cardCartoesQtdVencido')) {
             getEl('cardCartoesQtdVencido')!.textContent = `${qtdVencidos} lote${qtdVencidos === 1 ? '' : 's'} com previsão expirada`;
-        }
-        if (getEl('cardCartoesTotalBruto')) {
-            getEl('cardCartoesTotalBruto')!.textContent = formatMoney(totalBruto);
         }
         if (getEl('cardCartoesTotalTaxa')) {
             getEl('cardCartoesTotalTaxa')!.textContent = formatMoney(totalTaxa);
@@ -460,7 +456,6 @@
             if (getEl('modalSummaryTotalLiquido')) getEl('modalSummaryTotalLiquido')!.textContent = 'R$ 0,00';
             if (getEl('modalSummaryTotalAVencer')) getEl('modalSummaryTotalAVencer')!.textContent = 'R$ 0,00';
             if (getEl('modalSummaryTotalVencido')) getEl('modalSummaryTotalVencido')!.textContent = 'R$ 0,00';
-            if (getEl('modalSummaryTotalBruto')) getEl('modalSummaryTotalBruto')!.textContent = 'R$ 0,00';
             if (getEl('modalSummaryTotalTaxa')) getEl('modalSummaryTotalTaxa')!.textContent = 'R$ 0,00';
             if (getEl('modalCartoesItemCount')) getEl('modalCartoesItemCount')!.textContent = '0 lançamentos';
             renderModalTable([]);
@@ -525,9 +520,6 @@
         }
         if (getEl('modalSummaryTotalVencido')) {
             getEl('modalSummaryTotalVencido')!.textContent = formatMoney(sumVencido);
-        }
-        if (getEl('modalSummaryTotalBruto')) {
-            getEl('modalSummaryTotalBruto')!.textContent = formatMoney(sumBruto);
         }
         if (getEl('modalSummaryTotalTaxa')) {
             getEl('modalSummaryTotalTaxa')!.textContent = formatMoney(sumTaxa);

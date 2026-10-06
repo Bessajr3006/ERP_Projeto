@@ -200,8 +200,6 @@
                 getEl('cardCartoesTotalVencido').textContent = 'R$ 0,00';
             if (getEl('cardCartoesQtdVencido'))
                 getEl('cardCartoesQtdVencido').textContent = 'Defina o período e filtre';
-            if (getEl('cardCartoesTotalBruto'))
-                getEl('cardCartoesTotalBruto').textContent = 'R$ 0,00';
             if (getEl('cardCartoesTotalTaxa'))
                 getEl('cardCartoesTotalTaxa').textContent = 'R$ 0,00';
             if (getEl('cardCartoesTaxaPercent'))
@@ -251,9 +249,6 @@
         }
         if (getEl('cardCartoesQtdVencido')) {
             getEl('cardCartoesQtdVencido').textContent = `${qtdVencidos} lote${qtdVencidos === 1 ? '' : 's'} com previsão expirada`;
-        }
-        if (getEl('cardCartoesTotalBruto')) {
-            getEl('cardCartoesTotalBruto').textContent = formatMoney(totalBruto);
         }
         if (getEl('cardCartoesTotalTaxa')) {
             getEl('cardCartoesTotalTaxa').textContent = formatMoney(totalTaxa);
@@ -437,8 +432,6 @@
                 getEl('modalSummaryTotalAVencer').textContent = 'R$ 0,00';
             if (getEl('modalSummaryTotalVencido'))
                 getEl('modalSummaryTotalVencido').textContent = 'R$ 0,00';
-            if (getEl('modalSummaryTotalBruto'))
-                getEl('modalSummaryTotalBruto').textContent = 'R$ 0,00';
             if (getEl('modalSummaryTotalTaxa'))
                 getEl('modalSummaryTotalTaxa').textContent = 'R$ 0,00';
             if (getEl('modalCartoesItemCount'))
@@ -500,9 +493,6 @@
         }
         if (getEl('modalSummaryTotalVencido')) {
             getEl('modalSummaryTotalVencido').textContent = formatMoney(sumVencido);
-        }
-        if (getEl('modalSummaryTotalBruto')) {
-            getEl('modalSummaryTotalBruto').textContent = formatMoney(sumBruto);
         }
         if (getEl('modalSummaryTotalTaxa')) {
             getEl('modalSummaryTotalTaxa').textContent = formatMoney(sumTaxa);

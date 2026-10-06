@@ -200,14 +200,6 @@
                 getEl('cardCartoesTotalVencido').textContent = 'R$ 0,00';
             if (getEl('cardCartoesQtdVencido'))
                 getEl('cardCartoesQtdVencido').textContent = 'Defina o período e filtre';
-            if (getEl('cardCartoesTotalTaxa'))
-                getEl('cardCartoesTotalTaxa').textContent = 'R$ 0,00';
-            if (getEl('cardCartoesTaxaPercent'))
-                getEl('cardCartoesTaxaPercent').textContent = 'Taxa média: 0.00%';
-            if (getEl('cardCartoesTotalOperacoes'))
-                getEl('cardCartoesTotalOperacoes').textContent = '-';
-            if (getEl('cardCartoesTicketMedio'))
-                getEl('cardCartoesTicketMedio').textContent = 'Ticket Médio: R$ 0,00';
             if (getEl('badgeCardLancamentosCount'))
                 getEl('badgeCardLancamentosCount').textContent = '-';
             if (getEl('badgeCartoesStatus')) {
@@ -225,16 +217,11 @@
         }
         const summary = cartoesData.summary || {};
         const totalLiquido = Number(summary.totalLiquido || 0);
-        const totalBruto = Number(summary.totalBruto || 0);
-        const totalTaxa = Number(summary.totalTaxa || 0);
-        const totalOperacoes = Number(summary.totalOperacoes || 0);
         const totalLancamentos = Number(summary.totalLancamentos || 0);
-        const ticketMedio = Number(summary.ticketMedio || 0);
         const totalAVencer = Number(summary.totalAVencer || 0);
         const totalVencido = Number(summary.totalVencido || 0);
         const qtdAVencer = Number(summary.qtdAVencer || 0);
         const qtdVencidos = Number(summary.qtdVencidos || 0);
-        const taxaMediaPct = totalBruto > 0 ? ((totalTaxa / totalBruto) * 100).toFixed(2) : '0.00';
         if (getEl('cardCartoesTotalLiquido')) {
             getEl('cardCartoesTotalLiquido').textContent = formatMoney(totalLiquido);
         }
@@ -249,18 +236,6 @@
         }
         if (getEl('cardCartoesQtdVencido')) {
             getEl('cardCartoesQtdVencido').textContent = `${qtdVencidos} lote${qtdVencidos === 1 ? '' : 's'} com previsão expirada`;
-        }
-        if (getEl('cardCartoesTotalTaxa')) {
-            getEl('cardCartoesTotalTaxa').textContent = formatMoney(totalTaxa);
-        }
-        if (getEl('cardCartoesTaxaPercent')) {
-            getEl('cardCartoesTaxaPercent').textContent = `Taxa média: ${taxaMediaPct}%`;
-        }
-        if (getEl('cardCartoesTotalOperacoes')) {
-            getEl('cardCartoesTotalOperacoes').textContent = totalOperacoes.toLocaleString('pt-BR');
-        }
-        if (getEl('cardCartoesTicketMedio')) {
-            getEl('cardCartoesTicketMedio').textContent = `Ticket Médio: ${formatMoney(ticketMedio)}`;
         }
         if (getEl('badgeCardLancamentosCount')) {
             getEl('badgeCardLancamentosCount').textContent = String(totalLancamentos);

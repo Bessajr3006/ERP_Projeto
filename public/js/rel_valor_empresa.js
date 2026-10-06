@@ -555,37 +555,6 @@
         if (getEl('modalCrediarioBadgePeriodo')) {
             getEl('modalCrediarioBadgePeriodo').textContent = badgePeriodoText;
         }
-        // Render Top Clientes com maior pendência
-        const topContainer = getEl('cardCrediarioTopClientesContainer');
-        const topClientes = data.topClientes || [];
-        if (getEl('cardCrediarioCountTopClientes')) {
-            getEl('cardCrediarioCountTopClientes').textContent = `${topClientes.length} devedores em destaque`;
-        }
-        if (topContainer) {
-            if (topClientes.length === 0) {
-                topContainer.innerHTML = '<span class="text-xs text-gray-400 dark:text-gray-500 col-span-full">Nenhum saldo pendente encontrado no período</span>';
-            }
-            else {
-                topContainer.innerHTML = topClientes.slice(0, 5).map((item, idx) => {
-                    return `
-                        <div class="p-2.5 rounded-xl bg-gray-50/80 dark:bg-slate-900/60 border border-indigo-100/80 dark:border-indigo-950/50 flex flex-col justify-between">
-                            <div class="flex items-center justify-between gap-1 mb-1">
-                                <span class="font-bold text-[11px] text-gray-800 dark:text-gray-200 truncate" title="${escapeHtml(item.cliente)}">
-                                    #${idx + 1} ${escapeHtml(item.cliente)}
-                                </span>
-                                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 shrink-0">
-                                    ${item.percentual}%
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs mt-1">
-                                <span class="text-[10px] text-gray-400 dark:text-gray-500">${item.qtdCupons} cupons</span>
-                                <span class="font-bold font-mono text-indigo-600 dark:text-indigo-400">${formatMoney(item.totalAReceber)}</span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
     };
     // ─── Modal Crediário/Convênio: Populate & Filter ───────────────────────────
     const populateModalCrediarioFilters = (data) => {

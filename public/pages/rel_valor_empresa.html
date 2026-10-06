@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Rel.Valor_Empresa</title>
-    <link href="/css/style.css?v=20261006110354" rel="stylesheet">
+    <link href="/css/style.css?v=20261006110854" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261006110354"></script>
+    <script src="/js/pwa.js?v=20261006110854"></script>
 </head>
 <body data-required-module="rel_valor_empresa" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -174,7 +174,7 @@
                 <!-- Main Highlight KPI & Secondary Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-5 items-stretch">
                     <!-- Highlight: Total Líquido -->
-                    <div class="md:col-span-1 p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200/80 dark:border-amber-800/40 flex flex-col justify-between">
+                    <div class="md:col-span-1 p-4 rounded-xl bg-linear-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200/80 dark:border-amber-800/40 flex flex-col justify-between">
                         <div>
                             <span class="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
                                 Total Líquido Não Baixado
@@ -246,7 +246,7 @@
         </div>
 
         <!-- ── MODAL: LANÇAMENTOS DE CARTÕES NÃO BAIXADOS ────────────── -->
-        <div id="modalCartoesNaoBaixados" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto hidden">
+        <div id="modalCartoesNaoBaixados" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm items-center justify-center p-3 sm:p-4 overflow-y-auto hidden [&:not(.hidden)]:flex">
             <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col max-h-[92vh] overflow-hidden animate-fadeIn">
                 <!-- Modal Header -->
                 <div class="p-4 sm:p-5 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-gray-50/50 dark:bg-slate-900/50">
@@ -352,11 +352,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261006110354"></script>
-    <script src="/js/rel_valor_empresa.js?v=20261006110354"></script>
-    <script src="/js/components/navbar.js?v=20261006110354"></script>
+    <script src="/js/api.js?v=20261006110854"></script>
+    <script src="/js/rel_valor_empresa.js?v=20261006110854"></script>
+    <script src="/js/components/navbar.js?v=20261006110854"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261006110354"></script>
+    <script src="/js/components/footer.js?v=20261006110854"></script>
 </body>
 </html>
 

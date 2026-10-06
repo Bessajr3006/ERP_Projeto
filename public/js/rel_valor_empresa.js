@@ -7,6 +7,16 @@
     // ─── DOM Helpers ──────────────────────────────────────────────────────────
     const getEl = (id) => document.getElementById(id);
     let isLoading = false;
+    let accessibleCompanies = [];
+    let currentCompanyPublicId = '';
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
     // ─── Status & Alert Helpers ───────────────────────────────────────────────
     const updateStatusBadge = (type, text) => {
         const badge = getEl('statusBadge');
@@ -76,93 +86,83 @@
             }
             select.appendChild(opt);
         }
+        if (savedYear && !select.querySelector(`option[value="${savedYear}"]`)) {
+            const opt = document.createElement('option');
+            opt.value = savedYear;
+            opt.textContent = savedYear;
+            opt.selected = true;
+            select.appendChild(opt);
+        }
     };
     // ─── Load Companies ───────────────────────────────────────────────────────
-    const loadCompanies = async () => {
+    async function loadCompanies() {
         const compSelect = getEl('filterCompany');
         if (!compSelect)
             return;
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/companies', {
-                headers: {
-                    'Authorization': `Bearer ${token || ''}`,
-                    'Content-Type': 'application/json'
+            const meRes = await api('/auth/me');
+            const activeCompany = meRes?.data?.company;
+            currentCompanyPublicId = activeCompany?.public_id || '';
+            let list = meRes?.data?.companies || [];
+            if (!Array.isArray(list) || list.length === 0) {
+                try {
+                    const compRes = await api('/companies');
+                    if (Array.isArray(compRes?.data)) {
+                        list = compRes.data;
+                    }
                 }
-            });
-            if (!res.ok)
-                throw new Error('Não foi possível carregar as empresas.');
-            const data = await res.json();
-            const list = Array.isArray(data) ? data : (data.companies || data.data || []);
-            compSelect.innerHTML = '';
-            if (list.length === 0) {
-                compSelect.innerHTML = '<option value="">Nenhuma empresa disponível</option>';
-                return;
+                catch (e) { }
             }
-            // Sort alphabetically by trade name or company name
-            list.sort((a, b) => {
-                const nameA = (a.trade_name || a.company_name || '').toUpperCase();
-                const nameB = (b.trade_name || b.company_name || '').toUpperCase();
-                return nameA.localeCompare(nameB, 'pt-BR');
-            });
+            if (list.length === 0 && activeCompany) {
+                list = [activeCompany];
+            }
+            accessibleCompanies = list;
             const savedCompanyId = localStorage.getItem('rel_valor_empresa_company');
-            list.forEach((c) => {
-                const opt = document.createElement('option');
-                opt.value = c.id;
-                opt.textContent = c.trade_name || c.company_name || 'Sem nome';
-                if (savedCompanyId && String(c.id) === savedCompanyId) {
-                    opt.selected = true;
-                }
-                compSelect.appendChild(opt);
-            });
-            // If no saved selection matched, select first option
-            if (!compSelect.value && list.length > 0) {
-                compSelect.value = list[0].id;
+            compSelect.innerHTML = accessibleCompanies.map((c) => {
+                const idVal = c.public_id || c.id;
+                const displayName = c.trade_name || c.company_name || c.name || `Empresa #${c.id}`;
+                const isSelected = savedCompanyId
+                    ? (idVal === savedCompanyId || String(c.id) === String(savedCompanyId))
+                    : (idVal === currentCompanyPublicId);
+                return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>${escapeHtml(displayName)}</option>`;
+            }).join('');
+            if (compSelect.options.length > 0 && compSelect.selectedIndex === -1) {
+                compSelect.selectedIndex = 0;
             }
         }
         catch (err) {
-            console.error('[Rel.Valor_Empresa] Error loading companies:', err);
-            compSelect.innerHTML = '<option value="">Erro ao carregar empresas</option>';
+            console.warn('[Rel.Valor_Empresa] Falha ao carregar lista de empresas:', err);
+            compSelect.innerHTML = '<option value="">Minha Empresa</option>';
         }
-    };
+    }
     // ─── Load Solidcon Connections for Company ────────────────────────────────
     const loadSolidconConnections = async (targetCompany) => {
         const select = getEl('filterConnection');
         if (!select)
             return;
         const companyParam = targetCompany || getEl('filterCompany')?.value || '';
-        if (!companyParam) {
-            select.innerHTML = '<option value="">Padrão da Empresa (Solidcon)</option>';
-            return;
-        }
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`/api/companies/${encodeURIComponent(companyParam)}/solidcon-configs`, {
-                headers: {
-                    'Authorization': `Bearer ${token || ''}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            if (!res.ok) {
-                select.innerHTML = '<option value="">Padrão da Empresa (Solidcon)</option>';
-                return;
-            }
-            const json = await res.json();
-            const configs = Array.isArray(json?.data) ? json.data : (Array.isArray(json) ? json : []);
-            const savedConnectionId = localStorage.getItem(`rel_valor_empresa_conn_${companyParam || 'default'}`);
+            select.innerHTML = '<option value="">Carregando conexões...</option>';
+            const url = `/finance/reports/solidcon-connections${companyParam ? `?targetCompanyId=${encodeURIComponent(companyParam)}` : ''}`;
+            const res = await api(url);
+            const conns = res?.data || [];
             select.innerHTML = '<option value="">Padrão da Empresa (Solidcon)</option>';
-            configs.forEach((c) => {
+            conns.forEach((c) => {
                 const opt = document.createElement('option');
                 opt.value = String(c.id);
-                opt.textContent = `${c.name || 'Conexão Solidcon'} (${c.host}/${c.database_name || 'solidcon'})${c.is_default ? ' [Padrão]' : ''}`;
-                if (savedConnectionId && String(c.id) === savedConnectionId) {
-                    opt.selected = true;
+                opt.textContent = `${c.name || 'Conexão'} (${c.serv_solidcon || ''}/${c.bd_solidcon || 'solidcon'})`;
+                if (c.is_default) {
+                    opt.textContent += ' [Padrão]';
                 }
                 select.appendChild(opt);
             });
+            const savedConnectionId = localStorage.getItem(`rel_valor_empresa_conn_${companyParam || 'default'}`);
+            if (savedConnectionId) {
+                select.value = savedConnectionId;
+            }
         }
         catch (err) {
-            console.warn('[Rel.Valor_Empresa] Could not load solidcon connections:', err);
+            console.warn('[Rel.Valor_Empresa] Falha ao carregar conexões Solidcon:', err);
             select.innerHTML = '<option value="">Padrão da Empresa (Solidcon)</option>';
         }
     };
@@ -201,7 +201,6 @@
             if (filial) {
                 localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, filial);
             }
-            const token = localStorage.getItem('token');
             const queryParams = new URLSearchParams({
                 ano,
                 mes,
@@ -210,17 +209,7 @@
                 ...(filial ? { filial } : {}),
                 ...(connId ? { connection_id: connId } : {})
             });
-            const response = await fetch(`/api/fin-solidcon-vision?${queryParams.toString()}`, {
-                headers: {
-                    'Authorization': `Bearer ${token || ''}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            if (!response.ok) {
-                const errJson = await response.json().catch(() => ({}));
-                throw new Error(errJson?.error || errJson?.message || `Erro HTTP ${response.status}`);
-            }
-            const res = await response.json();
+            const res = await api(`/fin-solidcon-vision?${queryParams.toString()}`);
             const data = res?.data;
             if (!data)
                 throw new Error('Estrutura de dados inválida retornada pelo servidor.');

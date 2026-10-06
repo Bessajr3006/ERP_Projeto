@@ -225,7 +225,8 @@
                     { id: 'balancete', label: 'Balancete' },
                     { id: 'rel_rafael', label: 'Relatório Rafael' },
                     { id: 'rel_pedido_dorsal', label: 'Rel. Pedido (Dorsal)' },
-                    { id: 'rel_saldo_banco', label: 'Saldo Banco' }
+                    { id: 'rel_saldo_banco', label: 'Saldo Banco' },
+                    { id: 'fin_solidcon_vision', label: 'Rel.Valor_Empresa' }
                 ]
             },
             {

@@ -1127,6 +1127,8 @@ async function loadUserGreeting() {
                     'cost-centers': 'cost_centers',
                     'fin_solidcon_vision': 'fin_solidcon_vision',
                     'fin-solidcon-vision': 'fin_solidcon_vision',
+                    'rel-valor-empresa': 'fin_solidcon_vision',
+                    'rel_valor_empresa': 'fin_solidcon_vision',
                 };
                 const normalizeModule = (name?: string) => {
                     const value = String(name || '').trim();

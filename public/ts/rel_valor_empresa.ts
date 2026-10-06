@@ -18,6 +18,10 @@
     let rawLancamentos: any[] = [];
     let currentPeriodLabel = '';
 
+    // State for Crediário e Convênio a Receber (até 2999)
+    let currentCrediarioReceberData: any = null;
+    let rawCrediarioCupons: any[] = [];
+
 
     function escapeHtml(value: any): string {
         return String(value ?? '')
@@ -471,6 +475,260 @@
         URL.revokeObjectURL(url);
     };
 
+    // ─── Render Card: Crediário e Convênio a Receber (até 2999) ───────────────
+    const renderCrediarioReceberCard = (data: any) => {
+        if (!data) return;
+
+        const summary = data.summary || {};
+        const totalAReceber = Number(summary.totalAReceber || 0);
+        const totalVencido = Number(summary.totalVencido || 0);
+        const totalAVencer = Number(summary.totalAVencer || 0);
+        const totalEmitido = Number(summary.totalEmitido || 0);
+        const totalQuitado = Number(summary.totalQuitado || 0);
+        const qtdCupons = Number(summary.qtdCupons || 0);
+        const qtdVencidos = Number(summary.qtdVencidos || 0);
+        const qtdAVencer = Number(summary.qtdAVencer || 0);
+        const qtdClientes = Number(summary.qtdClientes || 0);
+
+        if (getEl('cardCrediarioTotalReceber')) {
+            getEl('cardCrediarioTotalReceber')!.textContent = formatMoney(totalAReceber);
+        }
+        if (getEl('cardCrediarioTotalVencido')) {
+            getEl('cardCrediarioTotalVencido')!.textContent = formatMoney(totalVencido);
+        }
+        if (getEl('cardCrediarioQtdVencidos')) {
+            getEl('cardCrediarioQtdVencidos')!.textContent = `${qtdVencidos.toLocaleString('pt-BR')} cupons vencidos`;
+        }
+        if (getEl('cardCrediarioTotalAVencer')) {
+            getEl('cardCrediarioTotalAVencer')!.textContent = formatMoney(totalAVencer);
+        }
+        if (getEl('cardCrediarioQtdAVencer')) {
+            getEl('cardCrediarioQtdAVencer')!.textContent = `${qtdAVencer.toLocaleString('pt-BR')} cupons a vencer`;
+        }
+        if (getEl('cardCrediarioTotalEmitido')) {
+            getEl('cardCrediarioTotalEmitido')!.textContent = formatMoney(totalEmitido);
+        }
+        if (getEl('cardCrediarioEmitidoInfo')) {
+            getEl('cardCrediarioEmitidoInfo')!.textContent = `Quitado: ${formatMoney(totalQuitado)} • ${qtdClientes.toLocaleString('pt-BR')} clientes`;
+        }
+        if (getEl('badgeCrediarioStatus')) {
+            getEl('badgeCrediarioStatus')!.textContent = `${qtdCupons.toLocaleString('pt-BR')} Cupons a Receber`;
+        }
+        if (getEl('badgeCardCrediarioCount')) {
+            getEl('badgeCardCrediarioCount')!.textContent = String(qtdCupons);
+        }
+
+        // Render Top Clientes com maior pendência
+        const topContainer = getEl('cardCrediarioTopClientesContainer');
+        const topClientes = data.topClientes || [];
+        if (getEl('cardCrediarioCountTopClientes')) {
+            getEl('cardCrediarioCountTopClientes')!.textContent = `${topClientes.length} devedores em destaque`;
+        }
+
+        if (topContainer) {
+            if (topClientes.length === 0) {
+                topContainer.innerHTML = '<span class="text-xs text-gray-400 dark:text-gray-500 col-span-full">Nenhum saldo pendente encontrado no período</span>';
+            } else {
+                topContainer.innerHTML = topClientes.slice(0, 5).map((item: any, idx: number) => {
+                    return `
+                        <div class="p-2.5 rounded-xl bg-gray-50/80 dark:bg-slate-900/60 border border-indigo-100/80 dark:border-indigo-950/50 flex flex-col justify-between">
+                            <div class="flex items-center justify-between gap-1 mb-1">
+                                <span class="font-bold text-[11px] text-gray-800 dark:text-gray-200 truncate" title="${escapeHtml(item.cliente)}">
+                                    #${idx + 1} ${escapeHtml(item.cliente)}
+                                </span>
+                                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 shrink-0">
+                                    ${item.percentual}%
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs mt-1">
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500">${item.qtdCupons} cupons</span>
+                                <span class="font-bold font-mono text-indigo-600 dark:text-indigo-400">${formatMoney(item.totalAReceber)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    };
+
+    // ─── Modal Crediário/Convênio: Populate & Filter ───────────────────────────
+    const populateModalCrediarioFilters = (data: any) => {
+        const filialSelect = getEl<HTMLSelectElement>('modalCrediarioFilterFilial');
+        if (filialSelect) {
+            const filiais = data.byFilial || [];
+            filialSelect.innerHTML = '<option value="">Todas as Filiais</option>' +
+                filiais.map((f: any) => `<option value="${escapeHtml(f.filial)}">${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}</option>`).join('');
+        }
+    };
+
+    const renderModalCrediarioTable = (list: any[]) => {
+        const tbody = getEl('modalCrediarioTableBody');
+        if (!tbody) return;
+
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <svg class="w-8 h-8 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="font-medium">Nenhum cupom a receber encontrado para os filtros selecionados.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = list.map((item: any) => {
+            const isVencido = item.isVencido;
+            const statusBadgeClass = isVencido
+                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40'
+                : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40';
+
+            const statusText = isVencido
+                ? `Vencido (${item.diasAtraso}d)`
+                : 'A Vencer';
+
+            return `
+                <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <td class="py-2.5 px-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        ${formatDateBR(item.dtEmissao)}
+                    </td>
+                    <td class="py-2.5 px-4 font-medium ${isVencido ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
+                        ${formatDateBR(item.dtVencimento)}
+                    </td>
+                    <td class="py-2.5 px-4 text-center whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${statusBadgeClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="py-2.5 px-4 font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-[11px]">
+                        #${item.nrCupom || item.id}
+                    </td>
+                    <td class="py-2.5 px-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                        ${escapeHtml(item.nomeFilial || `Filial ${item.filial}`)}
+                    </td>
+                    <td class="py-2.5 px-4 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate" title="${escapeHtml(item.cliente)} (${escapeHtml(item.cdCrediario)})">
+                        ${escapeHtml(item.cliente)}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                        ${formatMoney(item.vlCrediario)}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        ${formatMoney(item.vlQuitado)}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                        ${formatMoney(item.saldoPendente)}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
+
+    const applyModalCrediarioFilters = () => {
+        const query = (getEl<HTMLInputElement>('modalCrediarioSearch')?.value || '').toLowerCase().trim();
+        const selectedStatus = getEl<HTMLSelectElement>('modalCrediarioFilterStatus')?.value || 'all';
+        const selectedFilial = getEl<HTMLSelectElement>('modalCrediarioFilterFilial')?.value || '';
+
+        const filtered = rawCrediarioCupons.filter((item: any) => {
+            if (selectedStatus === 'vencidos' && !item.isVencido) return false;
+            if (selectedStatus === 'a_vencer' && item.isVencido) return false;
+            if (selectedFilial && String(item.filial) !== selectedFilial) return false;
+            if (query) {
+                const combined = `${item.cliente || ''} ${item.cdCrediario || ''} ${item.nrCupom || ''} ${item.nomeFilial || ''} ${item.operador || ''} ${item.obs || ''}`.toLowerCase();
+                if (!combined.includes(query)) return false;
+            }
+            return true;
+        });
+
+        // Update Ribbon Summary
+        let sumReceber = 0;
+        let sumVencido = 0;
+        let sumAVencer = 0;
+        filtered.forEach((r: any) => {
+            const val = Number(r.saldoPendente || 0);
+            sumReceber += val;
+            if (r.isVencido) sumVencido += val;
+            else sumAVencer += val;
+        });
+
+        if (getEl('modalCrediarioSummaryReceber')) {
+            getEl('modalCrediarioSummaryReceber')!.textContent = formatMoney(sumReceber);
+        }
+        if (getEl('modalCrediarioSummaryVencido')) {
+            getEl('modalCrediarioSummaryVencido')!.textContent = formatMoney(sumVencido);
+        }
+        if (getEl('modalCrediarioSummaryAVencer')) {
+            getEl('modalCrediarioSummaryAVencer')!.textContent = formatMoney(sumAVencer);
+        }
+        if (getEl('modalCrediarioItemCount')) {
+            getEl('modalCrediarioItemCount')!.textContent = `Exibindo ${filtered.length} de ${rawCrediarioCupons.length} cupons`;
+        }
+
+        renderModalCrediarioTable(filtered);
+    };
+
+    const openModalCrediario = () => {
+        const modal = getEl('modalCrediarioReceber');
+        if (!modal) return;
+
+        if (getEl<HTMLInputElement>('modalCrediarioSearch')) {
+            getEl<HTMLInputElement>('modalCrediarioSearch')!.value = '';
+        }
+        if (getEl<HTMLSelectElement>('modalCrediarioFilterStatus')) {
+            getEl<HTMLSelectElement>('modalCrediarioFilterStatus')!.value = 'all';
+        }
+        if (getEl<HTMLSelectElement>('modalCrediarioFilterFilial')) {
+            getEl<HTMLSelectElement>('modalCrediarioFilterFilial')!.value = '';
+        }
+
+        applyModalCrediarioFilters();
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const closeModalCrediario = () => {
+        const modal = getEl('modalCrediarioReceber');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    };
+
+    const exportCrediarioCsv = () => {
+        if (!rawCrediarioCupons || rawCrediarioCupons.length === 0) {
+            showAlert('Não há cupons a receber para exportar.', 'info');
+            return;
+        }
+
+        const headers = ['Emissão', 'Vencimento', 'Status', 'Dias de Atraso', 'Cupom nº', 'Filial', 'CPF/CNPJ Cliente', 'Cliente / Convênio', 'Valor Emitido', 'Valor Quitado', 'Saldo a Receber', 'Operador', 'Obs'];
+        const rows = rawCrediarioCupons.map((item: any) => [
+            formatDateBR(item.dtEmissao),
+            formatDateBR(item.dtVencimento),
+            item.isVencido ? '"Vencido"' : '"A Vencer"',
+            item.diasAtraso || 0,
+            item.nrCupom || item.id || '',
+            `"${(item.nomeFilial || `Filial ${item.filial}`).replace(/"/g, '""')}"`,
+            `"${(item.cdCrediario || '').replace(/"/g, '""')}"`,
+            `"${(item.cliente || '').replace(/"/g, '""')}"`,
+            Number(item.vlCrediario || 0).toFixed(2).replace('.', ','),
+            Number(item.vlQuitado || 0).toFixed(2).replace('.', ','),
+            Number(item.saldoPendente || 0).toFixed(2).replace('.', ','),
+            `"${(item.operador || '').replace(/"/g, '""')}"`,
+            `"${(item.obs || '').replace(/"/g, '""')}"`
+        ]);
+
+        const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `crediario_convenio_a_receber_solidcon_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     // ─── Load Data Action ─────────────────────────────────────────────────────
     const loadReport = async () => {
         if (isLoading) return;
@@ -562,8 +820,21 @@
             renderCartoesCard(currentCartoesData);
             populateModalFilters(currentCartoesData);
 
+            // Process & Render Crediário e Convênio a Receber
+            currentCrediarioReceberData = data.crediarioReceber || {
+                summary: { totalAReceber: 0, totalEmitido: 0, totalQuitado: 0, totalVencido: 0, totalAVencer: 0, qtdCupons: 0, qtdVencidos: 0, qtdAVencer: 0, qtdClientes: 0, ticketMedio: 0 },
+                topClientes: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            rawCrediarioCupons = currentCrediarioReceberData.lancamentos || [];
+
+            renderCrediarioReceberCard(currentCrediarioReceberData);
+            populateModalCrediarioFilters(currentCrediarioReceberData);
+
             const totalCartoesLotes = currentCartoesData.summary?.totalLancamentos || 0;
-            updateStatusBadge('success', `Conectado (${totalCartoesLotes} lotes de cartões)`);
+            const totalCuponsReceber = currentCrediarioReceberData.summary?.qtdCupons || 0;
+            updateStatusBadge('success', `Conectado (${totalCartoesLotes} lotes de cartões / ${totalCuponsReceber} cupons a receber)`);
         } catch (err: any) {
             const msg = err?.message || String(err);
             updateStatusBadge('error', 'Falha na Conexão');
@@ -683,12 +954,49 @@
             exportCartoesCsv();
         });
 
+        // ─── Modal Crediário/Convênio Listeners ────────────────────────────────
+        getEl('btnOpenModalCrediario')?.addEventListener('click', () => {
+            openModalCrediario();
+        });
+
+        getEl('btnCloseModalCrediario')?.addEventListener('click', () => {
+            closeModalCrediario();
+        });
+
+        getEl('btnCloseModalCrediarioFooter')?.addEventListener('click', () => {
+            closeModalCrediario();
+        });
+
+        getEl('modalCrediarioReceber')?.addEventListener('click', (e) => {
+            if (e.target === getEl('modalCrediarioReceber')) {
+                closeModalCrediario();
+            }
+        });
+
+        getEl('modalCrediarioSearch')?.addEventListener('input', () => {
+            applyModalCrediarioFilters();
+        });
+
+        getEl('modalCrediarioFilterStatus')?.addEventListener('change', () => {
+            applyModalCrediarioFilters();
+        });
+
+        getEl('modalCrediarioFilterFilial')?.addEventListener('change', () => {
+            applyModalCrediarioFilters();
+        });
+
+        getEl('btnExportCrediarioCsv')?.addEventListener('click', () => {
+            exportCrediarioCsv();
+        });
 
         // ─── Global Keyboard Listener (ESC to close any modal) ───────────────
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (!getEl('modalCartoesNaoBaixados')?.classList.contains('hidden')) {
                     closeModalCartoes();
+                }
+                if (!getEl('modalCrediarioReceber')?.classList.contains('hidden')) {
+                    closeModalCrediario();
                 }
             }
         });

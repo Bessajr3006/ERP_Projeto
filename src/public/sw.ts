@@ -2,7 +2,7 @@
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
-const CACHE_NAME = 'keystone-pwa-v20261006122750';
+const CACHE_NAME = 'keystone-pwa-v20261006124749';
 const ASSETS_TO_CACHE: string[] = [
   '/index.html',
   '/register.html',

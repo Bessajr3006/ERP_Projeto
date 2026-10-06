@@ -7376,6 +7376,172 @@ export class ExternalDbService {
                     console.warn('Falha ao consultar dados de convênio no Solidcon:', convErr?.message || convErr);
                 }
 
+                // 8.8 Crediário e Convênio a Receber (Acumulado até ano 2999)
+                let crediarioReceber: any = {
+                    summary: {
+                        totalAReceber: 0,
+                        totalEmitido: 0,
+                        totalQuitado: 0,
+                        totalVencido: 0,
+                        totalAVencer: 0,
+                        qtdCupons: 0,
+                        qtdVencidos: 0,
+                        qtdAVencer: 0,
+                        qtdClientes: 0,
+                        ticketMedio: 0
+                    },
+                    topClientes: [],
+                    byFilial: [],
+                    lancamentos: []
+                };
+
+                try {
+                    let filialClauseRec = '';
+                    if (cdFilial) {
+                        const filialNum = parseInt(cdFilial, 10);
+                        if (!isNaN(filialNum)) {
+                            filialClauseRec = ` AND cc.cdFilial = ${filialNum}`;
+                        }
+                    }
+
+                    const reqRec = pool.request();
+
+                    // Resumo Geral (até 2999)
+                    const resRecSummary = await reqRec.query(`
+                        SELECT 
+                            COUNT(*) as qtd_cupons,
+                            COUNT(DISTINCT cc.cdCrediario) as qtd_clientes,
+                            SUM(ISNULL(cc.vlCrediario, 0)) as total_emitido,
+                            SUM(ISNULL(cc.vlQuitado, 0)) as total_quitado,
+                            SUM(ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) as total_a_receber,
+                            SUM(CASE WHEN CAST(cc.dtVencimento AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) ELSE 0 END) as total_vencido,
+                            SUM(CASE WHEN CAST(cc.dtVencimento AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) ELSE 0 END) as total_a_vencer,
+                            COUNT(CASE WHEN CAST(cc.dtVencimento AS DATE) < CAST(GETDATE() AS DATE) THEN 1 END) as qtd_vencidos,
+                            COUNT(CASE WHEN CAST(cc.dtVencimento AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer
+                        FROM tbCrediarioCupom cc WITH (NOLOCK)
+                        WHERE (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) > 0.01
+                          AND cc.dtCrediario <= '2999-12-31'
+                          ${filialClauseRec}
+                    `);
+                    const recRow = resRecSummary.recordset?.[0] || {};
+                    const totRec = Number(recRow.total_a_receber || 0);
+                    const qtdTot = Number(recRow.qtd_cupons || 0);
+
+                    crediarioReceber.summary = {
+                        totalAReceber: totRec,
+                        totalEmitido: Number(recRow.total_emitido || 0),
+                        totalQuitado: Number(recRow.total_quitado || 0),
+                        totalVencido: Number(recRow.total_vencido || 0),
+                        totalAVencer: Number(recRow.total_a_vencer || 0),
+                        qtdCupons: qtdTot,
+                        qtdVencidos: Number(recRow.qtd_vencidos || 0),
+                        qtdAVencer: Number(recRow.qtd_a_vencer || 0),
+                        qtdClientes: Number(recRow.qtd_clientes || 0),
+                        ticketMedio: qtdTot > 0 ? totRec / qtdTot : 0
+                    };
+
+                    // Top Clientes com maior saldo a receber
+                    const resRecTop = await reqRec.query(`
+                        SELECT TOP 10
+                            cc.cdCrediario,
+                            ISNULL(NULLIF(RTRIM(LTRIM(c.Nome)), ''), 'Cliente não identificado') as cliente,
+                            COUNT(cc.cdCrediarioCupom) as qtd_cupons,
+                            SUM(ISNULL(cc.vlCrediario, 0)) as total_emitido,
+                            SUM(ISNULL(cc.vlQuitado, 0)) as total_quitado,
+                            SUM(ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) as total_a_receber
+                        FROM tbCrediarioCupom cc WITH (NOLOCK)
+                        LEFT JOIN tbCrediario c WITH (NOLOCK) ON c.cdCrediario = cc.cdCrediario
+                        WHERE (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) > 0.01
+                          AND cc.dtCrediario <= '2999-12-31'
+                          ${filialClauseRec}
+                        GROUP BY cc.cdCrediario, c.Nome
+                        ORDER BY total_a_receber DESC
+                    `);
+                    crediarioReceber.topClientes = (resRecTop.recordset || []).map((t: any) => {
+                        const val = Number(t.total_a_receber || 0);
+                        const pct = totRec > 0 ? (val / totRec) * 100 : 0;
+                        return {
+                            cdCrediario: String(t.cdCrediario || ''),
+                            cliente: String(t.cliente || 'Cliente').trim(),
+                            qtdCupons: Number(t.qtd_cupons || 0),
+                            totalEmitido: Number(t.total_emitido || 0),
+                            totalQuitado: Number(t.total_quitado || 0),
+                            totalAReceber: val,
+                            percentual: Number(pct.toFixed(1))
+                        };
+                    });
+
+                    // Agrupamento por Filial
+                    const resRecFilial = await reqRec.query(`
+                        SELECT 
+                            cc.cdFilial as filial,
+                            ISNULL(p.nmPessoa, CONCAT('Filial ', CAST(cc.cdFilial AS VARCHAR(20)))) as nomeFilial,
+                            COUNT(*) as qtd_cupons,
+                            SUM(ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) as total_a_receber
+                        FROM tbCrediarioCupom cc WITH (NOLOCK)
+                        LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = cc.cdFilial
+                        WHERE (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) > 0.01
+                          AND cc.dtCrediario <= '2999-12-31'
+                          ${filialClauseRec}
+                        GROUP BY cc.cdFilial, p.nmPessoa
+                        ORDER BY total_a_receber DESC
+                    `);
+                    crediarioReceber.byFilial = (resRecFilial.recordset || []).map((f: any) => ({
+                        filial: Number(f.filial || 1),
+                        nomeFilial: String(f.nomeFilial || `Filial ${f.filial}`).trim(),
+                        qtdCupons: Number(f.qtd_cupons || 0),
+                        totalAReceber: Number(f.total_a_receber || 0)
+                    }));
+
+                    // Lista detalhada dos cupons a receber (Top 2000)
+                    const resRecList = await reqRec.query(`
+                        SELECT TOP 2000
+                            cc.cdCrediarioCupom as id,
+                            cc.cdCrediario,
+                            ISNULL(NULLIF(RTRIM(LTRIM(c.Nome)), ''), 'Cliente não identificado') as cliente,
+                            cc.nrCupom,
+                            CONVERT(VARCHAR(10), cc.dtCrediario, 120) as dtEmissao,
+                            CONVERT(VARCHAR(10), cc.dtVencimento, 120) as dtVencimento,
+                            CAST(ISNULL(cc.vlCrediario, 0) AS FLOAT) as vlCrediario,
+                            CAST(ISNULL(cc.vlQuitado, 0) AS FLOAT) as vlQuitado,
+                            CAST(ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0) AS FLOAT) as saldoPendente,
+                            CASE WHEN CAST(cc.dtVencimento AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
+                            CASE WHEN CAST(cc.dtVencimento AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cc.dtVencimento, GETDATE()) ELSE 0 END as diasAtraso,
+                            ISNULL(cc.Obs, '') as obs,
+                            ISNULL(cc.nmOperador, '') as operador,
+                            ISNULL(cc.cdPDV, 0) as pdv,
+                            ISNULL(cc.cdFilial, 1) as filial,
+                            ISNULL(p.nmPessoa, CONCAT('Filial ', CAST(cc.cdFilial AS VARCHAR(20)))) as nomeFilial
+                        FROM tbCrediarioCupom cc WITH (NOLOCK)
+                        LEFT JOIN tbCrediario c WITH (NOLOCK) ON c.cdCrediario = cc.cdCrediario
+                        LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = cc.cdFilial
+                        WHERE (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) > 0.01
+                          AND cc.dtCrediario <= '2999-12-31'
+                          ${filialClauseRec}
+                        ORDER BY saldoPendente DESC, cc.dtVencimento ASC
+                    `);
+                    crediarioReceber.lancamentos = (resRecList.recordset || []).map((cp: any) => ({
+                        id: cp.id,
+                        cdCrediario: String(cp.cdCrediario || ''),
+                        cliente: String(cp.cliente || 'Convênio/Cliente').trim(),
+                        nrCupom: Number(cp.nrCupom || 0),
+                        dtEmissao: cp.dtEmissao,
+                        dtVencimento: cp.dtVencimento,
+                        vlCrediario: Number(cp.vlCrediario || 0),
+                        vlQuitado: Number(cp.vlQuitado || 0),
+                        saldoPendente: Number(cp.saldoPendente || 0),
+                        isVencido: Boolean(cp.isVencido),
+                        diasAtraso: Number(cp.diasAtraso || 0),
+                        obs: String(cp.obs || ''),
+                        operador: String(cp.operador || ''),
+                        pdv: Number(cp.pdv || 0),
+                        filial: Number(cp.filial || 1),
+                        nomeFilial: String(cp.nomeFilial || `Filial ${cp.filial}`).trim()
+                    }));
+                } catch (recErr: any) {
+                    console.warn('Falha ao consultar crediário/convênio a receber no Solidcon:', recErr?.message || recErr);
+                }
+
                 // 9. Cartões Não Baixados do Solidcon (tbBoletimItemMovimento + tbBoletimItem + tbBoletimItemTipo + tbBoletimMovimento)
                 let cartoesNaoBaixados: any = {
                     summary: {
@@ -7592,6 +7758,7 @@ export class ExternalDbService {
                     salesByModality,
                     annualSalesByModality,
                     convenioData,
+                    crediarioReceber,
                     cartoesNaoBaixados,
                     monthlyComparison,
                     annualByCategory,

@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filterChevron = document.getElementById('filterChevron');
     const filterForm = document.getElementById('filterForm');
     const btnClearFilters = document.getElementById('btnClearFilters');
+    const filterTargetCompany = document.getElementById('filterTargetCompany');
     const filterCompanyParam = document.getElementById('filterCompanyParam');
     const filterCustomerGroup = document.getElementById('filterCustomerGroup');
     const filterCompetencia = document.getElementById('filterCompetencia');
@@ -260,29 +261,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 xmlImportLabel.className = "flex-1 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-slate-700 shadow-sm px-3 py-2 bg-gray-100 dark:bg-slate-800/50 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60 pointer-events-none transition-colors";
             }
             if (spedFileInputEl)
-                spedFileInputEl.disabled = true;
+                spedFileInputEl.disabled = false;
             if (spedImportLabel) {
-                spedImportLabel.classList.add('hidden');
-                spedImportLabel.classList.remove('inline-flex');
+                spedImportLabel.classList.remove('hidden');
+                spedImportLabel.classList.add('inline-flex');
             }
         };
-        const enableXmlImport = (showSped) => {
+        const enableXmlImport = (_showSped) => {
             if (xmlFileInputEl)
                 xmlFileInputEl.disabled = false;
             if (xmlImportLabel) {
                 xmlImportLabel.className = "flex-1 inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-slate-600 shadow-sm px-3 py-2 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 cursor-pointer transition-colors";
             }
             if (spedFileInputEl)
-                spedFileInputEl.disabled = !showSped;
+                spedFileInputEl.disabled = false;
             if (spedImportLabel) {
-                if (showSped) {
-                    spedImportLabel.classList.remove('hidden');
-                    spedImportLabel.classList.add('inline-flex');
-                }
-                else {
-                    spedImportLabel.classList.add('hidden');
-                    spedImportLabel.classList.remove('inline-flex');
-                }
+                spedImportLabel.classList.remove('hidden');
+                spedImportLabel.classList.add('inline-flex');
             }
         };
         if (!customerId) {
@@ -538,8 +533,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const FILTERS_STORAGE_KEY = 'erp_fechamentos_filters';
     const SORT_STORAGE_KEY = 'erp_fechamentos_sort';
+    let accessibleCompanies = [];
+    async function loadCompanies(savedCompanyId) {
+        if (!filterTargetCompany)
+            return;
+        try {
+            const meRes = await api('/auth/me');
+            const activeCompany = meRes?.data?.company;
+            const currentCompanyPublicId = activeCompany?.public_id || '';
+            let list = meRes?.data?.companies || [];
+            if (!Array.isArray(list) || list.length === 0) {
+                try {
+                    const compRes = await api('/companies');
+                    if (Array.isArray(compRes?.data)) {
+                        list = compRes.data;
+                    }
+                }
+                catch (e) { }
+            }
+            if (list.length === 0 && activeCompany) {
+                list = [activeCompany];
+            }
+            accessibleCompanies = list;
+            filterTargetCompany.innerHTML = `
+                <option value="all">Todas as Unidades (Multiempresa)</option>
+                ${accessibleCompanies.map((c) => {
+                const idVal = c.public_id || c.id;
+                const displayName = c.trade_name || c.company_name || c.name || `Empresa #${c.id}`;
+                const isSelected = (savedCompanyId && savedCompanyId !== 'all')
+                    ? (idVal === savedCompanyId || String(c.id) === String(savedCompanyId))
+                    : false;
+                return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>🏢 ${displayName}</option>`;
+            }).join('')}
+            `;
+            if (!savedCompanyId || savedCompanyId === 'all') {
+                filterTargetCompany.value = 'all';
+            }
+        }
+        catch (err) {
+            console.warn('Falha ao carregar empresas para o filtro:', err);
+            filterTargetCompany.innerHTML = '<option value="all">Todas as Unidades</option>';
+        }
+    }
     function saveFilters() {
         const data = {
+            targetCompanyId: filterTargetCompany ? filterTargetCompany.value : 'all',
             customerId: filterCompanyParam ? filterCompanyParam.value : '',
             customerGroupId: filterCustomerGroup ? filterCustomerGroup.value : '',
             competencia: filterCompetencia ? filterCompetencia.value : '',
@@ -653,11 +691,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fechamentosCount = document.getElementById('fechamentosCount');
     async function loadFechamentos() {
         try {
+            const targetCompanyId = filterTargetCompany ? filterTargetCompany.value : 'all';
             const customerId = filterCompanyParam?.value;
             const customerGroupId = filterCustomerGroup?.value;
             const competencia = filterCompetencia?.value;
             let url = '/fechamentos';
             const params = [];
+            if (targetCompanyId)
+                params.push(`targetCompanyId=${encodeURIComponent(targetCompanyId)}`);
             if (customerId)
                 params.push(`customerId=${customerId}`);
             if (customerGroupId)
@@ -739,7 +780,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </td>
                     <td class="col-empresa px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         <div class="flex items-center gap-1.5">
-                            <span class="font-medium">${f.customer_name || `Cliente ${f.customer_id}`}</span>
+                            <span class="font-medium">${f.customer_name || (f.customer_id ? `Cliente ${f.customer_id}` : 'Empresa')}</span>
                             ${f.is_registered_as_company ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800" title="Cadastrada como empresa no ERP">🏢 Empresa</span>` : ''}
                         </div>
                         ${f.customer_tax_regime ? `<div class="text-[11px] text-gray-400 dark:text-gray-500">${f.customer_tax_regime}${f.customer_city ? ' • ' + f.customer_city + (f.customer_state ? '/' + f.customer_state : '') : ''}</div>` : (f.customer_city ? `<div class="text-[11px] text-gray-400 dark:text-gray-500">${f.customer_city}${f.customer_state ? '/' + f.customer_state : ''}</div>` : '')}
@@ -947,7 +988,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         fechamentoModal.classList.remove('hidden');
         switchTab('compra');
         // Fill in fields
-        const selectedCustomer = allCustomers.find(c => String(c.id) === String(fechamento.customer_id));
+        const custIdStr = fechamento.customer_id ? String(fechamento.customer_id) : '';
+        const selectedCustomer = custIdStr ? allCustomers.find(c => String(c.id) === custIdStr) : null;
         if (modalCustomerGroup) {
             modalCustomerGroup.value = selectedCustomer?.customer_group_id ? String(selectedCustomer.customer_group_id) : '';
         }
@@ -958,8 +1000,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         else {
             populateCustomersSelect(allCustomers);
         }
-        companyParam.value = fechamento.customer_id.toString();
-        updateCustomerTypeIndicator(fechamento.customer_id.toString());
+        companyParam.value = custIdStr;
+        updateCustomerTypeIndicator(custIdStr);
         const competenciaInput = document.getElementById('competencia');
         if (competenciaInput)
             competenciaInput.value = fechamento.competencia;
@@ -1202,6 +1244,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             saveFilters();
         });
     }
+    if (filterTargetCompany) {
+        filterTargetCompany.addEventListener('change', () => {
+            saveFilters();
+            loadFechamentos();
+        });
+    }
     if (filterCustomerGroup) {
         filterCustomerGroup.addEventListener('change', () => {
             updateFilterCustomersByGroup();
@@ -1224,6 +1272,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnClearFilters.addEventListener('click', () => {
             if (filterForm)
                 filterForm.reset();
+            if (filterTargetCompany)
+                filterTargetCompany.value = 'all';
             updateFilterCustomersByGroup();
             saveFilters();
             loadFechamentos();
@@ -1511,12 +1561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const files = spedFileInput.files;
             if (!files || files.length === 0)
                 return;
-            const customerId = companyParam.value;
-            if (!customerId) {
-                showImportFeedback('Por favor, selecione um cliente antes de importar o SPED.', 'error');
-                spedFileInput.value = '';
-                return;
-            }
+            const customerId = companyParam.value || undefined;
             const file = files[0];
             const reader = new FileReader();
             const progressOverlay = document.createElement('div');
@@ -1538,7 +1583,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const response = await api('/fechamentos/import-sped-fiscal', {
                         method: 'POST',
                         body: JSON.stringify({
-                            customerId,
+                            customerId: customerId ? Number(customerId) : undefined,
                             fileContent
                         })
                     });
@@ -1546,6 +1591,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                         throw new Error(response.message || 'Erro ao processar arquivo SPED.');
                     }
                     const { totals, cfopTotals } = response.data;
+                    const impStats = response.data?.importedStats;
+                    // Reload customers and background fechamentos table
+                    await loadCustomers();
+                    await loadFechamentos();
+                    // If customer was not selected, auto-select from response
+                    if (!companyParam.value && (impStats?.customerId || response.data?.targetCompany?.id || response.data?.header?.cnpj_cpf)) {
+                        const docClean = (response.data.header?.cnpj_cpf || response.data.header?.cnpj || '').replace(/\D/g, '');
+                        let matched = allCustomers.find((c) => {
+                            const cDoc = (c.cnpj_cpf || '').replace(/\D/g, '');
+                            return docClean && cDoc === docClean;
+                        });
+                        if (!matched && impStats?.customerId) {
+                            matched = allCustomers.find((c) => Number(c.id) === Number(impStats.customerId));
+                        }
+                        if (matched) {
+                            companyParam.value = String(matched.id);
+                            updateCustomerTypeIndicator(String(matched.id));
+                        }
+                    }
+                    // Set Competencia
+                    const competenciaInput = document.getElementById('competencia');
+                    const compKey = impStats?.competencia;
+                    if (competenciaInput && compKey) {
+                        competenciaInput.value = compKey;
+                        competenciaInput.dispatchEvent(new Event('change'));
+                    }
+                    if (impStats?.fechamentoPublicId) {
+                        currentFechamentoPublicId = impStats.fechamentoPublicId;
+                    }
+                    else if (response.data?.fechamentoPublicId) {
+                        currentFechamentoPublicId = response.data.fechamentoPublicId;
+                    }
                     const formatBRL = (val) => {
                         if (val === 0)
                             return '';
@@ -1570,6 +1647,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     setFieldValue('compra_cofins', totals.compra_cofins);
                     setFieldValue('simples_valor_tributado', totals.simples_valor_tributado);
                     setFieldValue('simples_valor_nao_tributado', totals.simples_valor_nao_tributado);
+                    if (totals.venda_valor > 0) {
+                        const simplesFatEl = document.getElementById('simples_faturamento');
+                        if (simplesFatEl)
+                            simplesFatEl.value = formatBRL(totals.venda_valor);
+                    }
                     setFieldValue('apuracao_icms', totals.apuracao_icms || 0);
                     setFieldValue('apuracao_fecp', totals.apuracao_fecp || 0);
                     currentImportCfopTotals = cfopTotals;
@@ -1600,7 +1682,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 spedFileInput.value = '';
             };
-            reader.readAsText(file);
+            reader.readAsText(file, 'ISO-8859-1');
         });
     }
     const btnClearImport = document.getElementById('btnClearImport');
@@ -1642,6 +1724,76 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnFillCurrentMonthOnly = document.getElementById('btnFillCurrentMonthOnly');
     const btnConfirmBatchPgdasImport = document.getElementById('btnConfirmBatchPgdasImport');
     const pgdasSelectAllMonths = document.getElementById('pgdasSelectAllMonths');
+    const btnTopImportSped = document.getElementById('btnTopImportSped');
+    const topSpedFileInput = document.getElementById('topSpedFileInput');
+    if (btnTopImportSped && topSpedFileInput) {
+        btnTopImportSped.addEventListener('click', () => {
+            topSpedFileInput.click();
+        });
+        topSpedFileInput.addEventListener('change', async () => {
+            const files = topSpedFileInput.files;
+            if (!files || files.length === 0)
+                return;
+            const file = files[0];
+            const reader = new FileReader();
+            const progressOverlay = document.createElement('div');
+            progressOverlay.id = 'importTopSpedProgressModal';
+            progressOverlay.className = 'fixed inset-0 z-[100000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm';
+            progressOverlay.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md border border-gray-100 dark:border-slate-700">
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">Importando SPED Fiscal</h3>
+                    <p id="importTopSpedProgressText" class="text-sm text-gray-500 dark:text-gray-400 mb-4">Processando arquivo localmente...</p>
+                    <div class="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2.5 mb-2 overflow-hidden">
+                        <div class="bg-brand-600 h-2.5 rounded-full transition-all duration-300" style="width: 100%"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(progressOverlay);
+            reader.onload = async () => {
+                try {
+                    const fileContent = reader.result;
+                    const response = await api('/fechamentos/import-sped-fiscal', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            fileContent
+                        })
+                    });
+                    if (response.status === 'error') {
+                        throw new Error(response.message || 'Erro ao processar arquivo SPED.');
+                    }
+                    await loadCustomers();
+                    await loadFechamentos();
+                    const impStats = response.data?.importedStats;
+                    const compName = impStats?.companyName || response.data?.header?.nome || 'Empresa';
+                    const compKey = impStats?.competencia || '';
+                    let compDisplay = compKey;
+                    if (compKey.includes('-')) {
+                        const [y, m] = compKey.split('-');
+                        compDisplay = `${m}/${y}`;
+                    }
+                    showAlert(`✨ <strong>Importação realizada com sucesso!</strong> O Fechamento Fiscal da competência <strong>${compDisplay}</strong> foi processado e vinculado à <strong>${compName}</strong>.`);
+                }
+                catch (err) {
+                    console.error('Erro na importação de SPED:', err);
+                    showAlert(err.message || 'Erro ao processar arquivo SPED.', true);
+                }
+                finally {
+                    if (document.body.contains(progressOverlay)) {
+                        document.body.removeChild(progressOverlay);
+                    }
+                    topSpedFileInput.value = '';
+                }
+            };
+            reader.onerror = () => {
+                showAlert('Erro ao ler arquivo SPED local.', true);
+                if (document.body.contains(progressOverlay)) {
+                    document.body.removeChild(progressOverlay);
+                }
+                topSpedFileInput.value = '';
+            };
+            reader.readAsText(file, 'ISO-8859-1');
+        });
+    }
     if (btnTopImportPgdasPdf && pgdasFileInput) {
         btnTopImportPgdasPdf.addEventListener('click', () => {
             pgdasFileInput.click();
@@ -2139,6 +2291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     await Promise.all([
+        loadCompanies(savedFilters?.targetCompanyId),
         loadCustomerGroups(savedFilters?.customerGroupId),
         loadCustomers(savedFilters?.customerId)
     ]);

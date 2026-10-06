@@ -157,9 +157,63 @@ export class FechamentoController {
         });
     }
 
+    private static async resolveTargetCompany(req: Request, targetCompanyParam?: any) {
+        if (!targetCompanyParam) return null;
+        const { CompanyService } = await import('../services/companyService');
+        let target = null;
+        if (typeof targetCompanyParam === 'string' && targetCompanyParam.includes('-')) {
+            target = await CompanyService.getByPublicId(targetCompanyParam);
+        } else if (!isNaN(Number(targetCompanyParam))) {
+            target = await CompanyService.getById(Number(targetCompanyParam));
+        }
+        if (target) {
+            const { CompanyController } = await import('./companyController');
+            if (await CompanyController.hasAccess(req, target.id)) {
+                return target;
+            }
+        }
+        return null;
+    }
+
     static async list(req: Request, res: Response): Promise<any> {
-        const companyId = req.user!.company_id;
+        const userCompanyId = req.user!.company_id;
+        const requestedCompany = req.query.targetCompanyId || req.query.companyId || req.query.company_id;
         
+        const [generalAdminRows] = await pool.query<RowDataPacket[]>(
+            'SELECT is_general_admin, is_group_master, company_group_id FROM companies WHERE id = ? LIMIT 1',
+            [userCompanyId]
+        );
+        const isGeneralAdmin = req.user?.role === 'super_admin' || Boolean(req.user?.general_admin_company_id) || Boolean(generalAdminRows?.[0]?.is_general_admin);
+        const isGroupMaster = Boolean(generalAdminRows?.[0]?.is_group_master);
+        const companyGroupId = generalAdminRows?.[0]?.company_group_id;
+
+        let targetCompanyIds: number | number[] = userCompanyId;
+
+        if (requestedCompany && requestedCompany !== 'all') {
+            const target = await FechamentoController.resolveTargetCompany(req, requestedCompany);
+            if (target) {
+                if (target.is_general_admin || (isGeneralAdmin && req.query.customerGroupId)) {
+                    const [allComps] = await pool.query<RowDataPacket[]>('SELECT id FROM companies');
+                    targetCompanyIds = allComps.map(c => c.id);
+                } else {
+                    targetCompanyIds = target.id;
+                }
+            } else {
+                return res.status(403).json({ status: 'error', message: 'Sem permissão para acessar os dados desta empresa.' });
+            }
+        } else if (isGeneralAdmin || requestedCompany === 'all' || req.query.customerGroupId) {
+            const [allComps] = await pool.query<RowDataPacket[]>('SELECT id FROM companies');
+            targetCompanyIds = allComps.map(c => c.id);
+        } else if (isGroupMaster && companyGroupId) {
+            const [groupComps] = await pool.query<RowDataPacket[]>(
+                'SELECT id FROM companies WHERE id = ? OR company_group_id = ?',
+                [userCompanyId, companyGroupId]
+            );
+            targetCompanyIds = groupComps.length > 0 ? groupComps.map(c => c.id) : [userCompanyId];
+        } else {
+            targetCompanyIds = userCompanyId;
+        }
+
         const filters: { customerId?: number; competencia?: string; customerGroupId?: number } = {};
         if (req.query.customerId) {
             filters.customerId = Number(req.query.customerId);
@@ -171,7 +225,7 @@ export class FechamentoController {
             filters.customerGroupId = Number(req.query.customerGroupId);
         }
 
-        const result = await FechamentoService.list(companyId, filters);
+        const result = await FechamentoService.list(targetCompanyIds, filters);
 
         return res.status(200).json({
             status: 'success',
@@ -180,14 +234,27 @@ export class FechamentoController {
     }
 
     static async getByPublicId(req: Request, res: Response): Promise<any> {
-        const companyId = req.user!.company_id;
         const publicId = req.params.id;
 
         if (!publicId) {
             throw new AppError('O ID público é obrigatório', 400);
         }
 
-        const result = await FechamentoService.getByPublicId(publicId, companyId);
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT company_id FROM fechamentos WHERE public_id = ? LIMIT 1',
+            [publicId]
+        );
+        if (!rows || rows.length === 0) {
+            throw new AppError('Fechamento não encontrado.', 404);
+        }
+
+        const fechCompanyId = rows[0]!.company_id;
+        const { CompanyController } = await import('./companyController');
+        if (!(await CompanyController.hasAccess(req, fechCompanyId))) {
+            throw new AppError('Acesso negado a este fechamento.', 403);
+        }
+
+        const result = await FechamentoService.getByPublicId(publicId, fechCompanyId);
 
         return res.status(200).json({
             status: 'success',
@@ -196,7 +263,6 @@ export class FechamentoController {
     }
 
     static async update(req: Request, res: Response): Promise<any> {
-        const companyId = req.user!.company_id;
         const publicId = req.params.id;
         const validatedData = fechamentoUpdateSchema.parse(req.body);
 
@@ -204,7 +270,21 @@ export class FechamentoController {
             throw new AppError('O ID público é obrigatório', 400);
         }
 
-        const result = await FechamentoService.update(publicId, companyId, validatedData);
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT company_id FROM fechamentos WHERE public_id = ? LIMIT 1',
+            [publicId]
+        );
+        if (!rows || rows.length === 0) {
+            throw new AppError('Fechamento não encontrado.', 404);
+        }
+
+        const fechCompanyId = rows[0]!.company_id;
+        const { CompanyController } = await import('./companyController');
+        if (!(await CompanyController.hasAccess(req, fechCompanyId))) {
+            throw new AppError('Acesso negado a este fechamento.', 403);
+        }
+
+        const result = await FechamentoService.update(publicId, fechCompanyId, validatedData);
 
         return res.status(200).json({
             status: 'success',
@@ -214,14 +294,27 @@ export class FechamentoController {
     }
 
     static async delete(req: Request, res: Response): Promise<any> {
-        const companyId = req.user!.company_id;
         const publicId = req.params.id;
 
         if (!publicId) {
             throw new AppError('O ID público é obrigatório', 400);
         }
 
-        await FechamentoService.delete(publicId, companyId);
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT company_id FROM fechamentos WHERE public_id = ? LIMIT 1',
+            [publicId]
+        );
+        if (!rows || rows.length === 0) {
+            throw new AppError('Fechamento não encontrado.', 404);
+        }
+
+        const fechCompanyId = rows[0]!.company_id;
+        const { CompanyController } = await import('./companyController');
+        if (!(await CompanyController.hasAccess(req, fechCompanyId))) {
+            throw new AppError('Acesso negado a este fechamento.', 403);
+        }
+
+        await FechamentoService.delete(publicId, fechCompanyId);
 
         return res.status(200).json({
             status: 'success',
@@ -230,10 +323,19 @@ export class FechamentoController {
     }
 
     static async getSpedVision(req: Request, res: Response): Promise<any> {
-        const companyId = req.user!.company_id;
+        const userCompanyId = req.user!.company_id;
         const rawCust = req.query.customerId;
         const customerId = rawCust !== undefined && rawCust !== '' ? Number(rawCust) : 0;
         const competencia = String(req.query.competencia || '').trim();
+        const requestedCompany = req.query.targetCompanyId || req.query.companyId || req.query.company_id;
+
+        let targetCompanyId = userCompanyId;
+        if (requestedCompany) {
+            const target = await FechamentoController.resolveTargetCompany(req, requestedCompany);
+            if (target) {
+                targetCompanyId = target.id;
+            }
+        }
 
         if (isNaN(customerId)) {
             throw new AppError('O ID do cliente/empresa é inválido.', 400);
@@ -242,7 +344,7 @@ export class FechamentoController {
             throw new AppError('A competência é obrigatória no formato YYYY-MM (ex: 2026-03).', 400);
         }
 
-        const result = await FechamentoService.getSpedVision(companyId, customerId, competencia);
+        const result = await FechamentoService.getSpedVision(targetCompanyId, customerId, competencia);
 
         return res.status(200).json({
             status: 'success',

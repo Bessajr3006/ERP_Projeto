@@ -252,6 +252,7 @@ import { runMigration100DentalOdontogram } from './run_migration_100_dental_odon
 import { runMigration101DentalPermissions } from './run_migration_101_dental_permissions';
 import { runMigration256CompanyShowPoscontrol } from './run_migration_256_company_show_poscontrol';
 import runMigration257RelValorEmpresaPermissions from './run_migration_257_rel_valor_empresa_permissions';
+import { runMigration258FechamentosNullableCustomer } from './run_migration_258_fechamentos_nullable_customer';
 
 
 
@@ -823,6 +824,7 @@ async function runInitDb(): Promise<void> {
     await runMigration101DentalPermissions();
     await runMigration256CompanyShowPoscontrol();
     await runMigration257RelValorEmpresaPermissions();
+    await runMigration258FechamentosNullableCustomer();
     await normalizeAllDocuments();
 
     const systemCompany = await ensureSystemCompany();

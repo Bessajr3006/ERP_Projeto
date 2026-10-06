@@ -292,10 +292,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const isUpdate = !!(impStats?.isUpdate || impStats?.fechamentoAction === 'updated');
             const compName = impStats?.companyName || data.header?.nome;
             if (isUpdate) {
-                showAlert(`🔄 <strong>Alteração realizada com sucesso!</strong> Os dados da competência <strong>${impStats?.competencia || ''}</strong> foram <strong>atualizados</strong> e vinculados à empresa <strong>${compName || 'do arquivo'}</strong> (${impStats?.importedCustomersCount || 0} clientes, ${impStats?.importedSuppliersCount || 0} fornecedores e ${impStats?.importedProductsCount || 0} produtos sincronizados).`, 'info');
+                showAlert(`🔄 <strong>Alteração realizada com sucesso!</strong> O Fechamento Fiscal da competência <strong>${impStats?.competencia || ''}</strong> foi <strong>atualizado</strong> e vinculado à empresa <strong>${compName || 'do arquivo'}</strong> (${impStats?.importedCustomersCount || 0} clientes, ${impStats?.importedSuppliersCount || 0} fornecedores e ${impStats?.importedProductsCount || 0} produtos sincronizados).`, 'info');
             }
             else {
-                showAlert(`✨ <strong>Importação realizada com sucesso!</strong> Todo o movimento fiscal foi importado e amarrado à empresa <strong>${compName || 'do arquivo'}</strong> (${impStats?.importedCustomersCount || 0} clientes, ${impStats?.importedSuppliersCount || 0} fornecedores e ${impStats?.importedProductsCount || 0} produtos cadastrados).`, 'success');
+                showAlert(`✨ <strong>Importação realizada com sucesso!</strong> O Fechamento Fiscal da competência <strong>${impStats?.competencia || ''}</strong> foi <strong>lançado</strong> e vinculado à empresa <strong>${compName || 'do arquivo'}</strong> (${impStats?.importedCustomersCount || 0} clientes, ${impStats?.importedSuppliersCount || 0} fornecedores e ${impStats?.importedProductsCount || 0} produtos cadastrados).`, 'success');
             }
         }
         catch (err) {

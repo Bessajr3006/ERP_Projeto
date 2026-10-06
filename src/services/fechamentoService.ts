@@ -176,48 +176,156 @@ export class FechamentoService {
         return rows[0] as Fechamento;
     }
 
-    static async list(companyId: number, filters?: { customerId?: number; competencia?: string; customerGroupId?: number }): Promise<Fechamento[]> {
-        const conditions: string[] = ['f.company_id = ?'];
-        const values: any[] = [companyId];
+    static async list(companyId: number | number[], filters?: { customerId?: number; competencia?: string; customerGroupId?: number }): Promise<Fechamento[]> {
+        const conditions: string[] = [];
+        const values: any[] = [];
+
+        if (Array.isArray(companyId)) {
+            if (companyId.length === 0) {
+                return [];
+            }
+            conditions.push(`f.company_id IN (${companyId.map(() => '?').join(',')})`);
+            values.push(...companyId);
+        } else {
+            conditions.push('f.company_id = ?');
+            values.push(companyId);
+        }
 
         if (filters?.customerId) {
-            conditions.push('f.customer_id = ?');
-            values.push(filters.customerId);
+            conditions.push(`(
+                f.customer_id = ?
+                OR comp.id IN (
+                    SELECT comp_match.id FROM companies comp_match 
+                    JOIN customers cust_match ON LPAD(REPLACE(REPLACE(REPLACE(REPLACE(cust_match.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', ''), 14, '0') = LPAD(REPLACE(REPLACE(REPLACE(REPLACE(comp_match.cnpj, '.', ''), '-', ''), '/', ''), ' ', ''), 14, '0')
+                    WHERE cust_match.id = ? AND cust_match.cnpj_cpf IS NOT NULL AND cust_match.cnpj_cpf != ''
+                )
+                OR comp.id IN (
+                    SELECT comp_match2.id FROM companies comp_match2 
+                    JOIN customers cust_match2 ON (
+                        LOWER(TRIM(comp_match2.trade_name)) = LOWER(TRIM(cust_match2.trade_name))
+                        OR LOWER(TRIM(comp_match2.trade_name)) = LOWER(TRIM(cust_match2.name))
+                        OR LOWER(TRIM(comp_match2.company_name)) = LOWER(TRIM(cust_match2.name))
+                    )
+                    WHERE cust_match2.id = ?
+                )
+            )`);
+            values.push(filters.customerId, filters.customerId, filters.customerId);
         }
 
         if (filters?.competencia) {
-            conditions.push('f.competencia = ?');
-            values.push(filters.competencia);
+            const rawComp = String(filters.competencia).trim();
+            let altComp = rawComp;
+            if (rawComp.includes('-')) {
+                const parts = rawComp.split('-');
+                if (parts.length === 2) {
+                    const y = parts[0]!.padStart(4, '0');
+                    const m = parts[1]!.padStart(2, '0');
+                    altComp = `${m}/${y}`;
+                }
+            } else if (rawComp.includes('/')) {
+                const parts = rawComp.split('/');
+                if (parts.length === 2) {
+                    const m = parts[0]!.padStart(2, '0');
+                    const y = parts[1]!.padStart(4, '0');
+                    altComp = `${y}-${m}`;
+                }
+            }
+            conditions.push('(f.competencia = ? OR f.competencia = ?)');
+            values.push(rawComp, altComp);
         }
 
         if (filters?.customerGroupId) {
-            conditions.push('c.customer_group_id = ?');
-            values.push(filters.customerGroupId);
+            conditions.push(`(
+                c.customer_group_id = ?
+                OR c.customer_group_id IN (
+                    SELECT cg_same.id FROM customer_groups cg_same 
+                    JOIN customer_groups cg_ref ON LOWER(TRIM(cg_same.name)) = LOWER(TRIM(cg_ref.name)) 
+                    WHERE cg_ref.id = ?
+                )
+                OR comp.default_customer_group_id = ?
+                OR comp.default_customer_group_id IN (
+                    SELECT cg_same2.id FROM customer_groups cg_same2 
+                    JOIN customer_groups cg_ref2 ON LOWER(TRIM(cg_same2.name)) = LOWER(TRIM(cg_ref2.name)) 
+                    WHERE cg_ref2.id = ?
+                )
+                OR comp.company_group_id = ?
+                OR comp.company_group_id IN (
+                    SELECT cgp.id FROM company_groups cgp 
+                    JOIN customer_groups cg_sel ON LOWER(TRIM(cgp.name)) = LOWER(TRIM(cg_sel.name)) 
+                    WHERE cg_sel.id = ?
+                )
+                OR comp.id IN (
+                    SELECT comp2.id FROM companies comp2 
+                    JOIN customers cust2 ON LPAD(REPLACE(REPLACE(REPLACE(REPLACE(cust2.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', ''), 14, '0') = LPAD(REPLACE(REPLACE(REPLACE(REPLACE(comp2.cnpj, '.', ''), '-', ''), '/', ''), ' ', ''), 14, '0')
+                    WHERE (
+                        cust2.customer_group_id = ?
+                        OR cust2.customer_group_id IN (
+                            SELECT cg_sub.id FROM customer_groups cg_sub 
+                            JOIN customer_groups cg_ref3 ON LOWER(TRIM(cg_sub.name)) = LOWER(TRIM(cg_ref3.name)) 
+                            WHERE cg_ref3.id = ?
+                        )
+                    )
+                    AND cust2.cnpj_cpf IS NOT NULL AND cust2.cnpj_cpf != ''
+                )
+                OR comp.id IN (
+                    SELECT comp3.id FROM companies comp3 
+                    JOIN customers cust3 ON (
+                        LOWER(TRIM(comp3.trade_name)) = LOWER(TRIM(cust3.trade_name)) 
+                        OR LOWER(TRIM(comp3.trade_name)) = LOWER(TRIM(cust3.name)) 
+                        OR LOWER(TRIM(comp3.company_name)) = LOWER(TRIM(cust3.name))
+                    )
+                    WHERE (
+                        cust3.customer_group_id = ?
+                        OR cust3.customer_group_id IN (
+                            SELECT cg_sub2.id FROM customer_groups cg_sub2 
+                            JOIN customer_groups cg_ref4 ON LOWER(TRIM(cg_sub2.name)) = LOWER(TRIM(cg_ref4.name)) 
+                            WHERE cg_ref4.id = ?
+                        )
+                    )
+                )
+                OR LOWER(comp.trade_name) LIKE CONCAT('%', (SELECT LOWER(TRIM(cg_name.name)) FROM customer_groups cg_name WHERE cg_name.id = ? LIMIT 1), '%')
+                OR LOWER(comp.company_name) LIKE CONCAT('%', (SELECT LOWER(TRIM(cg_name2.name)) FROM customer_groups cg_name2 WHERE cg_name2.id = ? LIMIT 1), '%')
+            )`);
+            values.push(
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId,
+                filters.customerGroupId
+            );
         }
 
         const query = `
             SELECT f.*, 
-                   COALESCE(c.name, (SELECT comp.company_name FROM companies comp WHERE comp.id = f.company_id), 'Empresa') AS customer_name, 
-                   COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
-                   COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
-                   c.tax_regime AS customer_tax_regime,
-                   c.inscricao_estadual AS customer_ie,
-                   c.inscricao_municipal AS customer_im,
-                   c.city AS customer_city,
-                   c.state AS customer_state,
-                   c.street AS customer_street,
-                   c.number AS customer_number,
-                   c.neighborhood AS customer_neighborhood,
-                   c.zipcode AS customer_zipcode,
-                   (CASE WHEN c.cnpj_cpf IS NOT NULL AND c.cnpj_cpf != '' THEN (SELECT COUNT(*) FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '')) > 0 ELSE 0 END) AS is_registered_as_company,
-                   (SELECT comp.id FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1) AS registered_company_id,
-                   (SELECT COALESCE(comp.trade_name, comp.company_name) FROM companies comp WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1) AS registered_company_name,
+                   COALESCE(c.name, comp.company_name, comp.trade_name, 'Empresa') AS customer_name, 
+                   COALESCE(c.trade_name, comp.trade_name, comp.company_name, '-') AS customer_trade_name, 
+                   COALESCE(c.cnpj_cpf, comp.cnpj, '-') AS customer_cnpj_cpf,
+                   COALESCE(c.tax_regime, comp.tax_regime, '-') AS customer_tax_regime,
+                   COALESCE(c.inscricao_estadual, comp.ie, '-') AS customer_ie,
+                   COALESCE(c.inscricao_municipal, comp.im, '-') AS customer_im,
+                   COALESCE(c.city, comp.city, '-') AS customer_city,
+                   COALESCE(c.state, comp.state, '-') AS customer_state,
+                   COALESCE(c.street, comp.street, '-') AS customer_street,
+                   COALESCE(c.number, comp.number, '-') AS customer_number,
+                   COALESCE(c.neighborhood, comp.neighborhood, '-') AS customer_neighborhood,
+                   COALESCE(c.zipcode, comp.zipcode, '-') AS customer_zipcode,
+                   (CASE WHEN (c.cnpj_cpf IS NOT NULL AND c.cnpj_cpf != '') OR (comp.cnpj IS NOT NULL AND comp.cnpj != '') THEN 1 ELSE 0 END) AS is_registered_as_company,
+                   COALESCE(comp.id, (SELECT comp_sub.id FROM companies comp_sub WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp_sub.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1)) AS registered_company_id,
+                   COALESCE(comp.trade_name, comp.company_name, (SELECT COALESCE(comp_sub2.trade_name, comp_sub2.company_name) FROM companies comp_sub2 WHERE REPLACE(REPLACE(REPLACE(REPLACE(comp_sub2.cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = REPLACE(REPLACE(REPLACE(REPLACE(c.cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIMIT 1)) AS registered_company_name,
                    CASE 
                        WHEN f.observacao LIKE '%Importado%' OR f.observacao LIKE '%SPED%' OR f.observacao LIKE '%XML%' THEN 'Arquivo'
                        ELSE 'Manual'
                    END AS origem
             FROM fechamentos f
             LEFT JOIN customers c ON f.customer_id = c.id
+            LEFT JOIN companies comp ON f.company_id = comp.id
             WHERE ${conditions.join(' AND ')}
             ORDER BY f.competencia DESC, c.name ASC
         `;
@@ -233,8 +341,10 @@ export class FechamentoService {
         const values: any[] = [];
 
         if (data.customerId !== undefined) {
-            const customerId = Number(data.customerId);
-            await this.validateCustomer(customerId, companyId);
+            const customerId = data.customerId ? Number(data.customerId) : null;
+            if (customerId) {
+                await this.validateCustomer(customerId, companyId);
+            }
             updates.push('customer_id = ?');
             values.push(customerId);
         }
@@ -709,16 +819,20 @@ export class FechamentoService {
             companyId: number | null;
             companyPublicId?: string | null;
             companyName: string | null;
+            customerId?: number | null;
+            fechamentoPublicId?: string | null;
             importedCustomersCount: number;
             importedSuppliersCount: number;
             importedProductsCount: number;
             totalParticipants: number;
             totalProducts: number;
+            totalDocuments?: number;
             fechamentoSaved: boolean;
             fechamentoAction?: 'created' | 'updated';
             isUpdate?: boolean;
             competencia?: string;
         };
+        fechamentoPublicId?: string | null;
         products?: Array<{
             codItem: string;
             descrItem: string;
@@ -894,13 +1008,46 @@ export class FechamentoService {
 
         // 3. Resolve o customer_id vinculado a esta empresa no sistema (para a contabilidade/holding)
         let resolvedCustomerId = customerId ? Number(customerId) : 0;
-        if (!isOwnCompanySped && spedDocClean.length >= 11) {
+        if (!resolvedCustomerId && !isOwnCompanySped && spedDocClean.length >= 11) {
             const [matchingCust] = await pool.query<RowDataPacket[]>(
                 `SELECT id, name, cnpj_cpf FROM customers 
                  WHERE company_id = ? 
-                   AND (REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ? OR name LIKE ?) 
+                   AND (REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ? 
+                        OR cnpj_cpf = ?) 
                  LIMIT 1`,
-                [companyId, spedDocClean, `%${headerInfo.nome}%`]
+                [companyId, spedDocClean, spedDocClean]
+            );
+            if (matchingCust && matchingCust.length > 0) {
+                resolvedCustomerId = matchingCust[0]!.id;
+            }
+        }
+
+        if (!resolvedCustomerId && targetCompany && !isOwnCompanySped) {
+            const targetCnpjClean = (targetCompany.cnpj || '').replace(/\D/g, '');
+            if (targetCnpjClean.length >= 11) {
+                const [matchingCust] = await pool.query<RowDataPacket[]>(
+                    `SELECT id, name, cnpj_cpf FROM customers 
+                     WHERE company_id = ? 
+                       AND (REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ? 
+                            OR cnpj_cpf = ?) 
+                     LIMIT 1`,
+                    [companyId, targetCnpjClean, targetCnpjClean]
+                );
+                if (matchingCust && matchingCust.length > 0) {
+                    resolvedCustomerId = matchingCust[0]!.id;
+                }
+            }
+        }
+
+        if (!resolvedCustomerId && !isOwnCompanySped && (headerInfo.nome || targetCompany?.trade_name)) {
+            const name1 = headerInfo.nome || '';
+            const name2 = targetCompany?.trade_name || '';
+            const [matchingCust] = await pool.query<RowDataPacket[]>(
+                `SELECT id, name, cnpj_cpf FROM customers 
+                 WHERE company_id = ? 
+                   AND (name LIKE ? OR trade_name LIKE ? OR name LIKE ? OR trade_name LIKE ?) 
+                 LIMIT 1`,
+                [companyId, `%${name1}%`, `%${name1}%`, `%${name2}%`, `%${name2}%`]
             );
             if (matchingCust && matchingCust.length > 0) {
                 resolvedCustomerId = matchingCust[0]!.id;
@@ -922,9 +1069,9 @@ export class FechamentoService {
                     [
                         newPubId,
                         companyId,
-                        headerInfo.nome || 'Empresa Declarada no SPED',
-                        headerInfo.nome || 'Empresa Declarada no SPED',
-                        headerInfo.cnpj_cpf || headerInfo.cnpj || null,
+                        headerInfo.nome || targetCompany?.trade_name || 'Empresa Declarada no SPED',
+                        targetCompany?.trade_name || headerInfo.nome || 'Empresa Declarada no SPED',
+                        headerInfo.cnpj_cpf || headerInfo.cnpj || targetCompany?.cnpj || null,
                         headerInfo.ie || null,
                         headerInfo.uf || null
                     ]
@@ -1661,77 +1808,115 @@ export class FechamentoService {
         };
 
         // Grava ou atualiza automaticamente o fechamento fiscal
-        let fechamentoSaved = false;
-        let fechamentoAction: 'created' | 'updated' = 'created';
-        let isUpdate = false;
+        let mainSessionFechamentoPublicId: string | null = null;
+        let mainSessionFechamentoSaved = false;
+        let mainSessionFechamentoAction: 'created' | 'updated' = 'created';
+        let mainSessionIsUpdate = false;
         let compKey = '';
+
         if (headerInfo.dt_ini && headerInfo.dt_ini.includes('/')) {
             const parts = headerInfo.dt_ini.split('/');
             if (parts.length === 3) compKey = `${parts[2]}-${parts[1]}`;
+        } else if (headerInfo.dt_ini && headerInfo.dt_ini.includes('-')) {
+            const parts = headerInfo.dt_ini.split('-');
+            if (parts.length === 3) {
+                if (parts[0] && parts[0].length === 4) {
+                    compKey = `${parts[0]}-${parts[1]}`;
+                } else {
+                    compKey = `${parts[2]}-${parts[1]}`;
+                }
+            }
+        } else if (headerInfo.dt_ini && headerInfo.dt_ini.length === 8) {
+            const m = headerInfo.dt_ini.substring(2, 4);
+            const y = headerInfo.dt_ini.substring(4, 8);
+            compKey = `${y}-${m}`;
         }
 
         if (compKey) {
-            try {
-                const spedDataToStore = JSON.stringify({
-                    header: headerInfo,
-                    stats: {
-                        totalLines: lines.length,
-                        totalParticipants: participants.length,
-                        totalProducts: products0200.length,
-                        totalDocuments: totalDocs,
-                        totalEntries,
-                        totalExits
-                    },
-                    totals,
-                    apuracao,
-                    cfopTotals,
-                    cfopDetails,
-                    products: products0200,
-                    participants: participantsList,
-                    documents
-                });
+            const spedDataToStore = JSON.stringify({
+                header: headerInfo,
+                stats: {
+                    totalLines: lines.length,
+                    totalParticipants: participants.length,
+                    totalProducts: products0200.length,
+                    totalDocuments: totalDocs,
+                    totalEntries,
+                    totalExits
+                },
+                totals,
+                apuracao,
+                cfopTotals,
+                cfopDetails,
+                products: products0200,
+                participants: participantsList,
+                documents
+            });
 
-                const companyLabel = targetCompany?.trade_name || headerInfo.nome || 'Empresa SPED';
+            const companyLabel = targetCompany?.trade_name || headerInfo.nome || 'Empresa SPED';
 
-                const fechamentoTargets: Array<{ syncCompId: number; custId: number }> = [];
-                if (targetCompanyId && targetCompanyId !== companyId) {
-                    fechamentoTargets.push({ syncCompId: targetCompanyId, custId: 0 });
-                    if (resolvedCustomerId) {
-                        fechamentoTargets.push({ syncCompId: companyId, custId: resolvedCustomerId });
+            const fechamentoTargets: Array<{ syncCompId: number; custId: number | null }> = [];
+
+            // 1. Garante o fechamento na empresa logada na sessão (holding / contabilidade), vinculado ao cliente resolvido
+            if (resolvedCustomerId) {
+                fechamentoTargets.push({ syncCompId: companyId, custId: resolvedCustomerId });
+            } else if (isOwnCompanySped || !targetCompanyId) {
+                fechamentoTargets.push({ syncCompId: companyId, custId: null });
+            } else {
+                fechamentoTargets.push({ syncCompId: companyId, custId: null });
+            }
+
+            // 2. Se o SPED pertencer a uma empresa cadastrada diferente da sessão, grava também nela (auto-fechamento com custId = null)
+            if (targetCompanyId && targetCompanyId !== companyId) {
+                fechamentoTargets.push({ syncCompId: targetCompanyId, custId: null });
+            }
+
+            for (const target of fechamentoTargets) {
+                const { syncCompId, custId } = target;
+
+                try {
+                    let existingFech: RowDataPacket[] = [];
+                    if (custId) {
+                        const [rows] = await pool.query<RowDataPacket[]>(
+                            `SELECT id, public_id FROM fechamentos 
+                             WHERE company_id = ? 
+                               AND (customer_id = ? OR (customer_id IN (SELECT id FROM customers WHERE REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?)))
+                               AND competencia = ? 
+                             LIMIT 1`,
+                            [syncCompId, custId, spedDocClean, compKey]
+                        );
+                        existingFech = rows;
+                    } else {
+                        const [rows] = await pool.query<RowDataPacket[]>(
+                            `SELECT id, public_id FROM fechamentos 
+                             WHERE company_id = ? 
+                               AND (customer_id IS NULL OR customer_id = 0)
+                               AND competencia = ? 
+                             LIMIT 1`,
+                            [syncCompId, compKey]
+                        );
+                        existingFech = rows;
                     }
-                } else {
-                    fechamentoTargets.push({ syncCompId: companyId, custId: resolvedCustomerId || 0 });
-                }
-
-                for (const target of fechamentoTargets) {
-                    const { syncCompId, custId } = target;
-
-                    const [existingFech] = await pool.query<RowDataPacket[]>(
-                        `SELECT id FROM fechamentos 
-                         WHERE company_id = ? 
-                           AND (customer_id = ? OR (customer_id IN (SELECT id FROM customers WHERE REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?)))
-                           AND competencia = ? 
-                         LIMIT 1`,
-                        [syncCompId, custId, spedDocClean, compKey]
-                    );
 
                     if (existingFech && existingFech.length > 0) {
+                        const existingPubId = existingFech[0]!.public_id;
                         await pool.query(
                             `UPDATE fechamentos SET
                                 customer_id = ?,
                                 venda_valor = ?, venda_bs_icms = ?, venda_isento = ?, venda_outros = ?, venda_pis = ?, venda_cofins = ?,
                                 compra_valor = ?, compra_bs_icms = ?, compra_isento = ?, compra_outros = ?, compra_pis = ?, compra_cofins = ?,
                                 simples_valor_tributado = ?, simples_valor_nao_tributado = ?,
+                                simples_faturamento = CASE WHEN simples_faturamento IS NULL OR simples_faturamento = 0 THEN ? ELSE simples_faturamento END,
                                 apuracao_icms = ?,
                                 apuracao_fecp = ?,
                                 observacao = ?,
                                 sped_data_json = ?
                              WHERE id = ?`,
                             [
-                                custId,
+                                custId || null,
                                 totals.venda_valor, totals.venda_bs_icms, totals.venda_isento, totals.venda_outros, totals.venda_pis, totals.venda_cofins,
                                 totals.compra_valor, totals.compra_bs_icms, totals.compra_isento, totals.compra_outros, totals.compra_pis, totals.compra_cofins,
                                 totals.simples_valor_tributado, totals.simples_valor_nao_tributado,
+                                totals.venda_valor,
                                 totals.apuracao_icms,
                                 totals.apuracao_fecp || 0,
                                 `Importado via SPED Fiscal EFD - Empresa: ${companyLabel}`,
@@ -1739,9 +1924,12 @@ export class FechamentoService {
                                 existingFech[0]!.id
                             ]
                         );
-                        fechamentoSaved = true;
-                        fechamentoAction = 'updated';
-                        isUpdate = true;
+                        if (syncCompId === companyId || !mainSessionFechamentoPublicId) {
+                            mainSessionFechamentoPublicId = existingPubId;
+                            mainSessionFechamentoSaved = true;
+                            mainSessionFechamentoAction = 'updated';
+                            mainSessionIsUpdate = true;
+                        }
                     } else {
                         const publicId = randomUUID();
                         await pool.query(
@@ -1749,49 +1937,57 @@ export class FechamentoService {
                                 public_id, company_id, customer_id, competencia,
                                 venda_valor, venda_bs_icms, venda_isento, venda_outros, venda_pis, venda_cofins,
                                 compra_valor, compra_bs_icms, compra_isento, compra_outros, compra_pis, compra_cofins,
-                                simples_valor_tributado, simples_valor_nao_tributado,
+                                simples_valor_tributado, simples_valor_nao_tributado, simples_faturamento,
                                 apuracao_icms,
                                 apuracao_fecp,
                                 observacao,
                                 sped_data_json
-                             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                             [
-                                publicId, syncCompId, custId, compKey,
+                                publicId, syncCompId, custId || null, compKey,
                                 totals.venda_valor, totals.venda_bs_icms, totals.venda_isento, totals.venda_outros, totals.venda_pis, totals.venda_cofins,
                                 totals.compra_valor, totals.compra_bs_icms, totals.compra_isento, totals.compra_outros, totals.compra_pis, totals.compra_cofins,
-                                totals.simples_valor_tributado, totals.simples_valor_nao_tributado,
+                                totals.simples_valor_tributado, totals.simples_valor_nao_tributado, totals.venda_valor,
                                 totals.apuracao_icms,
                                 totals.apuracao_fecp || 0,
                                 `Importado via SPED Fiscal EFD - Empresa: ${companyLabel}`,
                                 spedDataToStore
                             ]
                         );
-                        fechamentoSaved = true;
-                        fechamentoAction = 'created';
-                        isUpdate = false;
+
+                        if (syncCompId === companyId || !mainSessionFechamentoPublicId) {
+                            mainSessionFechamentoPublicId = publicId;
+                            mainSessionFechamentoSaved = true;
+                            mainSessionFechamentoAction = 'created';
+                            mainSessionIsUpdate = false;
+                        }
                     }
+                } catch (targetErr) {
+                    console.error(`Erro ao salvar fechamento para target (comp: ${syncCompId}, cust: ${custId}) na comp ${compKey}:`, targetErr);
                 }
-            } catch (fechErr) {
-                console.error(`Erro ao auto-salvar fechamento da empresa declarante na comp ${compKey}:`, fechErr);
             }
         }
 
         return {
             header: headerInfo,
             targetCompany,
+            fechamentoPublicId: mainSessionFechamentoPublicId,
             importedStats: {
                 isCompany: !!targetCompany,
                 companyId: targetCompanyId,
                 companyPublicId: targetCompany ? (targetCompany.public_id || null) : null,
                 companyName: targetCompany ? targetCompany.trade_name : (headerInfo.nome || null),
+                customerId: resolvedCustomerId || null,
+                fechamentoPublicId: mainSessionFechamentoPublicId,
                 importedCustomersCount,
                 importedSuppliersCount,
                 importedProductsCount,
                 totalParticipants: participants.length,
                 totalProducts: products0200.length,
-                fechamentoSaved,
-                fechamentoAction,
-                isUpdate,
+                totalDocuments: totalDocs,
+                fechamentoSaved: mainSessionFechamentoSaved,
+                fechamentoAction: mainSessionFechamentoAction,
+                isUpdate: mainSessionIsUpdate,
                 competencia: compKey
             },
             stats: {

@@ -554,7 +554,7 @@ export class EntityRepository {
                 const registerAsCompany = (data as any).register_as_company;
                 const shouldRegisterAsCompany = registerAsCompany === true || registerAsCompany === 1 || registerAsCompany === 'true' || registerAsCompany === '1';
 
-                if (generalAdminCompanyId && companyId === generalAdminCompanyId) {
+                if (generalAdminCompanyId && companyId === generalAdminCompanyId && shouldRegisterAsCompany) {
                     const cnpj = data.cnpj_cpf || null;
                     const inputTradeName = (data as any).trade_name || '';
                     const inputName = data.name || '';

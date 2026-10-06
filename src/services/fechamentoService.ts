@@ -837,7 +837,16 @@ export class FechamentoService {
 
         const spedDocClean = (headerInfo.cnpj_cpf || headerInfo.cnpj || '').replace(/\D/g, '');
 
-        // 1. Identifica se o declarante do arquivo SPED é uma Empresa cadastrada no ERP
+        // 1. Identifica os dados da empresa logada na sessão
+        const [currCompRows] = await pool.query<RowDataPacket[]>(
+            `SELECT id, public_id, trade_name, company_name, cnpj 
+             FROM companies 
+             WHERE id = ? LIMIT 1`,
+            [companyId]
+        );
+        const currentCompanyCnpj = currCompRows?.[0]?.cnpj ? String(currCompRows[0].cnpj).replace(/\D/g, '') : '';
+
+        // 2. Identifica se o declarante do arquivo SPED é uma Empresa cadastrada no ERP
         let targetCompany: { id: number; public_id?: string; trade_name: string; cnpj: string } | null = null;
         let targetCompanyId: number | null = null;
 
@@ -881,9 +890,11 @@ export class FechamentoService {
             headerInfo.company_public_id = targetCompany.public_id || null;
         }
 
-        // 2. Resolve o customer_id vinculado a esta empresa no sistema
+        const isOwnCompanySped = targetCompanyId === companyId || (Boolean(currentCompanyCnpj) && currentCompanyCnpj === spedDocClean);
+
+        // 3. Resolve o customer_id vinculado a esta empresa no sistema (para a contabilidade/holding)
         let resolvedCustomerId = customerId ? Number(customerId) : 0;
-        if (spedDocClean.length >= 11) {
+        if (!isOwnCompanySped && spedDocClean.length >= 11) {
             const [matchingCust] = await pool.query<RowDataPacket[]>(
                 `SELECT id, name, cnpj_cpf FROM customers 
                  WHERE company_id = ? 
@@ -900,8 +911,8 @@ export class FechamentoService {
             resolvedCustomerId = Number(customerId);
         }
 
-        // Se ainda não existir registro em customers para esta empresa declarante, auto-cadastra
-        if (!resolvedCustomerId && (headerInfo.nome || spedDocClean)) {
+        // Se a empresa declarante for de um cliente e ainda não existir registro em customers para ela na holding/contabilidade, auto-cadastra
+        if (!resolvedCustomerId && (headerInfo.nome || spedDocClean) && !isOwnCompanySped && targetCompanyId !== companyId) {
             try {
                 const newPubId = randomUUID();
                 const [insertCust] = await pool.query<ResultSetHeader>(
@@ -1420,16 +1431,21 @@ export class FechamentoService {
             role: string;
         }> = [];
 
-        // Definir empresas onde os participantes e produtos serão sincronizados
-        const targetCompaniesToSync = new Set<number>([companyId]);
+        // Definir destino da sincronização de participantes (0150) e produtos (0200):
+        // - Se targetCompanyId existir (empresa cadastrada no ERP): sincroniza EXCLUSIVAMENTE nessa empresa.
+        // - Se o SPED for da própria empresa logada (isOwnCompanySped): sincroniza na própria empresa (companyId).
+        // - Se for de um cliente externo (targetCompanyId nulo e não é empresa própria): NÃO cadastra os 0150 na tabela customers da holding/contabilidade (preserva tudo no sped_data_json).
+        let targetCompanyToSyncParticipants: number | null = null;
         if (targetCompanyId) {
-            targetCompaniesToSync.add(targetCompanyId);
+            targetCompanyToSyncParticipants = targetCompanyId;
+        } else if (isOwnCompanySped) {
+            targetCompanyToSyncParticipants = companyId;
         }
 
         let importedCustomersCount = 0;
         let importedSuppliersCount = 0;
 
-        // Processa e auto-cadastra participantes como Clientes ou Fornecedores
+        // Processa participantes
         for (const part of participants) {
             const doc = part.cnpj || part.cpf;
             if (!doc) continue;
@@ -1472,34 +1488,33 @@ export class FechamentoService {
                 role: roleLabel
             });
 
-            const mappedData: any = {
-                name: part.name,
-                cnpj_cpf: doc,
-                inscricao_estadual: part.ie || null,
-                street: part.end || null,
-                number: part.num || null,
-                complement: part.compl || null,
-                neighborhood: part.bairro || null,
-                city,
-                state,
-                cd_municipio: part.codMun ? Number(part.codMun) : null
-            };
+            // Sincroniza participantes apenas na empresa declarante isolada
+            if (targetCompanyToSyncParticipants) {
+                const mappedData: any = {
+                    name: part.name,
+                    cnpj_cpf: doc,
+                    inscricao_estadual: part.ie || null,
+                    street: part.end || null,
+                    number: part.num || null,
+                    complement: part.compl || null,
+                    neighborhood: part.bairro || null,
+                    city,
+                    state,
+                    cd_municipio: part.codMun ? Number(part.codMun) : null
+                };
 
-            for (const syncCompId of targetCompaniesToSync) {
                 if (isCustomer) {
                     try {
                         const [existingCustomer] = await pool.query<RowDataPacket[]>(
                             `SELECT id FROM customers WHERE cnpj_cpf = ? AND company_id = ? LIMIT 1`,
-                            [doc, syncCompId]
+                            [doc, targetCompanyToSyncParticipants]
                         );
                         if (!existingCustomer || existingCustomer.length === 0) {
-                            await EntityRepository.create('customers', syncCompId, mappedData);
-                            if (syncCompId === targetCompanyId || (!targetCompanyId && syncCompId === companyId)) {
-                                importedCustomersCount++;
-                            }
+                            await EntityRepository.create('customers', targetCompanyToSyncParticipants, mappedData);
+                            importedCustomersCount++;
                         }
                     } catch (err) {
-                        console.error(`Erro ao cadastrar cliente do SPED (${doc}) na empresa ${syncCompId}:`, err);
+                        console.error(`Erro ao cadastrar cliente do SPED (${doc}) na empresa ${targetCompanyToSyncParticipants}:`, err);
                     }
                 }
 
@@ -1507,66 +1522,60 @@ export class FechamentoService {
                     try {
                         const [existingSupplier] = await pool.query<RowDataPacket[]>(
                             `SELECT id FROM suppliers WHERE cnpj_cpf = ? AND company_id = ? LIMIT 1`,
-                            [doc, syncCompId]
+                            [doc, targetCompanyToSyncParticipants]
                         );
                         if (!existingSupplier || existingSupplier.length === 0) {
-                            await EntityRepository.create('suppliers', syncCompId, mappedData);
-                            if (syncCompId === targetCompanyId || (!targetCompanyId && syncCompId === companyId)) {
-                                importedSuppliersCount++;
-                            }
+                            await EntityRepository.create('suppliers', targetCompanyToSyncParticipants, mappedData);
+                            importedSuppliersCount++;
                         }
                     } catch (err) {
-                        console.error(`Erro ao cadastrar fornecedor do SPED (${doc}) na empresa ${syncCompId}:`, err);
+                        console.error(`Erro ao cadastrar fornecedor do SPED (${doc}) na empresa ${targetCompanyToSyncParticipants}:`, err);
                     }
                 }
             }
         }
 
-        // Sincroniza produtos (0200) na empresa vinculada e holding
+        // Sincroniza produtos (0200) na empresa vinculada isolada
         let importedProductsCount = 0;
-        if (products0200.length > 0) {
-            for (const syncCompId of targetCompaniesToSync) {
-                for (const prod of products0200) {
-                    try {
-                        let existingQuery = `SELECT id FROM products WHERE company_id = ? AND (sku = ?`;
-                        const params: any[] = [syncCompId, prod.codItem];
-                        if (prod.codBarra && prod.codBarra.length >= 7) {
-                            existingQuery += ` OR ean = ?`;
-                            params.push(prod.codBarra);
-                        }
-                        existingQuery += `) LIMIT 1`;
-
-                        const [existingProd] = await pool.query<RowDataPacket[]>(existingQuery, params);
-                        if (!existingProd || existingProd.length === 0) {
-                            const publicId = randomUUID();
-                            const descDetails = [
-                                prod.codNcm ? `NCM: ${prod.codNcm}` : '',
-                                prod.unidInv ? `UN: ${prod.unidInv}` : '',
-                                prod.cest ? `CEST: ${prod.cest}` : ''
-                            ].filter(Boolean).join(' | ');
-
-                            await pool.query(
-                                `INSERT INTO products (
-                                    public_id, company_id, name, description, sku, ean,
-                                    is_imported, cost_price, selling_price, current_stock,
-                                    min_stock, max_stock, active, status_pos_id
-                                ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0, 0, 0, 0, 1, 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1758966')`,
-                                [
-                                    publicId,
-                                    syncCompId,
-                                    prod.descrItem,
-                                    descDetails || null,
-                                    prod.codItem || null,
-                                    (prod.codBarra && prod.codBarra.length >= 7) ? prod.codBarra : null
-                                ]
-                            );
-                            if (syncCompId === targetCompanyId || (!targetCompanyId && syncCompId === companyId)) {
-                                importedProductsCount++;
-                            }
-                        }
-                    } catch (prodErr) {
-                        console.error(`Erro ao cadastrar produto do SPED (${prod.codItem}) na empresa ${syncCompId}:`, prodErr);
+        if (products0200.length > 0 && targetCompanyToSyncParticipants) {
+            for (const prod of products0200) {
+                try {
+                    let existingQuery = `SELECT id FROM products WHERE company_id = ? AND (sku = ?`;
+                    const params: any[] = [targetCompanyToSyncParticipants, prod.codItem];
+                    if (prod.codBarra && prod.codBarra.length >= 7) {
+                        existingQuery += ` OR ean = ?`;
+                        params.push(prod.codBarra);
                     }
+                    existingQuery += `) LIMIT 1`;
+
+                    const [existingProd] = await pool.query<RowDataPacket[]>(existingQuery, params);
+                    if (!existingProd || existingProd.length === 0) {
+                        const publicId = randomUUID();
+                        const descDetails = [
+                            prod.codNcm ? `NCM: ${prod.codNcm}` : '',
+                            prod.unidInv ? `UN: ${prod.unidInv}` : '',
+                            prod.cest ? `CEST: ${prod.cest}` : ''
+                        ].filter(Boolean).join(' | ');
+
+                        await pool.query(
+                            `INSERT INTO products (
+                                public_id, company_id, name, description, sku, ean,
+                                is_imported, cost_price, selling_price, current_stock,
+                                min_stock, max_stock, active, status_pos_id
+                            ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0, 0, 0, 0, 1, 'ABCDEABC-ABCD-ABCD-ABCD-ABCED1758966')`,
+                            [
+                                publicId,
+                                targetCompanyToSyncParticipants,
+                                prod.descrItem,
+                                descDetails || null,
+                                prod.codItem || null,
+                                (prod.codBarra && prod.codBarra.length >= 7) ? prod.codBarra : null
+                            ]
+                        );
+                        importedProductsCount++;
+                    }
+                } catch (prodErr) {
+                    console.error(`Erro ao cadastrar produto do SPED (${prod.codItem}) na empresa ${targetCompanyToSyncParticipants}:`, prodErr);
                 }
             }
         }
@@ -1684,30 +1693,32 @@ export class FechamentoService {
 
                 const companyLabel = targetCompany?.trade_name || headerInfo.nome || 'Empresa SPED';
 
-                for (const syncCompId of targetCompaniesToSync) {
-                    let custIdForFech = resolvedCustomerId;
-                    if (syncCompId !== companyId && spedDocClean) {
-                        const [custInTarget] = await pool.query<RowDataPacket[]>(
-                            `SELECT id FROM customers WHERE company_id = ? AND REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ? LIMIT 1`,
-                            [syncCompId, spedDocClean]
-                        );
-                        if (custInTarget && custInTarget.length > 0) {
-                            custIdForFech = custInTarget[0]!.id;
-                        }
+                const fechamentoTargets: Array<{ syncCompId: number; custId: number }> = [];
+                if (targetCompanyId && targetCompanyId !== companyId) {
+                    fechamentoTargets.push({ syncCompId: targetCompanyId, custId: 0 });
+                    if (resolvedCustomerId) {
+                        fechamentoTargets.push({ syncCompId: companyId, custId: resolvedCustomerId });
                     }
+                } else {
+                    fechamentoTargets.push({ syncCompId: companyId, custId: resolvedCustomerId || 0 });
+                }
+
+                for (const target of fechamentoTargets) {
+                    const { syncCompId, custId } = target;
 
                     const [existingFech] = await pool.query<RowDataPacket[]>(
                         `SELECT id FROM fechamentos 
                          WHERE company_id = ? 
-                           AND (customer_id = ? OR customer_id = ? OR (customer_id IN (SELECT id FROM customers WHERE REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?)))
+                           AND (customer_id = ? OR (customer_id IN (SELECT id FROM customers WHERE REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?)))
                            AND competencia = ? 
                          LIMIT 1`,
-                        [syncCompId, custIdForFech, resolvedCustomerId, spedDocClean, compKey]
+                        [syncCompId, custId, spedDocClean, compKey]
                     );
 
                     if (existingFech && existingFech.length > 0) {
                         await pool.query(
                             `UPDATE fechamentos SET
+                                customer_id = ?,
                                 venda_valor = ?, venda_bs_icms = ?, venda_isento = ?, venda_outros = ?, venda_pis = ?, venda_cofins = ?,
                                 compra_valor = ?, compra_bs_icms = ?, compra_isento = ?, compra_outros = ?, compra_pis = ?, compra_cofins = ?,
                                 simples_valor_tributado = ?, simples_valor_nao_tributado = ?,
@@ -1717,6 +1728,7 @@ export class FechamentoService {
                                 sped_data_json = ?
                              WHERE id = ?`,
                             [
+                                custId,
                                 totals.venda_valor, totals.venda_bs_icms, totals.venda_isento, totals.venda_outros, totals.venda_pis, totals.venda_cofins,
                                 totals.compra_valor, totals.compra_bs_icms, totals.compra_isento, totals.compra_outros, totals.compra_pis, totals.compra_cofins,
                                 totals.simples_valor_tributado, totals.simples_valor_nao_tributado,
@@ -1744,7 +1756,7 @@ export class FechamentoService {
                                 sped_data_json
                              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                             [
-                                publicId, syncCompId, custIdForFech, compKey,
+                                publicId, syncCompId, custId, compKey,
                                 totals.venda_valor, totals.venda_bs_icms, totals.venda_isento, totals.venda_outros, totals.venda_pis, totals.venda_cofins,
                                 totals.compra_valor, totals.compra_bs_icms, totals.compra_isento, totals.compra_outros, totals.compra_pis, totals.compra_cofins,
                                 totals.simples_valor_tributado, totals.simples_valor_nao_tributado,

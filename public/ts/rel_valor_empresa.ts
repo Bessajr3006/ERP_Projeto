@@ -103,34 +103,6 @@
         if (box) box.classList.add('hidden');
     };
 
-    // ─── Year Dropdown Population ─────────────────────────────────────────────
-    const populateYearDropdown = () => {
-        const select = getEl<HTMLSelectElement>('filterAno');
-        if (!select) return;
-
-        const currentYear = new Date().getFullYear();
-        const savedYear = localStorage.getItem('rel_valor_empresa_ano');
-        select.innerHTML = '';
-
-        for (let y = currentYear; y >= currentYear - 4; y--) {
-            const opt = document.createElement('option');
-            opt.value = String(y);
-            opt.textContent = String(y);
-            if (savedYear ? String(y) === savedYear : y === currentYear) {
-                opt.selected = true;
-            }
-            select.appendChild(opt);
-        }
-
-        if (savedYear && !select.querySelector(`option[value="${savedYear}"]`)) {
-            const opt = document.createElement('option');
-            opt.value = savedYear;
-            opt.textContent = savedYear;
-            opt.selected = true;
-            select.appendChild(opt);
-        }
-    };
-
     // ─── Load Companies ───────────────────────────────────────────────────────
     async function loadCompanies(): Promise<void> {
         const compSelect = getEl<HTMLSelectElement>('filterCompany');
@@ -1205,28 +1177,6 @@
 
     // ─── DOMContentLoaded Init ───────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
-        populateYearDropdown();
-
-        // Set saved or current month in select
-        const mesSelect = getEl<HTMLSelectElement>('filterMes');
-        if (mesSelect) {
-            const savedMes = localStorage.getItem('rel_valor_empresa_mes');
-            if (savedMes && mesSelect.querySelector(`option[value="${savedMes}"]`)) {
-                mesSelect.value = savedMes;
-            } else {
-                mesSelect.value = String(new Date().getMonth() + 1);
-            }
-        }
-
-        // Set saved data source
-        const sourceSelect = getEl<HTMLSelectElement>('filterSource');
-        if (sourceSelect) {
-            const savedSource = localStorage.getItem('rel_valor_empresa_source');
-            if (savedSource && sourceSelect.querySelector(`option[value="${savedSource}"]`)) {
-                sourceSelect.value = savedSource;
-            }
-        }
-
         await loadCompanies();
         const initialCompany = getEl<HTMLSelectElement>('filterCompany')?.value || '';
         await loadSolidconConnections(initialCompany);
@@ -1296,24 +1246,6 @@
             rawCrediarioCupons = [];
             renderCrediarioReceberCard(currentCrediarioReceberData);
 
-            void loadReport();
-        });
-
-        getEl('filterAno')?.addEventListener('change', () => {
-            const val = getEl<HTMLSelectElement>('filterAno')?.value || '';
-            if (val) localStorage.setItem('rel_valor_empresa_ano', val);
-            void loadReport();
-        });
-
-        getEl('filterMes')?.addEventListener('change', () => {
-            const val = getEl<HTMLSelectElement>('filterMes')?.value || '';
-            if (val) localStorage.setItem('rel_valor_empresa_mes', val);
-            void loadReport();
-        });
-
-        getEl('filterSource')?.addEventListener('change', () => {
-            const val = getEl<HTMLSelectElement>('filterSource')?.value || '';
-            if (val) localStorage.setItem('rel_valor_empresa_source', val);
             void loadReport();
         });
 

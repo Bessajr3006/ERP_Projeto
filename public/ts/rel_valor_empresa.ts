@@ -294,6 +294,29 @@
                 }).join('');
             }
         }
+
+        // Filtros aplicados & Badges de Período Cartões
+        const filtros = cartoesData.filtrosAplicados || {};
+        const dtIni = filtros.dtInicio || '';
+        const dtFim = filtros.dtFim || '';
+        const tipoDt = filtros.tipoData || 'previsao';
+        const tipoLabel = tipoDt === 'venda' ? 'Data Venda' : 'Previsão';
+
+        let badgePeriodoText = `Mês ${currentPeriodLabel}`;
+        if (dtIni && dtFim) {
+            badgePeriodoText = `${formatDateBR(dtIni)} a ${formatDateBR(dtFim)} (${tipoLabel})`;
+        } else if (dtIni) {
+            badgePeriodoText = `A partir de ${formatDateBR(dtIni)} (${tipoLabel})`;
+        } else if (dtFim) {
+            badgePeriodoText = `Até ${formatDateBR(dtFim)} (${tipoLabel})`;
+        }
+
+        if (getEl('cardCartoesPeriodoBadge')) {
+            getEl('cardCartoesPeriodoBadge')!.textContent = badgePeriodoText;
+        }
+        if (getEl('modalCartoesBadgePeriodo')) {
+            getEl('modalCartoesBadgePeriodo')!.textContent = badgePeriodoText;
+        }
     };
 
     // ─── Modal Cartões: Populate & Filter ─────────────────────────────────────
@@ -472,8 +495,19 @@
         const modal = getEl('modalCartoesNaoBaixados');
         if (!modal) return;
 
-        if (getEl('modalCartoesBadgePeriodo')) {
-            getEl('modalCartoesBadgePeriodo')!.textContent = currentPeriodLabel;
+        // Sync card dates into modal
+        const cardDtInicio = getEl<HTMLInputElement>('cardCartoesDtInicio')?.value || '';
+        const cardDtFim = getEl<HTMLInputElement>('cardCartoesDtFim')?.value || '';
+        const cardTipoData = getEl<HTMLSelectElement>('cardCartoesTipoData')?.value || 'previsao';
+
+        if (getEl<HTMLInputElement>('modalCartoesDtInicio')) {
+            getEl<HTMLInputElement>('modalCartoesDtInicio')!.value = cardDtInicio;
+        }
+        if (getEl<HTMLInputElement>('modalCartoesDtFim')) {
+            getEl<HTMLInputElement>('modalCartoesDtFim')!.value = cardDtFim;
+        }
+        if (getEl<HTMLSelectElement>('modalCartoesTipoData')) {
+            getEl<HTMLSelectElement>('modalCartoesTipoData')!.value = cardTipoData;
         }
 
         // Reset search & filters
@@ -957,13 +991,20 @@
                 localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, filial);
             }
 
+            const cardCartoesDtInicio = getEl<HTMLInputElement>('cardCartoesDtInicio')?.value || '';
+            const cardCartoesDtFim = getEl<HTMLInputElement>('cardCartoesDtFim')?.value || '';
+            const cardTipoData = getEl<HTMLSelectElement>('cardCartoesTipoData')?.value || 'previsao';
+
             const queryParams = new URLSearchParams({
                 ano,
                 mes,
                 source,
                 ...(companyParam ? { company_id: companyParam } : {}),
                 ...(filial ? { cdFilial: filial, filial } : {}),
-                ...(connId ? { connectionId: connId, connection_id: connId } : {})
+                ...(connId ? { connectionId: connId, connection_id: connId } : {}),
+                ...(cardCartoesDtInicio ? { dtInicioCartoes: cardCartoesDtInicio } : {}),
+                ...(cardCartoesDtFim ? { dtFimCartoes: cardCartoesDtFim } : {}),
+                ...(cardTipoData ? { tipoDataCartoes: cardTipoData } : {})
             });
 
             const res = await api(`/finance/solidcon-vision?${queryParams.toString()}`);
@@ -1181,6 +1222,56 @@
 
         getEl('btnExportCartoesCsv')?.addEventListener('click', () => {
             exportCartoesCsv();
+        });
+
+        // ─── Cartões Card Date Filter Listeners ────────────────────────────────
+        getEl('btnFilterCartoesCard')?.addEventListener('click', () => {
+            const dtIni = getEl<HTMLInputElement>('cardCartoesDtInicio')?.value || '';
+            const dtFim = getEl<HTMLInputElement>('cardCartoesDtFim')?.value || '';
+            const tipo = getEl<HTMLSelectElement>('cardCartoesTipoData')?.value || 'previsao';
+            if (getEl<HTMLInputElement>('modalCartoesDtInicio')) getEl<HTMLInputElement>('modalCartoesDtInicio')!.value = dtIni;
+            if (getEl<HTMLInputElement>('modalCartoesDtFim')) getEl<HTMLInputElement>('modalCartoesDtFim')!.value = dtFim;
+            if (getEl<HTMLSelectElement>('modalCartoesTipoData')) getEl<HTMLSelectElement>('modalCartoesTipoData')!.value = tipo;
+            void loadReport();
+        });
+
+        getEl('btnResetCartoesCard')?.addEventListener('click', () => {
+            if (getEl<HTMLInputElement>('cardCartoesDtInicio')) getEl<HTMLInputElement>('cardCartoesDtInicio')!.value = '';
+            if (getEl<HTMLInputElement>('cardCartoesDtFim')) getEl<HTMLInputElement>('cardCartoesDtFim')!.value = '';
+            if (getEl<HTMLSelectElement>('cardCartoesTipoData')) getEl<HTMLSelectElement>('cardCartoesTipoData')!.value = 'previsao';
+            if (getEl<HTMLInputElement>('modalCartoesDtInicio')) getEl<HTMLInputElement>('modalCartoesDtInicio')!.value = '';
+            if (getEl<HTMLInputElement>('modalCartoesDtFim')) getEl<HTMLInputElement>('modalCartoesDtFim')!.value = '';
+            if (getEl<HTMLSelectElement>('modalCartoesTipoData')) getEl<HTMLSelectElement>('modalCartoesTipoData')!.value = 'previsao';
+            void loadReport();
+        });
+
+        const onCardCartoesInputKey = (e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                void loadReport();
+            }
+        };
+        getEl('cardCartoesDtInicio')?.addEventListener('keydown', onCardCartoesInputKey);
+        getEl('cardCartoesDtFim')?.addEventListener('keydown', onCardCartoesInputKey);
+
+        getEl('btnFilterCartoesModal')?.addEventListener('click', () => {
+            const dtIni = getEl<HTMLInputElement>('modalCartoesDtInicio')?.value || '';
+            const dtFim = getEl<HTMLInputElement>('modalCartoesDtFim')?.value || '';
+            const tipo = getEl<HTMLSelectElement>('modalCartoesTipoData')?.value || 'previsao';
+            if (getEl<HTMLInputElement>('cardCartoesDtInicio')) getEl<HTMLInputElement>('cardCartoesDtInicio')!.value = dtIni;
+            if (getEl<HTMLInputElement>('cardCartoesDtFim')) getEl<HTMLInputElement>('cardCartoesDtFim')!.value = dtFim;
+            if (getEl<HTMLSelectElement>('cardCartoesTipoData')) getEl<HTMLSelectElement>('cardCartoesTipoData')!.value = tipo;
+            void loadReport();
+        });
+
+        getEl('btnResetCartoesModal')?.addEventListener('click', () => {
+            if (getEl<HTMLInputElement>('cardCartoesDtInicio')) getEl<HTMLInputElement>('cardCartoesDtInicio')!.value = '';
+            if (getEl<HTMLInputElement>('cardCartoesDtFim')) getEl<HTMLInputElement>('cardCartoesDtFim')!.value = '';
+            if (getEl<HTMLSelectElement>('cardCartoesTipoData')) getEl<HTMLSelectElement>('cardCartoesTipoData')!.value = 'previsao';
+            if (getEl<HTMLInputElement>('modalCartoesDtInicio')) getEl<HTMLInputElement>('modalCartoesDtInicio')!.value = '';
+            if (getEl<HTMLInputElement>('modalCartoesDtFim')) getEl<HTMLInputElement>('modalCartoesDtFim')!.value = '';
+            if (getEl<HTMLSelectElement>('modalCartoesTipoData')) getEl<HTMLSelectElement>('modalCartoesTipoData')!.value = 'previsao';
+            void loadReport();
         });
 
         // ─── Crediário Card Date Filter Listeners ─────────────────────────────

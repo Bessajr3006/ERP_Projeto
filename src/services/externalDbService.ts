@@ -6410,6 +6410,9 @@ export class ExternalDbService {
             dtFimCrediario?: string | null;
             tipoDataCrediario?: 'vencimento' | 'emissao' | string | null;
             includeCrediario?: boolean | string | null;
+            dtInicioCartoes?: string | null;
+            dtFimCartoes?: string | null;
+            tipoDataCartoes?: 'previsao' | 'venda' | string | null;
         }
     ): Promise<any> {
         let server = (config.host || '').trim();
@@ -7610,9 +7613,37 @@ export class ExternalDbService {
                         }
                     }
 
+                    const dtInicioCartoes = params.dtInicioCartoes ? String(params.dtInicioCartoes).trim() : null;
+                    const dtFimCartoes = params.dtFimCartoes ? String(params.dtFimCartoes).trim() : null;
+                    const tipoDataCartoes = params.tipoDataCartoes === 'venda' ? 'venda' : 'previsao';
+                    const targetColCartao = tipoDataCartoes === 'venda' ? 'bm.dtMovimento' : 'bim.dtPrevisao';
+
+                    let dateFilterClauseCartao = '';
+                    if (dtInicioCartoes && dtFimCartoes) {
+                        dateFilterClauseCartao = ` AND CAST(${targetColCartao} AS DATE) >= @dtInicioCartao AND CAST(${targetColCartao} AS DATE) <= @dtFimCartao`;
+                    } else if (dtInicioCartoes) {
+                        dateFilterClauseCartao = ` AND CAST(${targetColCartao} AS DATE) >= @dtInicioCartao`;
+                    } else if (dtFimCartoes) {
+                        dateFilterClauseCartao = ` AND CAST(${targetColCartao} AS DATE) <= @dtFimCartao`;
+                    } else {
+                        dateFilterClauseCartao = ` AND YEAR(bm.dtMovimento) = @ano AND MONTH(bm.dtMovimento) = @mes`;
+                    }
+
                     const reqCards = pool.request();
                     reqCards.input('ano', sql.Int, ano);
                     reqCards.input('mes', sql.Int, mes);
+                    if (dtInicioCartoes) {
+                        reqCards.input('dtInicioCartao', sql.VarChar(10), dtInicioCartoes);
+                    }
+                    if (dtFimCartoes) {
+                        reqCards.input('dtFimCartao', sql.VarChar(10), dtFimCartoes);
+                    }
+
+                    cartoesNaoBaixados.filtrosAplicados = {
+                        dtInicio: dtInicioCartoes || null,
+                        dtFim: dtFimCartoes || null,
+                        tipoData: tipoDataCartoes
+                    };
 
                     const queryCards = `
                         SELECT 
@@ -7639,7 +7670,7 @@ export class ExternalDbService {
                         LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = bim.cdPessoaFilial
                         WHERE bit.cdBoletimItemTipo IN (2, 6, 7)
                           AND (bim.cdBoletimDeposito IS NULL OR bd.dtDeposito IS NULL OR bd.cdBancoConta IS NULL)
-                          AND YEAR(bm.dtMovimento) = @ano AND MONTH(bm.dtMovimento) = @mes
+                          ${dateFilterClauseCartao}
                           ${filialClauseCartao}
                         ORDER BY bm.dtMovimento DESC, bim.vlBruto DESC
                     `;

@@ -2425,35 +2425,49 @@ export class FinanceController {
 
             const { ano, mes, cdFilial, source, connectionId, convDateFilter, dtInicioCrediario, dtFimCrediario, tipoDataCrediario, includeCrediario, dtInicioCartoes, dtFimCartoes, tipoDataCartoes, includeCartoes } = req.query;
 
+            const isAllConnections = String(connectionId || '').toLowerCase() === 'all' || String(connectionId || '').toLowerCase() === 'todas';
+
             const { SolidconConfigService } = await import('../services/solidconConfigService');
-            let solidconConfig: any = null;
-            if (connectionId) {
+            let configsToQuery: any[] = [];
+
+            if (isAllConnections) {
+                const configs = await SolidconConfigService.list(company.id);
+                if (configs && configs.length > 0) {
+                    configsToQuery = configs.filter((c: any) => c.serv_solidcon && c.serv_solidcon.trim());
+                }
+            } else if (connectionId) {
                 const cleanId = parseInt(String(connectionId).replace('solidcon_', ''), 10);
                 if (!isNaN(cleanId)) {
-                    solidconConfig = await SolidconConfigService.getById(cleanId, company.id);
+                    const cfg = await SolidconConfigService.getById(cleanId, company.id);
+                    if (cfg && cfg.serv_solidcon && cfg.serv_solidcon.trim()) {
+                        configsToQuery = [cfg];
+                    }
                 }
             }
 
-            if (!solidconConfig) {
+            if (configsToQuery.length === 0 && !isAllConnections) {
                 const configs = await SolidconConfigService.list(company.id);
-                solidconConfig = configs.find((c: any) => c.is_default) || configs[0] || null;
+                const defaultCfg = configs.find((c: any) => c.is_default) || configs[0] || null;
+                if (defaultCfg && defaultCfg.serv_solidcon && defaultCfg.serv_solidcon.trim()) {
+                    configsToQuery = [defaultCfg];
+                }
             }
 
-            if (!solidconConfig) {
+            if (configsToQuery.length === 0) {
                 const [compRows]: any = await pool.query('SELECT serv_solidcon, bd_solidcon, login_solidcon, senha_solidcon, trade_name, company_name FROM companies WHERE id = ?', [company.id]);
                 const comp = compRows?.[0];
-                if (comp && comp.serv_solidcon) {
-                    solidconConfig = {
+                if (comp && comp.serv_solidcon && comp.serv_solidcon.trim()) {
+                    configsToQuery = [{
                         name: comp.trade_name || comp.company_name || 'Padrão da Empresa',
                         serv_solidcon: comp.serv_solidcon,
                         bd_solidcon: comp.bd_solidcon || 'solidcon',
                         login_solidcon: comp.login_solidcon,
                         senha_solidcon: decrypt(comp.senha_solidcon) || comp.senha_solidcon
-                    };
+                    }];
                 }
             }
 
-            if (!solidconConfig || !solidconConfig.serv_solidcon || !solidconConfig.serv_solidcon.trim()) {
+            if (configsToQuery.length === 0) {
                 const compName = company.trade_name || company.company_name || `Empresa #${company.id}`;
                 res.status(400).json({
                     status: 'error',
@@ -2462,40 +2476,77 @@ export class FinanceController {
                 return;
             }
 
-            const host = (solidconConfig.serv_solidcon || '').trim();
-            const database = (solidconConfig.bd_solidcon || 'solidcon').trim();
-            const user = (solidconConfig.login_solidcon || 'aporttec').trim();
-            const password = (solidconConfig.senha_solidcon ? (decrypt(solidconConfig.senha_solidcon) || solidconConfig.senha_solidcon) : '') || '';
-
             const currentYear = new Date().getFullYear();
             const currentMonth = new Date().getMonth() + 1;
 
             const selectedAno = ano ? parseInt(String(ano), 10) : currentYear;
             const selectedMes = mes ? parseInt(String(mes), 10) : currentMonth;
 
-            const data = await ExternalDbService.getSolidconFinanceVisionData(
-                {
-                    host: host,
-                    database: database === 'dorsal' ? 'solidcon' : database,
-                    user: user,
-                    password: password
-                },
-                {
-                    ano: isNaN(selectedAno) ? currentYear : selectedAno,
-                    mes: isNaN(selectedMes) ? currentMonth : selectedMes,
-                    cdFilial: cdFilial ? String(cdFilial) : null,
-                    source: source ? String(source) : 'conta_baixa',
-                    convDateFilter: convDateFilter ? String(convDateFilter) : 'baixa',
-                    dtInicioCrediario: dtInicioCrediario ? String(dtInicioCrediario) : null,
-                    dtFimCrediario: dtFimCrediario ? String(dtFimCrediario) : null,
-                    tipoDataCrediario: tipoDataCrediario ? String(tipoDataCrediario) : null,
-                    includeCrediario: includeCrediario ? String(includeCrediario) : null,
-                    includeCartoes: includeCartoes ? String(includeCartoes) : null,
-                    dtInicioCartoes: dtInicioCartoes ? String(dtInicioCartoes) : null,
-                    dtFimCartoes: dtFimCartoes ? String(dtFimCartoes) : null,
-                    tipoDataCartoes: tipoDataCartoes ? String(tipoDataCartoes) : null
+            const queryParamsObj = {
+                ano: isNaN(selectedAno) ? currentYear : selectedAno,
+                mes: isNaN(selectedMes) ? currentMonth : selectedMes,
+                cdFilial: cdFilial ? String(cdFilial) : null,
+                source: source ? String(source) : 'conta_baixa',
+                convDateFilter: convDateFilter ? String(convDateFilter) : 'baixa',
+                dtInicioCrediario: dtInicioCrediario ? String(dtInicioCrediario) : null,
+                dtFimCrediario: dtFimCrediario ? String(dtFimCrediario) : null,
+                tipoDataCrediario: tipoDataCrediario ? String(tipoDataCrediario) : null,
+                includeCrediario: includeCrediario ? String(includeCrediario) : null,
+                includeCartoes: includeCartoes ? String(includeCartoes) : null,
+                dtInicioCartoes: dtInicioCartoes ? String(dtInicioCartoes) : null,
+                dtFimCartoes: dtFimCartoes ? String(dtFimCartoes) : null,
+                tipoDataCartoes: tipoDataCartoes ? String(tipoDataCartoes) : null
+            };
+
+            const queryPromises = configsToQuery.map(async (cfg) => {
+                const host = (cfg.serv_solidcon || '').trim();
+                const database = (cfg.bd_solidcon || 'solidcon').trim();
+                const user = (cfg.login_solidcon || 'aporttec').trim();
+                const password = (cfg.senha_solidcon ? (decrypt(cfg.senha_solidcon) || cfg.senha_solidcon) : '') || '';
+
+                return ExternalDbService.getSolidconFinanceVisionData(
+                    {
+                        host,
+                        database: database === 'dorsal' ? 'solidcon' : database,
+                        user,
+                        password
+                    },
+                    queryParamsObj
+                );
+            });
+
+            const queryResults = await Promise.allSettled(queryPromises);
+            const successfulData: any[] = [];
+            const errors: string[] = [];
+
+            queryResults.forEach((resItem, idx) => {
+                if (resItem.status === 'fulfilled') {
+                    successfulData.push(resItem.value);
+                } else {
+                    const cfgName = configsToQuery[idx]?.name || `Conexão #${idx + 1}`;
+                    errors.push(`${cfgName}: ${resItem.reason?.message || resItem.reason}`);
                 }
-            );
+            });
+
+            if (successfulData.length === 0) {
+                throw new Error(`Falha ao consultar servidor(es) Solidcon: ${errors.join('; ')}`);
+            }
+
+            const data = ExternalDbService.mergeSolidconFinanceVisionResults(successfulData);
+
+            const connMeta = isAllConnections
+                ? {
+                    id: 'all',
+                    name: `Todas as Conexões (${successfulData.length}/${configsToQuery.length} servidor${configsToQuery.length === 1 ? '' : 'es'})`,
+                    host: configsToQuery.map(c => c.serv_solidcon).join(', '),
+                    database: 'Todas'
+                }
+                : {
+                    id: configsToQuery[0]?.id || null,
+                    name: configsToQuery[0]?.name || 'Solidcon Principal',
+                    host: (configsToQuery[0]?.serv_solidcon || '').trim(),
+                    database: (configsToQuery[0]?.bd_solidcon || 'solidcon').trim()
+                };
 
             res.status(200).json({
                 status: 'success',
@@ -2506,12 +2557,7 @@ export class FinanceController {
                     trade_name: company.trade_name,
                     company_name: company.company_name
                 },
-                connection: {
-                    id: solidconConfig?.id || null,
-                    name: solidconConfig?.name || 'Solidcon Principal',
-                    host: host,
-                    database: database === 'dorsal' ? 'solidcon' : database
-                }
+                connection: connMeta
             });
         } catch (error: any) {
             res.status(400).json({

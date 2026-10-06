@@ -7881,5 +7881,517 @@ export class ExternalDbService {
             }
         }
     }
+
+    static mergeSolidconFinanceVisionResults(results: any[]): any {
+        if (!results || results.length === 0) return null;
+        if (results.length === 1) return results[0];
+
+        const first = results[0];
+        const params = first?.params || {};
+
+        // 1. Monthly comparison
+        const monthlyComparison = Array.from({ length: 12 }, (_, idx) => {
+            const mNum = idx + 1;
+            let rec = 0;
+            let desp = 0;
+            let qtdRec = 0;
+            let qtdDesp = 0;
+            let mesNome = '';
+            let mesSigla = '';
+
+            results.forEach(r => {
+                const item = r.monthlyComparison?.[idx];
+                if (item) {
+                    rec += Number(item.receita || 0);
+                    desp += Number(item.despesa || 0);
+                    qtdRec += Number(item.qtd_receita || 0);
+                    qtdDesp += Number(item.qtd_despesa || 0);
+                    if (!mesNome && item.mesNome) mesNome = item.mesNome;
+                    if (!mesSigla && item.mesSigla) mesSigla = item.mesSigla;
+                }
+            });
+
+            return {
+                mes: mNum,
+                mesNome: mesNome || '',
+                mesSigla: mesSigla || '',
+                receita: rec,
+                despesa: desp,
+                saldo: rec - desp,
+                qtd_receita: qtdRec,
+                qtd_despesa: qtdDesp
+            };
+        });
+
+        // 2. Daily evolution
+        const maxDays = Math.max(...results.map(r => r.dailyEvolution?.length || 0), 1);
+        const dailyEvolution = Array.from({ length: maxDays }, (_, idx) => {
+            const diaNum = idx + 1;
+            let rec = 0;
+            let desp = 0;
+            let qtdRec = 0;
+            let qtdDesp = 0;
+            let data = '';
+
+            results.forEach(r => {
+                const item = r.dailyEvolution?.[idx];
+                if (item) {
+                    rec += Number(item.receita || 0);
+                    desp += Number(item.despesa || 0);
+                    qtdRec += Number(item.qtd_receita || 0);
+                    qtdDesp += Number(item.qtd_despesa || 0);
+                    if (!data && item.data) data = item.data;
+                }
+            });
+
+            return {
+                dia: diaNum,
+                data: data || '',
+                receita: rec,
+                despesa: desp,
+                saldo: rec - desp,
+                qtd_receita: qtdRec,
+                qtd_despesa: qtdDesp
+            };
+        });
+
+        // 3. Summary (Current Month)
+        const mesIdx = (params.mes ? parseInt(String(params.mes), 10) : 1) - 1;
+        const currentMonthData = monthlyComparison[mesIdx] || { receita: 0, despesa: 0, saldo: 0, qtd_receita: 0, qtd_despesa: 0 };
+        const totalReceita = currentMonthData.receita;
+        const totalDespesa = currentMonthData.despesa;
+        const saldoLiquido = totalReceita - totalDespesa;
+        const totalMovimentado = totalReceita + totalDespesa;
+        const margemPercent = totalReceita > 0 ? Number(((saldoLiquido / totalReceita) * 100).toFixed(1)) : 0;
+        const qtdReceita = currentMonthData.qtd_receita;
+        const qtdDespesa = currentMonthData.qtd_despesa;
+
+        const summary = {
+            totalReceita,
+            totalDespesa,
+            saldoLiquido,
+            totalMovimentado,
+            margemPercent,
+            qtdReceita,
+            qtdDespesa,
+            ticketMedioReceita: qtdReceita > 0 ? totalReceita / qtdReceita : 0,
+            ticketMedioDespesa: qtdDespesa > 0 ? totalDespesa / qtdDespesa : 0
+        };
+
+        // 4. Sales Summary
+        let totalVendas = 0;
+        let qtdVendas = 0;
+        let totalLiquidoSales = 0;
+        let totalDesconto = 0;
+        let totalAcrescimo = 0;
+
+        results.forEach(r => {
+            const ss = r.salesSummary || {};
+            totalVendas += Number(ss.totalVendas || 0);
+            qtdVendas += Number(ss.qtdVendas || 0);
+            totalLiquidoSales += Number(ss.totalLiquido || 0);
+            totalDesconto += Number(ss.totalDesconto || 0);
+            totalAcrescimo += Number(ss.totalAcrescimo || 0);
+        });
+
+        const salesSummary = {
+            totalVendas,
+            qtdVendas,
+            ticketMedio: qtdVendas > 0 ? totalVendas / qtdVendas : 0,
+            totalLiquido: totalLiquidoSales,
+            totalDesconto,
+            totalAcrescimo
+        };
+
+        // 5. Sales by Modality
+        const modalityMap: Record<string, any> = {};
+        results.forEach(r => {
+            (r.salesByModality || []).forEach((m: any) => {
+                const key = String(m.cdModo || m.nmModo || 'Outros');
+                if (!modalityMap[key]) {
+                    modalityMap[key] = {
+                        cdModo: m.cdModo,
+                        nmModo: m.nmModo || key,
+                        total: 0,
+                        qtd: 0,
+                        pct: 0
+                    };
+                }
+                modalityMap[key].total += Number(m.total || 0);
+                modalityMap[key].qtd += Number(m.qtd || 0);
+            });
+        });
+        const salesByModality = Object.values(modalityMap).map((m: any) => ({
+            ...m,
+            pct: totalVendas > 0 ? Number(((m.total / totalVendas) * 100).toFixed(1)) : 0
+        })).sort((a: any, b: any) => b.total - a.total);
+
+        // 6. Annual Sales by Modality
+        const annualSalesModMap: Record<string, any> = {};
+        results.forEach(r => {
+            (r.annualSalesByModality || []).forEach((m: any) => {
+                const key = `${m.mes}_${m.cdModo || m.nmModo}`;
+                if (!annualSalesModMap[key]) {
+                    annualSalesModMap[key] = {
+                        mes: Number(m.mes),
+                        cdModo: m.cdModo,
+                        nmModo: m.nmModo,
+                        total: 0,
+                        qtd: 0
+                    };
+                }
+                annualSalesModMap[key].total += Number(m.total || 0);
+                annualSalesModMap[key].qtd += Number(m.qtd || 0);
+            });
+        });
+        const annualSalesByModality = Object.values(annualSalesModMap).sort((a: any, b: any) => a.mes - b.mes || b.total - a.total);
+
+        // 7. By Bank
+        const bankMap: Record<string, any> = {};
+        results.forEach(r => {
+            (r.byBank || []).forEach((b: any) => {
+                const key = `${b.banco}_${b.conta_numero}`;
+                if (!bankMap[key]) {
+                    bankMap[key] = {
+                        banco: b.banco,
+                        conta_numero: b.conta_numero,
+                        receita: 0,
+                        despesa: 0,
+                        saldo: 0,
+                        total_movimentado: 0,
+                        qtd: 0
+                    };
+                }
+                bankMap[key].receita += Number(b.receita || 0);
+                bankMap[key].despesa += Number(b.despesa || 0);
+                bankMap[key].saldo += Number(b.saldo || 0);
+                bankMap[key].total_movimentado += Number(b.total_movimentado || 0);
+                bankMap[key].qtd += Number(b.qtd || 0);
+            });
+        });
+        const byBank = Object.values(bankMap).sort((a: any, b: any) => b.total_movimentado - a.total_movimentado);
+
+        // 8. By Category & Annual by Category
+        const catMap: Record<string, any> = {};
+        results.forEach(r => {
+            (r.byCategory || []).forEach((c: any) => {
+                const key = `${c.tipo}_${c.tipoconta}`;
+                if (!catMap[key]) {
+                    catMap[key] = {
+                        tipo: c.tipo,
+                        tipoconta: c.tipoconta,
+                        valor: 0,
+                        qtd: 0
+                    };
+                }
+                catMap[key].valor += Number(c.valor || 0);
+                catMap[key].qtd += Number(c.qtd || 0);
+            });
+        });
+        const byCategory = Object.values(catMap).sort((a: any, b: any) => b.valor - a.valor);
+
+        const annualCatMap: Record<string, any> = {};
+        results.forEach(r => {
+            (r.annualByCategory || []).forEach((c: any) => {
+                const key = `${c.mes}_${c.tipo}_${c.tipoconta}`;
+                if (!annualCatMap[key]) {
+                    annualCatMap[key] = {
+                        mes: Number(c.mes),
+                        tipo: c.tipo,
+                        tipoconta: c.tipoconta,
+                        valor: 0,
+                        qtd: 0
+                    };
+                }
+                annualCatMap[key].valor += Number(c.valor || 0);
+                annualCatMap[key].qtd += Number(c.qtd || 0);
+            });
+        });
+        const annualByCategory = Object.values(annualCatMap).sort((a: any, b: any) => a.mes - b.mes || b.valor - a.valor);
+
+        // 9. Transactions, Top Receitas, Top Despesas
+        let allTransactions: any[] = [];
+        results.forEach(r => {
+            if (Array.isArray(r.transactions)) {
+                allTransactions = allTransactions.concat(r.transactions);
+            }
+        });
+        allTransactions.sort((a: any, b: any) => (b.data || '').localeCompare(a.data || '') || Number(b.valor || 0) - Number(a.valor || 0));
+        const transactions = allTransactions.slice(0, 500);
+
+        const topReceitas = allTransactions
+            .filter((t: any) => t.tipo === 'receita')
+            .sort((a: any, b: any) => Number(b.valor || 0) - Number(a.valor || 0))
+            .slice(0, 5);
+
+        const topDespesas = allTransactions
+            .filter((t: any) => t.tipo === 'despesa')
+            .sort((a: any, b: any) => Number(b.valor || 0) - Number(a.valor || 0))
+            .slice(0, 5);
+
+        // 10. Filiais
+        const filiaisMap: Record<string, any> = {};
+        results.forEach(r => {
+            (r.filiais || []).forEach((f: any) => {
+                const fId = typeof f === 'object' ? String(f.id) : String(f);
+                const fNome = typeof f === 'object' ? (f.nome || `Filial ${f.id}`) : `Filial ${f}`;
+                if (!filiaisMap[fId]) {
+                    filiaisMap[fId] = { id: fId, nome: fNome };
+                }
+            });
+        });
+        const filiais = Object.values(filiaisMap);
+
+        // 11. Convenio Data
+        let convEmitido = 0;
+        let convQuitado = 0;
+        let convQtdCupons = 0;
+        let convRecebidoBaixas = 0;
+        let convJuros = 0;
+        let convQtdBaixas = 0;
+        const topClientesMap: Record<string, any> = {};
+        let recentBaixas: any[] = [];
+        const convDailyMap: Record<string, any> = {};
+        const convAnnualMap: Record<number, any> = {};
+
+        results.forEach(r => {
+            const cd = r.convenioData;
+            if (cd && cd.summary) {
+                convEmitido += Number(cd.summary.totalEmitido || 0);
+                convQuitado += Number(cd.summary.totalQuitado || 0);
+                convQtdCupons += Number(cd.summary.qtdCupons || 0);
+                convRecebidoBaixas += Number(cd.summary.totalRecebidoBaixas || 0);
+                convJuros += Number(cd.summary.totalJuros || 0);
+                convQtdBaixas += Number(cd.summary.qtdBaixas || 0);
+            }
+            (cd?.topClientes || []).forEach((tc: any) => {
+                const k = tc.cliente || tc.cpf_cnpj || 'Outros';
+                if (!topClientesMap[k]) {
+                    topClientesMap[k] = { ...tc, total_emitido: 0, total_quitado: 0, total_pendente: 0, qtd_cupons: 0 };
+                }
+                topClientesMap[k].total_emitido += Number(tc.total_emitido || 0);
+                topClientesMap[k].total_quitado += Number(tc.total_quitado || 0);
+                topClientesMap[k].total_pendente += Number(tc.total_pendente || 0);
+                topClientesMap[k].qtd_cupons += Number(tc.qtd_cupons || 0);
+            });
+            if (Array.isArray(cd?.recentBaixas)) {
+                recentBaixas = recentBaixas.concat(cd.recentBaixas);
+            }
+            (cd?.dailyEvolution || []).forEach((de: any) => {
+                const k = String(de.dia || de.data);
+                if (!convDailyMap[k]) {
+                    convDailyMap[k] = { ...de, total_emitido: 0, total_quitado: 0, qtd_cupons: 0 };
+                }
+                convDailyMap[k].total_emitido += Number(de.total_emitido || 0);
+                convDailyMap[k].total_quitado += Number(de.total_quitado || 0);
+                convDailyMap[k].qtd_cupons += Number(de.qtd_cupons || 0);
+            });
+            (cd?.annualSummary || []).forEach((as: any) => {
+                const k = Number(as.mes);
+                if (!convAnnualMap[k]) {
+                    convAnnualMap[k] = { ...as, total_emitido: 0, total_quitado: 0, qtd_cupons: 0 };
+                }
+                convAnnualMap[k].total_emitido += Number(as.total_emitido || 0);
+                convAnnualMap[k].total_quitado += Number(as.total_quitado || 0);
+                convAnnualMap[k].qtd_cupons += Number(as.qtd_cupons || 0);
+            });
+        });
+
+        const convTotalPendente = Math.max(0, convEmitido - convQuitado);
+        const convenioData = {
+            dateFilter: first.convenioData?.dateFilter || 'baixa',
+            summary: {
+                totalEmitido: convEmitido,
+                totalQuitado: convQuitado,
+                totalPendente: convTotalPendente,
+                qtdCupons: convQtdCupons,
+                ticketMedio: convQtdCupons > 0 ? (convQuitado > 0 ? convQuitado / convQtdCupons : convEmitido / convQtdCupons) : 0,
+                totalRecebidoBaixas: convRecebidoBaixas,
+                totalJuros: convJuros,
+                qtdBaixas: convQtdBaixas,
+                pctQuitado: convEmitido > 0 ? (convQuitado / convEmitido) * 100 : 0
+            },
+            topClientes: Object.values(topClientesMap).sort((a: any, b: any) => b.total_emitido - a.total_emitido).slice(0, 10),
+            dailyEvolution: Object.values(convDailyMap).sort((a: any, b: any) => (a.dia || 0) - (b.dia || 0)),
+            recentBaixas: recentBaixas.sort((a: any, b: any) => (b.dtContaBaixa || '').localeCompare(a.dtContaBaixa || '')).slice(0, 20),
+            annualSummary: Object.values(convAnnualMap).sort((a: any, b: any) => a.mes - b.mes)
+        };
+
+        // 12. Crediario a Receber
+        const credLoaded = results.some(r => r.crediarioReceber?.loaded);
+        let crSumReceber = 0;
+        let crSumAVencer = 0;
+        let crSumVencido = 0;
+        let crQtdCupons = 0;
+        let crVencidos30 = 0;
+        let crVencidos60 = 0;
+        let crVencidos90 = 0;
+        let crVencidosMais90 = 0;
+        const crClientesMap: Record<string, any> = {};
+        const crFiliaisMap: Record<string, any> = {};
+        let crCupons: any[] = [];
+
+        results.forEach(r => {
+            const cr = r.crediarioReceber;
+            if (cr && cr.summary) {
+                crSumReceber += Number(cr.summary.totalReceber || 0);
+                crSumAVencer += Number(cr.summary.totalAVencer || 0);
+                crSumVencido += Number(cr.summary.totalVencido || 0);
+                crQtdCupons += Number(cr.summary.qtdCupons || 0);
+                crVencidos30 += Number(cr.summary.vencidos30 || 0);
+                crVencidos60 += Number(cr.summary.vencidos60 || 0);
+                crVencidos90 += Number(cr.summary.vencidos90 || 0);
+                crVencidosMais90 += Number(cr.summary.vencidosMais90 || 0);
+            }
+            (cr?.byCliente || []).forEach((c: any) => {
+                const k = String(c.cdCliente || c.nome || 'Outros');
+                if (!crClientesMap[k]) {
+                    crClientesMap[k] = { ...c, total: 0, totalAVencer: 0, totalVencido: 0, qtdCupons: 0 };
+                }
+                crClientesMap[k].total += Number(c.total || 0);
+                crClientesMap[k].totalAVencer += Number(c.totalAVencer || 0);
+                crClientesMap[k].totalVencido += Number(c.totalVencido || 0);
+                crClientesMap[k].qtdCupons += Number(c.qtdCupons || 0);
+            });
+            (cr?.byFilial || []).forEach((f: any) => {
+                const k = String(f.filial || f.nome_filial || 'Outros');
+                if (!crFiliaisMap[k]) {
+                    crFiliaisMap[k] = { ...f, total: 0, totalAVencer: 0, totalVencido: 0, qtdCupons: 0 };
+                }
+                crFiliaisMap[k].total += Number(f.total || 0);
+                crFiliaisMap[k].totalAVencer += Number(f.totalAVencer || 0);
+                crFiliaisMap[k].totalVencido += Number(f.totalVencido || 0);
+                crFiliaisMap[k].qtdCupons += Number(f.qtdCupons || 0);
+            });
+            if (Array.isArray(cr?.cupons)) {
+                crCupons = crCupons.concat(cr.cupons);
+            }
+        });
+
+        const crediarioReceber = {
+            loaded: credLoaded,
+            dateFilter: first.crediarioReceber?.dateFilter || 'vencimento',
+            summary: {
+                totalReceber: crSumReceber,
+                totalAVencer: crSumAVencer,
+                totalVencido: crSumVencido,
+                qtdCupons: crQtdCupons,
+                qtdClientes: Object.keys(crClientesMap).length,
+                ticketMedio: crQtdCupons > 0 ? crSumReceber / crQtdCupons : 0,
+                vencidos30: crVencidos30,
+                vencidos60: crVencidos60,
+                vencidos90: crVencidos90,
+                vencidosMais90: crVencidosMais90
+            },
+            byCliente: Object.values(crClientesMap).sort((a: any, b: any) => b.total - a.total),
+            byFilial: Object.values(crFiliaisMap).sort((a: any, b: any) => b.total - a.total),
+            cupons: crCupons.sort((a: any, b: any) => (a.dtVencimento || '').localeCompare(b.dtVencimento || ''))
+        };
+
+        // 13. Cartoes Nao Baixados
+        const cartoesLoaded = results.some(r => r.cartoesNaoBaixados?.loaded);
+        let cbSumBruto = 0;
+        let cbSumLiquido = 0;
+        let cbSumTaxa = 0;
+        let cbSumOperacoes = 0;
+        let cbSumAVencer = 0;
+        let cbSumVencido = 0;
+        let cbQtdAVencer = 0;
+        let cbQtdVencidos = 0;
+        const cbBandeiraMap: Record<string, any> = {};
+        const cbModalidadeMap: Record<string, any> = {};
+        const cbFilialMap: Record<string, any> = {};
+        let cbLancamentos: any[] = [];
+
+        results.forEach(r => {
+            const cb = r.cartoesNaoBaixados;
+            if (cb && cb.summary) {
+                cbSumBruto += Number(cb.summary.totalBruto || 0);
+                cbSumLiquido += Number(cb.summary.totalLiquido || 0);
+                cbSumTaxa += Number(cb.summary.totalTaxa || 0);
+                cbSumOperacoes += Number(cb.summary.totalOperacoes || 0);
+                cbSumAVencer += Number(cb.summary.totalAVencer || 0);
+                cbSumVencido += Number(cb.summary.totalVencido || 0);
+                cbQtdAVencer += Number(cb.summary.qtdAVencer || 0);
+                cbQtdVencidos += Number(cb.summary.qtdVencidos || 0);
+            }
+            (cb?.byBandeira || []).forEach((b: any) => {
+                const k = b.bandeira || 'Outros';
+                if (!cbBandeiraMap[k]) {
+                    cbBandeiraMap[k] = { ...b, totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0 };
+                }
+                cbBandeiraMap[k].totalBruto += Number(b.totalBruto || 0);
+                cbBandeiraMap[k].totalLiquido += Number(b.totalLiquido || 0);
+                cbBandeiraMap[k].totalTaxa += Number(b.totalTaxa || 0);
+                cbBandeiraMap[k].totalOperacoes += Number(b.totalOperacoes || 0);
+                cbBandeiraMap[k].totalLancamentos += Number(b.totalLancamentos || 0);
+            });
+            (cb?.byModalidade || []).forEach((m: any) => {
+                const k = m.modalidade || 'Outros';
+                if (!cbModalidadeMap[k]) {
+                    cbModalidadeMap[k] = { ...m, totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0 };
+                }
+                cbModalidadeMap[k].totalBruto += Number(m.totalBruto || 0);
+                cbModalidadeMap[k].totalLiquido += Number(m.totalLiquido || 0);
+                cbModalidadeMap[k].totalTaxa += Number(m.totalTaxa || 0);
+                cbModalidadeMap[k].totalOperacoes += Number(m.totalOperacoes || 0);
+                cbModalidadeMap[k].totalLancamentos += Number(m.totalLancamentos || 0);
+            });
+            (cb?.byFilial || []).forEach((f: any) => {
+                const k = String(f.filial || f.nome_filial || 'Outros');
+                if (!cbFilialMap[k]) {
+                    cbFilialMap[k] = { ...f, totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0 };
+                }
+                cbFilialMap[k].totalBruto += Number(f.totalBruto || 0);
+                cbFilialMap[k].totalLiquido += Number(f.totalLiquido || 0);
+                cbFilialMap[k].totalTaxa += Number(f.totalTaxa || 0);
+                cbFilialMap[k].totalOperacoes += Number(f.totalOperacoes || 0);
+                cbFilialMap[k].totalLancamentos += Number(f.totalLancamentos || 0);
+            });
+            if (Array.isArray(cb?.lancamentos)) {
+                cbLancamentos = cbLancamentos.concat(cb.lancamentos);
+            }
+        });
+
+        const cartoesNaoBaixados = {
+            loaded: cartoesLoaded,
+            summary: {
+                totalBruto: cbSumBruto,
+                totalLiquido: cbSumLiquido,
+                totalTaxa: cbSumTaxa,
+                totalOperacoes: cbSumOperacoes,
+                totalLancamentos: cbLancamentos.length,
+                ticketMedio: cbSumOperacoes > 0 ? cbSumLiquido / cbSumOperacoes : 0,
+                totalAVencer: cbSumAVencer,
+                totalVencido: cbSumVencido,
+                qtdAVencer: cbQtdAVencer,
+                qtdVencidos: cbQtdVencidos
+            },
+            byBandeira: Object.values(cbBandeiraMap).sort((a: any, b: any) => b.totalLiquido - a.totalLiquido),
+            byModalidade: Object.values(cbModalidadeMap).sort((a: any, b: any) => b.totalLiquido - a.totalLiquido),
+            byFilial: Object.values(cbFilialMap).sort((a: any, b: any) => b.totalLiquido - a.totalLiquido),
+            lancamentos: cbLancamentos.sort((a: any, b: any) => (b.dtVenda || '').localeCompare(a.dtVenda || ''))
+        };
+
+        return {
+            params,
+            summary,
+            salesSummary,
+            salesByModality,
+            annualSalesByModality,
+            convenioData,
+            crediarioReceber,
+            cartoesNaoBaixados,
+            monthlyComparison,
+            annualByCategory,
+            dailyEvolution,
+            byBank,
+            byCategory,
+            topReceitas,
+            topDespesas,
+            transactions,
+            filiais
+        };
+    }
 }
 

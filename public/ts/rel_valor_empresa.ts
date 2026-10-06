@@ -185,12 +185,15 @@
         const companyParam = targetCompany || getEl<HTMLSelectElement>('filterCompany')?.value || '';
 
         try {
-            select.innerHTML = '<option value="">Carregando conexões...</option>';
+            select.innerHTML = '<option value="all">Carregando conexões...</option>';
             const url = `/finance/reports/solidcon-connections${companyParam ? `?targetCompanyId=${encodeURIComponent(companyParam)}` : ''}`;
             const res = await api(url);
             const conns = res?.data || [];
 
-            select.innerHTML = '<option value="">Padrão da Empresa (Solidcon)</option>';
+            select.innerHTML = `
+                <option value="all">Todas as Conexões</option>
+                <option value="">Padrão da Empresa (Solidcon)</option>
+            `;
 
             conns.forEach((c: any) => {
                 const opt = document.createElement('option');
@@ -203,12 +206,17 @@
             });
 
             const savedConnectionId = localStorage.getItem(`rel_valor_empresa_conn_${companyParam || 'default'}`);
-            if (savedConnectionId) {
+            if (savedConnectionId && select.querySelector(`option[value="${savedConnectionId}"]`)) {
                 select.value = savedConnectionId;
+            } else {
+                select.value = 'all';
             }
         } catch (err) {
             console.warn('[Rel.Valor_Empresa] Falha ao carregar conexões Solidcon:', err);
-            select.innerHTML = '<option value="">Padrão da Empresa (Solidcon)</option>';
+            select.innerHTML = `
+                <option value="all">Todas as Conexões</option>
+                <option value="">Padrão da Empresa (Solidcon)</option>
+            `;
         }
     };
 

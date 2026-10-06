@@ -241,9 +241,9 @@ export class UserController {
         const validatedData = createUserSchema.parse(req.body);
         const targetRole = validatedData.role || 'user';
 
-        // Ninguém cria usuário com papel igual ou superior ao seu (exceto super_admin)
+        // Ninguém cria usuário com papel superior ao seu (exceto super_admin e admin na empresa)
         if (!canManageRole(callerRole, targetRole)) {
-            throw new AppError('Não é permitido criar usuário com papel igual ou superior ao seu', 403);
+            throw new AppError('Não é permitido criar usuário com papel superior ao seu', 403);
         }
 
         const newUser = await UserService.create(companyId, validatedData);
@@ -266,9 +266,9 @@ export class UserController {
         // Busca o usuário alvo para garantir isolamento por empresa e validar hierarquia
         const targetUser = await UserService.getById(companyId, targetId);
 
-        // Ninguém altera status de usuário com papel igual ou superior ao seu (exceto super_admin)
+        // Ninguém altera status de usuário com papel superior ao seu (exceto super_admin e admin na empresa)
         if (!canManageRole(callerRole, targetUser.role)) {
-            throw new AppError('Não é permitido alterar status de usuário com papel igual ou superior ao seu', 403);
+            throw new AppError('Não é permitido alterar status de usuário com papel superior ao seu', 403);
         }
 
         const validatedData = toggleUserSchema.parse(req.body);
@@ -294,9 +294,9 @@ export class UserController {
         // Busca o usuário alvo dentro da empresa do chamador (retorna 404 se pertencer a outra empresa)
         const targetUser = await UserService.getById(companyId, targetId);
 
-        // Se não for edição do próprio perfil, ninguém edita usuário com papel igual ou superior ao seu
+        // Se não for edição do próprio perfil, ninguém edita usuário com papel superior ao seu
         if (!isSelf && !canManageRole(callerRole, targetUser.role)) {
-            throw new AppError('Não é permitido editar usuário com papel igual ou superior ao seu', 403);
+            throw new AppError('Não é permitido editar usuário com papel superior ao seu', 403);
         }
 
         const validatedData = updateUserSchema.parse(req.body);
@@ -307,7 +307,7 @@ export class UserController {
                 throw new AppError('Não é permitido alterar o próprio papel', 403);
             }
             if (!canManageRole(callerRole, validatedData.role)) {
-                throw new AppError('Não é permitido atribuir papel igual ou superior ao seu', 403);
+                throw new AppError('Não é permitido atribuir papel superior ao seu', 403);
             }
         }
 
@@ -338,9 +338,9 @@ export class UserController {
         // Busca o usuário alvo dentro da empresa do chamador (retorna 404 se pertencer a outra empresa)
         const targetUser = await UserService.getById(companyId, targetId);
 
-        // Ninguém exclui usuário com papel igual ou superior ao seu (exceto super_admin)
+        // Ninguém exclui usuário com papel superior ao seu (exceto super_admin e admin na empresa)
         if (!canManageRole(callerRole, targetUser.role)) {
-            throw new AppError('Não é permitido excluir usuário com papel igual ou superior ao seu', 403);
+            throw new AppError('Não é permitido excluir usuário com papel superior ao seu', 403);
         }
 
         await UserService.delete(companyId, targetId);

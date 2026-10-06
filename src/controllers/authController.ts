@@ -67,11 +67,11 @@ export class AuthController {
             const targetRole = validatedData.role;
             const callerRole = req.user.role;
 
-            // Checagem de hierarquia: ninguém cria usuário com papel igual ou superior ao seu (exceto super_admin)
+            // Checagem de hierarquia: valida se o chamador pode gerenciar o papel alvo
             if (!canManageRole(callerRole, targetRole)) {
                 res.status(403).json({
                     status: 'error',
-                    message: 'Não é permitido criar usuário com papel igual ou superior ao seu'
+                    message: 'Não é permitido criar usuário com papel superior ao seu'
                 });
                 return;
             }

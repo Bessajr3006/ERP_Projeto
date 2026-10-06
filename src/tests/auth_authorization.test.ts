@@ -242,7 +242,7 @@ describe('Testes de Autorização e Isolamento Multiempresa (C2, A1, C6)', () =>
             assert.strictEqual(res.status, 403);
         });
 
-        it('deve rejeitar com 403 quando admin de empresa tentar criar papel superior (super_admin) ou igual (admin)', async () => {
+        it('deve rejeitar com 403 quando admin de empresa tentar criar super_admin', async () => {
             // Tentando criar super_admin
             const resSuper = await request(app)
                 .post('/api/v1/auth/register')
@@ -255,19 +255,25 @@ describe('Testes de Autorização e Isolamento Multiempresa (C2, A1, C6)', () =>
                 });
 
             assert.strictEqual(resSuper.status, 403);
+        });
 
-            // Tentando criar outro admin
+        it('deve permitir com 201 quando admin de empresa criar outro admin na mesma empresa', async () => {
+            const email = `novo_admin_${randomUUID().slice(0, 6)}@test.com`;
             const resAdmin = await request(app)
                 .post('/api/v1/auth/register')
                 .set('Authorization', `Bearer ${adminAToken}`)
                 .send({
-                    email: `fake_admin_${randomUUID().slice(0, 6)}@test.com`,
+                    email,
                     passwordRaw: 'SenhaForte123!',
-                    full_name: 'Tentando Criar Outro Admin',
+                    full_name: 'Novo Admin Empresa A',
                     role: 'admin',
                 });
 
-            assert.strictEqual(resAdmin.status, 403);
+            assert.strictEqual(resAdmin.status, 201);
+            assert.strictEqual(resAdmin.body.status, 'success');
+            if (resAdmin.body.data?.user?.public_id) {
+                createdUserPublicIds.push(resAdmin.body.data.user.public_id);
+            }
         });
 
         it('deve permitir com 201 quando admin criar usuário com papel estritamente inferior (ex: seller ou user)', async () => {

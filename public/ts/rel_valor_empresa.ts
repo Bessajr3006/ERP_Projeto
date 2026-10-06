@@ -914,7 +914,6 @@
             const companyParam = getEl<HTMLSelectElement>('filterCompany')?.value || '';
             const ano = getEl<HTMLSelectElement>('filterAno')?.value || String(new Date().getFullYear());
             const mes = getEl<HTMLSelectElement>('filterMes')?.value || String(new Date().getMonth() + 1);
-            const filial = getEl<HTMLSelectElement>('filterFilial')?.value || '';
             const source = getEl<HTMLSelectElement>('filterSource')?.value || 'conta_baixa';
             const connId = getEl<HTMLSelectElement>('filterConnection')?.value || '';
 
@@ -933,7 +932,6 @@
                 mes,
                 source,
                 ...(companyParam ? { company_id: companyParam } : {}),
-                ...(filial ? { cdFilial: filial, filial } : {}),
                 ...(connId ? { connectionId: connId, connection_id: connId } : {}),
                 ...(cardDtInicio ? { dtInicioCartoes: cardDtInicio } : {}),
                 ...(cardDtFim ? { dtFimCartoes: cardDtFim } : {}),
@@ -1015,7 +1013,6 @@
             }
 
             const companyParam = getEl<HTMLSelectElement>('filterCompany')?.value || '';
-            const filial = getEl<HTMLSelectElement>('filterFilial')?.value || '';
             const connId = getEl<HTMLSelectElement>('filterConnection')?.value || '';
 
             const cardDtInicio = getEl<HTMLInputElement>('cardCrediarioDtInicio')?.value || '';
@@ -1030,7 +1027,6 @@
             const queryParams = new URLSearchParams({
                 includeCrediario: '1',
                 ...(companyParam ? { company_id: companyParam } : {}),
-                ...(filial ? { cdFilial: filial, filial } : {}),
                 ...(connId ? { connectionId: connId, connection_id: connId } : {}),
                 ...(cardDtInicio ? { dtInicioCrediario: cardDtInicio } : {}),
                 ...(cardDtFim ? { dtFimCrediario: cardDtFim } : {}),
@@ -1094,7 +1090,6 @@
             const companyParam = getEl<HTMLSelectElement>('filterCompany')?.value || '';
             const ano = getEl<HTMLSelectElement>('filterAno')?.value || String(new Date().getFullYear());
             const mes = getEl<HTMLSelectElement>('filterMes')?.value || String(new Date().getMonth() + 1);
-            const filial = getEl<HTMLSelectElement>('filterFilial')?.value || '';
             const source = getEl<HTMLSelectElement>('filterSource')?.value || 'conta_baixa';
             const connId = getEl<HTMLSelectElement>('filterConnection')?.value || '';
 
@@ -1108,16 +1103,12 @@
             if (connId) {
                 localStorage.setItem(`rel_valor_empresa_conn_${companyParam || 'default'}`, connId);
             }
-            if (filial) {
-                localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, filial);
-            }
 
             const queryParams = new URLSearchParams({
                 ano,
                 mes,
                 source,
                 ...(companyParam ? { company_id: companyParam } : {}),
-                ...(filial ? { cdFilial: filial, filial } : {}),
                 ...(connId ? { connectionId: connId, connection_id: connId } : {})
             });
 
@@ -1125,29 +1116,6 @@
             const data = res?.data;
 
             if (!data) throw new Error('Estrutura de dados inválida retornada pelo servidor.');
-
-            // Update Filial select if new filiais returned
-            if (data.filiais && data.filiais.length > 0) {
-                const filialSelect = getEl<HTMLSelectElement>('filterFilial');
-                if (filialSelect) {
-                    const currentVal = filialSelect.value;
-                    const savedFilial = localStorage.getItem(`rel_valor_empresa_filial_${companyParam || 'default'}`);
-                    filialSelect.innerHTML = '<option value="">Todas as Filiais</option>';
-                    data.filiais.forEach((f: any) => {
-                        const opt = document.createElement('option');
-                        const fId = typeof f === 'object' ? String(f.id) : String(f);
-                        const fNome = typeof f === 'object' ? (f.nome || `Filial ${f.id}`) : `Filial ${f}`;
-                        opt.value = fId;
-                        opt.textContent = fNome;
-                        filialSelect.appendChild(opt);
-                    });
-
-                    const targetFilial = currentVal || savedFilial || '';
-                    if (targetFilial && filialSelect.querySelector(`option[value="${targetFilial}"]`)) {
-                        filialSelect.value = targetFilial;
-                    }
-                }
-            }
 
             if (getEl('connectionBadge')) {
                 const compDisplay = res.company?.trade_name || res.company?.company_name || '';
@@ -1325,13 +1293,6 @@
         getEl('filterSource')?.addEventListener('change', () => {
             const val = getEl<HTMLSelectElement>('filterSource')?.value || '';
             if (val) localStorage.setItem('rel_valor_empresa_source', val);
-            void loadReport();
-        });
-
-        getEl('filterFilial')?.addEventListener('change', () => {
-            const companyParam = getEl<HTMLSelectElement>('filterCompany')?.value || '';
-            const val = getEl<HTMLSelectElement>('filterFilial')?.value || '';
-            localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, val);
             void loadReport();
         });
 

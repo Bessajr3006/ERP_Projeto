@@ -869,7 +869,6 @@
             const companyParam = getEl('filterCompany')?.value || '';
             const ano = getEl('filterAno')?.value || String(new Date().getFullYear());
             const mes = getEl('filterMes')?.value || String(new Date().getMonth() + 1);
-            const filial = getEl('filterFilial')?.value || '';
             const source = getEl('filterSource')?.value || 'conta_baixa';
             const connId = getEl('filterConnection')?.value || '';
             const cardDtInicio = getEl('cardCartoesDtInicio')?.value || '';
@@ -888,7 +887,6 @@
                 mes,
                 source,
                 ...(companyParam ? { company_id: companyParam } : {}),
-                ...(filial ? { cdFilial: filial, filial } : {}),
                 ...(connId ? { connectionId: connId, connection_id: connId } : {}),
                 ...(cardDtInicio ? { dtInicioCartoes: cardDtInicio } : {}),
                 ...(cardDtFim ? { dtFimCartoes: cardDtFim } : {}),
@@ -971,7 +969,6 @@
                     getEl('modalCrediarioTipoData').value = 'vencimento';
             }
             const companyParam = getEl('filterCompany')?.value || '';
-            const filial = getEl('filterFilial')?.value || '';
             const connId = getEl('filterConnection')?.value || '';
             const cardDtInicio = getEl('cardCrediarioDtInicio')?.value || '';
             const cardDtFim = getEl('cardCrediarioDtFim')?.value || '';
@@ -986,7 +983,6 @@
             const queryParams = new URLSearchParams({
                 includeCrediario: '1',
                 ...(companyParam ? { company_id: companyParam } : {}),
-                ...(filial ? { cdFilial: filial, filial } : {}),
                 ...(connId ? { connectionId: connId, connection_id: connId } : {}),
                 ...(cardDtInicio ? { dtInicioCrediario: cardDtInicio } : {}),
                 ...(cardDtFim ? { dtFimCrediario: cardDtFim } : {}),
@@ -1049,7 +1045,6 @@
             const companyParam = getEl('filterCompany')?.value || '';
             const ano = getEl('filterAno')?.value || String(new Date().getFullYear());
             const mes = getEl('filterMes')?.value || String(new Date().getMonth() + 1);
-            const filial = getEl('filterFilial')?.value || '';
             const source = getEl('filterSource')?.value || 'conta_baixa';
             const connId = getEl('filterConnection')?.value || '';
             currentPeriodLabel = `${String(mes).padStart(2, '0')}/${ano}`;
@@ -1065,42 +1060,17 @@
             if (connId) {
                 localStorage.setItem(`rel_valor_empresa_conn_${companyParam || 'default'}`, connId);
             }
-            if (filial) {
-                localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, filial);
-            }
             const queryParams = new URLSearchParams({
                 ano,
                 mes,
                 source,
                 ...(companyParam ? { company_id: companyParam } : {}),
-                ...(filial ? { cdFilial: filial, filial } : {}),
                 ...(connId ? { connectionId: connId, connection_id: connId } : {})
             });
             const res = await api(`/finance/solidcon-vision?${queryParams.toString()}`);
             const data = res?.data;
             if (!data)
                 throw new Error('Estrutura de dados inválida retornada pelo servidor.');
-            // Update Filial select if new filiais returned
-            if (data.filiais && data.filiais.length > 0) {
-                const filialSelect = getEl('filterFilial');
-                if (filialSelect) {
-                    const currentVal = filialSelect.value;
-                    const savedFilial = localStorage.getItem(`rel_valor_empresa_filial_${companyParam || 'default'}`);
-                    filialSelect.innerHTML = '<option value="">Todas as Filiais</option>';
-                    data.filiais.forEach((f) => {
-                        const opt = document.createElement('option');
-                        const fId = typeof f === 'object' ? String(f.id) : String(f);
-                        const fNome = typeof f === 'object' ? (f.nome || `Filial ${f.id}`) : `Filial ${f}`;
-                        opt.value = fId;
-                        opt.textContent = fNome;
-                        filialSelect.appendChild(opt);
-                    });
-                    const targetFilial = currentVal || savedFilial || '';
-                    if (targetFilial && filialSelect.querySelector(`option[value="${targetFilial}"]`)) {
-                        filialSelect.value = targetFilial;
-                    }
-                }
-            }
             if (getEl('connectionBadge')) {
                 const compDisplay = res.company?.trade_name || res.company?.company_name || '';
                 const connDisplay = res.connection?.name || 'Solidcon Principal';
@@ -1268,12 +1238,6 @@
             const val = getEl('filterSource')?.value || '';
             if (val)
                 localStorage.setItem('rel_valor_empresa_source', val);
-            void loadReport();
-        });
-        getEl('filterFilial')?.addEventListener('change', () => {
-            const companyParam = getEl('filterCompany')?.value || '';
-            const val = getEl('filterFilial')?.value || '';
-            localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, val);
             void loadReport();
         });
         // ─── Modal Cartões Listeners ──────────────────────────────────────────

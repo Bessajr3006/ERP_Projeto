@@ -556,6 +556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const SORT_STORAGE_KEY = 'erp_fechamentos_sort';
 
     let accessibleCompanies: any[] = [];
+    let isUserGeneralAdmin = false;
 
     async function loadCompanies(savedCompanyId?: string) {
         if (!filterTargetCompany) return;
@@ -563,6 +564,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const meRes = await api('/auth/me');
             const activeCompany = meRes?.data?.company;
             const currentCompanyPublicId = activeCompany?.public_id || '';
+            const isGeneralAdmin = meRes?.data?.user?.role === 'super_admin' || 
+                                   activeCompany?.is_general_admin === 1 || 
+                                   activeCompany?.is_general_admin === true;
+            isUserGeneralAdmin = isGeneralAdmin;
 
             let list = meRes?.data?.companies || [];
             if (!Array.isArray(list) || list.length === 0) {
@@ -580,24 +585,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             accessibleCompanies = list;
 
-            filterTargetCompany.innerHTML = `
-                <option value="all">Todas as Unidades (Multiempresa)</option>
-                ${accessibleCompanies.map((c: any) => {
-                    const idVal = c.public_id || c.id;
-                    const displayName = c.trade_name || c.company_name || c.name || `Empresa #${c.id}`;
-                    const isSelected = (savedCompanyId && savedCompanyId !== 'all')
-                        ? (idVal === savedCompanyId || String(c.id) === String(savedCompanyId))
-                        : false;
-                    return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>🏢 ${displayName}</option>`;
-                }).join('')}
-            `;
+            if (isGeneralAdmin) {
+                filterTargetCompany.disabled = false;
+                filterTargetCompany.innerHTML = `
+                    <option value="all">Todas as Unidades (Multiempresa)</option>
+                    ${accessibleCompanies.map((c: any) => {
+                        const idVal = c.public_id || c.id;
+                        const displayName = c.trade_name || c.company_name || c.name || `Empresa #${c.id}`;
+                        const isSelected = (savedCompanyId && savedCompanyId !== 'all')
+                            ? (idVal === savedCompanyId || String(c.id) === String(savedCompanyId))
+                            : false;
+                        return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>🏢 ${displayName}</option>`;
+                    }).join('')}
+                `;
 
-            if (!savedCompanyId || savedCompanyId === 'all') {
-                filterTargetCompany.value = 'all';
+                if (!savedCompanyId || savedCompanyId === 'all') {
+                    filterTargetCompany.value = 'all';
+                }
+            } else {
+                // NOT ADM Geral: only display the currently selected company from footer switcher
+                const currentName = activeCompany?.trade_name || activeCompany?.company_name || activeCompany?.name || 'Empresa Selecionada';
+                const idVal = activeCompany?.public_id || activeCompany?.id || '';
+                filterTargetCompany.innerHTML = `
+                    <option value="${idVal}" selected>🏢 ${currentName}</option>
+                `;
+                filterTargetCompany.value = idVal;
+                filterTargetCompany.disabled = true;
             }
         } catch (err) {
             console.warn('Falha ao carregar empresas para o filtro:', err);
-            filterTargetCompany.innerHTML = '<option value="all">Todas as Unidades</option>';
+            filterTargetCompany.innerHTML = '<option value="">Minha Empresa</option>';
         }
     }
 
@@ -857,7 +874,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadFechamentos() {
         try {
-            const targetCompanyId = filterTargetCompany ? filterTargetCompany.value : 'all';
+            const targetCompanyId = isUserGeneralAdmin && filterTargetCompany ? filterTargetCompany.value : '';
             const customerId = filterCompanyParam?.value;
             const customerGroupId = filterCustomerGroup?.value;
             const taxRegime = filterRegime?.value;
@@ -865,7 +882,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             let url = '/fechamentos';
             const params: string[] = [];
-            if (targetCompanyId) params.push(`targetCompanyId=${encodeURIComponent(targetCompanyId)}`);
+            if (isUserGeneralAdmin && targetCompanyId) {
+                params.push(`targetCompanyId=${encodeURIComponent(targetCompanyId)}`);
+            }
             if (customerId) params.push(`customerId=${customerId}`);
             if (customerGroupId) params.push(`customerGroupId=${customerGroupId}`);
             if (taxRegime && taxRegime !== 'all') params.push(`taxRegime=${encodeURIComponent(taxRegime)}`);
@@ -1502,7 +1521,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btnClearFilters) {
         btnClearFilters.addEventListener('click', () => {
             if (filterForm) filterForm.reset();
-            if (filterTargetCompany) filterTargetCompany.value = 'all';
+            if (filterTargetCompany) {
+                if (isUserGeneralAdmin) {
+                    filterTargetCompany.value = 'all';
+                } else {
+                    filterTargetCompany.selectedIndex = 0;
+                }
+            }
             if (filterRegime) filterRegime.value = 'all';
             updateFilterCustomersByGroup();
             saveFilters();

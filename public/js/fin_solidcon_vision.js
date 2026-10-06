@@ -132,15 +132,28 @@
                 list = [activeCompany];
             }
             accessibleCompanies = list;
-            const savedCompanyId = localStorage.getItem('fin_solidcon_vision_company');
-            compSelect.innerHTML = accessibleCompanies.map((c) => {
-                const idVal = c.public_id || c.id;
-                const displayName = c.trade_name || c.company_name || c.name || `Empresa #${c.id}`;
-                const isSelected = savedCompanyId
-                    ? (idVal === savedCompanyId || String(c.id) === String(savedCompanyId))
-                    : (idVal === currentCompanyPublicId);
-                return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>${escapeHtml(displayName)}</option>`;
-            }).join('');
+            const isGeneralAdmin = meRes?.data?.user?.role === 'super_admin' ||
+                activeCompany?.is_general_admin === 1 ||
+                activeCompany?.is_general_admin === true;
+            if (isGeneralAdmin) {
+                compSelect.disabled = false;
+                const savedCompanyId = localStorage.getItem('fin_solidcon_vision_company');
+                compSelect.innerHTML = accessibleCompanies.map((c) => {
+                    const idVal = c.public_id || c.id;
+                    const displayName = c.trade_name || c.company_name || c.name || `Empresa #${c.id}`;
+                    const isSelected = savedCompanyId
+                        ? (idVal === savedCompanyId || String(c.id) === String(savedCompanyId))
+                        : (idVal === currentCompanyPublicId);
+                    return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>${escapeHtml(displayName)}</option>`;
+                }).join('');
+            }
+            else {
+                const displayName = activeCompany?.trade_name || activeCompany?.company_name || activeCompany?.name || 'Minha Empresa';
+                const idVal = activeCompany?.public_id || activeCompany?.id || '';
+                compSelect.innerHTML = `<option value="${idVal}" selected>${escapeHtml(displayName)}</option>`;
+                compSelect.value = idVal;
+                compSelect.disabled = true;
+            }
             if (compSelect.options.length > 0 && compSelect.selectedIndex === -1) {
                 compSelect.selectedIndex = 0;
             }

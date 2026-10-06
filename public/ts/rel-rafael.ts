@@ -51,16 +51,29 @@
 
       accessibleCompanies = list;
 
-      const savedCompanyId = localStorage.getItem('rel_rafael_selected_company');
+      const isGeneralAdmin = meRes?.data?.user?.role === 'super_admin' || 
+                             activeCompany?.is_general_admin === 1 || 
+                             activeCompany?.is_general_admin === true;
 
-      compSelect.innerHTML = accessibleCompanies.map((c: any) => {
-        const idVal = c.public_id || c.id;
-        const displayName = c.trade_name || c.name || `Empresa #${c.id}`;
-        const isSelected = savedCompanyId 
-          ? (idVal === savedCompanyId || String(c.id) === String(savedCompanyId)) 
-          : (idVal === currentCompanyPublicId);
-        return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>${escapeHtml(displayName)}</option>`;
-      }).join('');
+      if (isGeneralAdmin) {
+        compSelect.disabled = false;
+        const savedCompanyId = localStorage.getItem('rel_rafael_selected_company');
+
+        compSelect.innerHTML = accessibleCompanies.map((c: any) => {
+          const idVal = c.public_id || c.id;
+          const displayName = c.trade_name || c.name || `Empresa #${c.id}`;
+          const isSelected = savedCompanyId 
+            ? (idVal === savedCompanyId || String(c.id) === String(savedCompanyId)) 
+            : (idVal === currentCompanyPublicId);
+          return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>${escapeHtml(displayName)}</option>`;
+        }).join('');
+      } else {
+        const displayName = activeCompany?.trade_name || activeCompany?.name || 'Minha Empresa';
+        const idVal = activeCompany?.public_id || activeCompany?.id || '';
+        compSelect.innerHTML = `<option value="${idVal}" selected>${escapeHtml(displayName)}</option>`;
+        compSelect.value = idVal;
+        compSelect.disabled = true;
+      }
 
       if (compSelect.options.length > 0 && compSelect.selectedIndex === -1) {
         compSelect.selectedIndex = 0;

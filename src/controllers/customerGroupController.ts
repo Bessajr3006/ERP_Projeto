@@ -30,30 +30,20 @@ export class CustomerGroupController {
     static async list(req: Request, res: Response): Promise<any> {
         const userCompanyId = req.user!.company_id;
         const [generalAdminRows] = await pool.query<RowDataPacket[]>(
-            'SELECT is_general_admin, is_group_master, company_group_id FROM companies WHERE id = ? LIMIT 1',
+            'SELECT is_general_admin FROM companies WHERE id = ? LIMIT 1',
             [userCompanyId]
         );
-        const isGeneralAdmin = req.user?.role === 'super_admin' || Boolean(req.user?.general_admin_company_id) || Boolean(generalAdminRows?.[0]?.is_general_admin);
-        const isGroupMaster = Boolean(generalAdminRows?.[0]?.is_group_master);
-        const companyGroupId = generalAdminRows?.[0]?.company_group_id;
+        const isGeneralAdmin = req.user?.role === 'super_admin' || 
+                               Boolean(generalAdminRows?.[0]?.is_general_admin === 1 || generalAdminRows?.[0]?.is_general_admin === true);
 
         let targetCompanyIds: number | number[] = userCompanyId;
 
-        if (isGeneralAdmin || req.query.all === 'true') {
+        if (isGeneralAdmin) {
             const [allComps] = await pool.query<RowDataPacket[]>('SELECT id FROM companies');
             targetCompanyIds = allComps.map(c => c.id);
-        } else if (isGroupMaster && companyGroupId) {
-            const [groupComps] = await pool.query<RowDataPacket[]>(
-                'SELECT id FROM companies WHERE id = ? OR company_group_id = ?',
-                [userCompanyId, companyGroupId]
-            );
-            targetCompanyIds = groupComps.length > 0 ? groupComps.map(c => c.id) : [userCompanyId];
-        } else if (companyGroupId) {
-            const [groupComps] = await pool.query<RowDataPacket[]>(
-                'SELECT id FROM companies WHERE id = ? OR company_group_id = ?',
-                [userCompanyId, companyGroupId]
-            );
-            targetCompanyIds = groupComps.length > 0 ? groupComps.map(c => c.id) : [userCompanyId];
+        } else {
+            // When NOT ADM Geral: strictly only the selected company
+            targetCompanyIds = userCompanyId;
         }
 
         const result = await CustomerGroupService.listByCompany(targetCompanyIds);

@@ -549,8 +549,6 @@
             if (getEl('cardCrediarioQtdVencidos')) getEl('cardCrediarioQtdVencidos')!.textContent = 'Defina o período e filtre';
             if (getEl('cardCrediarioTotalAVencer')) getEl('cardCrediarioTotalAVencer')!.textContent = 'R$ 0,00';
             if (getEl('cardCrediarioQtdAVencer')) getEl('cardCrediarioQtdAVencer')!.textContent = 'Defina o período e filtre';
-            if (getEl('cardCrediarioTotalEmitido')) getEl('cardCrediarioTotalEmitido')!.textContent = 'R$ 0,00';
-            if (getEl('cardCrediarioEmitidoInfo')) getEl('cardCrediarioEmitidoInfo')!.textContent = 'Clique em Filtrar para carregar';
             if (getEl('badgeCrediarioStatus')) getEl('badgeCrediarioStatus')!.textContent = 'Aguardando Filtro';
             if (getEl('badgeCardCrediarioCount')) getEl('badgeCardCrediarioCount')!.textContent = '-';
             if (getEl('cardCrediarioPeriodoBadge')) getEl('cardCrediarioPeriodoBadge')!.textContent = 'Clique em Filtrar para carregar';
@@ -562,12 +560,9 @@
         const totalAReceber = Number(summary.totalAReceber || 0);
         const totalVencido = Number(summary.totalVencido || 0);
         const totalAVencer = Number(summary.totalAVencer || 0);
-        const totalEmitido = Number(summary.totalEmitido || 0);
-        const totalQuitado = Number(summary.totalQuitado || 0);
         const qtdCupons = Number(summary.qtdCupons || 0);
         const qtdVencidos = Number(summary.qtdVencidos || 0);
         const qtdAVencer = Number(summary.qtdAVencer || 0);
-        const qtdClientes = Number(summary.qtdClientes || 0);
 
         if (getEl('cardCrediarioTotalReceber')) {
             getEl('cardCrediarioTotalReceber')!.textContent = formatMoney(totalAReceber);
@@ -583,12 +578,6 @@
         }
         if (getEl('cardCrediarioQtdAVencer')) {
             getEl('cardCrediarioQtdAVencer')!.textContent = `${qtdAVencer.toLocaleString('pt-BR')} cupons a vencer`;
-        }
-        if (getEl('cardCrediarioTotalEmitido')) {
-            getEl('cardCrediarioTotalEmitido')!.textContent = formatMoney(totalEmitido);
-        }
-        if (getEl('cardCrediarioEmitidoInfo')) {
-            getEl('cardCrediarioEmitidoInfo')!.textContent = `Quitado: ${formatMoney(totalQuitado)} • ${qtdClientes.toLocaleString('pt-BR')} clientes`;
         }
         if (getEl('badgeCrediarioStatus')) {
             getEl('badgeCrediarioStatus')!.textContent = `${qtdCupons.toLocaleString('pt-BR')} Cupons a Receber`;

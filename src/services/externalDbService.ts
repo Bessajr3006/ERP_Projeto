@@ -6414,6 +6414,10 @@ export class ExternalDbService {
             dtInicioCartoes?: string | null;
             dtFimCartoes?: string | null;
             tipoDataCartoes?: 'previsao' | 'venda' | string | null;
+            includeContasPagar?: boolean | string | null;
+            dtInicioContasPagar?: string | null;
+            dtFimContasPagar?: string | null;
+            tipoDataContasPagar?: 'vencimento' | 'emissao' | string | null;
         }
     ): Promise<any> {
         let server = (config.host || '').trim();
@@ -7813,6 +7817,228 @@ export class ExternalDbService {
                     }
                 }
 
+                // 10. Contas a Pagar do Solidcon (Sob Demanda via Filtro por Período)
+                const shouldQueryContasPagar = params.includeContasPagar === true ||
+                    params.includeContasPagar === 'true' ||
+                    params.includeContasPagar === '1' ||
+                    Boolean(params.dtInicioContasPagar) ||
+                    Boolean(params.dtFimContasPagar);
+
+                let contasPagar: any = {
+                    loaded: shouldQueryContasPagar,
+                    summary: {
+                        totalAPagar: 0,
+                        totalPagar: 0,
+                        totalEmitido: 0,
+                        totalPago: 0,
+                        totalVencido: 0,
+                        totalAVencer: 0,
+                        qtdTitulos: 0,
+                        qtdVencidos: 0,
+                        qtdAVencer: 0,
+                        qtdFornecedores: 0,
+                        ticketMedio: 0
+                    },
+                    topFornecedores: [],
+                    byFilial: [],
+                    lancamentos: []
+                };
+
+                if (shouldQueryContasPagar) {
+                    try {
+                        let filialClausePagar = '';
+                        if (cdFilial) {
+                            const filialNum = parseInt(cdFilial, 10);
+                            if (!isNaN(filialNum)) {
+                                filialClausePagar = ` AND c.cdPessoaFilialConta = ${filialNum}`;
+                            }
+                        }
+
+                        const dtInicioContasPagar = params.dtInicioContasPagar ? String(params.dtInicioContasPagar).trim() : null;
+                        const dtFimContasPagar = params.dtFimContasPagar ? String(params.dtFimContasPagar).trim() : null;
+                        const tipoDataContasPagar = params.tipoDataContasPagar === 'emissao' ? 'emissao' : 'vencimento';
+                        const targetColPagar = tipoDataContasPagar === 'emissao' ? 'c.dtInclusao' : 'cp.dtParcela';
+
+                        let dateFilterClausePagar = " AND cp.dtParcela <= '2999-12-31'";
+                        if (dtInicioContasPagar && dtFimContasPagar) {
+                            dateFilterClausePagar = ` AND CAST(${targetColPagar} AS DATE) >= @dtInicioPagar AND CAST(${targetColPagar} AS DATE) <= @dtFimPagar`;
+                        } else if (dtInicioContasPagar) {
+                            dateFilterClausePagar = ` AND CAST(${targetColPagar} AS DATE) >= @dtInicioPagar AND ${targetColPagar} <= '2999-12-31'`;
+                        } else if (dtFimContasPagar) {
+                            dateFilterClausePagar = ` AND CAST(${targetColPagar} AS DATE) <= @dtFimPagar`;
+                        }
+
+                        const reqPagar = pool.request();
+                        if (dtInicioContasPagar) {
+                            reqPagar.input('dtInicioPagar', sql.VarChar(10), dtInicioContasPagar);
+                        }
+                        if (dtFimContasPagar) {
+                            reqPagar.input('dtFimPagar', sql.VarChar(10), dtFimContasPagar);
+                        }
+
+                        contasPagar.filtrosAplicados = {
+                            dtInicio: dtInicioContasPagar || null,
+                            dtFim: dtFimContasPagar || null,
+                            tipoData: tipoDataContasPagar
+                        };
+
+                        // Resumo Geral Contas a Pagar
+                        const resPagarSummary = await reqPagar.query(`
+                            SELECT 
+                                COUNT(*) as qtd_titulos,
+                                COUNT(DISTINCT c.cdPessoaComercial) as qtd_fornecedores,
+                                SUM(ISNULL(cp.vlParcela, 0)) as total_emitido,
+                                SUM(ISNULL(cb.vlContaBaixa, 0)) as total_pago,
+                                SUM(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) as total_a_pagar,
+                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_vencido,
+                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_a_vencer,
+                                COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 END) as qtd_vencidos,
+                                COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer
+                            FROM tbContaParcela cp WITH (NOLOCK)
+                            INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
+                            LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
+                            WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                              ${dateFilterClausePagar}
+                              ${filialClausePagar}
+                        `);
+                        const pagarRow = resPagarSummary.recordset?.[0] || {};
+                        const totVencidoPagar = Number(pagarRow.total_vencido || 0);
+                        const totAVencerPagar = Number(pagarRow.total_a_vencer || 0);
+                        const totPagar = (totVencidoPagar + totAVencerPagar > 0) ? (totVencidoPagar + totAVencerPagar) : Number(pagarRow.total_a_pagar || 0);
+                        const qtdVencPagar = Number(pagarRow.qtd_vencidos || 0);
+                        const qtdAVencPagar = Number(pagarRow.qtd_a_vencer || 0);
+                        const qtdTotPagar = (qtdVencPagar + qtdAVencPagar > 0) ? (qtdVencPagar + qtdAVencPagar) : Number(pagarRow.qtd_titulos || 0);
+
+                        contasPagar.summary = {
+                            totalAPagar: totPagar,
+                            totalPagar: totPagar,
+                            totalEmitido: Number(pagarRow.total_emitido || 0),
+                            totalPago: Number(pagarRow.total_pago || 0),
+                            totalVencido: totVencidoPagar,
+                            totalAVencer: totAVencerPagar,
+                            qtdTitulos: qtdTotPagar,
+                            qtdVencidos: qtdVencPagar,
+                            qtdAVencer: qtdAVencPagar,
+                            qtdFornecedores: Number(pagarRow.qtd_fornecedores || 0),
+                            ticketMedio: qtdTotPagar > 0 ? totPagar / qtdTotPagar : 0
+                        };
+
+                        // Top Fornecedores com maior saldo a pagar
+                        const resPagarTop = await reqPagar.query(`
+                            SELECT TOP 10
+                                c.cdPessoaComercial,
+                                ISNULL(NULLIF(RTRIM(LTRIM(p.nmPessoa)), ''), 'Fornecedor não identificado') as fornecedor,
+                                COUNT(cp.cdContaParcela) as qtd_titulos,
+                                SUM(ISNULL(cp.vlParcela, 0)) as total_emitido,
+                                SUM(ISNULL(cb.vlContaBaixa, 0)) as total_pago,
+                                SUM(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) as total_a_pagar
+                            FROM tbContaParcela cp WITH (NOLOCK)
+                            INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
+                            LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
+                            LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
+                            WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                              ${dateFilterClausePagar}
+                              ${filialClausePagar}
+                            GROUP BY c.cdPessoaComercial, p.nmPessoa
+                            ORDER BY total_a_pagar DESC
+                        `);
+                        contasPagar.topFornecedores = (resPagarTop.recordset || []).map((t: any) => {
+                            const val = Number(t.total_a_pagar || 0);
+                            const pct = totPagar > 0 ? (val / totPagar) * 100 : 0;
+                            return {
+                                cdPessoaComercial: String(t.cdPessoaComercial || ''),
+                                fornecedor: String(t.fornecedor || 'Fornecedor').trim(),
+                                qtdTitulos: Number(t.qtd_titulos || 0),
+                                totalEmitido: Number(t.total_emitido || 0),
+                                totalPago: Number(t.total_pago || 0),
+                                totalAPagar: val,
+                                percentual: Number(pct.toFixed(1))
+                            };
+                        });
+
+                        // Agrupamento por Filial
+                        const resPagarFilial = await reqPagar.query(`
+                            SELECT 
+                                c.cdPessoaFilialConta as filial,
+                                ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial,
+                                COUNT(*) as qtd_titulos,
+                                SUM(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) as total_a_pagar
+                            FROM tbContaParcela cp WITH (NOLOCK)
+                            INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
+                            LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
+                            LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
+                            WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                              ${dateFilterClausePagar}
+                              ${filialClausePagar}
+                            GROUP BY c.cdPessoaFilialConta, fil.nmPessoa
+                            ORDER BY total_a_pagar DESC
+                        `);
+                        contasPagar.byFilial = (resPagarFilial.recordset || []).map((f: any) => ({
+                            filial: Number(f.filial || 1),
+                            nomeFilial: String(f.nomeFilial || `Filial ${f.filial}`).trim(),
+                            qtdTitulos: Number(f.qtd_titulos || 0),
+                            totalAPagar: Number(f.total_a_pagar || 0)
+                        }));
+
+                        // Lista detalhada dos títulos a pagar (Top 2000)
+                        const resPagarList = await reqPagar.query(`
+                            SELECT TOP 2000
+                                cp.cdConta,
+                                cp.cdContaParcela,
+                                c.cdPessoaComercial,
+                                ISNULL(NULLIF(RTRIM(LTRIM(p.nmPessoa)), ''), 'Fornecedor não identificado') as fornecedor,
+                                ISNULL(pj.nrCGC, pf.nrCPF) as documentoPessoa,
+                                c.Documento as numeroDocumento,
+                                CONVERT(VARCHAR(10), c.dtInclusao, 120) as dtEmissao,
+                                CONVERT(VARCHAR(10), cp.dtParcela, 120) as dtVencimento,
+                                CAST(ISNULL(cp.vlParcela, 0) AS FLOAT) as vlParcela,
+                                CAST(ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as vlPago,
+                                CAST(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as saldoPendente,
+                                CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
+                                CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cp.dtParcela, GETDATE()) ELSE 0 END as diasAtraso,
+                                ISNULL(cp.Historico, '') as historico,
+                                ISNULL(c.cdPessoaFilialConta, 1) as filial,
+                                ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial
+                            FROM tbContaParcela cp WITH (NOLOCK)
+                            INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
+                            LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
+                            LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
+                            LEFT JOIN tbPessoaJuridica pj WITH (NOLOCK) ON pj.cdPessoaJuridica = p.cdPessoa
+                            LEFT JOIN tbPessoaFisica pf WITH (NOLOCK) ON pf.cdPessoaFisica = p.cdPessoa
+                            LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
+                            WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                              ${dateFilterClausePagar}
+                              ${filialClausePagar}
+                            ORDER BY saldoPendente DESC, cp.dtParcela ASC
+                        `);
+                        contasPagar.lancamentos = (resPagarList.recordset || []).map((cp: any) => ({
+                            id: `${cp.cdConta}_${cp.cdContaParcela}`,
+                            cdConta: Number(cp.cdConta || 0),
+                            cdContaParcela: Number(cp.cdContaParcela || 1),
+                            cdPessoaComercial: String(cp.cdPessoaComercial || ''),
+                            fornecedor: String(cp.fornecedor || 'Fornecedor').trim(),
+                            documentoPessoa: String(cp.documentoPessoa || '').trim(),
+                            numeroDocumento: String(cp.numeroDocumento || '').trim(),
+                            dtEmissao: cp.dtEmissao,
+                            dtVencimento: cp.dtVencimento,
+                            vlParcela: Number(cp.vlParcela || 0),
+                            vlPago: Number(cp.vlPago || 0),
+                            saldoPendente: Number(cp.saldoPendente || 0),
+                            isVencido: Boolean(cp.isVencido),
+                            diasAtraso: Number(cp.diasAtraso || 0),
+                            historico: String(cp.historico || ''),
+                            filial: Number(cp.filial || 1),
+                            nomeFilial: String(cp.nomeFilial || `Filial ${cp.filial}`).trim()
+                        }));
+                    } catch (pagarErr: any) {
+                        console.warn('Falha ao consultar contas a pagar no Solidcon:', pagarErr?.message || pagarErr);
+                    }
+                }
+
                 // Resumo do Mês
                 const currentMonthData = monthlyComparison[mes - 1] || {
                     receita: 0,
@@ -7864,6 +8090,7 @@ export class ExternalDbService {
                     convenioData,
                     crediarioReceber,
                     cartoesNaoBaixados,
+                    contasPagar,
                     monthlyComparison,
                     annualByCategory,
                     dailyEvolution,
@@ -8386,6 +8613,83 @@ export class ExternalDbService {
             lancamentos: cbLancamentos.sort((a: any, b: any) => (b.dtVenda || '').localeCompare(a.dtVenda || ''))
         };
 
+        // 14. Contas a Pagar
+        const cpLoaded = results.some(r => r.contasPagar?.loaded);
+        let cpSumPagar = 0;
+        let cpSumAVencer = 0;
+        let cpSumVencido = 0;
+        let cpQtdTitulos = 0;
+        let cpSumEmitido = 0;
+        let cpSumPago = 0;
+        const cpFornecedoresMap: Record<string, any> = {};
+        const cpFiliaisMap: Record<string, any> = {};
+        let cpLancamentos: any[] = [];
+
+        results.forEach(r => {
+            const cp = r.contasPagar;
+            if (cp && cp.summary) {
+                const sVenc = Number(cp.summary.totalVencido || 0);
+                const sAVenc = Number(cp.summary.totalAVencer || 0);
+                const sPag = (sVenc + sAVenc > 0) ? (sVenc + sAVenc) : Number(cp.summary.totalAPagar || cp.summary.totalPagar || 0);
+                cpSumPagar += sPag;
+                cpSumAVencer += sAVenc;
+                cpSumVencido += sVenc;
+                cpSumEmitido += Number(cp.summary.totalEmitido || 0);
+                cpSumPago += Number(cp.summary.totalPago || 0);
+                const qVenc = Number(cp.summary.qtdVencidos || 0);
+                const qAVenc = Number(cp.summary.qtdAVencer || 0);
+                const qTot = (qVenc + qAVenc > 0) ? (qVenc + qAVenc) : Number(cp.summary.qtdTitulos || 0);
+                cpQtdTitulos += qTot;
+            }
+            (cp?.topFornecedores || []).forEach((f: any) => {
+                const k = String(f.cdPessoaComercial || f.fornecedor || 'Outros');
+                if (!cpFornecedoresMap[k]) {
+                    cpFornecedoresMap[k] = { ...f, totalAPagar: 0, totalEmitido: 0, totalPago: 0, qtdTitulos: 0 };
+                }
+                cpFornecedoresMap[k].totalAPagar += Number(f.totalAPagar || 0);
+                cpFornecedoresMap[k].totalEmitido += Number(f.totalEmitido || 0);
+                cpFornecedoresMap[k].totalPago += Number(f.totalPago || 0);
+                cpFornecedoresMap[k].qtdTitulos += Number(f.qtdTitulos || 0);
+            });
+            (cp?.byFilial || []).forEach((f: any) => {
+                const k = String(f.filial || f.nomeFilial || 'Outros');
+                if (!cpFiliaisMap[k]) {
+                    cpFiliaisMap[k] = { ...f, totalAPagar: 0, qtdTitulos: 0 };
+                }
+                cpFiliaisMap[k].totalAPagar += Number(f.totalAPagar || 0);
+                cpFiliaisMap[k].qtdTitulos += Number(f.qtdTitulos || 0);
+            });
+            if (Array.isArray(cp?.lancamentos)) {
+                cpLancamentos = cpLancamentos.concat(cp.lancamentos);
+            }
+        });
+
+        const totalContasPagar = (cpSumVencido + cpSumAVencer > 0) ? (cpSumVencido + cpSumAVencer) : cpSumPagar;
+        const contasPagar = {
+            loaded: cpLoaded,
+            filtrosAplicados: first.contasPagar?.filtrosAplicados || {
+                dtInicio: null,
+                dtFim: null,
+                tipoData: 'vencimento'
+            },
+            summary: {
+                totalAPagar: totalContasPagar,
+                totalPagar: totalContasPagar,
+                totalEmitido: cpSumEmitido,
+                totalPago: cpSumPago,
+                totalAVencer: cpSumAVencer,
+                totalVencido: cpSumVencido,
+                qtdTitulos: cpQtdTitulos,
+                qtdVencidos: results.reduce((acc, r) => acc + Number(r.contasPagar?.summary?.qtdVencidos || 0), 0),
+                qtdAVencer: results.reduce((acc, r) => acc + Number(r.contasPagar?.summary?.qtdAVencer || 0), 0),
+                qtdFornecedores: Object.keys(cpFornecedoresMap).length,
+                ticketMedio: cpQtdTitulos > 0 ? totalContasPagar / cpQtdTitulos : 0
+            },
+            topFornecedores: Object.values(cpFornecedoresMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar),
+            byFilial: Object.values(cpFiliaisMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar),
+            lancamentos: cpLancamentos.sort((a: any, b: any) => (a.dtVencimento || '').localeCompare(b.dtVencimento || ''))
+        };
+
         return {
             params,
             summary,
@@ -8395,6 +8699,7 @@ export class ExternalDbService {
             convenioData,
             crediarioReceber,
             cartoesNaoBaixados,
+            contasPagar,
             monthlyComparison,
             annualByCategory,
             dailyEvolution,

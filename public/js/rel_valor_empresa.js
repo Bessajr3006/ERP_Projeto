@@ -16,6 +16,10 @@
     // State for Crediário e Convênio a Receber (até 2999)
     let currentCrediarioReceberData = null;
     let rawCrediarioCupons = [];
+    // State for Contas a Pagar (Solidcon)
+    let currentContasPagarData = null;
+    let rawContasPagarLancamentos = [];
+    let isContasPagarLoading = false;
     function escapeHtml(value) {
         return String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -831,6 +835,392 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     };
+    // ─── Contas a Pagar (Solidcon): Render Card ────────────────────────────────
+    const renderContasPagarCard = (data) => {
+        const card = getEl('cardContasPagar');
+        if (!card)
+            return;
+        if (!data || !data.loaded) {
+            if (getEl('cardContasPagarTotalPagar'))
+                getEl('cardContasPagarTotalPagar').textContent = 'R$ 0,00';
+            if (getEl('cardContasPagarSubtitle'))
+                getEl('cardContasPagarSubtitle').textContent = 'Total a Pagar (Vencidos + A Vencer)';
+            if (getEl('cardContasPagarTotalVencido'))
+                getEl('cardContasPagarTotalVencido').textContent = 'R$ 0,00';
+            if (getEl('cardContasPagarQtdVencidos'))
+                getEl('cardContasPagarQtdVencidos').textContent = 'Defina o período e filtre';
+            if (getEl('cardContasPagarTotalAVencer'))
+                getEl('cardContasPagarTotalAVencer').textContent = 'R$ 0,00';
+            if (getEl('cardContasPagarQtdAVencer'))
+                getEl('cardContasPagarQtdAVencer').textContent = 'Defina o período e filtre';
+            if (getEl('badgeContasPagarStatus'))
+                getEl('badgeContasPagarStatus').textContent = 'Aguardando Filtro';
+            if (getEl('badgeCardContasPagarCount'))
+                getEl('badgeCardContasPagarCount').textContent = '-';
+            if (getEl('cardContasPagarPeriodoBadge'))
+                getEl('cardContasPagarPeriodoBadge').textContent = 'Clique em Filtrar para carregar';
+            if (getEl('modalContasPagarBadgePeriodo'))
+                getEl('modalContasPagarBadgePeriodo').textContent = 'Não Consultado';
+            return;
+        }
+        const summary = data.summary || {};
+        const totalVencido = Number(summary.totalVencido || 0);
+        const totalAVencer = Number(summary.totalAVencer || 0);
+        const totalAPagar = (totalVencido + totalAVencer > 0)
+            ? (totalVencido + totalAVencer)
+            : Number(summary.totalAPagar || summary.totalPagar || 0);
+        const qtdVencidos = Number(summary.qtdVencidos || 0);
+        const qtdAVencer = Number(summary.qtdAVencer || 0);
+        const qtdTitulos = (qtdVencidos + qtdAVencer > 0)
+            ? (qtdVencidos + qtdAVencer)
+            : Number(summary.qtdTitulos || 0);
+        if (getEl('cardContasPagarTotalPagar')) {
+            getEl('cardContasPagarTotalPagar').textContent = formatMoney(totalAPagar);
+        }
+        if (getEl('cardContasPagarTotalVencido')) {
+            getEl('cardContasPagarTotalVencido').textContent = formatMoney(totalVencido);
+        }
+        if (getEl('cardContasPagarQtdVencidos')) {
+            getEl('cardContasPagarQtdVencidos').textContent = `${qtdVencidos.toLocaleString('pt-BR')} títulos vencidos`;
+        }
+        if (getEl('cardContasPagarTotalAVencer')) {
+            getEl('cardContasPagarTotalAVencer').textContent = formatMoney(totalAVencer);
+        }
+        if (getEl('cardContasPagarQtdAVencer')) {
+            getEl('cardContasPagarQtdAVencer').textContent = `${qtdAVencer.toLocaleString('pt-BR')} títulos a vencer`;
+        }
+        if (getEl('badgeContasPagarStatus')) {
+            getEl('badgeContasPagarStatus').textContent = `${qtdTitulos.toLocaleString('pt-BR')} Títulos a Pagar`;
+        }
+        if (getEl('badgeCardContasPagarCount')) {
+            getEl('badgeCardContasPagarCount').textContent = String(qtdTitulos);
+        }
+        // Filtros aplicados & Badges de Período
+        const filtros = data.filtrosAplicados || {};
+        const dtIni = filtros.dtInicio || '';
+        const dtFim = filtros.dtFim || '';
+        const tipoDt = filtros.tipoData || 'vencimento';
+        const tipoLabel = tipoDt === 'emissao' ? 'Emissão' : 'Vencimento';
+        let badgePeriodoText = 'Acumulado até 2999';
+        if (dtIni && dtFim) {
+            badgePeriodoText = `${formatDateBR(dtIni)} a ${formatDateBR(dtFim)} (${tipoLabel})`;
+        }
+        else if (dtIni) {
+            badgePeriodoText = `A partir de ${formatDateBR(dtIni)} (${tipoLabel})`;
+        }
+        else if (dtFim) {
+            badgePeriodoText = `Até ${formatDateBR(dtFim)} (${tipoLabel})`;
+        }
+        if (getEl('cardContasPagarPeriodoBadge')) {
+            getEl('cardContasPagarPeriodoBadge').textContent = badgePeriodoText;
+        }
+        if (getEl('modalContasPagarBadgePeriodo')) {
+            getEl('modalContasPagarBadgePeriodo').textContent = badgePeriodoText;
+        }
+    };
+    // ─── Modal Contas a Pagar: Populate & Filter ─────────────────────────────
+    const populateModalContasPagarFilters = (data) => {
+        const filialSelect = getEl('modalContasPagarFilterFilial');
+        if (filialSelect) {
+            const filiais = data.byFilial || [];
+            filialSelect.innerHTML = '<option value="">Todas as Filiais</option>' +
+                filiais.map((f) => `<option value="${escapeHtml(f.filial)}">${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}</option>`).join('');
+        }
+    };
+    const renderModalContasPagarTable = (list) => {
+        const tbody = getEl('modalContasPagarTableBody');
+        if (!tbody)
+            return;
+        if (!currentContasPagarData || !currentContasPagarData.loaded) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <svg class="w-8 h-8 text-rose-400 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="font-medium text-gray-700 dark:text-gray-200">Contas a Pagar não consultadas</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Defina o período acima e clique em "Consultar Servidor" ou "Filtrar" para carregar os títulos a pagar.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <svg class="w-8 h-8 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="font-medium">Nenhum título a pagar encontrado para os filtros selecionados.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        tbody.innerHTML = list.map((item) => {
+            const isVencido = item.isVencido;
+            const statusBadgeClass = isVencido
+                ? 'bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800/40'
+                : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40';
+            const statusText = isVencido
+                ? `Vencido (${item.diasAtraso}d)`
+                : 'A Vencer';
+            return `
+                <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <td class="py-2.5 px-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        ${formatDateBR(item.dtEmissao)}
+                    </td>
+                    <td class="py-2.5 px-4 font-medium ${isVencido ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
+                        ${formatDateBR(item.dtVencimento)}
+                    </td>
+                    <td class="py-2.5 px-4 text-center whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${statusBadgeClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="py-2.5 px-4 font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs font-semibold" title="Conta #${item.cdConta}">
+                        ${escapeHtml(item.numeroDocumento || `#${item.cdConta}`)}
+                    </td>
+                    <td class="py-2.5 px-4 text-center font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
+                        ${item.cdContaParcela || 1}
+                    </td>
+                    <td class="py-2.5 px-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                        ${escapeHtml(item.nomeFilial || `Filial ${item.filial}`)}
+                    </td>
+                    <td class="py-2.5 px-4 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate" title="${escapeHtml(item.fornecedor)} - ${escapeHtml(item.historico || '')}">
+                        ${escapeHtml(item.fornecedor)}
+                    </td>
+                    <td class="py-2.5 px-4 font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">
+                        ${escapeHtml(item.documentoPessoa || '-')}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                        ${formatMoney(item.vlParcela)}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        ${formatMoney(item.vlPago)}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                        ${formatMoney(item.saldoPendente)}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
+    const applyModalContasPagarFilters = () => {
+        const query = (getEl('modalContasPagarSearch')?.value || '').toLowerCase().trim();
+        const selectedStatus = getEl('modalContasPagarFilterStatus')?.value || 'all';
+        const selectedFilial = getEl('modalContasPagarFilterFilial')?.value || '';
+        const dtInicio = getEl('modalContasPagarDtInicio')?.value || '';
+        const dtFim = getEl('modalContasPagarDtFim')?.value || '';
+        const tipoData = getEl('modalContasPagarTipoData')?.value || 'vencimento';
+        const filtered = rawContasPagarLancamentos.filter((item) => {
+            if (selectedStatus === 'vencidos' && !item.isVencido)
+                return false;
+            if (selectedStatus === 'a_vencer' && item.isVencido)
+                return false;
+            if (selectedFilial && String(item.filial) !== selectedFilial)
+                return false;
+            const targetDate = tipoData === 'emissao' ? item.dtEmissao : item.dtVencimento;
+            if (dtInicio && targetDate && targetDate < dtInicio)
+                return false;
+            if (dtFim && targetDate && targetDate > dtFim)
+                return false;
+            if (query) {
+                const combined = `${item.fornecedor || ''} ${item.documentoPessoa || ''} ${item.numeroDocumento || ''} ${item.cdConta || ''} ${item.nomeFilial || ''} ${item.historico || ''}`.toLowerCase();
+                if (!combined.includes(query))
+                    return false;
+            }
+            return true;
+        });
+        // Update Ribbon Summary
+        let sumVencido = 0;
+        let sumAVencer = 0;
+        filtered.forEach((r) => {
+            const val = Number(r.saldoPendente || 0);
+            if (r.isVencido)
+                sumVencido += val;
+            else
+                sumAVencer += val;
+        });
+        const sumPagar = sumVencido + sumAVencer;
+        if (getEl('modalContasPagarSummaryPagar')) {
+            getEl('modalContasPagarSummaryPagar').textContent = formatMoney(sumPagar);
+        }
+        if (getEl('modalContasPagarSummaryVencido')) {
+            getEl('modalContasPagarSummaryVencido').textContent = formatMoney(sumVencido);
+        }
+        if (getEl('modalContasPagarSummaryAVencer')) {
+            getEl('modalContasPagarSummaryAVencer').textContent = formatMoney(sumAVencer);
+        }
+        if (getEl('modalContasPagarItemCount')) {
+            getEl('modalContasPagarItemCount').textContent = `Exibindo ${filtered.length} de ${rawContasPagarLancamentos.length} títulos`;
+        }
+        renderModalContasPagarTable(filtered);
+    };
+    const openModalContasPagar = () => {
+        const modal = getEl('modalContasPagar');
+        if (!modal)
+            return;
+        if (getEl('modalContasPagarSearch')) {
+            getEl('modalContasPagarSearch').value = '';
+        }
+        if (getEl('modalContasPagarFilterStatus')) {
+            getEl('modalContasPagarFilterStatus').value = 'all';
+        }
+        if (getEl('modalContasPagarFilterFilial')) {
+            getEl('modalContasPagarFilterFilial').value = '';
+        }
+        // Sync card dates into modal
+        const cardDtInicio = getEl('cardContasPagarDtInicio')?.value || '';
+        const cardDtFim = getEl('cardContasPagarDtFim')?.value || '';
+        const cardTipoData = getEl('cardContasPagarTipoData')?.value || 'vencimento';
+        if (getEl('modalContasPagarDtInicio')) {
+            getEl('modalContasPagarDtInicio').value = cardDtInicio;
+        }
+        if (getEl('modalContasPagarDtFim')) {
+            getEl('modalContasPagarDtFim').value = cardDtFim;
+        }
+        if (getEl('modalContasPagarTipoData')) {
+            getEl('modalContasPagarTipoData').value = cardTipoData;
+        }
+        applyModalContasPagarFilters();
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+    const closeModalContasPagar = () => {
+        const modal = getEl('modalContasPagar');
+        if (!modal)
+            return;
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    };
+    const exportContasPagarCsv = () => {
+        if (!rawContasPagarLancamentos || rawContasPagarLancamentos.length === 0) {
+            showAlert('Não há títulos a pagar para exportar.', 'info');
+            return;
+        }
+        const headers = ['Emissão', 'Vencimento', 'Status', 'Dias de Atraso', 'Documento/NF', 'Parcela', 'Filial', 'CNPJ/CPF Fornecedor', 'Fornecedor', 'Histórico', 'Valor Parcela', 'Valor Pago', 'Saldo a Pagar'];
+        const rows = rawContasPagarLancamentos.map((item) => [
+            formatDateBR(item.dtEmissao),
+            formatDateBR(item.dtVencimento),
+            item.isVencido ? '"Vencido"' : '"A Vencer"',
+            item.diasAtraso || 0,
+            `"${(item.numeroDocumento || `#${item.cdConta}`).replace(/"/g, '""')}"`,
+            item.cdContaParcela || 1,
+            `"${(item.nomeFilial || `Filial ${item.filial}`).replace(/"/g, '""')}"`,
+            `"${(item.documentoPessoa || '').replace(/"/g, '""')}"`,
+            `"${(item.fornecedor || '').replace(/"/g, '""')}"`,
+            `"${(item.historico || '').replace(/"/g, '""')}"`,
+            Number(item.vlParcela || 0).toFixed(2).replace('.', ','),
+            Number(item.vlPago || 0).toFixed(2).replace('.', ','),
+            Number(item.saldoPendente || 0).toFixed(2).replace('.', ',')
+        ]);
+        const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `contas_a_pagar_solidcon_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+    // ─── Load Contas a Pagar (Sob Demanda) ────────────────────────────────────
+    const loadContasPagar = async (options) => {
+        if (isContasPagarLoading)
+            return;
+        isContasPagarLoading = true;
+        const btnCard = getEl('btnFilterContasPagarCard');
+        const btnModal = getEl('btnFilterContasPagarModal');
+        const origBtnCardHtml = btnCard?.innerHTML;
+        const origBtnModalHtml = btnModal?.innerHTML;
+        if (btnCard) {
+            btnCard.disabled = true;
+            btnCard.classList.add('opacity-70');
+            btnCard.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Filtrando...</span>`;
+        }
+        if (btnModal) {
+            btnModal.disabled = true;
+            btnModal.classList.add('opacity-70');
+            btnModal.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Consultando...</span>`;
+        }
+        try {
+            if (options?.resetDates) {
+                if (getEl('cardContasPagarDtInicio'))
+                    getEl('cardContasPagarDtInicio').value = '';
+                if (getEl('cardContasPagarDtFim'))
+                    getEl('cardContasPagarDtFim').value = '';
+                if (getEl('cardContasPagarTipoData'))
+                    getEl('cardContasPagarTipoData').value = 'vencimento';
+                if (getEl('modalContasPagarDtInicio'))
+                    getEl('modalContasPagarDtInicio').value = '';
+                if (getEl('modalContasPagarDtFim'))
+                    getEl('modalContasPagarDtFim').value = '';
+                if (getEl('modalContasPagarTipoData'))
+                    getEl('modalContasPagarTipoData').value = 'vencimento';
+            }
+            const companyParam = getEl('filterCompany')?.value || '';
+            const connId = getEl('filterConnection')?.value || '';
+            const cardDtInicio = getEl('cardContasPagarDtInicio')?.value || '';
+            const cardDtFim = getEl('cardContasPagarDtFim')?.value || '';
+            const cardTipoData = getEl('cardContasPagarTipoData')?.value || 'vencimento';
+            // Also synchronize into modal
+            if (getEl('modalContasPagarDtInicio'))
+                getEl('modalContasPagarDtInicio').value = cardDtInicio;
+            if (getEl('modalContasPagarDtFim'))
+                getEl('modalContasPagarDtFim').value = cardDtFim;
+            if (getEl('modalContasPagarTipoData'))
+                getEl('modalContasPagarTipoData').value = cardTipoData;
+            const queryParams = new URLSearchParams({
+                includeContasPagar: '1',
+                ...(companyParam ? { company_id: companyParam } : {}),
+                ...(connId ? { connectionId: connId, connection_id: connId } : {}),
+                ...(cardDtInicio ? { dtInicioContasPagar: cardDtInicio } : {}),
+                ...(cardDtFim ? { dtFimContasPagar: cardDtFim } : {}),
+                ...(cardTipoData ? { tipoDataContasPagar: cardTipoData } : {})
+            });
+            const res = await api(`/finance/solidcon-vision?${queryParams.toString()}`);
+            const data = res?.data;
+            if (!data)
+                throw new Error('Falha ao obter dados de contas a pagar do servidor.');
+            currentContasPagarData = data.contasPagar || {
+                loaded: true,
+                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, ticketMedio: 0 },
+                topFornecedores: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            currentContasPagarData.loaded = true;
+            rawContasPagarLancamentos = currentContasPagarData.lancamentos || [];
+            renderContasPagarCard(currentContasPagarData);
+            populateModalContasPagarFilters(currentContasPagarData);
+            if (!getEl('modalContasPagar')?.classList.contains('hidden')) {
+                applyModalContasPagarFilters();
+            }
+            const totalTitulos = currentContasPagarData.summary?.qtdTitulos || 0;
+            showAlert(`Contas a pagar carregadas com sucesso (${totalTitulos.toLocaleString('pt-BR')} títulos).`, 'success');
+        }
+        catch (err) {
+            showAlert(`Erro ao carregar Contas a Pagar: ${err?.message || err}`, 'error');
+        }
+        finally {
+            isContasPagarLoading = false;
+            if (btnCard) {
+                btnCard.disabled = false;
+                btnCard.classList.remove('opacity-70');
+                if (origBtnCardHtml)
+                    btnCard.innerHTML = origBtnCardHtml;
+            }
+            if (btnModal) {
+                btnModal.disabled = false;
+                btnModal.classList.remove('opacity-70');
+                if (origBtnModalHtml)
+                    btnModal.innerHTML = origBtnModalHtml;
+            }
+        }
+    };
     // ─── Load Cartões Não Baixados (Sob Demanda) ──────────────────────────────
     let isCartoesLoading = false;
     const loadCartoesNaoBaixados = async (options) => {
@@ -1113,13 +1503,34 @@
                 rawCrediarioCupons = [];
                 renderCrediarioReceberCard(currentCrediarioReceberData);
             }
+            // Process & Render Contas a Pagar (Sob Demanda)
+            if (data.contasPagar && data.contasPagar.loaded) {
+                currentContasPagarData = data.contasPagar;
+                rawContasPagarLancamentos = currentContasPagarData.lancamentos || [];
+                renderContasPagarCard(currentContasPagarData);
+                populateModalContasPagarFilters(currentContasPagarData);
+            }
+            else if (!currentContasPagarData || !currentContasPagarData.loaded) {
+                currentContasPagarData = {
+                    loaded: false,
+                    summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, ticketMedio: 0 },
+                    topFornecedores: [],
+                    byFilial: [],
+                    lancamentos: []
+                };
+                rawContasPagarLancamentos = [];
+                renderContasPagarCard(currentContasPagarData);
+            }
             const totalCartoesLotes = currentCartoesData?.loaded ? (currentCartoesData.summary?.totalLancamentos || 0) : null;
             const totalCuponsReceber = currentCrediarioReceberData?.loaded ? (currentCrediarioReceberData.summary?.qtdCupons || 0) : null;
+            const totalTitulosPagar = currentContasPagarData?.loaded ? (currentContasPagarData.summary?.qtdTitulos || 0) : null;
             const extraDetails = [];
             if (totalCartoesLotes !== null)
                 extraDetails.push(`${totalCartoesLotes} lotes de cartões`);
             if (totalCuponsReceber !== null)
                 extraDetails.push(`${totalCuponsReceber} cupons a receber`);
+            if (totalTitulosPagar !== null)
+                extraDetails.push(`${totalTitulosPagar} títulos a pagar`);
             const badgeMsg = extraDetails.length > 0
                 ? `Conectado (${extraDetails.join(' / ')})`
                 : 'Conectado';
@@ -1172,6 +1583,16 @@
             };
             rawCrediarioCupons = [];
             renderCrediarioReceberCard(currentCrediarioReceberData);
+            // Reset contas a pagar so stale data from prior company isn't shown
+            currentContasPagarData = {
+                loaded: false,
+                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, ticketMedio: 0 },
+                topFornecedores: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            rawContasPagarLancamentos = [];
+            renderContasPagarCard(currentContasPagarData);
             await loadSolidconConnections(selectedCompany);
             await loadReport();
         });
@@ -1200,6 +1621,16 @@
             };
             rawCrediarioCupons = [];
             renderCrediarioReceberCard(currentCrediarioReceberData);
+            // Reset contas a pagar
+            currentContasPagarData = {
+                loaded: false,
+                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, ticketMedio: 0 },
+                topFornecedores: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            rawContasPagarLancamentos = [];
+            renderContasPagarCard(currentContasPagarData);
             void loadReport();
         });
         // ─── Modal Cartões Listeners ──────────────────────────────────────────
@@ -1328,6 +1759,72 @@
         getEl('btnExportCrediarioCsv')?.addEventListener('click', () => {
             exportCrediarioCsv();
         });
+        // ─── Contas a Pagar Card Date Filter Listeners ────────────────────────
+        getEl('btnFilterContasPagarCard')?.addEventListener('click', () => {
+            void loadContasPagar();
+        });
+        getEl('btnResetContasPagarCard')?.addEventListener('click', () => {
+            void loadContasPagar({ resetDates: true });
+        });
+        const onCardContasPagarInputKey = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                void loadContasPagar();
+            }
+        };
+        getEl('cardContasPagarDtInicio')?.addEventListener('keydown', onCardContasPagarInputKey);
+        getEl('cardContasPagarDtFim')?.addEventListener('keydown', onCardContasPagarInputKey);
+        // ─── Modal Contas a Pagar Listeners ───────────────────────────────────
+        getEl('btnOpenModalContasPagar')?.addEventListener('click', () => {
+            openModalContasPagar();
+        });
+        getEl('btnCloseModalContasPagar')?.addEventListener('click', () => {
+            closeModalContasPagar();
+        });
+        getEl('btnCloseModalContasPagarFooter')?.addEventListener('click', () => {
+            closeModalContasPagar();
+        });
+        getEl('modalContasPagar')?.addEventListener('click', (e) => {
+            if (e.target === getEl('modalContasPagar')) {
+                closeModalContasPagar();
+            }
+        });
+        getEl('modalContasPagarSearch')?.addEventListener('input', () => {
+            applyModalContasPagarFilters();
+        });
+        getEl('modalContasPagarFilterStatus')?.addEventListener('change', () => {
+            applyModalContasPagarFilters();
+        });
+        getEl('modalContasPagarFilterFilial')?.addEventListener('change', () => {
+            applyModalContasPagarFilters();
+        });
+        getEl('modalContasPagarDtInicio')?.addEventListener('change', () => {
+            applyModalContasPagarFilters();
+        });
+        getEl('modalContasPagarDtFim')?.addEventListener('change', () => {
+            applyModalContasPagarFilters();
+        });
+        getEl('modalContasPagarTipoData')?.addEventListener('change', () => {
+            applyModalContasPagarFilters();
+        });
+        getEl('btnFilterContasPagarModal')?.addEventListener('click', () => {
+            const dtIni = getEl('modalContasPagarDtInicio')?.value || '';
+            const dtFim = getEl('modalContasPagarDtFim')?.value || '';
+            const tipo = getEl('modalContasPagarTipoData')?.value || 'vencimento';
+            if (getEl('cardContasPagarDtInicio'))
+                getEl('cardContasPagarDtInicio').value = dtIni;
+            if (getEl('cardContasPagarDtFim'))
+                getEl('cardContasPagarDtFim').value = dtFim;
+            if (getEl('cardContasPagarTipoData'))
+                getEl('cardContasPagarTipoData').value = tipo;
+            void loadContasPagar();
+        });
+        getEl('btnResetContasPagarModal')?.addEventListener('click', () => {
+            void loadContasPagar({ resetDates: true });
+        });
+        getEl('btnExportContasPagarCsv')?.addEventListener('click', () => {
+            exportContasPagarCsv();
+        });
         // ─── Global Keyboard Listener (ESC to close any modal) ───────────────
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -1336,6 +1833,9 @@
                 }
                 if (!getEl('modalCrediarioReceber')?.classList.contains('hidden')) {
                     closeModalCrediario();
+                }
+                if (!getEl('modalContasPagar')?.classList.contains('hidden')) {
+                    closeModalContasPagar();
                 }
             }
         });

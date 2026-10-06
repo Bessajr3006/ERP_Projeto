@@ -2423,7 +2423,26 @@ export class FinanceController {
                 return;
             }
 
-            const { ano, mes, cdFilial, source, connectionId, convDateFilter, dtInicioCrediario, dtFimCrediario, tipoDataCrediario, includeCrediario, dtInicioCartoes, dtFimCartoes, tipoDataCartoes, includeCartoes } = req.query;
+            const { 
+                ano, 
+                mes, 
+                cdFilial, 
+                source, 
+                connectionId, 
+                convDateFilter, 
+                dtInicioCrediario, 
+                dtFimCrediario, 
+                tipoDataCrediario, 
+                includeCrediario, 
+                dtInicioCartoes, 
+                dtFimCartoes, 
+                tipoDataCartoes, 
+                includeCartoes,
+                dtInicioContasPagar,
+                dtFimContasPagar,
+                tipoDataContasPagar,
+                includeContasPagar
+            } = req.query;
 
             const isAllConnections = String(connectionId || '').toLowerCase() === 'all' || String(connectionId || '').toLowerCase() === 'todas';
 
@@ -2495,7 +2514,11 @@ export class FinanceController {
                 includeCartoes: includeCartoes ? String(includeCartoes) : null,
                 dtInicioCartoes: dtInicioCartoes ? String(dtInicioCartoes) : null,
                 dtFimCartoes: dtFimCartoes ? String(dtFimCartoes) : null,
-                tipoDataCartoes: tipoDataCartoes ? String(tipoDataCartoes) : null
+                tipoDataCartoes: tipoDataCartoes ? String(tipoDataCartoes) : null,
+                dtInicioContasPagar: dtInicioContasPagar ? String(dtInicioContasPagar) : null,
+                dtFimContasPagar: dtFimContasPagar ? String(dtFimContasPagar) : null,
+                tipoDataContasPagar: tipoDataContasPagar ? String(tipoDataContasPagar) : null,
+                includeContasPagar: includeContasPagar ? String(includeContasPagar) : null
             };
 
             const queryPromises = configsToQuery.map(async (cfg) => {

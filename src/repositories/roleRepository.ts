@@ -46,7 +46,7 @@ export class RoleRepository {
             'sped_fiscal', 'sped_fiscal_vision', 'dre', 'balanco', 'balancete',
             'roles', 'tasks', 'organizer', 'ajuste', 'whatsapp', 'email',
             'receivable_types', 'swagger', 'census-vision', 'mec-vision',
-            'rel_rafael', 'rel_pedido_dorsal', 'rel_saldo_banco', 'cost_centers', 'gera-pix', 'fin_solidcon_vision'
+            'rel_rafael', 'rel_pedido_dorsal', 'rel_saldo_banco', 'cost_centers', 'gera-pix', 'fin_solidcon_vision', 'rel_valor_empresa'
         ] as const;
 
         const DEFAULT_ROLE_MODULES: Record<string, readonly string[]> = {
@@ -56,7 +56,7 @@ export class RoleRepository {
             admin_basic: ALL_MODULES,
             operator: ['dashboard', 'sales', 'restaurant', 'picking', 'nota', 'census-vision', 'mec-vision'],
             financial: [
-                'dashboard', 'finance_vision', 'fin_solidcon_vision', 'expenses', 'card_debits', 'card_expenses',
+                'dashboard', 'finance_vision', 'fin_solidcon_vision', 'rel_valor_empresa', 'expenses', 'card_debits', 'card_expenses',
                 'card_brands', 'card_configurations', 'payment_types', 'revenues',
                 'finance_categories', 'finance_category_types', 'banks', 'statements',
                 'purchases', 'notas_compras', 'accountant', 'socio', 'receivable_types',
@@ -67,14 +67,14 @@ export class RoleRepository {
                 'customer_groups', 'employees', 'census-vision', 'mec-vision'
             ],
             contact: ['dashboard', 'contacts'],
-            accountant: ['dashboard', 'company', 'accountant', 'accounting', 'accounting_entries', 'accounting_closing', 'fechamento', 'sped_fiscal', 'sped_fiscal_vision', 'dre', 'balanco', 'balancete', 'census-vision', 'mec-vision', 'fin_solidcon_vision'],
+            accountant: ['dashboard', 'company', 'accountant', 'accounting', 'accounting_entries', 'accounting_closing', 'fechamento', 'sped_fiscal', 'sped_fiscal_vision', 'dre', 'balanco', 'balancete', 'census-vision', 'mec-vision', 'fin_solidcon_vision', 'rel_valor_empresa'],
             socio: ['dashboard', 'company', 'socio', 'census-vision', 'mec-vision'],
             buyer: ['dashboard', 'purchases', 'notas_compras', 'suppliers', 'buyers', 'census-vision', 'mec-vision'],
             service_provider: ['dashboard', 'service_providers', 'census-vision', 'mec-vision'],
             user: ['dashboard', 'census-vision', 'mec-vision'],
             pix_operator: ['dashboard', 'gera-pix'],
-            solidcon: ['dashboard', 'rel_rafael', 'fin_solidcon_vision'],
-            auxiliar_contador: ['dashboard', 'company', 'accounting', 'accounting_entries', 'accounting_closing', 'fechamento', 'sped_fiscal', 'sped_fiscal_vision', 'dre', 'balanco', 'balancete', 'census-vision', 'mec-vision', 'fin_solidcon_vision'],
+            solidcon: ['dashboard', 'rel_rafael', 'fin_solidcon_vision', 'rel_valor_empresa'],
+            auxiliar_contador: ['dashboard', 'company', 'accounting', 'accounting_entries', 'accounting_closing', 'fechamento', 'sped_fiscal', 'sped_fiscal_vision', 'dre', 'balanco', 'balancete', 'census-vision', 'mec-vision', 'fin_solidcon_vision', 'rel_valor_empresa'],
         };
 
         for (const [roleSlug, modules] of Object.entries(DEFAULT_ROLE_MODULES)) {

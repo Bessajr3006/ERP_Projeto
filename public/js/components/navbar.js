@@ -1071,8 +1071,8 @@ async function loadUserGreeting() {
                     'cost-centers': 'cost_centers',
                     'fin_solidcon_vision': 'fin_solidcon_vision',
                     'fin-solidcon-vision': 'fin_solidcon_vision',
-                    'rel-valor-empresa': 'fin_solidcon_vision',
-                    'rel_valor_empresa': 'fin_solidcon_vision',
+                    'rel-valor-empresa': 'rel_valor_empresa',
+                    'rel_valor_empresa': 'rel_valor_empresa',
                 };
                 const normalizeModule = (name) => {
                     const value = String(name || '').trim();
@@ -1087,6 +1087,9 @@ async function loadUserGreeting() {
                     }
                     if (moduleName === 'fin_solidcon_vision') {
                         return 'fin_solidcon_vision';
+                    }
+                    if (moduleName === 'rel_valor_empresa') {
+                        return 'rel_valor_empresa';
                     }
                     if (moduleName === 'stock_types') {
                         return 'stock-types';

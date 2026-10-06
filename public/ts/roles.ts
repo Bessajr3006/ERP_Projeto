@@ -226,7 +226,7 @@
                     { id: 'rel_rafael', label: 'Relatório Rafael' },
                     { id: 'rel_pedido_dorsal', label: 'Rel. Pedido (Dorsal)' },
                     { id: 'rel_saldo_banco', label: 'Saldo Banco' },
-                    { id: 'fin_solidcon_vision', label: 'Rel.Valor_Empresa' }
+                    { id: 'rel_valor_empresa', label: 'Rel.Valor_Empresa' }
                 ]
             },
             {
@@ -250,6 +250,7 @@
                     { id: 'sisu-professions', label: 'Visão Vagas SISU', subGroup: 'Visão' },
                     { id: 'income-vision', label: 'Visão Renda', subGroup: 'Visão' },
                     { id: 'sped_fiscal_vision', label: 'Visão Sped Fiscal', subGroup: 'Visão' },
+                    { id: 'fin_solidcon_vision', label: 'Visão Fin_Solidcon', subGroup: 'Visão' },
                     { id: 'maintenance', label: 'Manutenção de BD' }
                 ]
             }

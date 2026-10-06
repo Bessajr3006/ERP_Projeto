@@ -189,8 +189,42 @@
     };
     // ─── Render Card: Cartões Não Baixados ────────────────────────────────────
     const renderCartoesCard = (cartoesData) => {
-        if (!cartoesData)
+        if (!cartoesData || !cartoesData.loaded) {
+            if (getEl('cardCartoesTotalLiquido'))
+                getEl('cardCartoesTotalLiquido').textContent = 'R$ 0,00';
+            if (getEl('cardCartoesTotalAVencer'))
+                getEl('cardCartoesTotalAVencer').textContent = 'R$ 0,00';
+            if (getEl('cardCartoesQtdAVencer'))
+                getEl('cardCartoesQtdAVencer').textContent = 'Defina o período e filtre';
+            if (getEl('cardCartoesTotalVencido'))
+                getEl('cardCartoesTotalVencido').textContent = 'R$ 0,00';
+            if (getEl('cardCartoesQtdVencido'))
+                getEl('cardCartoesQtdVencido').textContent = 'Defina o período e filtre';
+            if (getEl('cardCartoesTotalBruto'))
+                getEl('cardCartoesTotalBruto').textContent = 'R$ 0,00';
+            if (getEl('cardCartoesTotalTaxa'))
+                getEl('cardCartoesTotalTaxa').textContent = 'R$ 0,00';
+            if (getEl('cardCartoesTaxaPercent'))
+                getEl('cardCartoesTaxaPercent').textContent = 'Taxa média: 0.00%';
+            if (getEl('cardCartoesTotalOperacoes'))
+                getEl('cardCartoesTotalOperacoes').textContent = '-';
+            if (getEl('cardCartoesTicketMedio'))
+                getEl('cardCartoesTicketMedio').textContent = 'Ticket Médio: R$ 0,00';
+            if (getEl('badgeCardLancamentosCount'))
+                getEl('badgeCardLancamentosCount').textContent = '-';
+            if (getEl('badgeCartoesStatus')) {
+                getEl('badgeCartoesStatus').textContent = 'Aguardando Filtro';
+                getEl('badgeCartoesStatus').className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-slate-700/80 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600';
+            }
+            if (getEl('cardCartoesPeriodoBadge'))
+                getEl('cardCartoesPeriodoBadge').textContent = 'Clique em Filtrar para carregar';
+            if (getEl('modalCartoesBadgePeriodo'))
+                getEl('modalCartoesBadgePeriodo').textContent = 'Não Consultado';
+            if (getEl('cardCartoesModalidadesContainer')) {
+                getEl('cardCartoesModalidadesContainer').innerHTML = '<span class="text-xs text-gray-400">Clique em Filtrar para carregar as modalidades</span>';
+            }
             return;
+        }
         const summary = cartoesData.summary || {};
         const totalLiquido = Number(summary.totalLiquido || 0);
         const totalBruto = Number(summary.totalBruto || 0);
@@ -308,6 +342,20 @@
         const tbody = getEl('modalCartoesTableBody');
         if (!tbody)
             return;
+        if (!currentCartoesData || !currentCartoesData.loaded) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <svg class="w-8 h-8 text-amber-400 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                            <span class="font-medium text-gray-700 dark:text-gray-200">Cartões Não Baixados não consultados</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Defina o período acima e clique em "Consultar Servidor" ou "Filtrar" para carregar os lotes de cartões.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
         if (!list || list.length === 0) {
             tbody.innerHTML = `
                 <tr>
@@ -382,6 +430,22 @@
         }).join('');
     };
     const applyModalFilters = () => {
+        if (!currentCartoesData || !currentCartoesData.loaded) {
+            if (getEl('modalSummaryTotalLiquido'))
+                getEl('modalSummaryTotalLiquido').textContent = 'R$ 0,00';
+            if (getEl('modalSummaryTotalAVencer'))
+                getEl('modalSummaryTotalAVencer').textContent = 'R$ 0,00';
+            if (getEl('modalSummaryTotalVencido'))
+                getEl('modalSummaryTotalVencido').textContent = 'R$ 0,00';
+            if (getEl('modalSummaryTotalBruto'))
+                getEl('modalSummaryTotalBruto').textContent = 'R$ 0,00';
+            if (getEl('modalSummaryTotalTaxa'))
+                getEl('modalSummaryTotalTaxa').textContent = 'R$ 0,00';
+            if (getEl('modalCartoesItemCount'))
+                getEl('modalCartoesItemCount').textContent = '0 lançamentos';
+            renderModalTable([]);
+            return;
+        }
         const query = (getEl('modalCartoesSearch')?.value || '').toLowerCase().trim();
         const selectedStatus = getEl('modalCartoesFilterStatus')?.value || 'all';
         const selectedMod = getEl('modalCartoesFilterModalidade')?.value || '';
@@ -802,6 +866,110 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     };
+    // ─── Load Cartões Não Baixados (Sob Demanda) ──────────────────────────────
+    let isCartoesLoading = false;
+    const loadCartoesNaoBaixados = async (options) => {
+        if (isCartoesLoading)
+            return;
+        isCartoesLoading = true;
+        const btnCard = getEl('btnFilterCartoesCard');
+        const btnModal = getEl('btnFilterCartoesModal');
+        const origBtnCardHtml = btnCard?.innerHTML;
+        const origBtnModalHtml = btnModal?.innerHTML;
+        if (btnCard) {
+            btnCard.disabled = true;
+            btnCard.classList.add('opacity-70');
+            btnCard.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Filtrando...</span>`;
+        }
+        if (btnModal) {
+            btnModal.disabled = true;
+            btnModal.classList.add('opacity-70');
+            btnModal.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Consultando...</span>`;
+        }
+        try {
+            if (options?.resetDates) {
+                if (getEl('cardCartoesDtInicio'))
+                    getEl('cardCartoesDtInicio').value = '';
+                if (getEl('cardCartoesDtFim'))
+                    getEl('cardCartoesDtFim').value = '';
+                if (getEl('cardCartoesTipoData'))
+                    getEl('cardCartoesTipoData').value = 'previsao';
+                if (getEl('modalCartoesDtInicio'))
+                    getEl('modalCartoesDtInicio').value = '';
+                if (getEl('modalCartoesDtFim'))
+                    getEl('modalCartoesDtFim').value = '';
+                if (getEl('modalCartoesTipoData'))
+                    getEl('modalCartoesTipoData').value = 'previsao';
+            }
+            const companyParam = getEl('filterCompany')?.value || '';
+            const ano = getEl('filterAno')?.value || String(new Date().getFullYear());
+            const mes = getEl('filterMes')?.value || String(new Date().getMonth() + 1);
+            const filial = getEl('filterFilial')?.value || '';
+            const source = getEl('filterSource')?.value || 'conta_baixa';
+            const connId = getEl('filterConnection')?.value || '';
+            const cardDtInicio = getEl('cardCartoesDtInicio')?.value || '';
+            const cardDtFim = getEl('cardCartoesDtFim')?.value || '';
+            const cardTipoData = getEl('cardCartoesTipoData')?.value || 'previsao';
+            // Also synchronize into modal
+            if (getEl('modalCartoesDtInicio'))
+                getEl('modalCartoesDtInicio').value = cardDtInicio;
+            if (getEl('modalCartoesDtFim'))
+                getEl('modalCartoesDtFim').value = cardDtFim;
+            if (getEl('modalCartoesTipoData'))
+                getEl('modalCartoesTipoData').value = cardTipoData;
+            const queryParams = new URLSearchParams({
+                includeCartoes: '1',
+                ano,
+                mes,
+                source,
+                ...(companyParam ? { company_id: companyParam } : {}),
+                ...(filial ? { cdFilial: filial, filial } : {}),
+                ...(connId ? { connectionId: connId, connection_id: connId } : {}),
+                ...(cardDtInicio ? { dtInicioCartoes: cardDtInicio } : {}),
+                ...(cardDtFim ? { dtFimCartoes: cardDtFim } : {}),
+                ...(cardTipoData ? { tipoDataCartoes: cardTipoData } : {})
+            });
+            const res = await api(`/finance/solidcon-vision?${queryParams.toString()}`);
+            const data = res?.data;
+            if (!data)
+                throw new Error('Falha ao obter dados de cartões do servidor.');
+            currentCartoesData = data.cartoesNaoBaixados || {
+                loaded: true,
+                summary: { totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0, ticketMedio: 0, totalAVencer: 0, totalVencido: 0, qtdAVencer: 0, qtdVencidos: 0 },
+                byBandeira: [],
+                byModalidade: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            currentCartoesData.loaded = true;
+            rawLancamentos = currentCartoesData.lancamentos || [];
+            renderCartoesCard(currentCartoesData);
+            populateModalFilters(currentCartoesData);
+            if (!getEl('modalCartoesNaoBaixados')?.classList.contains('hidden')) {
+                applyModalFilters();
+            }
+            const totalLotes = currentCartoesData.summary?.totalLancamentos || 0;
+            showAlert(`Cartões não baixados carregados com sucesso (${totalLotes.toLocaleString('pt-BR')} lotes).`, 'success');
+        }
+        catch (err) {
+            showAlert(`Erro ao carregar Cartões Não Baixados: ${err?.message || err}`, 'error');
+        }
+        finally {
+            isCartoesLoading = false;
+            if (btnCard) {
+                btnCard.disabled = false;
+                btnCard.classList.remove('opacity-70');
+                if (origBtnCardHtml)
+                    btnCard.innerHTML = origBtnCardHtml;
+            }
+            if (btnModal) {
+                btnModal.disabled = false;
+                btnModal.classList.remove('opacity-70');
+                if (origBtnModalHtml)
+                    btnModal.innerHTML = origBtnModalHtml;
+            }
+        }
+    };
     // ─── Load Crediário e Convênio a Receber (Sob Demanda) ─────────────────────
     let isCrediarioLoading = false;
     const loadCrediarioReceber = async (options) => {
@@ -935,19 +1103,13 @@
             if (filial) {
                 localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, filial);
             }
-            const cardCartoesDtInicio = getEl('cardCartoesDtInicio')?.value || '';
-            const cardCartoesDtFim = getEl('cardCartoesDtFim')?.value || '';
-            const cardTipoData = getEl('cardCartoesTipoData')?.value || 'previsao';
             const queryParams = new URLSearchParams({
                 ano,
                 mes,
                 source,
                 ...(companyParam ? { company_id: companyParam } : {}),
                 ...(filial ? { cdFilial: filial, filial } : {}),
-                ...(connId ? { connectionId: connId, connection_id: connId } : {}),
-                ...(cardCartoesDtInicio ? { dtInicioCartoes: cardCartoesDtInicio } : {}),
-                ...(cardCartoesDtFim ? { dtFimCartoes: cardCartoesDtFim } : {}),
-                ...(cardTipoData ? { tipoDataCartoes: cardTipoData } : {})
+                ...(connId ? { connectionId: connId, connection_id: connId } : {})
             });
             const res = await api(`/finance/solidcon-vision?${queryParams.toString()}`);
             const data = res?.data;
@@ -979,17 +1141,25 @@
                 const connDisplay = res.connection?.name || 'Solidcon Principal';
                 getEl('connectionBadge').textContent = `• ${compDisplay ? `${compDisplay} | ` : ''}${connDisplay}`;
             }
-            // Process & Render Cartões Não Baixados
-            currentCartoesData = data.cartoesNaoBaixados || {
-                summary: { totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0, ticketMedio: 0 },
-                byBandeira: [],
-                byModalidade: [],
-                byFilial: [],
-                lancamentos: []
-            };
-            rawLancamentos = currentCartoesData.lancamentos || [];
-            renderCartoesCard(currentCartoesData);
-            populateModalFilters(currentCartoesData);
+            // Process & Render Cartões Não Baixados (Sob Demanda)
+            if (data.cartoesNaoBaixados && data.cartoesNaoBaixados.loaded) {
+                currentCartoesData = data.cartoesNaoBaixados;
+                rawLancamentos = currentCartoesData.lancamentos || [];
+                renderCartoesCard(currentCartoesData);
+                populateModalFilters(currentCartoesData);
+            }
+            else if (!currentCartoesData || !currentCartoesData.loaded) {
+                currentCartoesData = {
+                    loaded: false,
+                    summary: { totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0, ticketMedio: 0, totalAVencer: 0, totalVencido: 0, qtdAVencer: 0, qtdVencidos: 0 },
+                    byBandeira: [],
+                    byModalidade: [],
+                    byFilial: [],
+                    lancamentos: []
+                };
+                rawLancamentos = [];
+                renderCartoesCard(currentCartoesData);
+            }
             // Process & Render Crediário e Convênio a Receber (Sob Demanda)
             if (data.crediarioReceber && data.crediarioReceber.loaded) {
                 currentCrediarioReceberData = data.crediarioReceber;
@@ -1008,11 +1178,16 @@
                 rawCrediarioCupons = [];
                 renderCrediarioReceberCard(currentCrediarioReceberData);
             }
-            const totalCartoesLotes = currentCartoesData.summary?.totalLancamentos || 0;
+            const totalCartoesLotes = currentCartoesData?.loaded ? (currentCartoesData.summary?.totalLancamentos || 0) : null;
             const totalCuponsReceber = currentCrediarioReceberData?.loaded ? (currentCrediarioReceberData.summary?.qtdCupons || 0) : null;
-            const badgeMsg = totalCuponsReceber !== null
-                ? `Conectado (${totalCartoesLotes} lotes de cartões / ${totalCuponsReceber} cupons a receber)`
-                : `Conectado (${totalCartoesLotes} lotes de cartões)`;
+            const extraDetails = [];
+            if (totalCartoesLotes !== null)
+                extraDetails.push(`${totalCartoesLotes} lotes de cartões`);
+            if (totalCuponsReceber !== null)
+                extraDetails.push(`${totalCuponsReceber} cupons a receber`);
+            const badgeMsg = extraDetails.length > 0
+                ? `Conectado (${extraDetails.join(' / ')})`
+                : 'Conectado';
             updateStatusBadge('success', badgeMsg);
         }
         catch (err) {
@@ -1061,6 +1236,17 @@
         getEl('filterCompany')?.addEventListener('change', async () => {
             const selectedCompany = getEl('filterCompany')?.value || '';
             localStorage.setItem('rel_valor_empresa_company', selectedCompany);
+            // Reset cartoes so stale data from prior company isn't shown
+            currentCartoesData = {
+                loaded: false,
+                summary: { totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0, ticketMedio: 0, totalAVencer: 0, totalVencido: 0, qtdAVencer: 0, qtdVencidos: 0 },
+                byBandeira: [],
+                byModalidade: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            rawLancamentos = [];
+            renderCartoesCard(currentCartoesData);
             // Reset crediario so stale data from prior company isn't shown
             currentCrediarioReceberData = {
                 loaded: false,
@@ -1078,6 +1264,17 @@
             const companyParam = getEl('filterCompany')?.value || '';
             const connVal = getEl('filterConnection')?.value || '';
             localStorage.setItem(`rel_valor_empresa_conn_${companyParam || 'default'}`, connVal);
+            // Reset cartoes
+            currentCartoesData = {
+                loaded: false,
+                summary: { totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0, ticketMedio: 0, totalAVencer: 0, totalVencido: 0, qtdAVencer: 0, qtdVencidos: 0 },
+                byBandeira: [],
+                byModalidade: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            rawLancamentos = [];
+            renderCartoesCard(currentCartoesData);
             // Reset crediario
             currentCrediarioReceberData = {
                 loaded: false,
@@ -1146,36 +1343,15 @@
         });
         // ─── Cartões Card Date Filter Listeners ────────────────────────────────
         getEl('btnFilterCartoesCard')?.addEventListener('click', () => {
-            const dtIni = getEl('cardCartoesDtInicio')?.value || '';
-            const dtFim = getEl('cardCartoesDtFim')?.value || '';
-            const tipo = getEl('cardCartoesTipoData')?.value || 'previsao';
-            if (getEl('modalCartoesDtInicio'))
-                getEl('modalCartoesDtInicio').value = dtIni;
-            if (getEl('modalCartoesDtFim'))
-                getEl('modalCartoesDtFim').value = dtFim;
-            if (getEl('modalCartoesTipoData'))
-                getEl('modalCartoesTipoData').value = tipo;
-            void loadReport();
+            void loadCartoesNaoBaixados();
         });
         getEl('btnResetCartoesCard')?.addEventListener('click', () => {
-            if (getEl('cardCartoesDtInicio'))
-                getEl('cardCartoesDtInicio').value = '';
-            if (getEl('cardCartoesDtFim'))
-                getEl('cardCartoesDtFim').value = '';
-            if (getEl('cardCartoesTipoData'))
-                getEl('cardCartoesTipoData').value = 'previsao';
-            if (getEl('modalCartoesDtInicio'))
-                getEl('modalCartoesDtInicio').value = '';
-            if (getEl('modalCartoesDtFim'))
-                getEl('modalCartoesDtFim').value = '';
-            if (getEl('modalCartoesTipoData'))
-                getEl('modalCartoesTipoData').value = 'previsao';
-            void loadReport();
+            void loadCartoesNaoBaixados({ resetDates: true });
         });
         const onCardCartoesInputKey = (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                void loadReport();
+                void loadCartoesNaoBaixados();
             }
         };
         getEl('cardCartoesDtInicio')?.addEventListener('keydown', onCardCartoesInputKey);
@@ -1190,22 +1366,10 @@
                 getEl('cardCartoesDtFim').value = dtFim;
             if (getEl('cardCartoesTipoData'))
                 getEl('cardCartoesTipoData').value = tipo;
-            void loadReport();
+            void loadCartoesNaoBaixados();
         });
         getEl('btnResetCartoesModal')?.addEventListener('click', () => {
-            if (getEl('cardCartoesDtInicio'))
-                getEl('cardCartoesDtInicio').value = '';
-            if (getEl('cardCartoesDtFim'))
-                getEl('cardCartoesDtFim').value = '';
-            if (getEl('cardCartoesTipoData'))
-                getEl('cardCartoesTipoData').value = 'previsao';
-            if (getEl('modalCartoesDtInicio'))
-                getEl('modalCartoesDtInicio').value = '';
-            if (getEl('modalCartoesDtFim'))
-                getEl('modalCartoesDtFim').value = '';
-            if (getEl('modalCartoesTipoData'))
-                getEl('modalCartoesTipoData').value = 'previsao';
-            void loadReport();
+            void loadCartoesNaoBaixados({ resetDates: true });
         });
         // ─── Crediário Card Date Filter Listeners ─────────────────────────────
         getEl('btnFilterCrediarioCard')?.addEventListener('click', () => {

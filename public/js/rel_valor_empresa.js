@@ -198,9 +198,25 @@
         const totalOperacoes = Number(summary.totalOperacoes || 0);
         const totalLancamentos = Number(summary.totalLancamentos || 0);
         const ticketMedio = Number(summary.ticketMedio || 0);
+        const totalAVencer = Number(summary.totalAVencer || 0);
+        const totalVencido = Number(summary.totalVencido || 0);
+        const qtdAVencer = Number(summary.qtdAVencer || 0);
+        const qtdVencidos = Number(summary.qtdVencidos || 0);
         const taxaMediaPct = totalBruto > 0 ? ((totalTaxa / totalBruto) * 100).toFixed(2) : '0.00';
         if (getEl('cardCartoesTotalLiquido')) {
             getEl('cardCartoesTotalLiquido').textContent = formatMoney(totalLiquido);
+        }
+        if (getEl('cardCartoesTotalAVencer')) {
+            getEl('cardCartoesTotalAVencer').textContent = formatMoney(totalAVencer);
+        }
+        if (getEl('cardCartoesQtdAVencer')) {
+            getEl('cardCartoesQtdAVencer').textContent = `${qtdAVencer} lote${qtdAVencer === 1 ? '' : 's'} com previsão futura`;
+        }
+        if (getEl('cardCartoesTotalVencido')) {
+            getEl('cardCartoesTotalVencido').textContent = formatMoney(totalVencido);
+        }
+        if (getEl('cardCartoesQtdVencido')) {
+            getEl('cardCartoesQtdVencido').textContent = `${qtdVencidos} lote${qtdVencidos === 1 ? '' : 's'} com previsão expirada`;
         }
         if (getEl('cardCartoesTotalBruto')) {
             getEl('cardCartoesTotalBruto').textContent = formatMoney(totalBruto);
@@ -215,13 +231,13 @@
             getEl('cardCartoesTotalOperacoes').textContent = totalOperacoes.toLocaleString('pt-BR');
         }
         if (getEl('cardCartoesTicketMedio')) {
-            getEl('cardCartoesTicketMedio').textContent = `Ticket Médio: ${formatMoney(ticketMedio)} (${totalLancamentos} lotes)`;
+            getEl('cardCartoesTicketMedio').textContent = `Ticket Médio: ${formatMoney(ticketMedio)}`;
         }
         if (getEl('badgeCardLancamentosCount')) {
             getEl('badgeCardLancamentosCount').textContent = String(totalLancamentos);
         }
         if (getEl('badgeCartoesStatus')) {
-            getEl('badgeCartoesStatus').textContent = totalLancamentos > 0 ? `${totalLancamentos} Pendentes` : 'Tudo Baixado';
+            getEl('badgeCartoesStatus').textContent = totalLancamentos > 0 ? `${qtdAVencer} a Vencer • ${qtdVencidos} Vencidos` : 'Tudo Baixado';
             getEl('badgeCartoesStatus').className = totalLancamentos > 0
                 ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60'
                 : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60';
@@ -291,6 +307,20 @@
                     ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40'
                     : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40';
             const taxaPct = item.vlBruto > 0 ? ((item.vlTaxa / item.vlBruto) * 100).toFixed(1) : '0.0';
+            const isAVencer = Boolean(item.isAVencer === 1 || item.isAVencer === true);
+            const dias = Number(item.diasVencimento || 0);
+            let statusBadge = '';
+            if (isAVencer) {
+                if (dias === 0) {
+                    statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">Vence Hoje</span>`;
+                }
+                else {
+                    statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">A Vencer (${dias}d)</span>`;
+                }
+            }
+            else {
+                statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60">Vencido (${Math.abs(dias)}d)</span>`;
+            }
             return `
                 <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors">
                     <td class="py-2.5 px-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
@@ -298,6 +328,9 @@
                     </td>
                     <td class="py-2.5 px-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                         ${formatDateBR(item.dtPrevisao)}
+                    </td>
+                    <td class="py-2.5 px-4 text-center whitespace-nowrap">
+                        ${statusBadge}
                     </td>
                     <td class="py-2.5 px-4 text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">
                         ${escapeHtml(item.nome_filial || `Filial ${item.filial}`)}
@@ -322,20 +355,23 @@
                     <td class="py-2.5 px-4 text-right font-mono font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                         ${formatMoney(item.vlLiquido)}
                     </td>
-                    <td class="py-2.5 px-4 text-center whitespace-nowrap">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-                            Não Baixado
-                        </span>
-                    </td>
                 </tr>
             `;
         }).join('');
     };
     const applyModalFilters = () => {
         const query = (getEl('modalCartoesSearch')?.value || '').toLowerCase().trim();
+        const selectedStatus = getEl('modalCartoesFilterStatus')?.value || 'all';
         const selectedMod = getEl('modalCartoesFilterModalidade')?.value || '';
         const selectedFilial = getEl('modalCartoesFilterFilial')?.value || '';
         const filtered = rawLancamentos.filter((item) => {
+            const isAVencer = Boolean(item.isAVencer === 1 || item.isAVencer === true);
+            if (selectedStatus === 'a_vencer' && !isAVencer) {
+                return false;
+            }
+            if (selectedStatus === 'vencidos' && isAVencer) {
+                return false;
+            }
             if (selectedMod && item.modalidade !== selectedMod) {
                 return false;
             }
@@ -353,13 +389,31 @@
         let sumLiquido = 0;
         let sumBruto = 0;
         let sumTaxa = 0;
+        let sumAVencer = 0;
+        let sumVencido = 0;
         filtered.forEach((r) => {
-            sumLiquido += Number(r.vlLiquido || 0);
-            sumBruto += Number(r.vlBruto || 0);
-            sumTaxa += Number(r.vlTaxa || 0);
+            const vl = Number(r.vlLiquido || 0);
+            const vb = Number(r.vlBruto || 0);
+            const vt = Number(r.vlTaxa || 0);
+            const isAVencer = Boolean(r.isAVencer === 1 || r.isAVencer === true);
+            sumLiquido += vl;
+            sumBruto += vb;
+            sumTaxa += vt;
+            if (isAVencer) {
+                sumAVencer += vl;
+            }
+            else {
+                sumVencido += vl;
+            }
         });
         if (getEl('modalSummaryTotalLiquido')) {
             getEl('modalSummaryTotalLiquido').textContent = formatMoney(sumLiquido);
+        }
+        if (getEl('modalSummaryTotalAVencer')) {
+            getEl('modalSummaryTotalAVencer').textContent = formatMoney(sumAVencer);
+        }
+        if (getEl('modalSummaryTotalVencido')) {
+            getEl('modalSummaryTotalVencido').textContent = formatMoney(sumVencido);
         }
         if (getEl('modalSummaryTotalBruto')) {
             getEl('modalSummaryTotalBruto').textContent = formatMoney(sumBruto);
@@ -383,6 +437,9 @@
         if (getEl('modalCartoesSearch')) {
             getEl('modalCartoesSearch').value = '';
         }
+        if (getEl('modalCartoesFilterStatus')) {
+            getEl('modalCartoesFilterStatus').value = 'all';
+        }
         if (getEl('modalCartoesFilterModalidade')) {
             getEl('modalCartoesFilterModalidade').value = '';
         }
@@ -405,19 +462,25 @@
             showAlert('Não há dados para exportar.', 'info');
             return;
         }
-        const headers = ['Data Venda', 'Previsão Recebimento', 'Filial', 'Modalidade', 'Bandeira / Operadora', 'Qtd Vendas', 'Valor Bruto', 'Taxa (R$)', 'Valor Líquido', 'Status'];
-        const rows = rawLancamentos.map((item) => [
-            formatDateBR(item.dtVenda),
-            formatDateBR(item.dtPrevisao),
-            `"${(item.nome_filial || `Filial ${item.filial}`).replace(/"/g, '""')}"`,
-            `"${(item.modalidade || '').replace(/"/g, '""')}"`,
-            `"${(item.bandeira || '').replace(/"/g, '""')}"`,
-            item.qtd || 1,
-            Number(item.vlBruto || 0).toFixed(2).replace('.', ','),
-            Number(item.vlTaxa || 0).toFixed(2).replace('.', ','),
-            Number(item.vlLiquido || 0).toFixed(2).replace('.', ','),
-            '"Não Baixado"'
-        ]);
+        const headers = ['Data Venda', 'Previsão Recebimento', 'Status Vencimento', 'Dias Previsão', 'Filial', 'Modalidade', 'Bandeira / Operadora', 'Qtd Vendas', 'Valor Bruto', 'Taxa (R$)', 'Valor Líquido'];
+        const rows = rawLancamentos.map((item) => {
+            const isAVencer = Boolean(item.isAVencer === 1 || item.isAVencer === true);
+            const dias = Number(item.diasVencimento || 0);
+            const statusLabel = isAVencer ? (dias === 0 ? 'Vence Hoje' : 'A Vencer') : 'Vencido';
+            return [
+                formatDateBR(item.dtVenda),
+                formatDateBR(item.dtPrevisao),
+                `"${statusLabel}"`,
+                dias,
+                `"${(item.nome_filial || `Filial ${item.filial}`).replace(/"/g, '""')}"`,
+                `"${(item.modalidade || '').replace(/"/g, '""')}"`,
+                `"${(item.bandeira || '').replace(/"/g, '""')}"`,
+                item.qtd || 1,
+                Number(item.vlBruto || 0).toFixed(2).replace('.', ','),
+                Number(item.vlTaxa || 0).toFixed(2).replace('.', ','),
+                Number(item.vlLiquido || 0).toFixed(2).replace('.', ',')
+            ];
+        });
         const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -865,6 +928,9 @@
             }
         });
         getEl('modalCartoesSearch')?.addEventListener('input', () => {
+            applyModalFilters();
+        });
+        getEl('modalCartoesFilterStatus')?.addEventListener('change', () => {
             applyModalFilters();
         });
         getEl('modalCartoesFilterModalidade')?.addEventListener('change', () => {

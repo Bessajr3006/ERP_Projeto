@@ -7550,7 +7550,11 @@ export class ExternalDbService {
                         totalTaxa: 0,
                         totalOperacoes: 0,
                         totalLancamentos: 0,
-                        ticketMedio: 0
+                        ticketMedio: 0,
+                        totalAVencer: 0,
+                        totalVencido: 0,
+                        qtdAVencer: 0,
+                        qtdVencidos: 0
                     },
                     byBandeira: [],
                     byModalidade: [],
@@ -7585,7 +7589,9 @@ export class ExternalDbService {
                             CAST(ISNULL(bim.vlBruto, 0) - ISNULL(bim.vlLiquido, 0) AS FLOAT) as vlTaxa,
                             ISNULL(p.nmPessoa, CONCAT('Filial ', CAST(bim.cdPessoaFilial AS VARCHAR(20)))) as nome_filial,
                             bim.cdPessoaFilial as filial,
-                            ISNULL(bim.Historico, '') as historico
+                            ISNULL(bim.Historico, '') as historico,
+                            DATEDIFF(day, CAST(GETDATE() AS DATE), bim.dtPrevisao) as diasVencimento,
+                            CASE WHEN CAST(bim.dtPrevisao AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isAVencer
                         FROM tbBoletimItemMovimento bim WITH (NOLOCK)
                         INNER JOIN tbBoletimItem bi WITH (NOLOCK) ON bi.cdBoletimItem = bim.cdBoletimItem AND bi.cdEmpresa = bim.cdEmpresa
                         INNER JOIN tbBoletimItemTipo bit WITH (NOLOCK) ON bit.cdBoletimItemTipo = bi.cdBoletimItemTipo
@@ -7606,6 +7612,10 @@ export class ExternalDbService {
                     let sumLiquido = 0;
                     let sumTaxa = 0;
                     let sumOperacoes = 0;
+                    let sumAVencer = 0;
+                    let sumVencido = 0;
+                    let qtdAVencer = 0;
+                    let qtdVencidos = 0;
 
                     const bandeiraMap: Record<string, any> = {};
                     const modalidadeMap: Record<string, any> = {};
@@ -7616,11 +7626,20 @@ export class ExternalDbService {
                         const vl = Number(c.vlLiquido || 0);
                         const vt = Number(c.vlTaxa || 0);
                         const qtd = Number(c.qtd || 1);
+                        const isAVencer = Boolean(c.isAVencer === 1 || c.isAVencer === true);
 
                         sumBruto += vb;
                         sumLiquido += vl;
                         sumTaxa += vt;
                         sumOperacoes += qtd;
+
+                        if (isAVencer) {
+                            sumAVencer += vl;
+                            qtdAVencer += 1;
+                        } else {
+                            sumVencido += vl;
+                            qtdVencidos += 1;
+                        }
 
                         // Group by Bandeira
                         const banKey = c.bandeira || 'Outros';
@@ -7698,7 +7717,11 @@ export class ExternalDbService {
                             totalTaxa: sumTaxa,
                             totalOperacoes: sumOperacoes,
                             totalLancamentos: rawCards.length,
-                            ticketMedio: sumOperacoes > 0 ? sumLiquido / sumOperacoes : 0
+                            ticketMedio: sumOperacoes > 0 ? sumLiquido / sumOperacoes : 0,
+                            totalAVencer: sumAVencer,
+                            totalVencido: sumVencido,
+                            qtdAVencer,
+                            qtdVencidos
                         },
                         byBandeira,
                         byModalidade,

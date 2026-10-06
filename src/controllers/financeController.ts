@@ -2423,7 +2423,7 @@ export class FinanceController {
                 return;
             }
 
-            const { ano, mes, cdFilial, source, connectionId, convDateFilter, dtInicioCrediario, dtFimCrediario, tipoDataCrediario } = req.query;
+            const { ano, mes, cdFilial, source, connectionId, convDateFilter, dtInicioCrediario, dtFimCrediario, tipoDataCrediario, includeCrediario } = req.query;
 
             const { SolidconConfigService } = await import('../services/solidconConfigService');
             let solidconConfig: any = null;
@@ -2488,7 +2488,8 @@ export class FinanceController {
                     convDateFilter: convDateFilter ? String(convDateFilter) : 'baixa',
                     dtInicioCrediario: dtInicioCrediario ? String(dtInicioCrediario) : null,
                     dtFimCrediario: dtFimCrediario ? String(dtFimCrediario) : null,
-                    tipoDataCrediario: tipoDataCrediario ? String(tipoDataCrediario) : null
+                    tipoDataCrediario: tipoDataCrediario ? String(tipoDataCrediario) : null,
+                    includeCrediario: includeCrediario ? String(includeCrediario) : null
                 }
             );
 

@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Rel.Valor_Empresa</title>
-    <link href="/css/style.css?v=20261006134927" rel="stylesheet">
+    <link href="/css/style.css?v=20261006140413" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261006134927"></script>
+    <script src="/js/pwa.js?v=20261006140413"></script>
 </head>
 <body data-required-module="rel_valor_empresa" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -272,15 +272,15 @@
                         <div>
                             <h2 class="text-lg font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2 flex-wrap">
                                 Crediário e Convênio a Receber (Solidcon)
-                                <span id="badgeCrediarioStatus" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
-                                    A Receber
+                                <span id="badgeCrediarioStatus" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-slate-700/80 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600">
+                                    Aguardando Filtro
                                 </span>
                                 <span id="cardCrediarioPeriodoBadge" class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 dark:bg-slate-700/70 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-600">
-                                    Acumulado até 2999
+                                    Clique em Filtrar para carregar
                                 </span>
                             </h2>
                             <p class="text-xs text-gray-500 dark:text-gray-400">
-                                Saldo devedor total de cupons de clientes e convênios emitidos com filtro por período
+                                Saldo devedor total de cupons de clientes e convênios emitidos (consulta sob demanda)
                             </p>
                         </div>
                     </div>
@@ -352,8 +352,8 @@
                                 R$ 0,00
                             </div>
                         </div>
-                        <div class="mt-2 pt-2 border-t border-indigo-200/60 dark:border-indigo-800/30 text-[11px] text-indigo-700/80 dark:text-indigo-400/80 font-medium">
-                            Saldo em aberto até 2999
+                        <div id="cardCrediarioSubtitle" class="mt-2 pt-2 border-t border-indigo-200/60 dark:border-indigo-800/30 text-[11px] text-indigo-700/80 dark:text-indigo-400/80 font-medium">
+                            Defina o período e clique em Filtrar
                         </div>
                     </div>
 
@@ -535,8 +535,8 @@
                         <div>
                             <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 Cupons de Crediário e Convênio a Receber
-                                <span id="modalCrediarioBadgePeriodo" class="px-2 py-0.5 text-xs font-semibold rounded-md bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50">
-                                    Acumulado até 2999
+                                <span id="modalCrediarioBadgePeriodo" class="px-2 py-0.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-slate-700/80 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600">
+                                    Não Consultado
                                 </span>
                             </h3>
                             <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -667,11 +667,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261006134927"></script>
-    <script src="/js/rel_valor_empresa.js?v=20261006134927"></script>
-    <script src="/js/components/navbar.js?v=20261006134927"></script>
+    <script src="/js/api.js?v=20261006140413"></script>
+    <script src="/js/rel_valor_empresa.js?v=20261006140413"></script>
+    <script src="/js/components/navbar.js?v=20261006140413"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261006134927"></script>
+    <script src="/js/components/footer.js?v=20261006140413"></script>
 </body>
 </html>
 

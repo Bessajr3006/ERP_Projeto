@@ -6406,6 +6406,9 @@ export class ExternalDbService {
             cdFilial?: string | null;
             source?: 'conta_baixa' | 'banco_movimento' | 'consolidado' | string | null;
             convDateFilter?: 'baixa' | 'emissao' | string | null;
+            dtInicioCrediario?: string | null;
+            dtFimCrediario?: string | null;
+            tipoDataCrediario?: 'vencimento' | 'emissao' | string | null;
         }
     ): Promise<any> {
         let server = (config.host || '').trim();
@@ -7404,9 +7407,35 @@ export class ExternalDbService {
                         }
                     }
 
-                    const reqRec = pool.request();
+                    const dtInicioCrediario = params.dtInicioCrediario ? String(params.dtInicioCrediario).trim() : null;
+                    const dtFimCrediario = params.dtFimCrediario ? String(params.dtFimCrediario).trim() : null;
+                    const tipoDataCrediario = params.tipoDataCrediario === 'emissao' ? 'emissao' : 'vencimento';
+                    const targetColRec = tipoDataCrediario === 'emissao' ? 'cc.dtCrediario' : 'cc.dtVencimento';
 
-                    // Resumo Geral (até 2999)
+                    let dateFilterClauseRec = " AND cc.dtCrediario <= '2999-12-31'";
+                    if (dtInicioCrediario && dtFimCrediario) {
+                        dateFilterClauseRec = ` AND CAST(${targetColRec} AS DATE) >= @dtInicioCred AND CAST(${targetColRec} AS DATE) <= @dtFimCred`;
+                    } else if (dtInicioCrediario) {
+                        dateFilterClauseRec = ` AND CAST(${targetColRec} AS DATE) >= @dtInicioCred AND ${targetColRec} <= '2999-12-31'`;
+                    } else if (dtFimCrediario) {
+                        dateFilterClauseRec = ` AND CAST(${targetColRec} AS DATE) <= @dtFimCred`;
+                    }
+
+                    const reqRec = pool.request();
+                    if (dtInicioCrediario) {
+                        reqRec.input('dtInicioCred', sql.VarChar(10), dtInicioCrediario);
+                    }
+                    if (dtFimCrediario) {
+                        reqRec.input('dtFimCred', sql.VarChar(10), dtFimCrediario);
+                    }
+
+                    crediarioReceber.filtrosAplicados = {
+                        dtInicio: dtInicioCrediario || null,
+                        dtFim: dtFimCrediario || null,
+                        tipoData: tipoDataCrediario
+                    };
+
+                    // Resumo Geral
                     const resRecSummary = await reqRec.query(`
                         SELECT 
                             COUNT(*) as qtd_cupons,
@@ -7420,7 +7449,7 @@ export class ExternalDbService {
                             COUNT(CASE WHEN CAST(cc.dtVencimento AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer
                         FROM tbCrediarioCupom cc WITH (NOLOCK)
                         WHERE (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) > 0.01
-                          AND cc.dtCrediario <= '2999-12-31'
+                          ${dateFilterClauseRec}
                           ${filialClauseRec}
                     `);
                     const recRow = resRecSummary.recordset?.[0] || {};
@@ -7452,7 +7481,7 @@ export class ExternalDbService {
                         FROM tbCrediarioCupom cc WITH (NOLOCK)
                         LEFT JOIN tbCrediario c WITH (NOLOCK) ON c.cdCrediario = cc.cdCrediario
                         WHERE (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) > 0.01
-                          AND cc.dtCrediario <= '2999-12-31'
+                          ${dateFilterClauseRec}
                           ${filialClauseRec}
                         GROUP BY cc.cdCrediario, c.Nome
                         ORDER BY total_a_receber DESC
@@ -7481,7 +7510,7 @@ export class ExternalDbService {
                         FROM tbCrediarioCupom cc WITH (NOLOCK)
                         LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = cc.cdFilial
                         WHERE (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) > 0.01
-                          AND cc.dtCrediario <= '2999-12-31'
+                          ${dateFilterClauseRec}
                           ${filialClauseRec}
                         GROUP BY cc.cdFilial, p.nmPessoa
                         ORDER BY total_a_receber DESC
@@ -7516,7 +7545,7 @@ export class ExternalDbService {
                         LEFT JOIN tbCrediario c WITH (NOLOCK) ON c.cdCrediario = cc.cdCrediario
                         LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = cc.cdFilial
                         WHERE (ISNULL(cc.vlCrediario, 0) - ISNULL(cc.vlQuitado, 0)) > 0.01
-                          AND cc.dtCrediario <= '2999-12-31'
+                          ${dateFilterClauseRec}
                           ${filialClauseRec}
                         ORDER BY saldoPendente DESC, cc.dtVencimento ASC
                     `);

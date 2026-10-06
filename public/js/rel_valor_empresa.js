@@ -533,6 +533,28 @@
         if (getEl('badgeCardCrediarioCount')) {
             getEl('badgeCardCrediarioCount').textContent = String(qtdCupons);
         }
+        // Filtros aplicados & Badges de Período
+        const filtros = data.filtrosAplicados || {};
+        const dtIni = filtros.dtInicio || '';
+        const dtFim = filtros.dtFim || '';
+        const tipoDt = filtros.tipoData || 'vencimento';
+        const tipoLabel = tipoDt === 'emissao' ? 'Emissão' : 'Vencimento';
+        let badgePeriodoText = 'Acumulado até 2999';
+        if (dtIni && dtFim) {
+            badgePeriodoText = `${formatDateBR(dtIni)} a ${formatDateBR(dtFim)} (${tipoLabel})`;
+        }
+        else if (dtIni) {
+            badgePeriodoText = `A partir de ${formatDateBR(dtIni)} (${tipoLabel})`;
+        }
+        else if (dtFim) {
+            badgePeriodoText = `Até ${formatDateBR(dtFim)} (${tipoLabel})`;
+        }
+        if (getEl('cardCrediarioPeriodoBadge')) {
+            getEl('cardCrediarioPeriodoBadge').textContent = badgePeriodoText;
+        }
+        if (getEl('modalCrediarioBadgePeriodo')) {
+            getEl('modalCrediarioBadgePeriodo').textContent = badgePeriodoText;
+        }
         // Render Top Clientes com maior pendência
         const topContainer = getEl('cardCrediarioTopClientesContainer');
         const topClientes = data.topClientes || [];
@@ -638,12 +660,20 @@
         const query = (getEl('modalCrediarioSearch')?.value || '').toLowerCase().trim();
         const selectedStatus = getEl('modalCrediarioFilterStatus')?.value || 'all';
         const selectedFilial = getEl('modalCrediarioFilterFilial')?.value || '';
+        const dtInicio = getEl('modalCrediarioDtInicio')?.value || '';
+        const dtFim = getEl('modalCrediarioDtFim')?.value || '';
+        const tipoData = getEl('modalCrediarioTipoData')?.value || 'vencimento';
         const filtered = rawCrediarioCupons.filter((item) => {
             if (selectedStatus === 'vencidos' && !item.isVencido)
                 return false;
             if (selectedStatus === 'a_vencer' && item.isVencido)
                 return false;
             if (selectedFilial && String(item.filial) !== selectedFilial)
+                return false;
+            const targetDate = tipoData === 'emissao' ? item.dtEmissao : item.dtVencimento;
+            if (dtInicio && targetDate && targetDate < dtInicio)
+                return false;
+            if (dtFim && targetDate && targetDate > dtFim)
                 return false;
             if (query) {
                 const combined = `${item.cliente || ''} ${item.cdCrediario || ''} ${item.nrCupom || ''} ${item.nomeFilial || ''} ${item.operador || ''} ${item.obs || ''}`.toLowerCase();
@@ -690,6 +720,19 @@
         }
         if (getEl('modalCrediarioFilterFilial')) {
             getEl('modalCrediarioFilterFilial').value = '';
+        }
+        // Sync card dates into modal
+        const cardDtInicio = getEl('cardCrediarioDtInicio')?.value || '';
+        const cardDtFim = getEl('cardCrediarioDtFim')?.value || '';
+        const cardTipoData = getEl('cardCrediarioTipoData')?.value || 'vencimento';
+        if (getEl('modalCrediarioDtInicio')) {
+            getEl('modalCrediarioDtInicio').value = cardDtInicio;
+        }
+        if (getEl('modalCrediarioDtFim')) {
+            getEl('modalCrediarioDtFim').value = cardDtFim;
+        }
+        if (getEl('modalCrediarioTipoData')) {
+            getEl('modalCrediarioTipoData').value = cardTipoData;
         }
         applyModalCrediarioFilters();
         modal.classList.remove('hidden');
@@ -770,13 +813,19 @@
             if (filial) {
                 localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, filial);
             }
+            const cardDtInicio = getEl('cardCrediarioDtInicio')?.value || '';
+            const cardDtFim = getEl('cardCrediarioDtFim')?.value || '';
+            const cardTipoData = getEl('cardCrediarioTipoData')?.value || 'vencimento';
             const queryParams = new URLSearchParams({
                 ano,
                 mes,
                 source,
                 ...(companyParam ? { company_id: companyParam } : {}),
                 ...(filial ? { cdFilial: filial, filial } : {}),
-                ...(connId ? { connectionId: connId, connection_id: connId } : {})
+                ...(connId ? { connectionId: connId, connection_id: connId } : {}),
+                ...(cardDtInicio ? { dtInicioCrediario: cardDtInicio } : {}),
+                ...(cardDtFim ? { dtFimCrediario: cardDtFim } : {}),
+                ...(cardTipoData ? { tipoDataCrediario: cardTipoData } : {})
             });
             const res = await api(`/finance/solidcon-vision?${queryParams.toString()}`);
             const data = res?.data;
@@ -942,6 +991,34 @@
         getEl('btnExportCartoesCsv')?.addEventListener('click', () => {
             exportCartoesCsv();
         });
+        // ─── Crediário Card Date Filter Listeners ─────────────────────────────
+        getEl('btnFilterCrediarioCard')?.addEventListener('click', () => {
+            const dtIni = getEl('cardCrediarioDtInicio')?.value || '';
+            const dtFim = getEl('cardCrediarioDtFim')?.value || '';
+            const tipo = getEl('cardCrediarioTipoData')?.value || 'vencimento';
+            if (getEl('modalCrediarioDtInicio'))
+                getEl('modalCrediarioDtInicio').value = dtIni;
+            if (getEl('modalCrediarioDtFim'))
+                getEl('modalCrediarioDtFim').value = dtFim;
+            if (getEl('modalCrediarioTipoData'))
+                getEl('modalCrediarioTipoData').value = tipo;
+            void loadReport();
+        });
+        getEl('btnResetCrediarioCard')?.addEventListener('click', () => {
+            if (getEl('cardCrediarioDtInicio'))
+                getEl('cardCrediarioDtInicio').value = '';
+            if (getEl('cardCrediarioDtFim'))
+                getEl('cardCrediarioDtFim').value = '';
+            if (getEl('cardCrediarioTipoData'))
+                getEl('cardCrediarioTipoData').value = 'vencimento';
+            if (getEl('modalCrediarioDtInicio'))
+                getEl('modalCrediarioDtInicio').value = '';
+            if (getEl('modalCrediarioDtFim'))
+                getEl('modalCrediarioDtFim').value = '';
+            if (getEl('modalCrediarioTipoData'))
+                getEl('modalCrediarioTipoData').value = 'vencimento';
+            void loadReport();
+        });
         // ─── Modal Crediário/Convênio Listeners ────────────────────────────────
         getEl('btnOpenModalCrediario')?.addEventListener('click', () => {
             openModalCrediario();
@@ -965,6 +1042,42 @@
         });
         getEl('modalCrediarioFilterFilial')?.addEventListener('change', () => {
             applyModalCrediarioFilters();
+        });
+        getEl('modalCrediarioDtInicio')?.addEventListener('change', () => {
+            applyModalCrediarioFilters();
+        });
+        getEl('modalCrediarioDtFim')?.addEventListener('change', () => {
+            applyModalCrediarioFilters();
+        });
+        getEl('modalCrediarioTipoData')?.addEventListener('change', () => {
+            applyModalCrediarioFilters();
+        });
+        getEl('btnFilterCrediarioModal')?.addEventListener('click', () => {
+            const dtIni = getEl('modalCrediarioDtInicio')?.value || '';
+            const dtFim = getEl('modalCrediarioDtFim')?.value || '';
+            const tipo = getEl('modalCrediarioTipoData')?.value || 'vencimento';
+            if (getEl('cardCrediarioDtInicio'))
+                getEl('cardCrediarioDtInicio').value = dtIni;
+            if (getEl('cardCrediarioDtFim'))
+                getEl('cardCrediarioDtFim').value = dtFim;
+            if (getEl('cardCrediarioTipoData'))
+                getEl('cardCrediarioTipoData').value = tipo;
+            void loadReport();
+        });
+        getEl('btnResetCrediarioModal')?.addEventListener('click', () => {
+            if (getEl('cardCrediarioDtInicio'))
+                getEl('cardCrediarioDtInicio').value = '';
+            if (getEl('cardCrediarioDtFim'))
+                getEl('cardCrediarioDtFim').value = '';
+            if (getEl('cardCrediarioTipoData'))
+                getEl('cardCrediarioTipoData').value = 'vencimento';
+            if (getEl('modalCrediarioDtInicio'))
+                getEl('modalCrediarioDtInicio').value = '';
+            if (getEl('modalCrediarioDtFim'))
+                getEl('modalCrediarioDtFim').value = '';
+            if (getEl('modalCrediarioTipoData'))
+                getEl('modalCrediarioTipoData').value = 'vencimento';
+            void loadReport();
         });
         getEl('btnExportCrediarioCsv')?.addEventListener('click', () => {
             exportCrediarioCsv();

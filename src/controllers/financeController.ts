@@ -2423,7 +2423,7 @@ export class FinanceController {
                 return;
             }
 
-            const { ano, mes, cdFilial, source, connectionId, convDateFilter } = req.query;
+            const { ano, mes, cdFilial, source, connectionId, convDateFilter, dtInicioCrediario, dtFimCrediario, tipoDataCrediario } = req.query;
 
             const { SolidconConfigService } = await import('../services/solidconConfigService');
             let solidconConfig: any = null;
@@ -2485,7 +2485,10 @@ export class FinanceController {
                     mes: isNaN(selectedMes) ? currentMonth : selectedMes,
                     cdFilial: cdFilial ? String(cdFilial) : null,
                     source: source ? String(source) : 'conta_baixa',
-                    convDateFilter: convDateFilter ? String(convDateFilter) : 'baixa'
+                    convDateFilter: convDateFilter ? String(convDateFilter) : 'baixa',
+                    dtInicioCrediario: dtInicioCrediario ? String(dtInicioCrediario) : null,
+                    dtFimCrediario: dtFimCrediario ? String(dtFimCrediario) : null,
+                    tipoDataCrediario: tipoDataCrediario ? String(tipoDataCrediario) : null
                 }
             );
 

@@ -574,12 +574,16 @@
             return;
         }
         const summary = data.summary || {};
-        const totalAReceber = Number(summary.totalAReceber || 0);
         const totalVencido = Number(summary.totalVencido || 0);
         const totalAVencer = Number(summary.totalAVencer || 0);
-        const qtdCupons = Number(summary.qtdCupons || 0);
+        const totalAReceber = (totalVencido + totalAVencer > 0)
+            ? (totalVencido + totalAVencer)
+            : Number(summary.totalAReceber || summary.totalReceber || 0);
         const qtdVencidos = Number(summary.qtdVencidos || 0);
         const qtdAVencer = Number(summary.qtdAVencer || 0);
+        const qtdCupons = (qtdVencidos + qtdAVencer > 0)
+            ? (qtdVencidos + qtdAVencer)
+            : Number(summary.qtdCupons || 0);
         if (getEl('cardCrediarioTotalReceber')) {
             getEl('cardCrediarioTotalReceber').textContent = formatMoney(totalAReceber);
         }
@@ -734,17 +738,16 @@
             return true;
         });
         // Update Ribbon Summary
-        let sumReceber = 0;
         let sumVencido = 0;
         let sumAVencer = 0;
         filtered.forEach((r) => {
             const val = Number(r.saldoPendente || 0);
-            sumReceber += val;
             if (r.isVencido)
                 sumVencido += val;
             else
                 sumAVencer += val;
         });
+        const sumReceber = sumVencido + sumAVencer;
         if (getEl('modalCrediarioSummaryReceber')) {
             getEl('modalCrediarioSummaryReceber').textContent = formatMoney(sumReceber);
         }

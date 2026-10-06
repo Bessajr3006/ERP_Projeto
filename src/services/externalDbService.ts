@@ -7466,18 +7466,23 @@ export class ExternalDbService {
                               ${filialClauseRec}
                         `);
                         const recRow = resRecSummary.recordset?.[0] || {};
-                        const totRec = Number(recRow.total_a_receber || 0);
-                        const qtdTot = Number(recRow.qtd_cupons || 0);
+                        const totVencido = Number(recRow.total_vencido || 0);
+                        const totAVencer = Number(recRow.total_a_vencer || 0);
+                        const totRec = (totVencido + totAVencer > 0) ? (totVencido + totAVencer) : Number(recRow.total_a_receber || 0);
+                        const qtdVenc = Number(recRow.qtd_vencidos || 0);
+                        const qtdAVenc = Number(recRow.qtd_a_vencer || 0);
+                        const qtdTot = (qtdVenc + qtdAVenc > 0) ? (qtdVenc + qtdAVenc) : Number(recRow.qtd_cupons || 0);
 
                         crediarioReceber.summary = {
                             totalAReceber: totRec,
+                            totalReceber: totRec,
                             totalEmitido: Number(recRow.total_emitido || 0),
                             totalQuitado: Number(recRow.total_quitado || 0),
-                            totalVencido: Number(recRow.total_vencido || 0),
-                            totalAVencer: Number(recRow.total_a_vencer || 0),
+                            totalVencido: totVencido,
+                            totalAVencer: totAVencer,
                             qtdCupons: qtdTot,
-                            qtdVencidos: Number(recRow.qtd_vencidos || 0),
-                            qtdAVencer: Number(recRow.qtd_a_vencer || 0),
+                            qtdVencidos: qtdVenc,
+                            qtdAVencer: qtdAVenc,
                             qtdClientes: Number(recRow.qtd_clientes || 0),
                             ticketMedio: qtdTot > 0 ? totRec / qtdTot : 0
                         };
@@ -8234,10 +8239,16 @@ export class ExternalDbService {
         results.forEach(r => {
             const cr = r.crediarioReceber;
             if (cr && cr.summary) {
-                crSumReceber += Number(cr.summary.totalReceber || 0);
-                crSumAVencer += Number(cr.summary.totalAVencer || 0);
-                crSumVencido += Number(cr.summary.totalVencido || 0);
-                crQtdCupons += Number(cr.summary.qtdCupons || 0);
+                const sVenc = Number(cr.summary.totalVencido || 0);
+                const sAVenc = Number(cr.summary.totalAVencer || 0);
+                const sRec = (sVenc + sAVenc > 0) ? (sVenc + sAVenc) : Number(cr.summary.totalAReceber || cr.summary.totalReceber || 0);
+                crSumReceber += sRec;
+                crSumAVencer += sAVenc;
+                crSumVencido += sVenc;
+                const qVenc = Number(cr.summary.qtdVencidos || 0);
+                const qAVenc = Number(cr.summary.qtdAVencer || 0);
+                const qTot = (qVenc + qAVenc > 0) ? (qVenc + qAVenc) : Number(cr.summary.qtdCupons || 0);
+                crQtdCupons += qTot;
                 crVencidos30 += Number(cr.summary.vencidos30 || 0);
                 crVencidos60 += Number(cr.summary.vencidos60 || 0);
                 crVencidos90 += Number(cr.summary.vencidos90 || 0);
@@ -8268,16 +8279,18 @@ export class ExternalDbService {
             }
         });
 
+        const totalCrediarioReceber = (crSumVencido + crSumAVencer > 0) ? (crSumVencido + crSumAVencer) : crSumReceber;
         const crediarioReceber = {
             loaded: credLoaded,
             dateFilter: first.crediarioReceber?.dateFilter || 'vencimento',
             summary: {
-                totalReceber: crSumReceber,
+                totalAReceber: totalCrediarioReceber,
+                totalReceber: totalCrediarioReceber,
                 totalAVencer: crSumAVencer,
                 totalVencido: crSumVencido,
                 qtdCupons: crQtdCupons,
                 qtdClientes: Object.keys(crClientesMap).length,
-                ticketMedio: crQtdCupons > 0 ? crSumReceber / crQtdCupons : 0,
+                ticketMedio: crQtdCupons > 0 ? totalCrediarioReceber / crQtdCupons : 0,
                 vencidos30: crVencidos30,
                 vencidos60: crVencidos60,
                 vencidos90: crVencidos90,

@@ -7376,6 +7376,173 @@ export class ExternalDbService {
                     console.warn('Falha ao consultar dados de convênio no Solidcon:', convErr?.message || convErr);
                 }
 
+                // 9. Cartões Não Baixados do Solidcon (tbBoletimItemMovimento + tbBoletimItem + tbBoletimItemTipo + tbBoletimMovimento)
+                let cartoesNaoBaixados: any = {
+                    summary: {
+                        totalBruto: 0,
+                        totalLiquido: 0,
+                        totalTaxa: 0,
+                        totalOperacoes: 0,
+                        totalLancamentos: 0,
+                        ticketMedio: 0
+                    },
+                    byBandeira: [],
+                    byModalidade: [],
+                    byFilial: [],
+                    lancamentos: []
+                };
+
+                try {
+                    let filialClauseCartao = '';
+                    if (cdFilial) {
+                        const filialNum = parseInt(cdFilial, 10);
+                        if (!isNaN(filialNum)) {
+                            filialClauseCartao = ` AND (bim.cdPessoaFilial = ${filialNum} OR bim.cdPessoaFilialDeposito = ${filialNum})`;
+                        }
+                    }
+
+                    const reqCards = pool.request();
+                    reqCards.input('ano', sql.Int, ano);
+                    reqCards.input('mes', sql.Int, mes);
+
+                    const queryCards = `
+                        SELECT 
+                            bim.cdBoletimItemMovimento as id,
+                            bim.cdBoletimMovimento,
+                            CONVERT(VARCHAR(10), bm.dtMovimento, 120) as dtVenda,
+                            CONVERT(VARCHAR(10), bim.dtPrevisao, 120) as dtPrevisao,
+                            ISNULL(bit.nmBoletimItemTipo, 'Outros') as modalidade,
+                            ISNULL(bi.nmBoletimItem, 'Outros') as bandeira,
+                            ISNULL(bim.qtMovimento, 1) as qtd,
+                            CAST(ISNULL(bim.vlBruto, 0) AS FLOAT) as vlBruto,
+                            CAST(ISNULL(bim.vlLiquido, 0) AS FLOAT) as vlLiquido,
+                            CAST(ISNULL(bim.vlBruto, 0) - ISNULL(bim.vlLiquido, 0) AS FLOAT) as vlTaxa,
+                            ISNULL(p.nmPessoa, CONCAT('Filial ', CAST(bim.cdPessoaFilial AS VARCHAR(20)))) as nome_filial,
+                            bim.cdPessoaFilial as filial,
+                            ISNULL(bim.Historico, '') as historico
+                        FROM tbBoletimItemMovimento bim WITH (NOLOCK)
+                        INNER JOIN tbBoletimItem bi WITH (NOLOCK) ON bi.cdBoletimItem = bim.cdBoletimItem AND bi.cdEmpresa = bim.cdEmpresa
+                        INNER JOIN tbBoletimItemTipo bit WITH (NOLOCK) ON bit.cdBoletimItemTipo = bi.cdBoletimItemTipo
+                        INNER JOIN tbBoletimMovimento bm WITH (NOLOCK) ON bm.cdBoletimMovimento = bim.cdBoletimMovimento AND bm.cdPessoaFilial = bim.cdPessoaFilial
+                        LEFT JOIN tbBoletimDeposito bd WITH (NOLOCK) ON bd.cdBoletimDeposito = bim.cdBoletimDeposito AND bd.cdPessoaFilialDeposito = bim.cdPessoaFilialDeposito
+                        LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = bim.cdPessoaFilial
+                        WHERE bit.cdBoletimItemTipo IN (2, 6, 7)
+                          AND (bim.cdBoletimDeposito IS NULL OR bd.dtDeposito IS NULL OR bd.cdBancoConta IS NULL)
+                          AND YEAR(bm.dtMovimento) = @ano AND MONTH(bm.dtMovimento) = @mes
+                          ${filialClauseCartao}
+                        ORDER BY bm.dtMovimento DESC, bim.vlBruto DESC
+                    `;
+
+                    const resCards = await reqCards.query(queryCards);
+                    const rawCards = resCards.recordset || [];
+
+                    let sumBruto = 0;
+                    let sumLiquido = 0;
+                    let sumTaxa = 0;
+                    let sumOperacoes = 0;
+
+                    const bandeiraMap: Record<string, any> = {};
+                    const modalidadeMap: Record<string, any> = {};
+                    const filialMap: Record<string, any> = {};
+
+                    rawCards.forEach((c: any) => {
+                        const vb = Number(c.vlBruto || 0);
+                        const vl = Number(c.vlLiquido || 0);
+                        const vt = Number(c.vlTaxa || 0);
+                        const qtd = Number(c.qtd || 1);
+
+                        sumBruto += vb;
+                        sumLiquido += vl;
+                        sumTaxa += vt;
+                        sumOperacoes += qtd;
+
+                        // Group by Bandeira
+                        const banKey = c.bandeira || 'Outros';
+                        if (!bandeiraMap[banKey]) {
+                            bandeiraMap[banKey] = {
+                                bandeira: banKey,
+                                modalidade: c.modalidade || 'Cartão',
+                                totalBruto: 0,
+                                totalLiquido: 0,
+                                totalTaxa: 0,
+                                totalOperacoes: 0,
+                                totalLancamentos: 0
+                            };
+                        }
+                        bandeiraMap[banKey].totalBruto += vb;
+                        bandeiraMap[banKey].totalLiquido += vl;
+                        bandeiraMap[banKey].totalTaxa += vt;
+                        bandeiraMap[banKey].totalOperacoes += qtd;
+                        bandeiraMap[banKey].totalLancamentos += 1;
+
+                        // Group by Modalidade
+                        const modKey = c.modalidade || 'Outros';
+                        if (!modalidadeMap[modKey]) {
+                            modalidadeMap[modKey] = {
+                                modalidade: modKey,
+                                totalBruto: 0,
+                                totalLiquido: 0,
+                                totalTaxa: 0,
+                                totalOperacoes: 0,
+                                totalLancamentos: 0
+                            };
+                        }
+                        modalidadeMap[modKey].totalBruto += vb;
+                        modalidadeMap[modKey].totalLiquido += vl;
+                        modalidadeMap[modKey].totalTaxa += vt;
+                        modalidadeMap[modKey].totalOperacoes += qtd;
+                        modalidadeMap[modKey].totalLancamentos += 1;
+
+                        // Group by Filial
+                        const filKey = String(c.filial || 1);
+                        if (!filialMap[filKey]) {
+                            filialMap[filKey] = {
+                                filial: c.filial,
+                                nomeFilial: c.nome_filial || `Filial ${c.filial}`,
+                                totalBruto: 0,
+                                totalLiquido: 0,
+                                totalTaxa: 0,
+                                totalOperacoes: 0,
+                                totalLancamentos: 0
+                            };
+                        }
+                        filialMap[filKey].totalBruto += vb;
+                        filialMap[filKey].totalLiquido += vl;
+                        filialMap[filKey].totalTaxa += vt;
+                        filialMap[filKey].totalOperacoes += qtd;
+                        filialMap[filKey].totalLancamentos += 1;
+                    });
+
+                    const byBandeira = Object.values(bandeiraMap).map((b: any) => ({
+                        ...b,
+                        percentual: sumLiquido > 0 ? Number(((b.totalLiquido / sumLiquido) * 100).toFixed(2)) : 0
+                    })).sort((a: any, b: any) => b.totalLiquido - a.totalLiquido);
+
+                    const byModalidade = Object.values(modalidadeMap).map((m: any) => ({
+                        ...m,
+                        percentual: sumLiquido > 0 ? Number(((m.totalLiquido / sumLiquido) * 100).toFixed(2)) : 0
+                    })).sort((a: any, b: any) => b.totalLiquido - a.totalLiquido);
+
+                    const byFilial = Object.values(filialMap).sort((a: any, b: any) => b.totalLiquido - a.totalLiquido);
+
+                    cartoesNaoBaixados = {
+                        summary: {
+                            totalBruto: sumBruto,
+                            totalLiquido: sumLiquido,
+                            totalTaxa: sumTaxa,
+                            totalOperacoes: sumOperacoes,
+                            totalLancamentos: rawCards.length,
+                            ticketMedio: sumOperacoes > 0 ? sumLiquido / sumOperacoes : 0
+                        },
+                        byBandeira,
+                        byModalidade,
+                        byFilial,
+                        lancamentos: rawCards
+                    };
+                } catch (cardErr: any) {
+                    console.warn('Falha ao consultar cartões não baixados no Solidcon:', cardErr?.message || cardErr);
+                }
+
                 // Resumo do Mês
                 const currentMonthData = monthlyComparison[mes - 1] || {
                     receita: 0,
@@ -7425,6 +7592,7 @@ export class ExternalDbService {
                     salesByModality,
                     annualSalesByModality,
                     convenioData,
+                    cartoesNaoBaixados,
                     monthlyComparison,
                     annualByCategory,
                     dailyEvolution,

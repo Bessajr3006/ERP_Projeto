@@ -9,6 +9,10 @@
     let isLoading = false;
     let accessibleCompanies = [];
     let currentCompanyPublicId = '';
+    // State for Cartões Não Baixados
+    let currentCartoesData = null;
+    let rawLancamentos = [];
+    let currentPeriodLabel = '';
     function escapeHtml(value) {
         return String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -17,6 +21,20 @@
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
+    const formatMoney = (val) => {
+        const num = Number(val || 0);
+        return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+    const formatDateBR = (isoDateStr) => {
+        if (!isoDateStr)
+            return '-';
+        const clean = String(isoDateStr).slice(0, 10);
+        const parts = clean.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return clean;
+    };
     // ─── Status & Alert Helpers ───────────────────────────────────────────────
     const updateStatusBadge = (type, text) => {
         const badge = getEl('statusBadge');
@@ -166,6 +184,248 @@
             select.innerHTML = '<option value="">Padrão da Empresa (Solidcon)</option>';
         }
     };
+    // ─── Render Card: Cartões Não Baixados ────────────────────────────────────
+    const renderCartoesCard = (cartoesData) => {
+        if (!cartoesData)
+            return;
+        const summary = cartoesData.summary || {};
+        const totalLiquido = Number(summary.totalLiquido || 0);
+        const totalBruto = Number(summary.totalBruto || 0);
+        const totalTaxa = Number(summary.totalTaxa || 0);
+        const totalOperacoes = Number(summary.totalOperacoes || 0);
+        const totalLancamentos = Number(summary.totalLancamentos || 0);
+        const ticketMedio = Number(summary.ticketMedio || 0);
+        const taxaMediaPct = totalBruto > 0 ? ((totalTaxa / totalBruto) * 100).toFixed(2) : '0.00';
+        if (getEl('cardCartoesTotalLiquido')) {
+            getEl('cardCartoesTotalLiquido').textContent = formatMoney(totalLiquido);
+        }
+        if (getEl('cardCartoesTotalBruto')) {
+            getEl('cardCartoesTotalBruto').textContent = formatMoney(totalBruto);
+        }
+        if (getEl('cardCartoesTotalTaxa')) {
+            getEl('cardCartoesTotalTaxa').textContent = formatMoney(totalTaxa);
+        }
+        if (getEl('cardCartoesTaxaPercent')) {
+            getEl('cardCartoesTaxaPercent').textContent = `Taxa média: ${taxaMediaPct}%`;
+        }
+        if (getEl('cardCartoesTotalOperacoes')) {
+            getEl('cardCartoesTotalOperacoes').textContent = totalOperacoes.toLocaleString('pt-BR');
+        }
+        if (getEl('cardCartoesTicketMedio')) {
+            getEl('cardCartoesTicketMedio').textContent = `Ticket Médio: ${formatMoney(ticketMedio)} (${totalLancamentos} lotes)`;
+        }
+        if (getEl('badgeCardLancamentosCount')) {
+            getEl('badgeCardLancamentosCount').textContent = String(totalLancamentos);
+        }
+        if (getEl('badgeCartoesStatus')) {
+            getEl('badgeCartoesStatus').textContent = totalLancamentos > 0 ? `${totalLancamentos} Pendentes` : 'Tudo Baixado';
+            getEl('badgeCartoesStatus').className = totalLancamentos > 0
+                ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60'
+                : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60';
+        }
+        // Render modalidade distribution pills
+        const modContainer = getEl('cardCartoesModalidadesContainer');
+        if (modContainer) {
+            const byModalidade = cartoesData.byModalidade || [];
+            if (byModalidade.length === 0) {
+                modContainer.innerHTML = '<span class="text-xs text-gray-400">Nenhum lote pendente no período</span>';
+            }
+            else {
+                modContainer.innerHTML = byModalidade.map((m) => {
+                    const badgeColor = m.modalidade.includes('CRED')
+                        ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50'
+                        : m.modalidade.includes('DEB')
+                            ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50'
+                            : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50';
+                    return `
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${badgeColor}">
+                            <span>${escapeHtml(m.modalidade)}:</span>
+                            <span class="font-bold">${formatMoney(m.totalLiquido)}</span>
+                            <span class="text-[10px] opacity-75">(${m.percentual}%)</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    };
+    // ─── Modal Functions: Populate & Filter ────────────────────────────────────
+    const populateModalFilters = (cartoesData) => {
+        const modSelect = getEl('modalCartoesFilterModalidade');
+        const filSelect = getEl('modalCartoesFilterFilial');
+        if (modSelect) {
+            const modalidades = (cartoesData.byModalidade || []).map((m) => m.modalidade);
+            modSelect.innerHTML = '<option value="">Todas as Modalidades</option>' +
+                modalidades.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        }
+        if (filSelect) {
+            const filiais = cartoesData.byFilial || [];
+            filSelect.innerHTML = '<option value="">Todas as Filiais</option>' +
+                filiais.map((f) => `<option value="${escapeHtml(f.filial)}">${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}</option>`).join('');
+        }
+    };
+    const renderModalTable = (list) => {
+        const tbody = getEl('modalCartoesTableBody');
+        if (!tbody)
+            return;
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <svg class="w-8 h-8 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="font-medium">Nenhum lançamento encontrado para os filtros selecionados.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        tbody.innerHTML = list.map((item) => {
+            const modalidadeUpper = String(item.modalidade || '').toUpperCase();
+            const modBadgeClass = modalidadeUpper.includes('CRED')
+                ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40'
+                : modalidadeUpper.includes('DEB')
+                    ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40'
+                    : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40';
+            const taxaPct = item.vlBruto > 0 ? ((item.vlTaxa / item.vlBruto) * 100).toFixed(1) : '0.0';
+            return `
+                <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                    <td class="py-2.5 px-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        ${formatDateBR(item.dtVenda)}
+                    </td>
+                    <td class="py-2.5 px-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        ${formatDateBR(item.dtPrevisao)}
+                    </td>
+                    <td class="py-2.5 px-4 text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">
+                        ${escapeHtml(item.nome_filial || `Filial ${item.filial}`)}
+                    </td>
+                    <td class="py-2.5 px-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${modBadgeClass}">
+                            ${escapeHtml(item.modalidade)}
+                        </span>
+                    </td>
+                    <td class="py-2.5 px-4 font-semibold text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                        ${escapeHtml(item.bandeira)}
+                    </td>
+                    <td class="py-2.5 px-4 text-center font-mono font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                        ${Number(item.qtd || 1).toLocaleString('pt-BR')}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                        ${formatMoney(item.vlBruto)}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                        ${formatMoney(item.vlTaxa)} <span class="text-[10px] text-gray-400">(${taxaPct}%)</span>
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                        ${formatMoney(item.vlLiquido)}
+                    </td>
+                    <td class="py-2.5 px-4 text-center whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                            Não Baixado
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
+    const applyModalFilters = () => {
+        const query = (getEl('modalCartoesSearch')?.value || '').toLowerCase().trim();
+        const selectedMod = getEl('modalCartoesFilterModalidade')?.value || '';
+        const selectedFilial = getEl('modalCartoesFilterFilial')?.value || '';
+        const filtered = rawLancamentos.filter((item) => {
+            if (selectedMod && item.modalidade !== selectedMod) {
+                return false;
+            }
+            if (selectedFilial && String(item.filial) !== selectedFilial) {
+                return false;
+            }
+            if (query) {
+                const combined = `${item.bandeira} ${item.modalidade} ${item.nome_filial} ${item.dtVenda} ${item.dtPrevisao} ${item.historico}`.toLowerCase();
+                if (!combined.includes(query))
+                    return false;
+            }
+            return true;
+        });
+        // Update Ribbon Summary
+        let sumLiquido = 0;
+        let sumBruto = 0;
+        let sumTaxa = 0;
+        filtered.forEach((r) => {
+            sumLiquido += Number(r.vlLiquido || 0);
+            sumBruto += Number(r.vlBruto || 0);
+            sumTaxa += Number(r.vlTaxa || 0);
+        });
+        if (getEl('modalSummaryTotalLiquido')) {
+            getEl('modalSummaryTotalLiquido').textContent = formatMoney(sumLiquido);
+        }
+        if (getEl('modalSummaryTotalBruto')) {
+            getEl('modalSummaryTotalBruto').textContent = formatMoney(sumBruto);
+        }
+        if (getEl('modalSummaryTotalTaxa')) {
+            getEl('modalSummaryTotalTaxa').textContent = formatMoney(sumTaxa);
+        }
+        if (getEl('modalCartoesItemCount')) {
+            getEl('modalCartoesItemCount').textContent = `Exibindo ${filtered.length} de ${rawLancamentos.length} lançamentos`;
+        }
+        renderModalTable(filtered);
+    };
+    const openModalCartoes = () => {
+        const modal = getEl('modalCartoesNaoBaixados');
+        if (!modal)
+            return;
+        if (getEl('modalCartoesBadgePeriodo')) {
+            getEl('modalCartoesBadgePeriodo').textContent = currentPeriodLabel;
+        }
+        // Reset search & filters
+        if (getEl('modalCartoesSearch')) {
+            getEl('modalCartoesSearch').value = '';
+        }
+        if (getEl('modalCartoesFilterModalidade')) {
+            getEl('modalCartoesFilterModalidade').value = '';
+        }
+        if (getEl('modalCartoesFilterFilial')) {
+            getEl('modalCartoesFilterFilial').value = '';
+        }
+        applyModalFilters();
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+    const closeModalCartoes = () => {
+        const modal = getEl('modalCartoesNaoBaixados');
+        if (!modal)
+            return;
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    };
+    const exportCartoesCsv = () => {
+        if (!rawLancamentos || rawLancamentos.length === 0) {
+            showAlert('Não há dados para exportar.', 'info');
+            return;
+        }
+        const headers = ['Data Venda', 'Previsão Recebimento', 'Filial', 'Modalidade', 'Bandeira / Operadora', 'Qtd Vendas', 'Valor Bruto', 'Taxa (R$)', 'Valor Líquido', 'Status'];
+        const rows = rawLancamentos.map((item) => [
+            formatDateBR(item.dtVenda),
+            formatDateBR(item.dtPrevisao),
+            `"${(item.nome_filial || `Filial ${item.filial}`).replace(/"/g, '""')}"`,
+            `"${(item.modalidade || '').replace(/"/g, '""')}"`,
+            `"${(item.bandeira || '').replace(/"/g, '""')}"`,
+            item.qtd || 1,
+            Number(item.vlBruto || 0).toFixed(2).replace('.', ','),
+            Number(item.vlTaxa || 0).toFixed(2).replace('.', ','),
+            Number(item.vlLiquido || 0).toFixed(2).replace('.', ','),
+            '"Não Baixado"'
+        ]);
+        const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cartoes_nao_baixados_solidcon_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
     // ─── Load Data Action ─────────────────────────────────────────────────────
     const loadReport = async () => {
         if (isLoading)
@@ -186,6 +446,7 @@
             const filial = getEl('filterFilial')?.value || '';
             const source = getEl('filterSource')?.value || 'conta_baixa';
             const connId = getEl('filterConnection')?.value || '';
+            currentPeriodLabel = `${String(mes).padStart(2, '0')}/${ano}`;
             // Persist selections
             if (companyParam)
                 localStorage.setItem('rel_valor_empresa_company', companyParam);
@@ -206,10 +467,10 @@
                 mes,
                 source,
                 ...(companyParam ? { company_id: companyParam } : {}),
-                ...(filial ? { filial } : {}),
-                ...(connId ? { connection_id: connId } : {})
+                ...(filial ? { cdFilial: filial, filial } : {}),
+                ...(connId ? { connectionId: connId, connection_id: connId } : {})
             });
-            const res = await api(`/fin-solidcon-vision?${queryParams.toString()}`);
+            const res = await api(`/finance/solidcon-vision?${queryParams.toString()}`);
             const data = res?.data;
             if (!data)
                 throw new Error('Estrutura de dados inválida retornada pelo servidor.');
@@ -239,8 +500,20 @@
                 const connDisplay = res.connection?.name || 'Solidcon Principal';
                 getEl('connectionBadge').textContent = `• ${compDisplay ? `${compDisplay} | ` : ''}${connDisplay}`;
             }
+            // Process & Render Cartões Não Baixados
+            currentCartoesData = data.cartoesNaoBaixados || {
+                summary: { totalBruto: 0, totalLiquido: 0, totalTaxa: 0, totalOperacoes: 0, totalLancamentos: 0, ticketMedio: 0 },
+                byBandeira: [],
+                byModalidade: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            rawLancamentos = currentCartoesData.lancamentos || [];
+            renderCartoesCard(currentCartoesData);
+            populateModalFilters(currentCartoesData);
+            const totalCartoesLotes = currentCartoesData.summary?.totalLancamentos || 0;
             const totalLancamentos = (data.summary?.qtdReceita || 0) + (data.summary?.qtdDespesa || 0);
-            updateStatusBadge('success', `Conectado (${totalLancamentos} lançamentos)`);
+            updateStatusBadge('success', `Conectado (${totalCartoesLotes} lotes de cartões pendentes)`);
         }
         catch (err) {
             const msg = err?.message || String(err);
@@ -280,6 +553,7 @@
         await loadCompanies();
         const initialCompany = getEl('filterCompany')?.value || '';
         await loadSolidconConnections(initialCompany);
+        // Filter Form Submissions
         getEl('filterForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             void loadReport();
@@ -319,6 +593,38 @@
             const val = getEl('filterFilial')?.value || '';
             localStorage.setItem(`rel_valor_empresa_filial_${companyParam || 'default'}`, val);
             void loadReport();
+        });
+        // ─── Modal Listeners ──────────────────────────────────────────────────
+        getEl('btnOpenModalCartoes')?.addEventListener('click', () => {
+            openModalCartoes();
+        });
+        getEl('btnCloseModalCartoes')?.addEventListener('click', () => {
+            closeModalCartoes();
+        });
+        getEl('btnCloseModalCartoesFooter')?.addEventListener('click', () => {
+            closeModalCartoes();
+        });
+        getEl('modalCartoesNaoBaixados')?.addEventListener('click', (e) => {
+            if (e.target === getEl('modalCartoesNaoBaixados')) {
+                closeModalCartoes();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !getEl('modalCartoesNaoBaixados')?.classList.contains('hidden')) {
+                closeModalCartoes();
+            }
+        });
+        getEl('modalCartoesSearch')?.addEventListener('input', () => {
+            applyModalFilters();
+        });
+        getEl('modalCartoesFilterModalidade')?.addEventListener('change', () => {
+            applyModalFilters();
+        });
+        getEl('modalCartoesFilterFilial')?.addEventListener('change', () => {
+            applyModalFilters();
+        });
+        getEl('btnExportCartoesCsv')?.addEventListener('click', () => {
+            exportCartoesCsv();
         });
         // Initial fetch
         await loadReport();

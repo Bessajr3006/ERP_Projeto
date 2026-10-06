@@ -113,6 +113,8 @@ export class FechamentoService {
                     COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
                     COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
                     c.tax_regime AS customer_tax_regime,
+                    COALESCE(cg.name, cgp.name, cg_comp.name, '-') AS customer_group_name,
+                    COALESCE(c.customer_group_id, (SELECT comp_cg.default_customer_group_id FROM companies comp_cg WHERE comp_cg.id = f.company_id)) AS customer_group_id,
                     c.inscricao_estadual AS customer_ie,
                     c.inscricao_municipal AS customer_im,
                     c.city AS customer_city,
@@ -130,6 +132,10 @@ export class FechamentoService {
                     END AS origem
              FROM fechamentos f
              LEFT JOIN customers c ON f.customer_id = c.id
+             LEFT JOIN customer_groups cg ON c.customer_group_id = cg.id
+             LEFT JOIN companies comp_ref ON f.company_id = comp_ref.id
+             LEFT JOIN company_groups cgp ON comp_ref.company_group_id = cgp.id
+             LEFT JOIN customer_groups cg_comp ON comp_ref.default_customer_group_id = cg_comp.id
              WHERE f.id = ? AND f.company_id = ? LIMIT 1`,
             [id, companyId]
         );
@@ -148,6 +154,8 @@ export class FechamentoService {
                     COALESCE(c.trade_name, (SELECT comp.trade_name FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_trade_name, 
                     COALESCE(c.cnpj_cpf, (SELECT comp.cnpj FROM companies comp WHERE comp.id = f.company_id), '-') AS customer_cnpj_cpf,
                     c.tax_regime AS customer_tax_regime,
+                    COALESCE(cg.name, cgp.name, cg_comp.name, '-') AS customer_group_name,
+                    COALESCE(c.customer_group_id, (SELECT comp_cg.default_customer_group_id FROM companies comp_cg WHERE comp_cg.id = f.company_id)) AS customer_group_id,
                     c.inscricao_estadual AS customer_ie,
                     c.inscricao_municipal AS customer_im,
                     c.city AS customer_city,
@@ -165,6 +173,10 @@ export class FechamentoService {
                     END AS origem
              FROM fechamentos f
              LEFT JOIN customers c ON f.customer_id = c.id
+             LEFT JOIN customer_groups cg ON c.customer_group_id = cg.id
+             LEFT JOIN companies comp_ref ON f.company_id = comp_ref.id
+             LEFT JOIN company_groups cgp ON comp_ref.company_group_id = cgp.id
+             LEFT JOIN customer_groups cg_comp ON comp_ref.default_customer_group_id = cg_comp.id
              WHERE f.public_id = ? AND f.company_id = ? LIMIT 1`,
             [publicId, companyId]
         );
@@ -176,7 +188,7 @@ export class FechamentoService {
         return rows[0] as Fechamento;
     }
 
-    static async list(companyId: number | number[], filters?: { customerId?: number; competencia?: string; customerGroupId?: number }): Promise<Fechamento[]> {
+    static async list(companyId: number | number[], filters?: { customerId?: number; competencia?: string; customerGroupId?: number; taxRegime?: string }): Promise<Fechamento[]> {
         const conditions: string[] = [];
         const values: any[] = [];
 
@@ -302,12 +314,40 @@ export class FechamentoService {
             );
         }
 
+        if (filters?.taxRegime && filters.taxRegime !== 'all') {
+            const tr = filters.taxRegime.toLowerCase();
+            if (tr === 'simples' || tr.includes('simples')) {
+                conditions.push(`(
+                    LOWER(COALESCE(c.tax_regime, comp.tax_regime, '')) LIKE '%simples%'
+                    OR (f.simples_faturamento > 0 OR f.simples_das > 0 OR f.simples_valor_tributado > 0)
+                )`);
+            } else if (tr === 'lucro_presumido' || tr.includes('presumido')) {
+                conditions.push(`(
+                    LOWER(COALESCE(c.tax_regime, comp.tax_regime, '')) LIKE '%presumido%'
+                    OR (f.compra_valor > 0 OR f.venda_valor > 0 OR f.apuracao_icms > 0)
+                )`);
+            } else if (tr === 'lucro_real' || tr.includes('real')) {
+                conditions.push(`(
+                    LOWER(COALESCE(c.tax_regime, comp.tax_regime, '')) LIKE '%real%'
+                    OR (f.compra_valor > 0 OR f.venda_valor > 0 OR f.apuracao_icms > 0)
+                )`);
+            } else if (tr === 'lucro' || tr.includes('lucro')) {
+                conditions.push(`(
+                    LOWER(COALESCE(c.tax_regime, comp.tax_regime, '')) LIKE '%presumido%'
+                    OR LOWER(COALESCE(c.tax_regime, comp.tax_regime, '')) LIKE '%real%'
+                    OR (f.compra_valor > 0 OR f.venda_valor > 0 OR f.apuracao_icms > 0)
+                )`);
+            }
+        }
+
         const query = `
             SELECT f.*, 
                    COALESCE(c.name, comp.company_name, comp.trade_name, 'Empresa') AS customer_name, 
                    COALESCE(c.trade_name, comp.trade_name, comp.company_name, '-') AS customer_trade_name, 
                    COALESCE(c.cnpj_cpf, comp.cnpj, '-') AS customer_cnpj_cpf,
                    COALESCE(c.tax_regime, comp.tax_regime, '-') AS customer_tax_regime,
+                   COALESCE(cg.name, cgp.name, cg_comp.name, '-') AS customer_group_name,
+                   COALESCE(c.customer_group_id, comp.default_customer_group_id) AS customer_group_id,
                    COALESCE(c.inscricao_estadual, comp.ie, '-') AS customer_ie,
                    COALESCE(c.inscricao_municipal, comp.im, '-') AS customer_im,
                    COALESCE(c.city, comp.city, '-') AS customer_city,
@@ -326,6 +366,9 @@ export class FechamentoService {
             FROM fechamentos f
             LEFT JOIN customers c ON f.customer_id = c.id
             LEFT JOIN companies comp ON f.company_id = comp.id
+            LEFT JOIN customer_groups cg ON c.customer_group_id = cg.id
+            LEFT JOIN company_groups cgp ON comp.company_group_id = cgp.id
+            LEFT JOIN customer_groups cg_comp ON comp.default_customer_group_id = cg_comp.id
             WHERE ${conditions.join(' AND ')}
             ORDER BY f.competencia DESC, c.name ASC
         `;

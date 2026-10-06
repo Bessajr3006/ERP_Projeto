@@ -31,8 +31,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filterTargetCompany = document.getElementById('filterTargetCompany');
     const filterCompanyParam = document.getElementById('filterCompanyParam');
     const filterCustomerGroup = document.getElementById('filterCustomerGroup');
+    const filterRegime = document.getElementById('filterRegime');
     const filterCompetencia = document.getElementById('filterCompetencia');
     const selectAll = document.getElementById('selectAll');
+    const btnPresetAuto = document.getElementById('btnPresetAuto');
+    const btnPresetSimples = document.getElementById('btnPresetSimples');
+    const btnPresetLucro = document.getElementById('btnPresetLucro');
+    const btnPresetTodos = document.getElementById('btnPresetTodos');
     const companyParam = document.getElementById('companyParam');
     const modalCustomerGroup = document.getElementById('modalCustomerGroup');
     const fechamentoForm = document.getElementById('fechamentoForm');
@@ -580,6 +585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             targetCompanyId: filterTargetCompany ? filterTargetCompany.value : 'all',
             customerId: filterCompanyParam ? filterCompanyParam.value : '',
             customerGroupId: filterCustomerGroup ? filterCustomerGroup.value : '',
+            taxRegime: filterRegime ? filterRegime.value : 'all',
             competencia: filterCompetencia ? filterCompetencia.value : '',
             filterIsOpen: filterIsOpen
         };
@@ -683,6 +689,153 @@ document.addEventListener('DOMContentLoaded', async () => {
             return 0;
         });
     }
+    const columnCheckboxes = document.querySelectorAll('input[data-column-target]');
+    const btnToggleColumns = document.getElementById('btnToggleColumns');
+    const columnsDropdownMenu = document.getElementById('columnsDropdownMenu');
+    const STORAGE_KEY = 'erp_fechamentos_columns_visibility';
+    const BASE_COLUMNS = ['selecionar', 'id', 'empresa', 'grupo', 'fantasia', 'cnpj', 'periodo', 'origem', 'acoes'];
+    const LUCRO_COLUMNS = [
+        'compra', 'compra_bs_icms', 'compra_isento', 'compra_outros', 'compra_pis', 'compra_cofins',
+        'venda', 'venda_bs_icms', 'venda_isento', 'venda_outros', 'venda_pis', 'venda_cofins',
+        'icms', 'apuracao_aj_icms', 'f_icms',
+        'fecp', 'apuracao_aj_fecp', 'f_fecp',
+        'pis', 'apuracao_aj_pis', 'f_pis',
+        'cofins', 'apuracao_aj_cofins', 'f_cofins',
+        'despesa_adm', 'despesa_operacional', 'despesa_folha', 'despesa_cmv', 'despesa_ir_aluguel',
+        'imposto_irpj', 'imposto_csll'
+    ];
+    const SIMPLES_COLUMNS = [
+        'simples_faturamento', 'simples_aliquota', 'simples_das', 'simples_cpp',
+        'simples_icms', 'simples_ipi', 'simples_iss', 'simples_pis', 'simples_cofins',
+        'simples_irpj', 'simples_csll', 'simples_faturamento_acumulado_12m',
+        'simples_faturamento_acumulado_ano_anterior', 'simples_valor_tributado', 'simples_valor_nao_tributado'
+    ];
+    function saveColumnVisibility() {
+        const preferences = {};
+        columnCheckboxes.forEach(cb => {
+            const target = cb.getAttribute('data-column-target');
+            if (target) {
+                preferences[target] = cb.checked;
+            }
+        });
+        if (window.CompanyStorage) {
+            window.CompanyStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+        }
+        else {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+        }
+    }
+    function loadColumnVisibility() {
+        try {
+            const saved = window.CompanyStorage?.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const preferences = JSON.parse(saved);
+                columnCheckboxes.forEach(cb => {
+                    const target = cb.getAttribute('data-column-target');
+                    if (target && target in preferences) {
+                        cb.checked = preferences[target];
+                    }
+                });
+            }
+        }
+        catch (e) {
+            console.error('Erro ao carregar preferências de colunas:', e);
+        }
+    }
+    function applyColumnVisibility() {
+        columnCheckboxes.forEach(cb => {
+            const target = cb.getAttribute('data-column-target');
+            const elements = document.querySelectorAll(`.col-${target}`);
+            elements.forEach(el => {
+                if (cb.checked) {
+                    el.classList.remove('hidden');
+                }
+                else {
+                    el.classList.add('hidden');
+                }
+            });
+        });
+    }
+    function setColumnPreset(mode, dataList = loadedFechamentos) {
+        let resolvedPreset = 'todos';
+        if (mode === 'simples') {
+            resolvedPreset = 'simples';
+        }
+        else if (mode === 'lucro') {
+            resolvedPreset = 'lucro';
+        }
+        else if (mode === 'todos') {
+            resolvedPreset = 'todos';
+        }
+        else {
+            // Auto detection based on filter or loaded data
+            const selectedRegime = filterRegime ? filterRegime.value : 'all';
+            if (selectedRegime === 'simples') {
+                resolvedPreset = 'simples';
+            }
+            else if (selectedRegime === 'lucro') {
+                resolvedPreset = 'lucro';
+            }
+            else {
+                const selectedCustId = filterCompanyParam?.value;
+                const selectedCustomer = selectedCustId ? allCustomers.find(c => String(c.id) === String(selectedCustId)) : null;
+                if (selectedCustomer) {
+                    const tr = String(selectedCustomer.tax_regime || '').toLowerCase();
+                    if (tr.includes('simples')) {
+                        resolvedPreset = 'simples';
+                    }
+                    else if (tr.includes('presumido') || tr.includes('real') || tr.includes('lucro')) {
+                        resolvedPreset = 'lucro';
+                    }
+                    else {
+                        resolvedPreset = 'todos';
+                    }
+                }
+                else if (dataList && dataList.length > 0) {
+                    const hasSimples = dataList.some(f => {
+                        const reg = String(f.customer_tax_regime || '').toLowerCase();
+                        return reg.includes('simples') || Number(f.simples_faturamento) > 0 || Number(f.simples_das) > 0 || Number(f.simples_valor_tributado) > 0;
+                    });
+                    const hasLucro = dataList.some(f => {
+                        const reg = String(f.customer_tax_regime || '').toLowerCase();
+                        return reg.includes('presumido') || reg.includes('real') || reg.includes('lucro') ||
+                            Number(f.compra_valor) > 0 || Number(f.venda_valor) > 0 ||
+                            Number(f.apuracao_icms) > 0 || Number(f.apuracao_fecp) > 0 ||
+                            Number(f.apuracao_pis) > 0 || Number(f.apuracao_cofins) > 0;
+                    });
+                    if (hasSimples && !hasLucro) {
+                        resolvedPreset = 'simples';
+                    }
+                    else if (hasLucro && !hasSimples) {
+                        resolvedPreset = 'lucro';
+                    }
+                    else {
+                        // Mixed / Group with all apurações -> show all columns
+                        resolvedPreset = 'todos';
+                    }
+                }
+                else {
+                    resolvedPreset = 'todos';
+                }
+            }
+        }
+        columnCheckboxes.forEach(cb => {
+            const target = cb.getAttribute('data-column-target');
+            if (!target)
+                return;
+            if (resolvedPreset === 'simples') {
+                cb.checked = BASE_COLUMNS.includes(target) || SIMPLES_COLUMNS.includes(target);
+            }
+            else if (resolvedPreset === 'lucro') {
+                cb.checked = BASE_COLUMNS.includes(target) || LUCRO_COLUMNS.includes(target);
+            }
+            else {
+                cb.checked = BASE_COLUMNS.includes(target) || LUCRO_COLUMNS.includes(target) || SIMPLES_COLUMNS.includes(target);
+            }
+        });
+        saveColumnVisibility();
+        applyColumnVisibility();
+    }
     let loadedFechamentos = [];
     let currentSortField = 'id';
     let currentSortAsc = false;
@@ -694,6 +847,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const targetCompanyId = filterTargetCompany ? filterTargetCompany.value : 'all';
             const customerId = filterCompanyParam?.value;
             const customerGroupId = filterCustomerGroup?.value;
+            const taxRegime = filterRegime?.value;
             const competencia = filterCompetencia?.value;
             let url = '/fechamentos';
             const params = [];
@@ -703,6 +857,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 params.push(`customerId=${customerId}`);
             if (customerGroupId)
                 params.push(`customerGroupId=${customerGroupId}`);
+            if (taxRegime && taxRegime !== 'all')
+                params.push(`taxRegime=${encodeURIComponent(taxRegime)}`);
             if (competencia)
                 params.push(`competencia=${competencia}`);
             if (params.length > 0) {
@@ -779,11 +935,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ${formattedId}
                     </td>
                     <td class="col-empresa px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
                             <span class="font-medium">${f.customer_name || (f.customer_id ? `Cliente ${f.customer_id}` : 'Empresa')}</span>
                             ${f.is_registered_as_company ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800" title="Cadastrada como empresa no ERP">🏢 Empresa</span>` : ''}
+                            ${f.customer_group_name && f.customer_group_name !== '-' ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800" title="Grupo: ${f.customer_group_name}">👥 ${f.customer_group_name}</span>` : ''}
                         </div>
                         ${f.customer_tax_regime ? `<div class="text-[11px] text-gray-400 dark:text-gray-500">${f.customer_tax_regime}${f.customer_city ? ' • ' + f.customer_city + (f.customer_state ? '/' + f.customer_state : '') : ''}</div>` : (f.customer_city ? `<div class="text-[11px] text-gray-400 dark:text-gray-500">${f.customer_city}${f.customer_state ? '/' + f.customer_state : ''}</div>` : '')}
+                    </td>
+                    <td class="col-grupo px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        ${f.customer_group_name && f.customer_group_name !== '-' ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40">👥 ${f.customer_group_name}</span>` : '<span class="text-gray-400 dark:text-gray-600">-</span>'}
                     </td>
                     <td class="col-fantasia px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         ${f.customer_trade_name || '-'}
@@ -971,8 +1131,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         });
-        // Apply visibility rules to new rows
-        applyColumnVisibility();
+        // Auto-adjust columns based on regime or preset
+        setColumnPreset('auto', fechamentos);
     }
     function editFechamento(publicId) {
         currentImportCfopTotals = null;
@@ -1268,12 +1428,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadFechamentos();
         });
     }
+    if (filterCompanyParam) {
+        filterCompanyParam.addEventListener('change', () => {
+            saveFilters();
+            loadFechamentos();
+        });
+    }
+    if (filterRegime) {
+        filterRegime.addEventListener('change', () => {
+            saveFilters();
+            loadFechamentos();
+        });
+    }
+    if (btnPresetAuto) {
+        btnPresetAuto.addEventListener('click', () => {
+            setColumnPreset('auto', loadedFechamentos);
+        });
+    }
+    if (btnPresetSimples) {
+        btnPresetSimples.addEventListener('click', () => {
+            setColumnPreset('simples', loadedFechamentos);
+        });
+    }
+    if (btnPresetLucro) {
+        btnPresetLucro.addEventListener('click', () => {
+            setColumnPreset('lucro', loadedFechamentos);
+        });
+    }
+    if (btnPresetTodos) {
+        btnPresetTodos.addEventListener('click', () => {
+            setColumnPreset('todos', loadedFechamentos);
+        });
+    }
     if (btnClearFilters) {
         btnClearFilters.addEventListener('click', () => {
             if (filterForm)
                 filterForm.reset();
             if (filterTargetCompany)
                 filterTargetCompany.value = 'all';
+            if (filterRegime)
+                filterRegime.value = 'all';
             updateFilterCustomersByGroup();
             saveFilters();
             loadFechamentos();
@@ -2064,56 +2258,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-    const columnCheckboxes = document.querySelectorAll('input[data-column-target]');
-    const btnToggleColumns = document.getElementById('btnToggleColumns');
-    const columnsDropdownMenu = document.getElementById('columnsDropdownMenu');
-    const STORAGE_KEY = 'erp_fechamentos_columns_visibility';
-    function saveColumnVisibility() {
-        const preferences = {};
-        columnCheckboxes.forEach(cb => {
-            const target = cb.getAttribute('data-column-target');
-            if (target) {
-                preferences[target] = cb.checked;
-            }
-        });
-        if (window.CompanyStorage) {
-            window.CompanyStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-        }
-        else {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-        }
-    }
-    function loadColumnVisibility() {
-        try {
-            const saved = window.CompanyStorage?.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const preferences = JSON.parse(saved);
-                columnCheckboxes.forEach(cb => {
-                    const target = cb.getAttribute('data-column-target');
-                    if (target && target in preferences) {
-                        cb.checked = preferences[target];
-                    }
-                });
-            }
-        }
-        catch (e) {
-            console.error('Erro ao carregar preferências de colunas:', e);
-        }
-    }
-    function applyColumnVisibility() {
-        columnCheckboxes.forEach(cb => {
-            const target = cb.getAttribute('data-column-target');
-            const elements = document.querySelectorAll(`.col-${target}`);
-            elements.forEach(el => {
-                if (cb.checked) {
-                    el.classList.remove('hidden');
-                }
-                else {
-                    el.classList.add('hidden');
-                }
-            });
-        });
-    }
     columnCheckboxes.forEach(cb => {
         cb.addEventListener('change', () => {
             saveColumnVisibility();
@@ -2279,6 +2423,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (savedFilters) {
         if (filterCompetencia && savedFilters.competencia) {
             filterCompetencia.value = savedFilters.competencia;
+        }
+        if (filterRegime && savedFilters.taxRegime) {
+            filterRegime.value = savedFilters.taxRegime;
         }
         if (savedFilters.filterIsOpen) {
             filterIsOpen = true;

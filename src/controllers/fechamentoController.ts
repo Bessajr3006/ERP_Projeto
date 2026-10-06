@@ -214,7 +214,7 @@ export class FechamentoController {
             targetCompanyIds = userCompanyId;
         }
 
-        const filters: { customerId?: number; competencia?: string; customerGroupId?: number } = {};
+        const filters: { customerId?: number; competencia?: string; customerGroupId?: number; taxRegime?: string } = {};
         if (req.query.customerId) {
             filters.customerId = Number(req.query.customerId);
         }
@@ -223,6 +223,9 @@ export class FechamentoController {
         }
         if (req.query.customerGroupId) {
             filters.customerGroupId = Number(req.query.customerGroupId);
+        }
+        if (req.query.taxRegime || req.query.regime) {
+            filters.taxRegime = String(req.query.taxRegime || req.query.regime);
         }
 
         const result = await FechamentoService.list(targetCompanyIds, filters);

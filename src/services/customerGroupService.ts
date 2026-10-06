@@ -51,16 +51,39 @@ export class CustomerGroupService {
         return rows[0] as CustomerGroup;
     }
 
-    static async listByCompany(companyId: number): Promise<CustomerGroup[]> {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT cg.* 
-             FROM customer_groups cg
-             WHERE cg.company_id = ? 
-             ORDER BY cg.created_at DESC`,
-            [companyId]
-        );
+    static async listByCompany(companyId: number | number[]): Promise<CustomerGroup[]> {
+        let rows: RowDataPacket[];
+        if (Array.isArray(companyId)) {
+            if (companyId.length === 0) return [];
+            [rows] = await pool.query<RowDataPacket[]>(
+                `SELECT cg.* 
+                 FROM customer_groups cg
+                 WHERE cg.company_id IN (${companyId.map(() => '?').join(',')})
+                 ORDER BY cg.name ASC, cg.created_at DESC`,
+                companyId
+            );
+        } else {
+            [rows] = await pool.query<RowDataPacket[]>(
+                `SELECT cg.* 
+                 FROM customer_groups cg
+                 WHERE cg.company_id = ? 
+                 ORDER BY cg.name ASC, cg.created_at DESC`,
+                [companyId]
+            );
+        }
 
-        return rows as CustomerGroup[];
+        // Deduplicate groups by normalized name
+        const seen = new Set<string>();
+        const uniqueGroups: CustomerGroup[] = [];
+        for (const g of (rows as CustomerGroup[])) {
+            const norm = (g.name || '').toLowerCase().trim();
+            if (norm && !seen.has(norm)) {
+                seen.add(norm);
+                uniqueGroups.push(g);
+            }
+        }
+
+        return uniqueGroups;
     }
 
     static async update(publicId: string, companyId: number, data: UpdateCustomerGroupData): Promise<CustomerGroup> {

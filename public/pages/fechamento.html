@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Fechamento</title>
-    <link href="/css/style.css?v=20261006173625" rel="stylesheet">
+    <link href="/css/style.css?v=20261006180726" rel="stylesheet">
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261006173625"></script>
+    <script src="/js/pwa.js?v=20261006180726"></script>
 </head>
 
 <body data-required-module="fechamento" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -48,6 +48,14 @@
                         <div id="columnsDropdownMenu" class="hidden origin-top-right absolute right-0 mt-2 w-72 max-h-96 overflow-y-auto rounded-xl shadow-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 p-3 space-y-3">
                             <span class="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-slate-700 pb-1.5 mb-1">Exibir Colunas</span>
                             
+                            <!-- Presets Rápidos -->
+                            <div class="grid grid-cols-2 gap-1.5 pb-2 border-b border-gray-100 dark:border-slate-700">
+                                <button type="button" id="btnPresetAuto" class="px-2 py-1 text-[10px] font-semibold rounded bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300 border border-brand-200 dark:border-brand-800 hover:bg-brand-100 transition-colors text-center" title="Ajusta automaticamente pelo regime do cliente/grupo">⚡ Auto (Regime)</button>
+                                <button type="button" id="btnPresetSimples" class="px-2 py-1 text-[10px] font-semibold rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors text-center" title="Exibe colunas da aba do Simples Nacional">🍃 Simples</button>
+                                <button type="button" id="btnPresetLucro" class="px-2 py-1 text-[10px] font-semibold rounded bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors text-center" title="Exibe Compras, Vendas e Apurações (ICMS, FECP, PIS, COFINS)">📊 Lucro (R/P)</button>
+                                <button type="button" id="btnPresetTodos" class="px-2 py-1 text-[10px] font-semibold rounded bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 transition-colors text-center" title="Exibe todas as apurações do grupo">📑 Todas</button>
+                            </div>
+
                             <!-- Gerais -->
                             <div class="space-y-1.5">
                                 <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Identificação</span>
@@ -62,6 +70,10 @@
                                 <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
                                     <input type="checkbox" data-column-target="empresa" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
                                     <span>Empresa</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
+                                    <input type="checkbox" data-column-target="grupo" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                    <span>Grupo de Cliente</span>
                                 </label>
                                 <label class="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/55 p-1 rounded transition-colors">
                                     <input type="checkbox" data-column-target="fantasia" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800">
@@ -323,7 +335,7 @@
                 <div id="filterBody" class="overflow-hidden" style="max-height: 0px;">
                     <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
                         <form id="filterForm">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
                                 <div>
                                     <label for="filterTargetCompany" class="block text-[10px] font-bold text-gray-500 uppercase">Unidade / Empresa ERP</label>
                                     <select id="filterTargetCompany" name="filterTargetCompany" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
@@ -340,6 +352,14 @@
                                     <label for="filterCompanyParam" class="block text-[10px] font-bold text-gray-500 uppercase">Empresa (Cliente)</label>
                                     <select id="filterCompanyParam" name="filterCompanyParam" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
                                         <option value="">Todas as empresas</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="filterRegime" class="block text-[10px] font-bold text-gray-500 uppercase">Regime / Apuração</label>
+                                    <select id="filterRegime" name="filterRegime" class="block w-full bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:ring-brand-500 focus:border-brand-500">
+                                        <option value="all">Todos os Regimes (Todas Apurações)</option>
+                                        <option value="simples">Simples Nacional</option>
+                                        <option value="lucro">Lucro Real / Presumido</option>
                                     </select>
                                 </div>
                                 <div>
@@ -374,6 +394,12 @@
                                 <th scope="col" class="col-empresa sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="customer_name">
                                     <div class="flex items-center gap-1">
                                         <span>Empresa</span>
+                                        <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
+                                    </div>
+                                </th>
+                                <th scope="col" class="col-grupo sortable-header cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-slate-700/50 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors" data-sort="customer_group_name">
+                                    <div class="flex items-center gap-1">
+                                        <span>Grupo</span>
                                         <span class="sort-icon text-[10px] text-gray-400"> ↕</span>
                                     </div>
                                 </th>
@@ -1330,11 +1356,11 @@
         </div>
     </div>
 
-    <script src="/js/api.js?v=20261006173625"></script>
-    <script src="/js/components/navbar.js?v=20261006173625"></script>
-    <script src="/js/fechamento.js?v=20261006173625"></script>
+    <script src="/js/api.js?v=20261006180726"></script>
+    <script src="/js/components/navbar.js?v=20261006180726"></script>
+    <script src="/js/fechamento.js?v=20261006180726"></script>
 
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261006173625"></script>
+    <script src="/js/components/footer.js?v=20261006180726"></script>
 </body>
 </html>

@@ -8004,38 +8004,77 @@ export class ExternalDbService {
                         });
 
                         // Lista detalhada dos títulos a pagar (Top 2000)
-                        const resPagarList = await reqPagar.query(`
-                            SELECT TOP 2000
-                                cp.cdConta,
-                                cp.cdContaParcela,
-                                c.cdPessoaComercial,
-                                ISNULL(NULLIF(RTRIM(LTRIM(p.nmPessoa)), ''), 'Fornecedor não identificado') as fornecedor,
-                                ISNULL(pj.nrCGC, pf.nrCPF) as documentoPessoa,
-                                c.Documento as numeroDocumento,
-                                CONVERT(VARCHAR(10), c.dtInclusao, 120) as dtEmissao,
-                                CONVERT(VARCHAR(10), cp.dtParcela, 120) as dtVencimento,
-                                CAST(ISNULL(cp.vlParcela, 0) AS FLOAT) as vlParcela,
-                                CAST(ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as vlPago,
-                                CAST(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as saldoPendente,
-                                CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
-                                CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cp.dtParcela, GETDATE()) ELSE 0 END as diasAtraso,
-                                ISNULL(cp.Historico, '') as historico,
-                                ISNULL(c.cdPessoaFilialConta, 1) as filial,
-                                ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial
-                            FROM tbContaParcela cp WITH (NOLOCK)
-                            INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
-                            LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
-                            LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
-                            LEFT JOIN tbPessoaJuridica pj WITH (NOLOCK) ON pj.cdPessoaJuridica = p.cdPessoa
-                            LEFT JOIN tbPessoaFisica pf WITH (NOLOCK) ON pf.cdPessoaFisica = p.cdPessoa
-                            LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
-                            WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
-                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
-                              ${dateFilterClausePagar}
-                              ${filialClausePagar}
-                            ORDER BY saldoPendente DESC, cp.dtParcela ASC
-                        `);
-                        contasPagar.lancamentos = (resPagarList.recordset || []).map((cp: any) => ({
+                        let resPagarList: any = null;
+                        try {
+                            resPagarList = await reqPagar.query(`
+                                SELECT TOP 2000
+                                    cp.cdConta,
+                                    cp.cdContaParcela,
+                                    c.cdPessoaComercial,
+                                    COALESCE(NULLIF(RTRIM(LTRIM(pj.RazaoSocial)), ''), NULLIF(RTRIM(LTRIM(pf.nmCompleto)), ''), NULLIF(RTRIM(LTRIM(p.nmPessoa)), ''), 'Fornecedor não identificado') as fornecedor,
+                                    COALESCE(
+                                        CASE WHEN pj.cdPessoaJuridica IS NOT NULL THEN CONCAT(pj.CNPJEmpresa, pj.CNPJFilial, pj.CNPJDV) END,
+                                        CASE WHEN pf.cdPessoaFisica IS NOT NULL THEN CONCAT(pf.CPF, pf.CPFDV) END,
+                                        ''
+                                    ) as documentoPessoa,
+                                    c.Documento as numeroDocumento,
+                                    CONVERT(VARCHAR(10), c.dtInclusao, 120) as dtEmissao,
+                                    CONVERT(VARCHAR(10), cp.dtParcela, 120) as dtVencimento,
+                                    CAST(ISNULL(cp.vlParcela, 0) AS FLOAT) as vlParcela,
+                                    CAST(ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as vlPago,
+                                    CAST(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as saldoPendente,
+                                    CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
+                                    CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cp.dtParcela, GETDATE()) ELSE 0 END as diasAtraso,
+                                    ISNULL(cp.Historico, '') as historico,
+                                    ISNULL(c.cdPessoaFilialConta, 1) as filial,
+                                    ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial
+                                FROM tbContaParcela cp WITH (NOLOCK)
+                                INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
+                                LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
+                                LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
+                                LEFT JOIN tbPessoaJuridica pj WITH (NOLOCK) ON pj.cdPessoaJuridica = p.cdPessoa
+                                LEFT JOIN tbPessoaFisica pf WITH (NOLOCK) ON pf.cdPessoaFisica = p.cdPessoa
+                                LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
+                                WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                                  AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                                  ${dateFilterClausePagar}
+                                  ${filialClausePagar}
+                                ORDER BY (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) DESC, cp.dtParcela ASC
+                            `);
+                        } catch (errPjPf: any) {
+                            console.warn('[Solidcon Pagar] Fallback sem tbPessoaJuridica/tbPessoaFisica:', errPjPf?.message);
+                            resPagarList = await reqPagar.query(`
+                                SELECT TOP 2000
+                                    cp.cdConta,
+                                    cp.cdContaParcela,
+                                    c.cdPessoaComercial,
+                                    ISNULL(NULLIF(RTRIM(LTRIM(p.nmPessoa)), ''), 'Fornecedor não identificado') as fornecedor,
+                                    '' as documentoPessoa,
+                                    c.Documento as numeroDocumento,
+                                    CONVERT(VARCHAR(10), c.dtInclusao, 120) as dtEmissao,
+                                    CONVERT(VARCHAR(10), cp.dtParcela, 120) as dtVencimento,
+                                    CAST(ISNULL(cp.vlParcela, 0) AS FLOAT) as vlParcela,
+                                    CAST(ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as vlPago,
+                                    CAST(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as saldoPendente,
+                                    CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
+                                    CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cp.dtParcela, GETDATE()) ELSE 0 END as diasAtraso,
+                                    ISNULL(cp.Historico, '') as historico,
+                                    ISNULL(c.cdPessoaFilialConta, 1) as filial,
+                                    ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial
+                                FROM tbContaParcela cp WITH (NOLOCK)
+                                INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
+                                LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
+                                LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
+                                LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
+                                WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                                  AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                                  ${dateFilterClausePagar}
+                                  ${filialClausePagar}
+                                ORDER BY (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) DESC, cp.dtParcela ASC
+                            `);
+                        }
+
+                        contasPagar.lancamentos = (resPagarList?.recordset || []).map((cp: any) => ({
                             id: `${cp.cdConta}_${cp.cdContaParcela}`,
                             cdConta: Number(cp.cdConta || 0),
                             cdContaParcela: Number(cp.cdContaParcela || 1),

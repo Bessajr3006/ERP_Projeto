@@ -1133,6 +1133,7 @@
                     nomeFilial,
                     items: [],
                     totalParcela: 0,
+                    totalPermutado: 0,
                     totalPago: 0,
                     saldoPendente: 0,
                     totalVencido: 0,
@@ -1148,7 +1149,10 @@
             const parcela = Number(item.vlParcela || 0);
             const pago = Number(item.vlPago || 0);
             const saldo = Number(item.saldoPendente || 0);
+            const isPermuta = Boolean(item.isPermuta);
+            const vlPermutado = Number(item.vlPermutado !== undefined ? item.vlPermutado : (isPermuta ? parcela : 0));
             group.totalParcela += parcela;
+            group.totalPermutado += vlPermutado;
             group.totalPago += pago;
             group.saldoPendente += saldo;
             if (item.isCancelado) {
@@ -1183,7 +1187,7 @@
             // Group Header Banner
             html += `
                 <tr class="bg-linear-to-r from-rose-50 via-rose-50/70 to-gray-50 dark:from-slate-800 dark:via-rose-950/30 dark:to-slate-800/80 border-t-2 border-b border-rose-200 dark:border-rose-800/60 sticky top-10 z-5">
-                    <td colspan="12" class="py-2.5 px-4">
+                    <td colspan="13" class="py-2.5 px-4">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2.5">
                                 <span class="p-1 rounded-lg bg-rose-600 text-white shadow-xs">
@@ -1228,6 +1232,7 @@
                 const isCancelado = Boolean(item.isCancelado);
                 const isVencido = Boolean(item.isVencido);
                 const isPermuta = Boolean(item.isPermuta);
+                const vlPermutado = Number(item.vlPermutado !== undefined ? item.vlPermutado : (isPermuta ? item.vlParcela : 0));
                 let statusBadgeHtml = '';
                 if (isCancelado) {
                     statusBadgeHtml = `
@@ -1298,6 +1303,9 @@
                         <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
                             ${formatMoney(item.vlParcela)}
                         </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-bold ${isPermuta || vlPermutado > 0 ? 'text-purple-700 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} whitespace-nowrap">
+                            ${isPermuta || vlPermutado > 0 ? formatMoney(vlPermutado) : '-'}
+                        </td>
                         <td class="py-2.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             ${formatMoney(item.vlPago)}
                         </td>
@@ -1326,6 +1334,9 @@
                     </td>
                     <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
                         ${formatMoney(group.totalParcela)}
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-mono font-bold text-purple-700 dark:text-purple-300 whitespace-nowrap">
+                        ${group.totalPermutado > 0 ? formatMoney(group.totalPermutado) : '-'}
                     </td>
                     <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                         ${formatMoney(group.totalPago)}
@@ -1543,8 +1554,11 @@
         if (getEl('histModalParcela'))
             getEl('histModalParcela').textContent = String(item.cdContaParcela || 1);
         // Valores
+        const vlPermutado = Number(item.vlPermutado !== undefined ? item.vlPermutado : (isPermuta ? item.vlParcela : 0));
         if (getEl('histModalVlParcela'))
             getEl('histModalVlParcela').textContent = formatMoney(item.vlParcela);
+        if (getEl('histModalVlPermutado'))
+            getEl('histModalVlPermutado').textContent = isPermuta || vlPermutado > 0 ? formatMoney(vlPermutado) : 'R$ 0,00';
         if (getEl('histModalVlPago'))
             getEl('histModalVlPago').textContent = formatMoney(item.vlPago);
         if (getEl('histModalSaldo'))
@@ -1608,24 +1622,29 @@
             showAlert('Não há títulos a pagar para exportar.', 'info');
             return;
         }
-        const headers = ['Emissão', 'Vencimento', 'Situação', 'Status', 'Tipo Operação', 'Dias de Atraso', 'Documento/NF', 'Parcela', 'Filial', 'CNPJ/CPF Fornecedor', 'Fornecedor', 'Histórico', 'Valor Parcela', 'Valor Pago', 'Saldo a Pagar'];
-        const rows = rawContasPagarLancamentos.map((item) => [
-            formatDateBR(item.dtEmissao),
-            formatDateBR(item.dtVencimento),
-            item.isCancelado ? '"Cancelado"' : '"Ativo"',
-            item.isCancelado ? '"Cancelado"' : (item.isVencido ? '"Vencido"' : '"A Vencer"'),
-            item.isPermuta ? '"Permuta"' : '"Comum"',
-            item.diasAtraso || 0,
-            `"${(item.numeroDocumento || `#${item.cdConta}`).replace(/"/g, '""')}"`,
-            item.cdContaParcela || 1,
-            `"${(item.nomeFilial || `Filial ${item.filial}`).replace(/"/g, '""')}"`,
-            `"${(item.documentoPessoa || '').replace(/"/g, '""')}"`,
-            `"${(item.fornecedor || '').replace(/"/g, '""')}"`,
-            `"${(item.historico || '').replace(/"/g, '""')}"`,
-            Number(item.vlParcela || 0).toFixed(2).replace('.', ','),
-            Number(item.vlPago || 0).toFixed(2).replace('.', ','),
-            Number(item.saldoPendente || 0).toFixed(2).replace('.', ',')
-        ]);
+        const headers = ['Emissão', 'Vencimento', 'Situação', 'Status', 'Tipo Operação', 'Dias de Atraso', 'Documento/NF', 'Parcela', 'Filial', 'CNPJ/CPF Fornecedor', 'Fornecedor', 'Histórico', 'Valor Parcela', 'Total Permutado', 'Valor Pago', 'Saldo a Pagar'];
+        const rows = rawContasPagarLancamentos.map((item) => {
+            const isPermuta = Boolean(item.isPermuta);
+            const vlPerm = Number(item.vlPermutado !== undefined ? item.vlPermutado : (isPermuta ? item.vlParcela : 0));
+            return [
+                formatDateBR(item.dtEmissao),
+                formatDateBR(item.dtVencimento),
+                item.isCancelado ? '"Cancelado"' : '"Ativo"',
+                item.isCancelado ? '"Cancelado"' : (item.isVencido ? '"Vencido"' : '"A Vencer"'),
+                isPermuta ? '"Permuta"' : '"Comum"',
+                item.diasAtraso || 0,
+                `"${(item.numeroDocumento || `#${item.cdConta}`).replace(/"/g, '""')}"`,
+                item.cdContaParcela || 1,
+                `"${(item.nomeFilial || `Filial ${item.filial}`).replace(/"/g, '""')}"`,
+                `"${(item.documentoPessoa || '').replace(/"/g, '""')}"`,
+                `"${(item.fornecedor || '').replace(/"/g, '""')}"`,
+                `"${(item.historico || '').replace(/"/g, '""')}"`,
+                Number(item.vlParcela || 0).toFixed(2).replace('.', ','),
+                vlPerm.toFixed(2).replace('.', ','),
+                Number(item.vlPago || 0).toFixed(2).replace('.', ','),
+                Number(item.saldoPendente || 0).toFixed(2).replace('.', ',')
+            ];
+        });
         const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);

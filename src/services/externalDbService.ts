@@ -8118,6 +8118,9 @@ export class ExternalDbService {
                             const status = isCancelado ? 'CANCELADO' : (saldoPendente <= 0.01 ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A_VENCER'));
                             const statusLabel = isCancelado ? 'Cancelado' : (saldoPendente <= 0.01 ? 'Pago' : (isVencido ? 'Vencido' : 'A Vencer'));
 
+                            const vlParcela = Number(cp.vlParcela || 0);
+                            const vlPermutado = isPermuta ? vlParcela : 0;
+
                             return {
                                 id: `${cp.cdConta}_${cp.cdContaParcela}`,
                                 cdConta: Number(cp.cdConta || 0),
@@ -8126,6 +8129,7 @@ export class ExternalDbService {
                                 cdContaTipo: cp.cdContaTipo !== undefined ? Number(cp.cdContaTipo) : null,
                                 cdPagamentoTipo: cp.cdPagamentoTipo !== undefined ? Number(cp.cdPagamentoTipo) : null,
                                 isPermuta: isPermuta,
+                                vlPermutado: vlPermutado,
                                 fornecedor: String(cp.fornecedor || 'Fornecedor').trim(),
                                 documentoPessoa: String(cp.documentoPessoa || '').trim(),
                                 numeroDocumento: String(cp.numeroDocumento || '').trim(),
@@ -8133,7 +8137,7 @@ export class ExternalDbService {
                                 dtVencimento: cp.dtVencimento,
                                 dtCompetencia: cp.dtCompetencia,
                                 dtBaixa: cp.dtBaixa,
-                                vlParcela: Number(cp.vlParcela || 0),
+                                vlParcela: vlParcela,
                                 vlPago: Number(cp.vlPago || 0),
                                 saldoPendente: saldoPendente,
                                 vlMulta: Number(cp.vlMulta || 0),

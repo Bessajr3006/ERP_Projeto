@@ -8020,17 +8020,27 @@ export class ExternalDbService {
                                     c.Documento as numeroDocumento,
                                     CONVERT(VARCHAR(10), c.dtInclusao, 120) as dtEmissao,
                                     CONVERT(VARCHAR(10), cp.dtParcela, 120) as dtVencimento,
+                                    CONVERT(VARCHAR(10), cp.dtCompetencia, 120) as dtCompetencia,
+                                    CONVERT(VARCHAR(10), cb.dtContaBaixa, 120) as dtBaixa,
                                     CAST(ISNULL(cp.vlParcela, 0) AS FLOAT) as vlParcela,
                                     CAST(ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as vlPago,
                                     CAST(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as saldoPendente,
+                                    CAST(ISNULL(cp.vlMulta, 0) AS FLOAT) as vlMulta,
+                                    CAST(ISNULL(cp.vlMora, 0) AS FLOAT) as vlMora,
+                                    CAST(ISNULL(cp.vlDesconto, 0) AS FLOAT) as vlDesconto,
                                     CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
                                     CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cp.dtParcela, GETDATE()) ELSE 0 END as diasAtraso,
                                     ISNULL(cp.Historico, '') as historico,
+                                    ISNULL(cb.Historico, '') as historicoBaixa,
+                                    cp.cdContaBaixa,
+                                    cp.cdBancoContaMovimento,
+                                    ISNULL(m.inCancelado, 0) as inCancelado,
                                     ISNULL(c.cdPessoaFilialConta, 1) as filial,
                                     ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial
                                 FROM tbContaParcela cp WITH (NOLOCK)
                                 INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                                 LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
+                                LEFT JOIN tbBancoContaMovimento m WITH (NOLOCK) ON m.cdBancoContaMovimento = cp.cdBancoContaMovimento
                                 LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
                                 LEFT JOIN tbPessoaJuridica pj WITH (NOLOCK) ON pj.cdPessoaJuridica = p.cdPessoa
                                 LEFT JOIN tbPessoaFisica pf WITH (NOLOCK) ON pf.cdPessoaFisica = p.cdPessoa
@@ -8053,12 +8063,21 @@ export class ExternalDbService {
                                     c.Documento as numeroDocumento,
                                     CONVERT(VARCHAR(10), c.dtInclusao, 120) as dtEmissao,
                                     CONVERT(VARCHAR(10), cp.dtParcela, 120) as dtVencimento,
+                                    CONVERT(VARCHAR(10), cp.dtCompetencia, 120) as dtCompetencia,
+                                    CONVERT(VARCHAR(10), cb.dtContaBaixa, 120) as dtBaixa,
                                     CAST(ISNULL(cp.vlParcela, 0) AS FLOAT) as vlParcela,
                                     CAST(ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as vlPago,
                                     CAST(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as saldoPendente,
+                                    CAST(ISNULL(cp.vlMulta, 0) AS FLOAT) as vlMulta,
+                                    CAST(ISNULL(cp.vlMora, 0) AS FLOAT) as vlMora,
+                                    CAST(ISNULL(cp.vlDesconto, 0) AS FLOAT) as vlDesconto,
                                     CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
                                     CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cp.dtParcela, GETDATE()) ELSE 0 END as diasAtraso,
                                     ISNULL(cp.Historico, '') as historico,
+                                    ISNULL(cb.Historico, '') as historicoBaixa,
+                                    cp.cdContaBaixa,
+                                    cp.cdBancoContaMovimento,
+                                    0 as inCancelado,
                                     ISNULL(c.cdPessoaFilialConta, 1) as filial,
                                     ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial
                                 FROM tbContaParcela cp WITH (NOLOCK)
@@ -8074,25 +8093,44 @@ export class ExternalDbService {
                             `);
                         }
 
-                        contasPagar.lancamentos = (resPagarList?.recordset || []).map((cp: any) => ({
-                            id: `${cp.cdConta}_${cp.cdContaParcela}`,
-                            cdConta: Number(cp.cdConta || 0),
-                            cdContaParcela: Number(cp.cdContaParcela || 1),
-                            cdPessoaComercial: String(cp.cdPessoaComercial || ''),
-                            fornecedor: String(cp.fornecedor || 'Fornecedor').trim(),
-                            documentoPessoa: String(cp.documentoPessoa || '').trim(),
-                            numeroDocumento: String(cp.numeroDocumento || '').trim(),
-                            dtEmissao: cp.dtEmissao,
-                            dtVencimento: cp.dtVencimento,
-                            vlParcela: Number(cp.vlParcela || 0),
-                            vlPago: Number(cp.vlPago || 0),
-                            saldoPendente: Number(cp.saldoPendente || 0),
-                            isVencido: Boolean(cp.isVencido),
-                            diasAtraso: Number(cp.diasAtraso || 0),
-                            historico: String(cp.historico || ''),
-                            filial: Number(cp.filial || 1),
-                            nomeFilial: String(cp.nomeFilial || `Filial ${cp.filial}`).trim()
-                        }));
+                        contasPagar.lancamentos = (resPagarList?.recordset || []).map((cp: any) => {
+                            const isCancelado = Number(cp.inCancelado || 0) === 1;
+                            const isVencido = Boolean(cp.isVencido);
+                            const saldoPendente = Number(cp.saldoPendente || 0);
+                            const status = isCancelado ? 'CANCELADO' : (saldoPendente <= 0.01 ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A_VENCER'));
+                            const statusLabel = isCancelado ? 'Cancelado' : (saldoPendente <= 0.01 ? 'Pago' : (isVencido ? 'Vencido' : 'A Vencer'));
+
+                            return {
+                                id: `${cp.cdConta}_${cp.cdContaParcela}`,
+                                cdConta: Number(cp.cdConta || 0),
+                                cdContaParcela: Number(cp.cdContaParcela || 1),
+                                cdPessoaComercial: String(cp.cdPessoaComercial || ''),
+                                fornecedor: String(cp.fornecedor || 'Fornecedor').trim(),
+                                documentoPessoa: String(cp.documentoPessoa || '').trim(),
+                                numeroDocumento: String(cp.numeroDocumento || '').trim(),
+                                dtEmissao: cp.dtEmissao,
+                                dtVencimento: cp.dtVencimento,
+                                dtCompetencia: cp.dtCompetencia,
+                                dtBaixa: cp.dtBaixa,
+                                vlParcela: Number(cp.vlParcela || 0),
+                                vlPago: Number(cp.vlPago || 0),
+                                saldoPendente: saldoPendente,
+                                vlMulta: Number(cp.vlMulta || 0),
+                                vlMora: Number(cp.vlMora || 0),
+                                vlDesconto: Number(cp.vlDesconto || 0),
+                                isVencido: isVencido,
+                                isCancelado: isCancelado,
+                                status: status,
+                                statusLabel: statusLabel,
+                                diasAtraso: Number(cp.diasAtraso || 0),
+                                historico: String(cp.historico || '').trim(),
+                                historicoBaixa: String(cp.historicoBaixa || '').trim(),
+                                cdContaBaixa: cp.cdContaBaixa ? Number(cp.cdContaBaixa) : null,
+                                cdBancoContaMovimento: cp.cdBancoContaMovimento ? Number(cp.cdBancoContaMovimento) : null,
+                                filial: Number(cp.filial || 1),
+                                nomeFilial: String(cp.nomeFilial || `Filial ${cp.filial}`).trim()
+                            };
+                        });
                     } catch (pagarErr: any) {
                         console.warn('Falha ao consultar contas a pagar no Solidcon:', pagarErr?.message || pagarErr);
                     }

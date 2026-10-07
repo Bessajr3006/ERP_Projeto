@@ -1160,7 +1160,7 @@
             // Group Header Banner
             html += `
                 <tr class="bg-linear-to-r from-rose-50 via-rose-50/70 to-gray-50 dark:from-slate-800 dark:via-rose-950/30 dark:to-slate-800/80 border-t-2 border-b border-rose-200 dark:border-rose-800/60 sticky top-10 z-5">
-                    <td colspan="11" class="py-2.5 px-4">
+                    <td colspan="12" class="py-2.5 px-4">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2.5">
                                 <span class="p-1 rounded-lg bg-rose-600 text-white shadow-xs">
@@ -1197,49 +1197,85 @@
             `;
             // Individual Title Rows for this Filial
             group.items.forEach((item) => {
-                const isVencido = item.isVencido;
-                const statusBadgeClass = isVencido
-                    ? 'bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800/40'
-                    : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40';
-                const statusText = isVencido
-                    ? `Vencido (${item.diasAtraso}d)`
-                    : 'A Vencer';
+                const isCancelado = Boolean(item.isCancelado);
+                const isVencido = Boolean(item.isVencido);
+                let statusBadgeHtml = '';
+                if (isCancelado) {
+                    statusBadgeHtml = `
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+                            Cancelado
+                        </span>
+                    `;
+                }
+                else if (isVencido) {
+                    statusBadgeHtml = `
+                        <div class="inline-flex flex-col items-center">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Ativo
+                            </span>
+                            <span class="text-[10px] font-bold text-red-600 dark:text-red-400 mt-0.5 whitespace-nowrap">
+                                Vencido (${item.diasAtraso || 0}d)
+                            </span>
+                        </div>
+                    `;
+                }
+                else {
+                    statusBadgeHtml = `
+                        <div class="inline-flex flex-col items-center">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Ativo
+                            </span>
+                            <span class="text-[10px] font-semibold text-amber-600 dark:text-amber-400 mt-0.5 whitespace-nowrap">
+                                A Vencer
+                            </span>
+                        </div>
+                    `;
+                }
                 html += `
-                    <tr class="hover:bg-rose-50/30 dark:hover:bg-slate-800/50 transition-colors">
-                        <td class="py-2.5 px-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                    <tr class="hover:bg-rose-50/30 dark:hover:bg-slate-800/50 transition-colors ${isCancelado ? 'opacity-60 bg-zinc-50/40 dark:bg-zinc-950/30' : ''}">
+                        <td class="py-2.5 px-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
                             ${formatDateBR(item.dtEmissao)}
                         </td>
-                        <td class="py-2.5 px-4 font-medium ${isVencido ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
+                        <td class="py-2.5 px-3 font-medium ${isVencido && !isCancelado ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
                             ${formatDateBR(item.dtVencimento)}
                         </td>
-                        <td class="py-2.5 px-4 text-center whitespace-nowrap">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${statusBadgeClass}">
-                                ${statusText}
-                            </span>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            ${statusBadgeHtml}
                         </td>
-                        <td class="py-2.5 px-4 font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs font-semibold" title="Conta #${item.cdConta}">
+                        <td class="py-2.5 px-3 font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs font-semibold" title="Conta #${item.cdConta}">
                             ${escapeHtml(item.numeroDocumento || `#${item.cdConta}`)}
                         </td>
-                        <td class="py-2.5 px-4 text-center font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
+                        <td class="py-2.5 px-2 text-center font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
                             ${item.cdContaParcela || 1}
                         </td>
-                        <td class="py-2.5 px-4 text-gray-700 dark:text-gray-300 whitespace-nowrap text-xs">
+                        <td class="py-2.5 px-3 text-gray-700 dark:text-gray-300 whitespace-nowrap text-xs">
                             ${escapeHtml(item.nomeFilial || `Filial ${item.filial}`)}
                         </td>
-                        <td class="py-2.5 px-4 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate text-xs" title="${escapeHtml(item.fornecedor)} - ${escapeHtml(item.historico || '')}">
+                        <td class="py-2.5 px-3 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate text-xs" title="${escapeHtml(item.fornecedor)} - ${escapeHtml(item.historico || '')}">
                             ${escapeHtml(item.fornecedor)}
                         </td>
-                        <td class="py-2.5 px-4 font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">
+                        <td class="py-2.5 px-3 font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">
                             ${escapeHtml(item.documentoPessoa || '-')}
                         </td>
-                        <td class="py-2.5 px-4 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                        <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
                             ${formatMoney(item.vlParcela)}
                         </td>
-                        <td class="py-2.5 px-4 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        <td class="py-2.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             ${formatMoney(item.vlPago)}
                         </td>
-                        <td class="py-2.5 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                        <td class="py-2.5 px-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
                             ${formatMoney(item.saldoPendente)}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <button type="button" class="btn-view-contas-pagar-historico p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 shadow-2xs hover:scale-110 transition-all cursor-pointer inline-flex items-center justify-center" data-id="${item.id}" title="Visualizar Histórico e Detalhes do Lançamento">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -1253,19 +1289,30 @@
                             <span class="text-[11px] font-normal text-gray-500 dark:text-gray-400">(${group.items.length} ${group.items.length === 1 ? 'título' : 'títulos'}):</span>
                         </div>
                     </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
+                    <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
                         ${formatMoney(group.totalParcela)}
                     </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                    <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                         ${formatMoney(group.totalPago)}
                     </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-black text-rose-600 dark:text-rose-400 whitespace-nowrap text-sm">
+                    <td class="py-2.5 px-3 text-right font-mono font-black text-rose-600 dark:text-rose-400 whitespace-nowrap text-sm">
                         ${formatMoney(group.saldoPendente)}
                     </td>
+                    <td class="py-2.5 px-3"></td>
                 </tr>
             `;
         });
         tbody.innerHTML = html;
+        // Attach click listener for eye (historico) buttons
+        tbody.querySelectorAll('.btn-view-contas-pagar-historico').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = btn.getAttribute('data-id');
+                if (id) {
+                    openModalContasPagarHistorico(id);
+                }
+            });
+        });
     };
     const applyModalContasPagarFilters = () => {
         const query = (getEl('modalContasPagarSearch')?.value || '').toLowerCase().trim();
@@ -1275,9 +1322,13 @@
         const dtFim = getEl('modalContasPagarDtFim')?.value || '';
         const tipoData = getEl('modalContasPagarTipoData')?.value || 'vencimento';
         const filtered = rawContasPagarLancamentos.filter((item) => {
-            if (selectedStatus === 'vencidos' && !item.isVencido)
+            if (selectedStatus === 'ativos' && item.isCancelado)
                 return false;
-            if (selectedStatus === 'a_vencer' && item.isVencido)
+            if (selectedStatus === 'vencidos' && (item.isCancelado || !item.isVencido))
+                return false;
+            if (selectedStatus === 'a_vencer' && (item.isCancelado || item.isVencido))
+                return false;
+            if (selectedStatus === 'cancelados' && !item.isCancelado)
                 return false;
             if (selectedFilial && String(item.filial) !== selectedFilial)
                 return false;
@@ -1297,6 +1348,8 @@
         let sumVencido = 0;
         let sumAVencer = 0;
         filtered.forEach((r) => {
+            if (r.isCancelado)
+                return; // cancelados não somam no saldo a pagar
             const val = Number(r.saldoPendente || 0);
             if (r.isVencido)
                 sumVencido += val;
@@ -1368,16 +1421,143 @@
         modal.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
     };
+    // ─── Modal Histórico do Lançamento ───────────────────────────────────────
+    const openModalContasPagarHistorico = (id) => {
+        const item = rawContasPagarLancamentos.find((x) => String(x.id) === String(id));
+        if (!item) {
+            showAlert('Lançamento não encontrado.', 'error');
+            return;
+        }
+        const modal = getEl('modalContasPagarHistorico');
+        if (!modal)
+            return;
+        // Populate header
+        if (getEl('histModalDocNum')) {
+            getEl('histModalDocNum').textContent = item.numeroDocumento || `#${item.cdConta}`;
+        }
+        const isCancelado = Boolean(item.isCancelado);
+        const isVencido = Boolean(item.isVencido);
+        // Status Badge (Ativo vs Cancelado)
+        const statusBadge = getEl('histModalStatusBadge');
+        if (statusBadge) {
+            if (isCancelado) {
+                statusBadge.textContent = 'Cancelado';
+                statusBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700';
+            }
+            else {
+                statusBadge.textContent = 'Ativo';
+                statusBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+            }
+        }
+        // Filial Badge
+        if (getEl('histModalFilialBadge')) {
+            getEl('histModalFilialBadge').textContent = item.nomeFilial || `Filial ${item.filial}`;
+        }
+        // Situação Badge (Vencido vs A Vencer vs Cancelado)
+        const situacaoBadge = getEl('histModalSituacaoBadge');
+        if (situacaoBadge) {
+            if (isCancelado) {
+                situacaoBadge.textContent = 'Título Cancelado';
+                situacaoBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700';
+            }
+            else if (isVencido) {
+                situacaoBadge.textContent = `Vencido há ${item.diasAtraso || 0} dias`;
+                situacaoBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-red-100 dark:bg-red-950/70 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800/60';
+            }
+            else {
+                situacaoBadge.textContent = 'A Vencer (Dentro do Prazo)';
+                situacaoBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50';
+            }
+        }
+        // Saldo Pendente
+        if (getEl('histModalSaldoPendente')) {
+            getEl('histModalSaldoPendente').textContent = formatMoney(item.saldoPendente);
+        }
+        // Identificação & Fornecedor
+        if (getEl('histModalFornecedor'))
+            getEl('histModalFornecedor').textContent = item.fornecedor || '-';
+        if (getEl('histModalDocumentoPessoa'))
+            getEl('histModalDocumentoPessoa').textContent = item.documentoPessoa || '-';
+        if (getEl('histModalCdPessoaComercial'))
+            getEl('histModalCdPessoaComercial').textContent = item.cdPessoaComercial ? `#${item.cdPessoaComercial}` : '-';
+        if (getEl('histModalNumeroDocumento'))
+            getEl('histModalNumeroDocumento').textContent = item.numeroDocumento || `#${item.cdConta}`;
+        if (getEl('histModalNomeFilial'))
+            getEl('histModalNomeFilial').textContent = item.nomeFilial || `Filial ${item.filial}`;
+        if (getEl('histModalParcela'))
+            getEl('histModalParcela').textContent = String(item.cdContaParcela || 1);
+        // Valores
+        if (getEl('histModalVlParcela'))
+            getEl('histModalVlParcela').textContent = formatMoney(item.vlParcela);
+        if (getEl('histModalVlPago'))
+            getEl('histModalVlPago').textContent = formatMoney(item.vlPago);
+        if (getEl('histModalSaldo'))
+            getEl('histModalSaldo').textContent = formatMoney(item.saldoPendente);
+        if (getEl('histModalVlMulta'))
+            getEl('histModalVlMulta').textContent = formatMoney(item.vlMulta || 0);
+        if (getEl('histModalVlMora'))
+            getEl('histModalVlMora').textContent = formatMoney(item.vlMora || 0);
+        if (getEl('histModalVlDesconto'))
+            getEl('histModalVlDesconto').textContent = formatMoney(item.vlDesconto || 0);
+        // Datas
+        if (getEl('histModalDtEmissao'))
+            getEl('histModalDtEmissao').textContent = formatDateBR(item.dtEmissao);
+        if (getEl('histModalDtVencimento'))
+            getEl('histModalDtVencimento').textContent = formatDateBR(item.dtVencimento);
+        if (getEl('histModalDtCompetencia'))
+            getEl('histModalDtCompetencia').textContent = formatDateBR(item.dtCompetencia) || '-';
+        if (getEl('histModalDtBaixa'))
+            getEl('histModalDtBaixa').textContent = formatDateBR(item.dtBaixa) || '-';
+        // Histórico
+        if (getEl('histModalHistorico')) {
+            const hist = (item.historico || '').trim();
+            getEl('histModalHistorico').textContent = hist || 'Nenhum histórico informado no lançamento.';
+        }
+        const histBaixaContainer = getEl('histModalHistoricoBaixaContainer');
+        const histBaixaEl = getEl('histModalHistoricoBaixa');
+        if (histBaixaContainer && histBaixaEl) {
+            const histBaixa = (item.historicoBaixa || '').trim();
+            if (histBaixa) {
+                histBaixaEl.textContent = histBaixa;
+                histBaixaContainer.classList.remove('hidden');
+            }
+            else {
+                histBaixaContainer.classList.add('hidden');
+            }
+        }
+        // Rastreabilidade Solidcon
+        if (getEl('histModalCdConta'))
+            getEl('histModalCdConta').textContent = `#${item.cdConta}`;
+        if (getEl('histModalCdContaParcela'))
+            getEl('histModalCdContaParcela').textContent = String(item.cdContaParcela || 1);
+        if (getEl('histModalCdContaBaixa'))
+            getEl('histModalCdContaBaixa').textContent = item.cdContaBaixa ? `#${item.cdContaBaixa}` : 'Nenhuma';
+        if (getEl('histModalCdBancoContaMovimento'))
+            getEl('histModalCdBancoContaMovimento').textContent = item.cdBancoContaMovimento ? `#${item.cdBancoContaMovimento}` : 'Nenhum';
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+    const closeModalContasPagarHistorico = () => {
+        const modal = getEl('modalContasPagarHistorico');
+        if (!modal)
+            return;
+        modal.classList.add('hidden');
+        // If main contas pagar modal is still visible, maintain body overflow-hidden
+        if (getEl('modalContasPagar')?.classList.contains('hidden')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    };
     const exportContasPagarCsv = () => {
         if (!rawContasPagarLancamentos || rawContasPagarLancamentos.length === 0) {
             showAlert('Não há títulos a pagar para exportar.', 'info');
             return;
         }
-        const headers = ['Emissão', 'Vencimento', 'Status', 'Dias de Atraso', 'Documento/NF', 'Parcela', 'Filial', 'CNPJ/CPF Fornecedor', 'Fornecedor', 'Histórico', 'Valor Parcela', 'Valor Pago', 'Saldo a Pagar'];
+        const headers = ['Emissão', 'Vencimento', 'Situação', 'Status', 'Dias de Atraso', 'Documento/NF', 'Parcela', 'Filial', 'CNPJ/CPF Fornecedor', 'Fornecedor', 'Histórico', 'Valor Parcela', 'Valor Pago', 'Saldo a Pagar'];
         const rows = rawContasPagarLancamentos.map((item) => [
             formatDateBR(item.dtEmissao),
             formatDateBR(item.dtVencimento),
-            item.isVencido ? '"Vencido"' : '"A Vencer"',
+            item.isCancelado ? '"Cancelado"' : '"Ativo"',
+            item.isCancelado ? '"Cancelado"' : (item.isVencido ? '"Vencido"' : '"A Vencer"'),
             item.diasAtraso || 0,
             `"${(item.numeroDocumento || `#${item.cdConta}`).replace(/"/g, '""')}"`,
             item.cdContaParcela || 1,
@@ -2105,9 +2285,25 @@
         getEl('btnExportContasPagarCsv')?.addEventListener('click', () => {
             exportContasPagarCsv();
         });
+        // ─── Modal Histórico Contas a Pagar Listeners ────────────────────────
+        getEl('btnCloseModalContasPagarHistorico')?.addEventListener('click', () => {
+            closeModalContasPagarHistorico();
+        });
+        getEl('btnCloseModalContasPagarHistoricoFooter')?.addEventListener('click', () => {
+            closeModalContasPagarHistorico();
+        });
+        getEl('modalContasPagarHistorico')?.addEventListener('click', (e) => {
+            if (e.target === getEl('modalContasPagarHistorico')) {
+                closeModalContasPagarHistorico();
+            }
+        });
         // ─── Global Keyboard Listener (ESC to close any modal) ───────────────
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                if (!getEl('modalContasPagarHistorico')?.classList.contains('hidden')) {
+                    closeModalContasPagarHistorico();
+                    return;
+                }
                 if (!getEl('modalCartoesNaoBaixados')?.classList.contains('hidden')) {
                     closeModalCartoes();
                 }

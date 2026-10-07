@@ -178,7 +178,7 @@ export class ExternalDbService {
                 FROM tbConta c
                 LEFT JOIN tbContaParcela cp ON cp.cdConta = c.cdConta AND cp.cdPessoaFilialConta = c.cdPessoaFilialConta
                 LEFT JOIN tbContaBaixa cb ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
-                WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                WHERE (c.cdContaTipo IN (1, 3))
                   AND (
                       (cp.dtParcela BETWEEN @startDate AND @endDate)
                       OR (c.dtInclusao BETWEEN @startDate AND @endDate)
@@ -399,7 +399,7 @@ export class ExternalDbService {
                     FROM tbConta c
                     ${joins}
                     ${pessoaJoin}
-                    WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL)
+                    WHERE (c.cdContaTipo IN (1, 3))
                       AND (
                           ${tableCols['tbcontaparcela'] ? '(cp.dtParcela BETWEEN @startDate AND @endDate) OR' : ''}
                           (c.dtInclusao BETWEEN @startDate AND @endDate)
@@ -1731,7 +1731,7 @@ export class ExternalDbService {
                 LEFT JOIN tbContaBaixa cb ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                 LEFT JOIN tbBancoContaMovimento bcm ON bcm.cdBancoContaMovimento = ISNULL(cp.cdBancoContaMovimento, cb.cdBancoContaMovimento)
                 LEFT JOIN tbBancoConta bc ON bc.cdBancoConta = ISNULL(cb.cdBancoConta, bcm.cdBancoConta)
-                WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL)
+                WHERE (c.cdContaTipo IN (1, 3))
                   AND ${filialFilter}
                   AND (
                       (@documento IS NOT NULL AND (

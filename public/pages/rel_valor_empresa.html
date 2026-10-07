@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Rel.Valor_Empresa</title>
-    <link href="/css/style.css?v=20261007132622" rel="stylesheet">
+    <link href="/css/style.css?v=20261007133839" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261007132622"></script>
+    <script src="/js/pwa.js?v=20261007133839"></script>
 </head>
 <body data-required-module="rel_valor_empresa" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -947,7 +947,7 @@
         </div>
 
         <!-- ─── MODAL: HISTÓRICO E DETALHES DO LANÇAMENTO ───────────────────────── -->
-        <div id="modalContasPagarHistorico" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
+        <div id="modalContasPagarHistorico" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs items-center justify-center p-3 sm:p-4 hidden [&:not(.hidden)]:flex">
             <div class="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-200 dark:border-slate-800 bg-linear-to-r from-rose-50/70 via-gray-50 to-white dark:from-rose-950/20 dark:via-slate-900 dark:to-slate-900">
@@ -1006,7 +1006,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Fornecedor / Razão Social:</span>
-                                <strong id="histModalFornecedor" class="text-gray-900 dark:text-gray-100 font-semibold text-xs block break-words">-</strong>
+                                <strong id="histModalFornecedor" class="text-gray-900 dark:text-gray-100 font-semibold text-xs block wrap-break-word">-</strong>
                             </div>
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400 block text-[11px]">CNPJ / CPF:</span>
@@ -1097,12 +1097,12 @@
                             <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
                             Histórico / Descrição Registrada
                         </h4>
-                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap break-words leading-relaxed" id="histModalHistorico">
+                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap wrap-break-word leading-relaxed" id="histModalHistorico">
                             Nenhum histórico registrado no lançamento.
                         </div>
                         <div id="histModalHistoricoBaixaContainer" class="hidden pt-2">
                             <span class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 block mb-1">Histórico da Baixa:</span>
-                            <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap break-words" id="histModalHistoricoBaixa">
+                            <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap wrap-break-word" id="histModalHistoricoBaixa">
                                 -
                             </div>
                         </div>
@@ -1134,11 +1134,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261007132622"></script>
-    <script src="/js/rel_valor_empresa.js?v=20261007132622"></script>
-    <script src="/js/components/navbar.js?v=20261007132622"></script>
+    <script src="/js/api.js?v=20261007133839"></script>
+    <script src="/js/rel_valor_empresa.js?v=20261007133839"></script>
+    <script src="/js/components/navbar.js?v=20261007133839"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261007132622"></script>
+    <script src="/js/components/footer.js?v=20261007133839"></script>
 </body>
 </html>
 

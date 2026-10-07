@@ -895,6 +895,10 @@
             if (getEl('badgeCardContasPagarCount')) getEl('badgeCardContasPagarCount')!.textContent = '-';
             if (getEl('cardContasPagarPeriodoBadge')) getEl('cardContasPagarPeriodoBadge')!.textContent = 'Clique em Filtrar para carregar';
             if (getEl('modalContasPagarBadgePeriodo')) getEl('modalContasPagarBadgePeriodo')!.textContent = 'Não Consultado';
+            if (getEl('cardContasPagarFiliaisCount')) getEl('cardContasPagarFiliaisCount')!.textContent = '0 filiais';
+            if (getEl('cardContasPagarFiliaisCards')) {
+                getEl('cardContasPagarFiliaisCards')!.innerHTML = '<span class="text-xs text-gray-400 col-span-full">Clique em Filtrar para carregar as filiais</span>';
+            }
             return;
         }
 
@@ -953,6 +957,53 @@
         }
         if (getEl('modalContasPagarBadgePeriodo')) {
             getEl('modalContasPagarBadgePeriodo')!.textContent = badgePeriodoText;
+        }
+
+        // Render Filiais on Main Card
+        const mainFiliaisContainer = getEl('cardContasPagarFiliaisCards');
+        const mainCountBadge = getEl('cardContasPagarFiliaisCount');
+        if (mainFiliaisContainer) {
+            const filiais = data.byFilial || [];
+            if (mainCountBadge) {
+                mainCountBadge.textContent = `${filiais.length} ${filiais.length === 1 ? 'filial' : 'filiais'}`;
+            }
+            if (filiais.length === 0) {
+                mainFiliaisContainer.innerHTML = '<span class="text-xs text-gray-400 col-span-full">Nenhum título a pagar no período</span>';
+            } else {
+                mainFiliaisContainer.innerHTML = filiais.map((f: any) => {
+                    const fId = String(f.filial);
+                    const fVenc = Number(f.totalVencido || 0);
+                    const fAVenc = Number(f.totalAVencer || 0);
+                    const fTotal = (fVenc + fAVenc > 0) ? (fVenc + fAVenc) : Number(f.totalAPagar || 0);
+                    const fQtd = Number(f.qtdTitulos || 0);
+                    return `
+                        <button type="button" data-filial="${escapeHtml(fId)}" class="card-filial-pagar-btn text-left p-3 rounded-xl border border-rose-200/80 dark:border-slate-700/80 bg-rose-50/40 dark:bg-slate-900/50 hover:bg-rose-100/60 dark:hover:bg-slate-800/80 hover:border-rose-400 transition-all cursor-pointer flex flex-col justify-between group shadow-2xs">
+                            <div class="flex items-center justify-between gap-1 mb-1">
+                                <span class="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-rose-600 transition-colors" title="${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}">
+                                    ${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}
+                                </span>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60">
+                                    ${fQtd} tit.
+                                </span>
+                            </div>
+                            <div class="text-base font-extrabold text-rose-700 dark:text-rose-400">
+                                ${formatMoney(fTotal)}
+                            </div>
+                            <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center justify-between pt-1 border-t border-rose-100 dark:border-slate-800">
+                                <span class="text-red-600 dark:text-red-400 font-semibold">${formatMoney(fVenc)} venc.</span>
+                                <span class="text-amber-600 dark:text-amber-400 font-semibold">${formatMoney(fAVenc)} a venc.</span>
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+
+                mainFiliaisContainer.querySelectorAll('.card-filial-pagar-btn').forEach((btn: any) => {
+                    btn.addEventListener('click', () => {
+                        const targetFilial = btn.getAttribute('data-filial') || '';
+                        openModalContasPagar(targetFilial);
+                    });
+                });
+            }
         }
     };
 
@@ -1345,7 +1396,7 @@
         renderModalContasPagarTable(filtered);
     };
 
-    const openModalContasPagar = () => {
+    const openModalContasPagar = (initialFilial?: string) => {
         const modal = getEl('modalContasPagar');
         if (!modal) return;
 
@@ -1356,7 +1407,7 @@
             getEl<HTMLSelectElement>('modalContasPagarFilterStatus')!.value = 'all';
         }
         if (getEl<HTMLSelectElement>('modalContasPagarFilterFilial')) {
-            getEl<HTMLSelectElement>('modalContasPagarFilterFilial')!.value = '';
+            getEl<HTMLSelectElement>('modalContasPagarFilterFilial')!.value = initialFilial || '';
         }
 
         // Sync card dates into modal
@@ -1379,9 +1430,14 @@
 
         // Se ainda não estiver carregado, dispara automaticamente a consulta das contas a pagar por filial
         if (!currentContasPagarData || !currentContasPagarData.loaded) {
-            void loadContasPagar();
+            void loadContasPagar({ targetFilial: initialFilial });
         } else {
             populateModalContasPagarFilters(currentContasPagarData);
+            if (initialFilial !== undefined) {
+                const filialSelect = getEl<HTMLSelectElement>('modalContasPagarFilterFilial');
+                if (filialSelect) filialSelect.value = initialFilial;
+                renderModalContasPagarFiliaisCards(currentContasPagarData);
+            }
             applyModalContasPagarFilters();
         }
     };
@@ -1429,7 +1485,7 @@
     };
 
     // ─── Load Contas a Pagar (Sob Demanda) ────────────────────────────────────
-    const loadContasPagar = async (options?: { resetDates?: boolean }) => {
+    const loadContasPagar = async (options?: { resetDates?: boolean; targetFilial?: string }) => {
         if (isContasPagarLoading) return;
         isContasPagarLoading = true;
 
@@ -1496,6 +1552,12 @@
 
             renderContasPagarCard(currentContasPagarData);
             populateModalContasPagarFilters(currentContasPagarData);
+
+            if (options?.targetFilial !== undefined) {
+                const filialSelect = getEl<HTMLSelectElement>('modalContasPagarFilterFilial');
+                if (filialSelect) filialSelect.value = options.targetFilial;
+                renderModalContasPagarFiliaisCards(currentContasPagarData);
+            }
 
             if (!getEl('modalContasPagar')?.classList.contains('hidden')) {
                 applyModalContasPagarFilters();

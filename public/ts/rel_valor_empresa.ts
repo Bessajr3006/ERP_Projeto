@@ -1413,31 +1413,6 @@
                     </tr>
                 `;
             });
-
-            // Group Subtotal Row
-            html += `
-                <tr class="bg-gray-100/90 dark:bg-slate-900/90 font-bold border-b-2 border-gray-200 dark:border-slate-700 text-xs text-gray-700 dark:text-gray-200">
-                    <td colspan="8" class="py-2.5 px-4 text-right">
-                        <div class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400 font-semibold">
-                            <span>Subtotal ${escapeHtml(group.nomeFilial)}</span>
-                            <span class="text-[11px] font-normal text-gray-500 dark:text-gray-400">(${group.items.length} ${group.items.length === 1 ? 'título' : 'títulos'}):</span>
-                        </div>
-                    </td>
-                    <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-                        ${formatMoney(group.totalParcela)}
-                    </td>
-                    <td class="py-2.5 px-3 text-right font-mono font-bold text-purple-700 dark:text-purple-300 whitespace-nowrap">
-                        ${group.totalPermutado > 0 ? formatMoney(group.totalPermutado) : '-'}
-                    </td>
-                    <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                        ${formatMoney(group.totalPago)}
-                    </td>
-                    <td class="py-2.5 px-3 text-right font-mono font-black text-rose-600 dark:text-rose-400 whitespace-nowrap text-sm">
-                        ${formatMoney(group.saldoPendente)}
-                    </td>
-                    <td class="py-2.5 px-3"></td>
-                </tr>
-            `;
         });
 
         // Grand Total Consolidado Row (when there are multiple groups or titles)

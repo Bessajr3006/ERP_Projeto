@@ -1263,50 +1263,6 @@
         let html = '';
 
         groups.forEach((group) => {
-            // Group Header Banner
-            html += `
-                <tr class="bg-linear-to-r from-rose-50 via-rose-50/70 to-gray-50 dark:from-slate-800 dark:via-rose-950/30 dark:to-slate-800/80 border-t-2 border-b border-rose-200 dark:border-rose-800/60 sticky top-10 z-5">
-                    <td colspan="13" class="py-2.5 px-4">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex items-center gap-2.5">
-                                <span class="p-1 rounded-lg bg-rose-600 text-white shadow-xs">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                                </span>
-                                <div class="flex items-center gap-2">
-                                    <span class="font-black text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-wide">
-                                        ${escapeHtml(group.nomeFilial)}
-                                    </span>
-                                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 shadow-2xs">
-                                        Filial #${escapeHtml(String(group.filialId))}
-                                    </span>
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800/50">
-                                        ${group.items.length} ${group.items.length === 1 ? 'título' : 'títulos'}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-3 text-xs">
-                                <span class="text-gray-600 dark:text-gray-300">
-                                    Vencidos: <strong class="text-red-600 dark:text-red-400 font-bold">${formatMoney(group.totalVencido)}</strong> <span class="text-[10px] font-medium text-gray-500">(${group.qtdVencidos})</span>
-                                </span>
-                                <span class="text-gray-300 dark:text-gray-700">|</span>
-                                <span class="text-gray-600 dark:text-gray-300">
-                                    A Vencer: <strong class="text-amber-600 dark:text-amber-400 font-bold">${formatMoney(group.totalAVencer)}</strong> <span class="text-[10px] font-medium text-gray-500">(${group.qtdAVencer})</span>
-                                </span>
-                                ${group.qtdPermuta > 0 ? `
-                                <span class="text-gray-300 dark:text-gray-700">|</span>
-                                <span class="text-purple-700 dark:text-purple-300 font-semibold">
-                                    Permutas: <strong class="font-bold">${formatMoney(group.totalPermuta)}</strong> <span class="text-[10px] font-medium opacity-80">(${group.qtdPermuta})</span>
-                                </span>` : ''}
-                                <span class="text-gray-300 dark:text-gray-700">|</span>
-                                <span class="text-gray-700 dark:text-gray-200 font-semibold">
-                                    Total Filial: <strong class="text-rose-700 dark:text-rose-300 font-black text-sm">${formatMoney(group.saldoPendente)}</strong>
-                                </span>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            `;
-
             // Individual Title Rows for this Filial
             group.items.forEach((item: any) => {
                 const isCancelado = Boolean(item.isCancelado);

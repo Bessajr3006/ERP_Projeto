@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Rel.Valor_Empresa</title>
-    <link href="/css/style.css?v=20261007182851" rel="stylesheet">
+    <link href="/css/style.css?v=20261007183730" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261007182851"></script>
+    <script src="/js/pwa.js?v=20261007183730"></script>
 </head>
 <body data-required-module="rel_valor_empresa" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -923,18 +923,18 @@
 
         <!-- ─── MODAL: HISTÓRICO E DETALHES DO LANÇAMENTO ───────────────────────── -->
         <div id="modalContasPagarHistorico" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs items-center justify-center p-3 sm:p-4 hidden [&:not(.hidden)]:flex">
-            <div class="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div class="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                 <!-- Modal Header -->
-                <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-200 dark:border-slate-800 bg-linear-to-r from-rose-50/70 via-gray-50 to-white dark:from-rose-950/20 dark:via-slate-900 dark:to-slate-900">
+                <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-200 dark:border-slate-800 bg-linear-to-r from-rose-50/80 via-gray-50 to-white dark:from-rose-950/30 dark:via-slate-900 dark:to-slate-900">
                     <div class="flex items-center gap-3">
-                        <div class="p-2.5 rounded-xl bg-rose-600 text-white shadow-sm flex items-center justify-center">
+                        <div class="p-2.5 rounded-xl bg-rose-600 text-white shadow-sm flex items-center justify-center shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                         </div>
                         <div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                                     Histórico e Detalhes do Lançamento
                                 </h3>
@@ -942,7 +942,7 @@
                                     Ativo
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                 Documento / NF: <strong id="histModalDocNum" class="text-gray-800 dark:text-gray-200 font-mono">-</strong>
                             </p>
                         </div>
@@ -955,8 +955,8 @@
                 <!-- Modal Body -->
                 <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs">
                     <!-- Top Ribbon: Status & Saldo -->
-                    <div class="p-3.5 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-3">
-                        <div class="flex flex-wrap items-center gap-2.5">
+                    <div class="p-3.5 rounded-xl bg-linear-to-r from-gray-50 via-rose-50/30 to-gray-50 dark:from-slate-800/80 dark:via-rose-950/20 dark:to-slate-800/80 border border-gray-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap items-center gap-2">
                             <span id="histModalFilialBadge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-slate-700 shadow-2xs">
                                 Filial 1
                             </span>
@@ -967,131 +967,137 @@
                                 🔄 Permuta
                             </span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-gray-500 dark:text-gray-400">Saldo Pendente:</span>
+                        <div class="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-2xs">
+                            <span class="text-gray-500 dark:text-gray-400 text-xs font-medium">Saldo Pendente:</span>
                             <strong id="histModalSaldoPendente" class="text-base sm:text-lg font-black font-mono text-rose-600 dark:text-rose-400">
                                 R$ 0,00
                             </strong>
                         </div>
                     </div>
 
-                    <!-- Grid: Identificação & Fornecedor -->
+                    <!-- Card: Valores Financeiros -->
+                    <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 space-y-3.5">
+                        <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Valores Financeiros
+                        </h4>
+
+                        <!-- 4 Cards Principais -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/70 flex flex-col justify-between">
+                                <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Valor Emitido (Parcela):</span>
+                                <strong id="histModalVlParcela" class="text-slate-900 dark:text-slate-100 font-mono font-bold text-sm sm:text-base mt-1">R$ 0,00</strong>
+                            </div>
+                            <div class="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/50 flex flex-col justify-between">
+                                <span class="text-purple-700 dark:text-purple-300 block text-[11px] font-medium">Total Permutado:</span>
+                                <strong id="histModalVlPermutado" class="text-purple-700 dark:text-purple-300 font-mono font-bold text-sm sm:text-base mt-1">R$ 0,00</strong>
+                            </div>
+                            <div class="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 flex flex-col justify-between">
+                                <span class="text-emerald-700 dark:text-emerald-300 block text-[11px] font-medium">Valor Pago / Baixado:</span>
+                                <strong id="histModalVlPago" class="text-emerald-700 dark:text-emerald-300 font-mono font-bold text-sm sm:text-base mt-1">R$ 0,00</strong>
+                            </div>
+                            <div class="p-3 rounded-xl bg-rose-50/80 dark:bg-rose-950/50 border border-rose-200/90 dark:border-rose-800/60 flex flex-col justify-between ring-1 ring-rose-500/20">
+                                <span class="text-rose-700 dark:text-rose-300 block text-[11px] font-bold">Saldo a Pagar:</span>
+                                <strong id="histModalSaldo" class="text-rose-700 dark:text-rose-300 font-mono font-black text-sm sm:text-base mt-1">R$ 0,00</strong>
+                            </div>
+                        </div>
+
+                        <!-- 3 Cards Complementares (Multa, Juros, Desconto) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                            <div class="p-2.5 rounded-lg bg-gray-50/90 dark:bg-slate-800/50 border border-gray-200/70 dark:border-slate-700/60 flex items-center justify-between">
+                                <span class="text-gray-500 dark:text-gray-400 text-[11px]">Multa:</span>
+                                <span id="histModalVlMulta" class="text-gray-800 dark:text-gray-200 font-mono font-semibold text-xs">R$ 0,00</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-gray-50/90 dark:bg-slate-800/50 border border-gray-200/70 dark:border-slate-700/60 flex items-center justify-between">
+                                <span class="text-gray-500 dark:text-gray-400 text-[11px]">Juros / Mora:</span>
+                                <span id="histModalVlMora" class="text-gray-800 dark:text-gray-200 font-mono font-semibold text-xs">R$ 0,00</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/30 flex items-center justify-between">
+                                <span class="text-emerald-700/80 dark:text-emerald-400/80 text-[11px]">Desconto:</span>
+                                <span id="histModalVlDesconto" class="text-emerald-700 dark:text-emerald-300 font-mono font-bold text-xs">R$ 0,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card: Identificação & Fornecedor -->
                     <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 space-y-3">
                         <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                             <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                             Identificação & Fornecedor
                         </h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                            <div>
-                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Fornecedor / Razão Social:</span>
-                                <strong id="histModalFornecedor" class="text-gray-900 dark:text-gray-100 font-semibold text-xs block wrap-break-word">-</strong>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2 lg:col-span-3 p-3 rounded-lg bg-gray-50/80 dark:bg-slate-800/40 border border-gray-200/70 dark:border-slate-700/50">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[11px] font-medium mb-0.5">Fornecedor / Razão Social:</span>
+                                <strong id="histModalFornecedor" class="text-gray-900 dark:text-gray-100 font-bold text-sm block break-words">-</strong>
                             </div>
-                            <div>
-                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">CNPJ / CPF:</span>
-                                <span id="histModalDocumentoPessoa" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-medium">-</span>
+                            <div class="p-2.5 rounded-lg bg-gray-50/60 dark:bg-slate-800/30 border border-gray-200/60 dark:border-slate-700/40">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">CNPJ / CPF:</span>
+                                <span id="histModalDocumentoPessoa" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-semibold block break-all">-</span>
                             </div>
-                            <div>
-                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Cód. Fornecedor (Solidcon):</span>
-                                <span id="histModalCdPessoaComercial" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-medium">-</span>
+                            <div class="p-2.5 rounded-lg bg-gray-50/60 dark:bg-slate-800/30 border border-gray-200/60 dark:border-slate-700/40">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Cód. Fornecedor (Solidcon):</span>
+                                <span id="histModalCdPessoaComercial" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-semibold block">-</span>
                             </div>
-                            <div>
-                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Número Documento / NF:</span>
-                                <span id="histModalNumeroDocumento" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-bold">-</span>
+                            <div class="p-2.5 rounded-lg bg-gray-50/60 dark:bg-slate-800/30 border border-gray-200/60 dark:border-slate-700/40">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Número Documento / NF:</span>
+                                <span id="histModalNumeroDocumento" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-bold block">-</span>
                             </div>
-                            <div>
-                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Filial de Origem:</span>
-                                <span id="histModalNomeFilial" class="text-gray-800 dark:text-gray-200 text-xs font-medium">-</span>
+                            <div class="p-2.5 rounded-lg bg-gray-50/60 dark:bg-slate-800/30 border border-gray-200/60 dark:border-slate-700/40">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Filial de Origem:</span>
+                                <span id="histModalNomeFilial" class="text-gray-800 dark:text-gray-200 text-xs font-semibold block truncate">-</span>
                             </div>
-                            <div>
-                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Número da Parcela:</span>
-                                <span id="histModalParcela" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-semibold">1</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Grid: Valores Financeiros -->
-                    <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 space-y-3">
-                        <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Valores Financeiros
-                        </h4>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                            <div class="p-2.5 rounded-lg bg-gray-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/60">
-                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Valor Parcela:</span>
-                                <strong id="histModalVlParcela" class="text-gray-900 dark:text-gray-100 font-mono font-bold text-xs">R$ 0,00</strong>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/60 dark:border-purple-800/40">
-                                <span class="text-purple-700 dark:text-purple-400 block text-[10px]">Total Permutado:</span>
-                                <strong id="histModalVlPermutado" class="text-purple-700 dark:text-purple-300 font-mono font-bold text-xs">R$ 0,00</strong>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
-                                <span class="text-emerald-700 dark:text-emerald-400 block text-[10px]">Valor Pago:</span>
-                                <strong id="histModalVlPago" class="text-emerald-700 dark:text-emerald-300 font-mono font-bold text-xs">R$ 0,00</strong>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-800/40">
-                                <span class="text-rose-700 dark:text-rose-400 block text-[10px]">Saldo Pendente:</span>
-                                <strong id="histModalSaldo" class="text-rose-700 dark:text-rose-300 font-mono font-bold text-xs">R$ 0,00</strong>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-gray-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/60">
-                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Multa:</span>
-                                <span id="histModalVlMulta" class="text-gray-800 dark:text-gray-200 font-mono text-xs">R$ 0,00</span>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-gray-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/60">
-                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Juros / Mora:</span>
-                                <span id="histModalVlMora" class="text-gray-800 dark:text-gray-200 font-mono text-xs">R$ 0,00</span>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-gray-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/60">
-                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Desconto:</span>
-                                <span id="histModalVlDesconto" class="text-gray-800 dark:text-gray-200 font-mono text-xs">R$ 0,00</span>
+                            <div class="p-2.5 rounded-lg bg-gray-50/60 dark:bg-slate-800/30 border border-gray-200/60 dark:border-slate-700/40">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Número da Parcela:</span>
+                                <span id="histModalParcela" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-semibold block">1</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Grid: Datas e Prazos -->
+                    <!-- Card: Datas e Prazos -->
                     <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 space-y-3">
                         <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                             <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                             Datas & Prazos
                         </h4>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div>
+                            <div class="p-3 rounded-lg bg-gray-50/80 dark:bg-slate-800/40 border border-gray-200/70 dark:border-slate-700/50">
                                 <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Data de Emissão:</span>
-                                <strong id="histModalDtEmissao" class="text-gray-800 dark:text-gray-200 font-medium text-xs">-</strong>
+                                <strong id="histModalDtEmissao" class="text-gray-800 dark:text-gray-200 font-semibold text-xs mt-0.5 block">-</strong>
                             </div>
-                            <div>
-                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Data de Vencimento:</span>
-                                <strong id="histModalDtVencimento" class="text-gray-800 dark:text-gray-200 font-bold text-xs">-</strong>
+                            <div class="p-3 rounded-lg bg-rose-50/50 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-800/40">
+                                <span class="text-rose-700 dark:text-rose-400 block text-[11px] font-semibold">Data de Vencimento:</span>
+                                <strong id="histModalDtVencimento" class="text-rose-800 dark:text-rose-300 font-bold text-xs mt-0.5 block">-</strong>
                             </div>
-                            <div>
+                            <div class="p-3 rounded-lg bg-gray-50/80 dark:bg-slate-800/40 border border-gray-200/70 dark:border-slate-700/50">
                                 <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Competência:</span>
-                                <span id="histModalDtCompetencia" class="text-gray-800 dark:text-gray-200 text-xs">-</span>
+                                <span id="histModalDtCompetencia" class="text-gray-800 dark:text-gray-200 text-xs mt-0.5 block">-</span>
                             </div>
-                            <div>
+                            <div class="p-3 rounded-lg bg-gray-50/80 dark:bg-slate-800/40 border border-gray-200/70 dark:border-slate-700/50">
                                 <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Data da Baixa:</span>
-                                <span id="histModalDtBaixa" class="text-gray-800 dark:text-gray-200 text-xs">-</span>
+                                <span id="histModalDtBaixa" class="text-gray-800 dark:text-gray-200 text-xs mt-0.5 block">-</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Histórico e Descrição do Lançamento -->
+                    <!-- Card: Histórico e Descrição do Lançamento -->
                     <div class="p-4 rounded-xl bg-gray-50/80 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-800 space-y-2.5">
                         <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                             <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
                             Histórico / Descrição Registrada
                         </h4>
-                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap wrap-break-word leading-relaxed" id="histModalHistorico">
+                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap break-words leading-relaxed" id="histModalHistorico">
                             Nenhum histórico registrado no lançamento.
                         </div>
                         <div id="histModalHistoricoBaixaContainer" class="hidden pt-2">
                             <span class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 block mb-1">Histórico da Baixa:</span>
-                            <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap wrap-break-word" id="histModalHistoricoBaixa">
+                            <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap break-words" id="histModalHistoricoBaixa">
                                 -
                             </div>
                         </div>
                     </div>
 
-                    <!-- Rastreabilidade Técnica Solidcon -->
-                    <div class="p-3 rounded-xl bg-gray-100/70 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-600 dark:text-gray-400">
+                    <!-- Card: Rastreabilidade Técnica Solidcon -->
+                    <div class="p-3 rounded-xl bg-gray-100/80 dark:bg-slate-900/80 border border-gray-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-600 dark:text-gray-400">
                         <div class="flex flex-wrap items-center gap-2">
                             <span>Código Conta: <strong id="histModalCdConta" class="font-mono text-gray-800 dark:text-gray-200">-</strong></span>
                             <span>•</span>
@@ -1101,13 +1107,13 @@
                             <span>•</span>
                             <span>Mov. Banco: <strong id="histModalCdBancoContaMovimento" class="font-mono text-gray-800 dark:text-gray-200">-</strong></span>
                         </div>
-                        <span class="text-[10px] text-gray-400 dark:text-gray-500">Solidcon SQL Server</span>
+                        <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Solidcon SQL Server</span>
                     </div>
                 </div>
 
                 <!-- Modal Footer -->
                 <div class="p-4 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 flex items-center justify-end gap-2">
-                    <button type="button" id="btnCloseModalContasPagarHistoricoFooter" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-xs shadow-xs transition-all cursor-pointer">
+                    <button type="button" id="btnCloseModalContasPagarHistoricoFooter" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-xs transition-all cursor-pointer">
                         Fechar
                     </button>
                 </div>
@@ -1116,11 +1122,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261007182851"></script>
-    <script src="/js/rel_valor_empresa.js?v=20261007182851"></script>
-    <script src="/js/components/navbar.js?v=20261007182851"></script>
+    <script src="/js/api.js?v=20261007183730"></script>
+    <script src="/js/rel_valor_empresa.js?v=20261007183730"></script>
+    <script src="/js/components/navbar.js?v=20261007183730"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261007182851"></script>
+    <script src="/js/components/footer.js?v=20261007183730"></script>
 </body>
 </html>
 

@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Rel.Valor_Empresa</title>
-    <link href="/css/style.css?v=20261007163033" rel="stylesheet">
+    <link href="/css/style.css?v=20261007172859" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261007163033"></script>
+    <script src="/js/pwa.js?v=20261007172859"></script>
 </head>
 <body data-required-module="rel_valor_empresa" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -425,65 +425,20 @@
                     </div>
                 </div>
 
-                <!-- Main Highlight KPI & Secondary Stats -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-5 items-stretch">
-                    <!-- Highlight: Total a Pagar -->
-                    <div class="p-4 rounded-xl bg-linear-to-br from-rose-50 to-red-50 dark:from-rose-950/40 dark:to-red-950/30 border border-rose-200/80 dark:border-rose-800/40 flex flex-col justify-between">
+                <!-- Main Highlight KPI: Total a Pagar Somente -->
+                <div class="pt-5">
+                    <div class="p-5 sm:p-6 rounded-2xl bg-linear-to-br from-rose-50 via-red-50/50 to-rose-50/20 dark:from-rose-950/40 dark:via-red-950/25 dark:to-slate-900/60 border border-rose-200/80 dark:border-rose-800/50 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 Total Geral a Pagar
                             </span>
-                            <div id="cardContasPagarTotalPagar" class="text-2xl sm:text-3xl font-black text-rose-700 dark:text-rose-400 mt-1 tracking-tight">
+                            <div id="cardContasPagarTotalPagar" class="text-3xl sm:text-4xl font-black text-rose-700 dark:text-rose-400 mt-1.5 tracking-tight">
                                 R$ 0,00
                             </div>
                         </div>
-                        <div id="cardContasPagarSubtitle" class="mt-2 pt-2 border-t border-rose-200/60 dark:border-rose-800/30 text-[11px] text-rose-700/80 dark:text-rose-400/80 font-medium">
+                        <div id="cardContasPagarSubtitle" class="text-xs text-rose-700/90 dark:text-rose-300/90 font-semibold bg-white/90 dark:bg-slate-800/90 border border-rose-200/70 dark:border-rose-900/50 px-4 py-2.5 rounded-xl shadow-2xs self-start sm:self-center">
                             Defina o período e clique em Filtrar
-                        </div>
-                    </div>
-
-                    <!-- Total Vencido -->
-                    <div class="p-4 rounded-xl bg-red-50/70 dark:bg-red-950/30 border border-red-200/70 dark:border-red-900/40 flex flex-col justify-between">
-                        <div>
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-red-700 dark:text-red-400">
-                                Títulos Vencidos
-                            </span>
-                            <div id="cardContasPagarTotalVencido" class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-                                R$ 0,00
-                            </div>
-                        </div>
-                        <div id="cardContasPagarQtdVencidos" class="text-[11px] text-red-600/80 dark:text-red-400/80 mt-2 font-medium">
-                            0 títulos vencidos
-                        </div>
-                    </div>
-
-                    <!-- Total A Vencer -->
-                    <div class="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/40 flex flex-col justify-between">
-                        <div>
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                                Títulos a Vencer
-                            </span>
-                            <div id="cardContasPagarTotalAVencer" class="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
-                                R$ 0,00
-                            </div>
-                        </div>
-                        <div id="cardContasPagarQtdAVencer" class="text-[11px] text-amber-600/80 dark:text-amber-400/80 mt-2 font-medium">
-                            0 títulos a vencer
-                        </div>
-                    </div>
-
-                    <!-- Permutas em Aberto -->
-                    <div class="p-4 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/70 dark:border-purple-900/40 flex flex-col justify-between">
-                        <div>
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 flex items-center gap-1">
-                                <span>🔄 Permutas em Aberto</span>
-                            </span>
-                            <div id="cardContasPagarTotalPermuta" class="text-xl sm:text-2xl font-bold text-purple-700 dark:text-purple-300 mt-1">
-                                R$ 0,00
-                            </div>
-                        </div>
-                        <div id="cardContasPagarQtdPermuta" class="text-[11px] text-purple-700/80 dark:text-purple-300/80 mt-2 font-medium">
-                            0 títulos de permuta
                         </div>
                     </div>
                 </div>
@@ -1161,11 +1116,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261007163033"></script>
-    <script src="/js/rel_valor_empresa.js?v=20261007163033"></script>
-    <script src="/js/components/navbar.js?v=20261007163033"></script>
+    <script src="/js/api.js?v=20261007172859"></script>
+    <script src="/js/rel_valor_empresa.js?v=20261007172859"></script>
+    <script src="/js/components/navbar.js?v=20261007172859"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261007163033"></script>
+    <script src="/js/components/footer.js?v=20261007172859"></script>
 </body>
 </html>
 

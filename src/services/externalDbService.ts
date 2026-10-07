@@ -7899,7 +7899,8 @@ export class ExternalDbService {
                             FROM tbContaParcela cp WITH (NOLOCK)
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
-                            WHERE (ISNULL(cb.inRecebimento, 0) = 0)
+                            WHERE (c.cdContaTipo IN (1, 3))
+                              AND (ISNULL(cb.inRecebimento, 0) = 0)
                               AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
@@ -7941,7 +7942,8 @@ export class ExternalDbService {
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                             LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
-                            WHERE (ISNULL(cb.inRecebimento, 0) = 0)
+                            WHERE (c.cdContaTipo IN (1, 3))
+                              AND (ISNULL(cb.inRecebimento, 0) = 0)
                               AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
@@ -7981,7 +7983,8 @@ export class ExternalDbService {
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                             LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
-                            WHERE (ISNULL(cb.inRecebimento, 0) = 0)
+                            WHERE (c.cdContaTipo IN (1, 3))
+                              AND (ISNULL(cb.inRecebimento, 0) = 0)
                               AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
@@ -8056,7 +8059,8 @@ export class ExternalDbService {
                                 LEFT JOIN tbPessoaJuridica pj WITH (NOLOCK) ON pj.cdPessoaJuridica = p.cdPessoa
                                 LEFT JOIN tbPessoaFisica pf WITH (NOLOCK) ON pf.cdPessoaFisica = p.cdPessoa
                                 LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
-                                WHERE (ISNULL(cb.inRecebimento, 0) = 0)
+                                WHERE (c.cdContaTipo IN (1, 3))
+                                  AND (ISNULL(cb.inRecebimento, 0) = 0)
                                   AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                                   ${dateFilterClausePagar}
                                   ${filialClausePagar}
@@ -8099,7 +8103,8 @@ export class ExternalDbService {
                                 LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                                 LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
                                 LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
-                                WHERE (ISNULL(cb.inRecebimento, 0) = 0)
+                                WHERE (c.cdContaTipo IN (1, 3))
+                                  AND (ISNULL(cb.inRecebimento, 0) = 0)
                                   AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                                   ${dateFilterClausePagar}
                                   ${filialClausePagar}
@@ -8172,8 +8177,10 @@ export class ExternalDbService {
                                 ? 'Cancelado'
                                 : (isPago ? (isPermuta ? 'Pago (Permuta)' : 'Pago') : (isVencido ? 'Vencido' : 'A Vencer'));
 
+                            const filialId = cp.filial !== undefined && cp.filial !== null ? cp.filial : (cp.cdPessoaFilialConta || 1);
+
                             return {
-                                id: `${cp.cdConta}_${cp.cdContaParcela}`,
+                                id: `${filialId}_${cp.cdConta}_${cp.cdContaParcela}`,
                                 cdConta: Number(cp.cdConta || 0),
                                 cdContaParcela: Number(cp.cdContaParcela || 1),
                                 cdPessoaComercial: String(cp.cdPessoaComercial || ''),
@@ -8203,8 +8210,8 @@ export class ExternalDbService {
                                 historicoBaixa: String(cp.historicoBaixa || '').trim(),
                                 cdContaBaixa: cp.cdContaBaixa ? Number(cp.cdContaBaixa) : null,
                                 cdBancoContaMovimento: cp.cdBancoContaMovimento ? Number(cp.cdBancoContaMovimento) : null,
-                                filial: Number(cp.filial || 1),
-                                nomeFilial: String(cp.nomeFilial || `Filial ${cp.filial}`).trim()
+                                filial: Number(filialId),
+                                nomeFilial: String(cp.nomeFilial || `Filial ${filialId}`).trim()
                             };
                         });
 

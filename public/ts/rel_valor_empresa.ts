@@ -886,7 +886,7 @@
 
         if (!data || !data.loaded) {
             if (getEl('cardContasPagarTotalPagar')) getEl('cardContasPagarTotalPagar')!.textContent = 'R$ 0,00';
-            if (getEl('cardContasPagarSubtitle')) getEl('cardContasPagarSubtitle')!.textContent = 'Total a Pagar (Vencidos + A Vencer)';
+            if (getEl('cardContasPagarSubtitle')) getEl('cardContasPagarSubtitle')!.textContent = 'Defina o período e clique em Filtrar';
             if (getEl('cardContasPagarTotalVencido')) getEl('cardContasPagarTotalVencido')!.textContent = 'R$ 0,00';
             if (getEl('cardContasPagarQtdVencidos')) getEl('cardContasPagarQtdVencidos')!.textContent = 'Defina o período e filtre';
             if (getEl('cardContasPagarTotalAVencer')) getEl('cardContasPagarTotalAVencer')!.textContent = 'R$ 0,00';
@@ -920,7 +920,7 @@
             getEl('cardContasPagarTotalPagar')!.textContent = formatMoney(totalAPagar);
         }
         if (getEl('cardContasPagarSubtitle')) {
-            getEl('cardContasPagarSubtitle')!.textContent = `Saldo Aberto: ${formatMoney(totalVencido)} venc. + ${formatMoney(totalAVencer)} a venc.`;
+            getEl('cardContasPagarSubtitle')!.textContent = `${qtdTitulos.toLocaleString('pt-BR')} ${qtdTitulos === 1 ? 'título a pagar' : 'títulos a pagar'}`;
         }
         if (getEl('cardContasPagarTotalVencido')) {
             getEl('cardContasPagarTotalVencido')!.textContent = formatMoney(totalVencido);
@@ -988,8 +988,8 @@
                     const fTotal = (fVenc + fAVenc > 0) ? (fVenc + fAVenc) : Number(f.totalAPagar || 0);
                     const fQtd = Number(f.qtdTitulos || 0);
                     return `
-                        <button type="button" data-filial="${escapeHtml(fId)}" class="card-filial-pagar-btn text-left p-3 rounded-xl border border-rose-200/80 dark:border-slate-700/80 bg-rose-50/40 dark:bg-slate-900/50 hover:bg-rose-100/60 dark:hover:bg-slate-800/80 hover:border-rose-400 transition-all cursor-pointer flex flex-col justify-between group shadow-2xs">
-                            <div class="flex items-center justify-between gap-1 mb-1">
+                        <button type="button" data-filial="${escapeHtml(fId)}" class="card-filial-pagar-btn text-left p-3.5 rounded-xl border border-rose-200/80 dark:border-slate-700/80 bg-rose-50/40 dark:bg-slate-900/50 hover:bg-rose-100/60 dark:hover:bg-slate-800/80 hover:border-rose-400 transition-all cursor-pointer flex flex-col justify-between group shadow-2xs">
+                            <div class="flex items-center justify-between gap-1 mb-1.5">
                                 <span class="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-rose-600 transition-colors" title="${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}">
                                     ${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}
                                 </span>
@@ -997,12 +997,8 @@
                                     ${fQtd} tit.
                                 </span>
                             </div>
-                            <div class="text-base font-extrabold text-rose-700 dark:text-rose-400">
+                            <div class="text-base font-black text-rose-700 dark:text-rose-400">
                                 ${formatMoney(fTotal)}
-                            </div>
-                            <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center justify-between pt-1 border-t border-rose-100 dark:border-slate-800">
-                                <span class="text-red-600 dark:text-red-400 font-semibold">${formatMoney(fVenc)} venc.</span>
-                                <span class="text-amber-600 dark:text-amber-400 font-semibold">${formatMoney(fAVenc)} a venc.</span>
                             </div>
                         </button>
                     `;

@@ -7907,7 +7907,7 @@ export class ExternalDbService {
                         const pagarRow = resPagarSummary.recordset?.[0] || {};
                         const totVencidoPagar = Number(pagarRow.total_vencido || 0);
                         const totAVencerPagar = Number(pagarRow.total_a_vencer || 0);
-                        const totPagar = (totVencidoPagar + totAVencerPagar > 0) ? (totVencidoPagar + totAVencerPagar) : Number(pagarRow.total_a_pagar || 0);
+                        const totPagar = totVencidoPagar + totAVencerPagar;
                         const qtdVencPagar = Number(pagarRow.qtd_vencidos || 0);
                         const qtdAVencPagar = Number(pagarRow.qtd_a_vencer || 0);
                         const qtdTotPagar = (qtdVencPagar + qtdAVencPagar > 0) ? (qtdVencPagar + qtdAVencPagar) : Number(pagarRow.qtd_titulos || 0);
@@ -8971,7 +8971,7 @@ export class ExternalDbService {
             }
         });
 
-        const totalContasPagar = (cpSumVencido + cpSumAVencer > 0) ? (cpSumVencido + cpSumAVencer) : cpSumPagar;
+        const totalContasPagar = cpSumVencido + cpSumAVencer;
         const contasPagar = {
             loaded: cpLoaded,
             filtrosAplicados: first.contasPagar?.filtrosAplicados || {

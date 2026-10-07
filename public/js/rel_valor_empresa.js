@@ -875,9 +875,7 @@
         const summary = data.summary || {};
         const totalVencido = Number(summary.totalVencido || 0);
         const totalAVencer = Number(summary.totalAVencer || 0);
-        const totalAPagar = (totalVencido + totalAVencer > 0)
-            ? (totalVencido + totalAVencer)
-            : Number(summary.totalAPagar || summary.totalPagar || 0);
+        const totalAPagar = Number(summary.totalAPagar !== undefined ? summary.totalAPagar : (totalVencido + totalAVencer));
         const qtdVencidos = Number(summary.qtdVencidos || 0);
         const qtdAVencer = Number(summary.qtdAVencer || 0);
         const qtdTitulos = (qtdVencidos + qtdAVencer > 0)
@@ -887,6 +885,9 @@
         const qtdPermuta = Number(summary.qtdPermuta || 0);
         if (getEl('cardContasPagarTotalPagar')) {
             getEl('cardContasPagarTotalPagar').textContent = formatMoney(totalAPagar);
+        }
+        if (getEl('cardContasPagarSubtitle')) {
+            getEl('cardContasPagarSubtitle').textContent = `Saldo Aberto: ${formatMoney(totalVencido)} venc. + ${formatMoney(totalAVencer)} a venc.`;
         }
         if (getEl('cardContasPagarTotalVencido')) {
             getEl('cardContasPagarTotalVencido').textContent = formatMoney(totalVencido);
@@ -1006,9 +1007,7 @@
         const summary = targetData.summary || {};
         const totalVencido = Number(summary.totalVencido || 0);
         const totalAVencer = Number(summary.totalAVencer || 0);
-        const totalAPagar = (totalVencido + totalAVencer > 0)
-            ? (totalVencido + totalAVencer)
-            : Number(summary.totalAPagar || summary.totalPagar || 0);
+        const totalAPagar = Number(summary.totalAPagar !== undefined ? summary.totalAPagar : (totalVencido + totalAVencer));
         const qtdTitulos = (Number(summary.qtdVencidos || 0) + Number(summary.qtdAVencer || 0) > 0)
             ? (Number(summary.qtdVencidos || 0) + Number(summary.qtdAVencer || 0))
             : Number(summary.qtdTitulos || 0);
@@ -1038,8 +1037,10 @@
             const isActive = currentSelectedFilial === filialId;
             const fVenc = Number(f.totalVencido || 0);
             const fAVenc = Number(f.totalAVencer || 0);
-            const fTotal = (fVenc + fAVenc > 0) ? (fVenc + fAVenc) : Number(f.totalAPagar || 0);
-            const fQtd = Number(f.qtdTitulos || 0);
+            const fTotal = Number(f.totalAPagar !== undefined ? f.totalAPagar : (fVenc + fAVenc));
+            const fQtd = (Number(f.qtdVencidos || 0) + Number(f.qtdAVencer || 0) > 0)
+                ? (Number(f.qtdVencidos || 0) + Number(f.qtdAVencer || 0))
+                : Number(f.qtdTitulos || 0);
             html += `
                 <button type="button" data-filial="${escapeHtml(filialId)}" class="filial-card-btn text-left p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${isActive
                 ? 'border-rose-500 bg-rose-50/80 dark:bg-rose-950/40 ring-2 ring-rose-500/40 shadow-xs'
@@ -1361,6 +1362,44 @@
                 </tr>
             `;
         });
+        // Grand Total Consolidado Row (when there are multiple groups or titles)
+        if (groups.length > 0) {
+            let gParcela = 0;
+            let gPermutado = 0;
+            let gPago = 0;
+            let gSaldo = 0;
+            let gTitulos = 0;
+            groups.forEach(g => {
+                gParcela += g.totalParcela;
+                gPermutado += g.totalPermutado;
+                gPago += g.totalPago;
+                gSaldo += g.saldoPendente;
+                gTitulos += g.items.length;
+            });
+            html += `
+                <tr class="bg-linear-to-r from-gray-200 via-rose-100/70 to-gray-200 dark:from-slate-950 dark:via-rose-950/50 dark:to-slate-950 font-black border-t-2 border-b-2 border-rose-400 dark:border-rose-700 text-xs text-gray-900 dark:text-white sticky bottom-0 z-10 shadow-lg">
+                    <td colspan="8" class="py-3 px-4 text-right">
+                        <div class="inline-flex items-center gap-1.5 uppercase tracking-wider text-rose-900 dark:text-rose-200 font-extrabold">
+                            <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            <span>TOTAL GERAL A PAGAR (${gTitulos} ${gTitulos === 1 ? 'título' : 'títulos'}):</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        ${formatMoney(gParcela)}
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-purple-800 dark:text-purple-300 whitespace-nowrap">
+                        ${gPermutado > 0 ? formatMoney(gPermutado) : '-'}
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                        ${formatMoney(gPago)}
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-black text-rose-700 dark:text-rose-300 whitespace-nowrap text-sm">
+                        ${formatMoney(gSaldo)}
+                    </td>
+                    <td class="py-3 px-3"></td>
+                </tr>
+            `;
+        }
         tbody.innerHTML = html;
         // Attach click listener for eye (historico) buttons
         tbody.querySelectorAll('.btn-view-contas-pagar-historico').forEach(btn => {

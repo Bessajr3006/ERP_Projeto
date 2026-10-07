@@ -7888,20 +7888,20 @@ export class ExternalDbService {
                                 COUNT(*) as qtd_titulos,
                                 COUNT(DISTINCT c.cdPessoaComercial) as qtd_fornecedores,
                                 SUM(ISNULL(cp.vlParcela, 0)) as total_emitido,
-                                SUM(ISNULL(cb.vlContaBaixa, 0)) as total_pago,
-                                SUM(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) as total_a_pagar,
-                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_vencido,
-                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_a_vencer,
+                                SUM(ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0)) as total_pago,
+                                SUM(ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) as total_a_pagar,
+                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) ELSE 0 END) as total_vencido,
+                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) ELSE 0 END) as total_a_vencer,
                                 COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 END) as qtd_vencidos,
                                 COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer,
-                                SUM(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_permuta,
+                                SUM(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) ELSE 0 END) as total_permuta,
                                 COUNT(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN 1 END) as qtd_permuta
                             FROM tbContaParcela cp WITH (NOLOCK)
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                             WHERE (c.cdContaTipo IN (1, 3))
                               AND (ISNULL(cb.inRecebimento, 0) = 0)
-                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
                         `);
@@ -7936,15 +7936,15 @@ export class ExternalDbService {
                                 ISNULL(NULLIF(RTRIM(LTRIM(p.nmPessoa)), ''), 'Fornecedor não identificado') as fornecedor,
                                 COUNT(cp.cdContaParcela) as qtd_titulos,
                                 SUM(ISNULL(cp.vlParcela, 0)) as total_emitido,
-                                SUM(ISNULL(cb.vlContaBaixa, 0)) as total_pago,
-                                SUM(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) as total_a_pagar
+                                SUM(ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0)) as total_pago,
+                                SUM(ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) as total_a_pagar
                             FROM tbContaParcela cp WITH (NOLOCK)
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                             LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
                             WHERE (c.cdContaTipo IN (1, 3))
                               AND (ISNULL(cb.inRecebimento, 0) = 0)
-                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
                             GROUP BY c.cdPessoaComercial, p.nmPessoa
@@ -7971,13 +7971,13 @@ export class ExternalDbService {
                                 ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial,
                                 COUNT(*) as qtd_titulos,
                                 SUM(ISNULL(cp.vlParcela, 0)) as total_emitido,
-                                SUM(ISNULL(cb.vlContaBaixa, 0)) as total_pago,
-                                SUM(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) as total_a_pagar,
-                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_vencido,
-                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_a_vencer,
+                                SUM(ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0)) as total_pago,
+                                SUM(ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) as total_a_pagar,
+                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) ELSE 0 END) as total_vencido,
+                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) ELSE 0 END) as total_a_vencer,
                                 COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 END) as qtd_vencidos,
                                 COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer,
-                                SUM(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_permuta,
+                                SUM(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) ELSE 0 END) as total_permuta,
                                 COUNT(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN 1 END) as qtd_permuta
                             FROM tbContaParcela cp WITH (NOLOCK)
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
@@ -7985,7 +7985,7 @@ export class ExternalDbService {
                             LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
                             WHERE (c.cdContaTipo IN (1, 3))
                               AND (ISNULL(cb.inRecebimento, 0) = 0)
-                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                              AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
                             GROUP BY c.cdPessoaFilialConta, fil.nmPessoa
@@ -8036,8 +8036,8 @@ export class ExternalDbService {
                                     CONVERT(VARCHAR(10), cp.dtCompetencia, 120) as dtCompetencia,
                                     CONVERT(VARCHAR(10), cb.dtContaBaixa, 120) as dtBaixa,
                                     CAST(ISNULL(cp.vlParcela, 0) AS FLOAT) as vlParcela,
-                                    CAST(ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as vlPago,
-                                    CAST(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as saldoPendente,
+                                    CAST(ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0) AS FLOAT) as vlPago,
+                                    CAST(ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0)) AS FLOAT) as saldoPendente,
                                     CAST(ISNULL(cp.vlMulta, 0) AS FLOAT) as vlMulta,
                                     CAST(ISNULL(cp.vlMora, 0) AS FLOAT) as vlMora,
                                     CAST(ISNULL(cp.vlDesconto, 0) AS FLOAT) as vlDesconto,
@@ -8061,10 +8061,10 @@ export class ExternalDbService {
                                 LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
                                 WHERE (c.cdContaTipo IN (1, 3))
                                   AND (ISNULL(cb.inRecebimento, 0) = 0)
-                                  AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                                  AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) > 0.01)
                                   ${dateFilterClausePagar}
                                   ${filialClausePagar}
-                                ORDER BY (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) DESC, cp.dtParcela ASC
+                                ORDER BY (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) DESC, cp.dtParcela ASC
                             `);
                         } catch (errPjPf: any) {
                             console.warn('[Solidcon Pagar] Fallback sem tbPessoaJuridica/tbPessoaFisica:', errPjPf?.message);
@@ -8083,8 +8083,8 @@ export class ExternalDbService {
                                     CONVERT(VARCHAR(10), cp.dtCompetencia, 120) as dtCompetencia,
                                     CONVERT(VARCHAR(10), cb.dtContaBaixa, 120) as dtBaixa,
                                     CAST(ISNULL(cp.vlParcela, 0) AS FLOAT) as vlParcela,
-                                    CAST(ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as vlPago,
-                                    CAST(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0) AS FLOAT) as saldoPendente,
+                                    CAST(ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0) AS FLOAT) as vlPago,
+                                    CAST(ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0)) AS FLOAT) as saldoPendente,
                                     CAST(ISNULL(cp.vlMulta, 0) AS FLOAT) as vlMulta,
                                     CAST(ISNULL(cp.vlMora, 0) AS FLOAT) as vlMora,
                                     CAST(ISNULL(cp.vlDesconto, 0) AS FLOAT) as vlDesconto,
@@ -8105,10 +8105,10 @@ export class ExternalDbService {
                                 LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
                                 WHERE (c.cdContaTipo IN (1, 3))
                                   AND (ISNULL(cb.inRecebimento, 0) = 0)
-                                  AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
+                                  AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) > 0.01)
                                   ${dateFilterClausePagar}
                                   ${filialClausePagar}
-                                ORDER BY (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) DESC, cp.dtParcela ASC
+                                ORDER BY (ISNULL(cp.vlParcela, 0) - (ISNULL(cb.vlContaBaixa, 0) + ISNULL(cp.vlDesconto, 0))) DESC, cp.dtParcela ASC
                             `);
                         }
 
@@ -8973,8 +8973,19 @@ export class ExternalDbService {
                 cpFiliaisMap[k].qtdVencidos += Number(f.qtdVencidos || 0);
                 cpFiliaisMap[k].qtdAVencer += Number(f.qtdAVencer || 0);
             });
+        });
+
+        const seenCpKeys = new Set<string>();
+        results.forEach(r => {
+            const cp = r.contasPagar;
             if (Array.isArray(cp?.lancamentos)) {
-                cpLancamentos = cpLancamentos.concat(cp.lancamentos);
+                cp.lancamentos.forEach((item: any) => {
+                    const uniqueKey = String(item.id || `${item.filial}_${item.cdConta}_${item.cdContaParcela}`);
+                    if (!seenCpKeys.has(uniqueKey)) {
+                        seenCpKeys.add(uniqueKey);
+                        cpLancamentos.push(item);
+                    }
+                });
             }
         });
 

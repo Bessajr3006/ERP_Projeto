@@ -2452,7 +2452,14 @@ export class FinanceController {
             if (isAllConnections) {
                 const configs = await SolidconConfigService.list(company.id);
                 if (configs && configs.length > 0) {
-                    configsToQuery = configs.filter((c: any) => c.serv_solidcon && c.serv_solidcon.trim());
+                    const seenDbs = new Set<string>();
+                    configsToQuery = configs.filter((c: any) => {
+                        if (!c.serv_solidcon || !c.serv_solidcon.trim()) return false;
+                        const key = `${c.serv_solidcon.trim().toLowerCase()}_${(c.bd_solidcon || 'solidcon').trim().toLowerCase()}`;
+                        if (seenDbs.has(key)) return false;
+                        seenDbs.add(key);
+                        return true;
+                    });
                 }
             } else if (connectionId) {
                 const cleanId = parseInt(String(connectionId).replace('solidcon_', ''), 10);

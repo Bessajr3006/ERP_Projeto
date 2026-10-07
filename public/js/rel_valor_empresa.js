@@ -1155,24 +1155,25 @@
             group.totalPermutado += vlPermutado;
             group.totalPago += pago;
             group.saldoPendente += saldo;
-            if (item.isCancelado) {
-                // cancelado não soma em vencido/a vencer/permuta
+            const isPago = item.status === 'PAGO' || saldo <= 0.01;
+            const isCancelado = Boolean(item.isCancelado);
+            const isVencido = Boolean(item.isVencido) && !isPago && !isCancelado;
+            if (isCancelado || isPago || saldo <= 0.01) {
+                // cancelado ou quitado/pago não soma em vencido/a vencer
             }
             else {
-                if (saldo > 0.01) {
-                    if (item.isVencido) {
-                        group.totalVencido += saldo;
-                        group.qtdVencidos += 1;
-                    }
-                    else {
-                        group.totalAVencer += saldo;
-                        group.qtdAVencer += 1;
-                    }
+                if (isVencido) {
+                    group.totalVencido += saldo;
+                    group.qtdVencidos += 1;
                 }
-                if (isPermuta || vlPermutado > 0) {
-                    group.totalPermuta += vlPermutado;
-                    group.qtdPermuta += 1;
+                else {
+                    group.totalAVencer += saldo;
+                    group.qtdAVencer += 1;
                 }
+            }
+            if (isPermuta || vlPermutado > 0) {
+                group.totalPermuta += vlPermutado;
+                group.qtdPermuta += 1;
             }
         });
         // Sort groups by filial ID or name
@@ -1421,7 +1422,8 @@
             const vlPerm = Number(r.vlPermutado !== undefined ? r.vlPermutado : (r.isPermuta ? r.vlParcela : 0));
             if (r.isPermuta || vlPerm > 0)
                 sumPermuta += vlPerm;
-            if (val > 0.01) {
+            const isPago = r.status === 'PAGO' || val <= 0.01;
+            if (!isPago && val > 0.01) {
                 if (r.isVencido)
                     sumVencido += val;
                 else

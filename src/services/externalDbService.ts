@@ -8109,7 +8109,6 @@ export class ExternalDbService {
 
                         contasPagar.lancamentos = (resPagarList?.recordset || []).map((cp: any) => {
                             const isCancelado = Number(cp.inCancelado || 0) === 1;
-                            const isVencido = Boolean(cp.isVencido);
                             
                             const histStr = String(cp.historico || '').toUpperCase();
                             const docStr = String(cp.numeroDocumento || '').toUpperCase();
@@ -8160,13 +8159,18 @@ export class ExternalDbService {
                                 }
                             }
 
+                            // Um título PAGO (inclusive por permuta) NUNCA é vencido!
+                            const isPago = saldoPendente <= 0.01;
+                            const isVencido = !isCancelado && !isPago && Boolean(cp.isVencido);
+                            const diasAtraso = isVencido ? Number(cp.diasAtraso || 0) : 0;
+
                             const status = isCancelado
                                 ? 'CANCELADO'
-                                : (saldoPendente <= 0.01 ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A_VENCER'));
+                                : (isPago ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A_VENCER'));
 
                             const statusLabel = isCancelado
                                 ? 'Cancelado'
-                                : (saldoPendente <= 0.01 ? 'Pago' : (isVencido ? 'Vencido' : 'A Vencer'));
+                                : (isPago ? (isPermuta ? 'Pago (Permuta)' : 'Pago') : (isVencido ? 'Vencido' : 'A Vencer'));
 
                             return {
                                 id: `${cp.cdConta}_${cp.cdContaParcela}`,
@@ -8194,7 +8198,7 @@ export class ExternalDbService {
                                 isCancelado: isCancelado,
                                 status: status,
                                 statusLabel: statusLabel,
-                                diasAtraso: Number(cp.diasAtraso || 0),
+                                diasAtraso: diasAtraso,
                                 historico: String(cp.historico || '').trim(),
                                 historicoBaixa: String(cp.historicoBaixa || '').trim(),
                                 cdContaBaixa: cp.cdContaBaixa ? Number(cp.cdContaBaixa) : null,
@@ -8226,7 +8230,8 @@ export class ExternalDbService {
                                 const permutado = Number(item.vlPermutado || 0);
                                 const isPerm = Boolean(item.isPermuta);
                                 const isCanc = Boolean(item.isCancelado);
-                                const isVenc = Boolean(item.isVencido);
+                                const isItemPago = item.status === 'PAGO' || saldo <= 0.01;
+                                const isVenc = !isCanc && !isItemPago && Boolean(item.isVencido);
 
                                 totEmitido += parcela;
                                 totPago += pago;
@@ -8235,16 +8240,14 @@ export class ExternalDbService {
                                     qtdPerm += 1;
                                 }
 
-                                if (!isCanc) {
+                                if (!isCanc && !isItemPago && saldo > 0.01) {
                                     totAPagar += saldo;
-                                    if (saldo > 0.01) {
-                                        if (isVenc) {
-                                            totVencido += saldo;
-                                            qtdVenc += 1;
-                                        } else {
-                                            totAVencer += saldo;
-                                            qtdAVenc += 1;
-                                        }
+                                    if (isVenc) {
+                                        totVencido += saldo;
+                                        qtdVenc += 1;
+                                    } else {
+                                        totAVencer += saldo;
+                                        qtdAVenc += 1;
                                     }
                                 }
 
@@ -8272,16 +8275,14 @@ export class ExternalDbService {
                                     filiaisMap[fKey].totalPermuta += permutado;
                                     filiaisMap[fKey].qtdPermuta += 1;
                                 }
-                                if (!isCanc) {
+                                if (!isCanc && !isItemPago && saldo > 0.01) {
                                     filiaisMap[fKey].totalAPagar += saldo;
-                                    if (saldo > 0.01) {
-                                        if (isVenc) {
-                                            filiaisMap[fKey].totalVencido += saldo;
-                                            filiaisMap[fKey].qtdVencidos += 1;
-                                        } else {
-                                            filiaisMap[fKey].totalAVencer += saldo;
-                                            filiaisMap[fKey].qtdAVencer += 1;
-                                        }
+                                    if (isVenc) {
+                                        filiaisMap[fKey].totalVencido += saldo;
+                                        filiaisMap[fKey].qtdVencidos += 1;
+                                    } else {
+                                        filiaisMap[fKey].totalAVencer += saldo;
+                                        filiaisMap[fKey].qtdAVencer += 1;
                                     }
                                 }
 
@@ -8300,7 +8301,7 @@ export class ExternalDbService {
                                 fornecedoresMap[fForn].qtdTitulos += 1;
                                 fornecedoresMap[fForn].totalEmitido += parcela;
                                 fornecedoresMap[fForn].totalPago += pago;
-                                if (!isCanc) {
+                                if (!isCanc && !isItemPago && saldo > 0.01) {
                                     fornecedoresMap[fForn].totalAPagar += saldo;
                                 }
                             });
@@ -8997,6 +8998,127 @@ export class ExternalDbService {
             byFilial: Object.values(cpFiliaisMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar),
             lancamentos: cpLancamentos.sort((a: any, b: any) => (a.dtVencimento || '').localeCompare(b.dtVencimento || ''))
         };
+
+        if (cpLancamentos.length > 0) {
+            let mTotAPagar = 0;
+            let mTotVencido = 0;
+            let mTotAVencer = 0;
+            let mTotEmitido = 0;
+            let mTotPago = 0;
+            let mTotPermuta = 0;
+            let mQtdVenc = 0;
+            let mQtdAVenc = 0;
+            let mQtdPerm = 0;
+
+            const mFiliaisMap: Record<string, any> = {};
+            const mFornecedoresMap: Record<string, any> = {};
+
+            cpLancamentos.forEach((item: any) => {
+                const parcela = Number(item.vlParcela || 0);
+                const pago = Number(item.vlPago || 0);
+                const saldo = Number(item.saldoPendente || 0);
+                const permutado = Number(item.vlPermutado || 0);
+                const isPerm = Boolean(item.isPermuta);
+                const isCanc = Boolean(item.isCancelado);
+                const isItemPago = item.status === 'PAGO' || saldo <= 0.01;
+                const isVenc = !isCanc && !isItemPago && Boolean(item.isVencido);
+
+                mTotEmitido += parcela;
+                mTotPago += pago;
+                if (isPerm || permutado > 0) {
+                    mTotPermuta += permutado;
+                    mQtdPerm += 1;
+                }
+
+                if (!isCanc && !isItemPago && saldo > 0.01) {
+                    mTotAPagar += saldo;
+                    if (isVenc) {
+                        mTotVencido += saldo;
+                        mQtdVenc += 1;
+                    } else {
+                        mTotAVencer += saldo;
+                        mQtdAVenc += 1;
+                    }
+                }
+
+                const fKey = String(item.filial || 1);
+                if (!mFiliaisMap[fKey]) {
+                    mFiliaisMap[fKey] = {
+                        filial: Number(item.filial || 1),
+                        nomeFilial: String(item.nomeFilial || `Filial ${item.filial}`).trim(),
+                        qtdTitulos: 0,
+                        qtdVencidos: 0,
+                        qtdAVencer: 0,
+                        totalAPagar: 0,
+                        totalVencido: 0,
+                        totalAVencer: 0,
+                        totalPermuta: 0,
+                        qtdPermuta: 0,
+                        totalEmitido: 0,
+                        totalPago: 0
+                    };
+                }
+                mFiliaisMap[fKey].qtdTitulos += 1;
+                mFiliaisMap[fKey].totalEmitido += parcela;
+                mFiliaisMap[fKey].totalPago += pago;
+                if (isPerm || permutado > 0) {
+                    mFiliaisMap[fKey].totalPermuta += permutado;
+                    mFiliaisMap[fKey].qtdPermuta += 1;
+                }
+                if (!isCanc && !isItemPago && saldo > 0.01) {
+                    mFiliaisMap[fKey].totalAPagar += saldo;
+                    if (isVenc) {
+                        mFiliaisMap[fKey].totalVencido += saldo;
+                        mFiliaisMap[fKey].qtdVencidos += 1;
+                    } else {
+                        mFiliaisMap[fKey].totalAVencer += saldo;
+                        mFiliaisMap[fKey].qtdAVencer += 1;
+                    }
+                }
+
+                const fForn = String(item.cdPessoaComercial || item.fornecedor || 'Fornecedor');
+                if (!mFornecedoresMap[fForn]) {
+                    mFornecedoresMap[fForn] = {
+                        cdPessoaComercial: String(item.cdPessoaComercial || ''),
+                        fornecedor: String(item.fornecedor || 'Fornecedor').trim(),
+                        qtdTitulos: 0,
+                        totalEmitido: 0,
+                        totalPago: 0,
+                        totalAPagar: 0,
+                        percentual: 0
+                    };
+                }
+                mFornecedoresMap[fForn].qtdTitulos += 1;
+                mFornecedoresMap[fForn].totalEmitido += parcela;
+                mFornecedoresMap[fForn].totalPago += pago;
+                if (!isCanc && !isItemPago && saldo > 0.01) {
+                    mFornecedoresMap[fForn].totalAPagar += saldo;
+                }
+            });
+
+            const mQtdTit = cpLancamentos.length;
+            contasPagar.summary = {
+                totalAPagar: mTotAPagar,
+                totalPagar: mTotAPagar,
+                totalEmitido: mTotEmitido,
+                totalPago: mTotPago,
+                totalVencido: mTotVencido,
+                totalAVencer: mTotAVencer,
+                totalPermuta: mTotPermuta,
+                qtdPermuta: mQtdPerm,
+                qtdTitulos: mQtdTit,
+                qtdVencidos: mQtdVenc,
+                qtdAVencer: mQtdAVenc,
+                qtdFornecedores: Object.keys(mFornecedoresMap).length,
+                ticketMedio: mQtdTit > 0 ? mTotAPagar / mQtdTit : 0
+            };
+            contasPagar.byFilial = Object.values(mFiliaisMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar);
+            const mTopForn = Object.values(mFornecedoresMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar).slice(0, 10);
+            mTopForn.forEach((t: any) => {
+                t.percentual = mTotAPagar > 0 ? Number(((t.totalAPagar / mTotAPagar) * 100).toFixed(1)) : 0;
+            });
+            contasPagar.topFornecedores = mTopForn;
+        }
 
         return {
             params,

@@ -8110,16 +8110,63 @@ export class ExternalDbService {
                         contasPagar.lancamentos = (resPagarList?.recordset || []).map((cp: any) => {
                             const isCancelado = Number(cp.inCancelado || 0) === 1;
                             const isVencido = Boolean(cp.isVencido);
+                            
+                            const histStr = String(cp.historico || '').toUpperCase();
+                            const docStr = String(cp.numeroDocumento || '').toUpperCase();
+                            const histBaixaStr = String(cp.historicoBaixa || '').toUpperCase();
+
                             const isPermuta = Boolean(cp.isPermuta) || 
-                                (String(cp.historico || '').toUpperCase().includes('PERMUT')) ||
-                                (String(cp.numeroDocumento || '').toUpperCase().includes('PERMUT')) ||
-                                (String(cp.historicoBaixa || '').toUpperCase().includes('PERMUT'));
-                            const saldoPendente = Number(cp.saldoPendente || 0);
-                            const status = isCancelado ? 'CANCELADO' : (saldoPendente <= 0.01 ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A_VENCER'));
-                            const statusLabel = isCancelado ? 'Cancelado' : (saldoPendente <= 0.01 ? 'Pago' : (isVencido ? 'Vencido' : 'A Vencer'));
+                                histStr.includes('PERMUT') ||
+                                docStr.includes('PERMUT') ||
+                                histBaixaStr.includes('PERMUT');
 
                             const vlParcela = Number(cp.vlParcela || 0);
-                            const vlPermutado = isPermuta ? vlParcela : 0;
+                            const vlPagoDb = Number(cp.vlPago || 0);
+
+                            // Determinar o valor da permuta
+                            let vlPermutado = 0;
+                            if (isPermuta) {
+                                if (vlPagoDb > 0 && histBaixaStr.includes('PERMUT')) {
+                                    vlPermutado = vlPagoDb;
+                                } else {
+                                    const fullText = `${cp.historico || ''} ${cp.numeroDocumento || ''} ${cp.historicoBaixa || ''}`;
+                                    const match = fullText.match(/PERMUT[A-Z0-9\s\.\:\-]*?([0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{2})|[0-9]+(?:\.[0-9]{2}))/i);
+                                    if (match && match[1]) {
+                                        const parsedVal = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+                                        if (!isNaN(parsedVal) && parsedVal > 0 && parsedVal <= vlParcela) {
+                                            vlPermutado = parsedVal;
+                                        } else {
+                                            vlPermutado = vlParcela;
+                                        }
+                                    } else {
+                                        vlPermutado = vlParcela;
+                                    }
+                                }
+                            }
+
+                            // Regra de Permuta:
+                            // Se o valor da parcela for igual ao valor permutado -> lança como pago (saldo = 0, status = Pago)
+                            // Se for diferente -> lança o valor que falta para completar (saldoPendente = vlParcela - vlPermutado, vlPago = vlPermutado)
+                            let vlPagoEfetivo = vlPagoDb;
+                            let saldoPendente = Math.max(0, vlParcela - vlPagoDb);
+
+                            if (isPermuta && vlPermutado > 0) {
+                                if (Math.abs(vlParcela - vlPermutado) <= 0.01) {
+                                    vlPagoEfetivo = vlParcela;
+                                    saldoPendente = 0;
+                                } else {
+                                    vlPagoEfetivo = Math.max(vlPagoDb, vlPermutado);
+                                    saldoPendente = Math.max(0, vlParcela - vlPagoEfetivo);
+                                }
+                            }
+
+                            const status = isCancelado
+                                ? 'CANCELADO'
+                                : (saldoPendente <= 0.01 ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A_VENCER'));
+
+                            const statusLabel = isCancelado
+                                ? 'Cancelado'
+                                : (saldoPendente <= 0.01 ? 'Pago' : (isVencido ? 'Vencido' : 'A Vencer'));
 
                             return {
                                 id: `${cp.cdConta}_${cp.cdContaParcela}`,
@@ -8138,7 +8185,7 @@ export class ExternalDbService {
                                 dtCompetencia: cp.dtCompetencia,
                                 dtBaixa: cp.dtBaixa,
                                 vlParcela: vlParcela,
-                                vlPago: Number(cp.vlPago || 0),
+                                vlPago: vlPagoEfetivo,
                                 saldoPendente: saldoPendente,
                                 vlMulta: Number(cp.vlMulta || 0),
                                 vlMora: Number(cp.vlMora || 0),
@@ -8156,6 +8203,133 @@ export class ExternalDbService {
                                 nomeFilial: String(cp.nomeFilial || `Filial ${cp.filial}`).trim()
                             };
                         });
+
+                        // Reconciliar sumários e agrupamentos com os saldos recalculados por permuta
+                        if (contasPagar.lancamentos && contasPagar.lancamentos.length > 0) {
+                            let totAPagar = 0;
+                            let totVencido = 0;
+                            let totAVencer = 0;
+                            let totEmitido = 0;
+                            let totPago = 0;
+                            let totPermuta = 0;
+                            let qtdVenc = 0;
+                            let qtdAVenc = 0;
+                            let qtdPerm = 0;
+
+                            const filiaisMap: Record<string, any> = {};
+                            const fornecedoresMap: Record<string, any> = {};
+
+                            contasPagar.lancamentos.forEach((item: any) => {
+                                const parcela = Number(item.vlParcela || 0);
+                                const pago = Number(item.vlPago || 0);
+                                const saldo = Number(item.saldoPendente || 0);
+                                const permutado = Number(item.vlPermutado || 0);
+                                const isPerm = Boolean(item.isPermuta);
+                                const isCanc = Boolean(item.isCancelado);
+                                const isVenc = Boolean(item.isVencido);
+
+                                totEmitido += parcela;
+                                totPago += pago;
+                                if (isPerm || permutado > 0) {
+                                    totPermuta += permutado;
+                                    qtdPerm += 1;
+                                }
+
+                                if (!isCanc) {
+                                    totAPagar += saldo;
+                                    if (saldo > 0.01) {
+                                        if (isVenc) {
+                                            totVencido += saldo;
+                                            qtdVenc += 1;
+                                        } else {
+                                            totAVencer += saldo;
+                                            qtdAVenc += 1;
+                                        }
+                                    }
+                                }
+
+                                const fKey = String(item.filial || 1);
+                                if (!filiaisMap[fKey]) {
+                                    filiaisMap[fKey] = {
+                                        filial: Number(item.filial || 1),
+                                        nomeFilial: String(item.nomeFilial || `Filial ${item.filial}`).trim(),
+                                        qtdTitulos: 0,
+                                        qtdVencidos: 0,
+                                        qtdAVencer: 0,
+                                        totalAPagar: 0,
+                                        totalVencido: 0,
+                                        totalAVencer: 0,
+                                        totalPermuta: 0,
+                                        qtdPermuta: 0,
+                                        totalEmitido: 0,
+                                        totalPago: 0
+                                    };
+                                }
+                                filiaisMap[fKey].qtdTitulos += 1;
+                                filiaisMap[fKey].totalEmitido += parcela;
+                                filiaisMap[fKey].totalPago += pago;
+                                if (isPerm || permutado > 0) {
+                                    filiaisMap[fKey].totalPermuta += permutado;
+                                    filiaisMap[fKey].qtdPermuta += 1;
+                                }
+                                if (!isCanc) {
+                                    filiaisMap[fKey].totalAPagar += saldo;
+                                    if (saldo > 0.01) {
+                                        if (isVenc) {
+                                            filiaisMap[fKey].totalVencido += saldo;
+                                            filiaisMap[fKey].qtdVencidos += 1;
+                                        } else {
+                                            filiaisMap[fKey].totalAVencer += saldo;
+                                            filiaisMap[fKey].qtdAVencer += 1;
+                                        }
+                                    }
+                                }
+
+                                const fForn = String(item.cdPessoaComercial || item.fornecedor || 'Fornecedor');
+                                if (!fornecedoresMap[fForn]) {
+                                    fornecedoresMap[fForn] = {
+                                        cdPessoaComercial: String(item.cdPessoaComercial || ''),
+                                        fornecedor: String(item.fornecedor || 'Fornecedor').trim(),
+                                        qtdTitulos: 0,
+                                        totalEmitido: 0,
+                                        totalPago: 0,
+                                        totalAPagar: 0,
+                                        percentual: 0
+                                    };
+                                }
+                                fornecedoresMap[fForn].qtdTitulos += 1;
+                                fornecedoresMap[fForn].totalEmitido += parcela;
+                                fornecedoresMap[fForn].totalPago += pago;
+                                if (!isCanc) {
+                                    fornecedoresMap[fForn].totalAPagar += saldo;
+                                }
+                            });
+
+                            const qtdTit = contasPagar.lancamentos.length;
+                            contasPagar.summary = {
+                                totalAPagar: totAPagar,
+                                totalPagar: totAPagar,
+                                totalEmitido: totEmitido,
+                                totalPago: totPago,
+                                totalVencido: totVencido,
+                                totalAVencer: totAVencer,
+                                totalPermuta: totPermuta,
+                                qtdPermuta: qtdPerm,
+                                qtdTitulos: qtdTit,
+                                qtdVencidos: qtdVenc,
+                                qtdAVencer: qtdAVenc,
+                                qtdFornecedores: Object.keys(fornecedoresMap).length,
+                                ticketMedio: qtdTit > 0 ? totAPagar / qtdTit : 0
+                            };
+
+                            contasPagar.byFilial = Object.values(filiaisMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar);
+
+                            const topFornList = Object.values(fornecedoresMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar).slice(0, 10);
+                            topFornList.forEach((t: any) => {
+                                t.percentual = totAPagar > 0 ? Number(((t.totalAPagar / totAPagar) * 100).toFixed(1)) : 0;
+                            });
+                            contasPagar.topFornecedores = topFornList;
+                        }
                     } catch (pagarErr: any) {
                         console.warn('Falha ao consultar contas a pagar no Solidcon:', pagarErr?.message || pagarErr);
                     }

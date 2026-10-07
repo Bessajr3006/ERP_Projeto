@@ -1159,16 +1159,18 @@
                 // cancelado não soma em vencido/a vencer/permuta
             }
             else {
-                if (item.isVencido) {
-                    group.totalVencido += saldo;
-                    group.qtdVencidos += 1;
+                if (saldo > 0.01) {
+                    if (item.isVencido) {
+                        group.totalVencido += saldo;
+                        group.qtdVencidos += 1;
+                    }
+                    else {
+                        group.totalAVencer += saldo;
+                        group.qtdAVencer += 1;
+                    }
                 }
-                else {
-                    group.totalAVencer += saldo;
-                    group.qtdAVencer += 1;
-                }
-                if (item.isPermuta) {
-                    group.totalPermuta += saldo;
+                if (isPermuta || vlPermutado > 0) {
+                    group.totalPermuta += vlPermutado;
                     group.qtdPermuta += 1;
                 }
             }
@@ -1232,6 +1234,8 @@
                 const isCancelado = Boolean(item.isCancelado);
                 const isVencido = Boolean(item.isVencido);
                 const isPermuta = Boolean(item.isPermuta);
+                const saldoPendente = Number(item.saldoPendente || 0);
+                const isPago = item.status === 'PAGO' || saldoPendente <= 0.01;
                 const vlPermutado = Number(item.vlPermutado !== undefined ? item.vlPermutado : (isPermuta ? item.vlParcela : 0));
                 let statusBadgeHtml = '';
                 if (isCancelado) {
@@ -1242,12 +1246,20 @@
                         </span>
                     `;
                 }
+                else if (isPago) {
+                    statusBadgeHtml = `
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            ${isPermuta ? 'Pago (Permuta)' : 'Pago'}
+                        </span>
+                    `;
+                }
                 else if (isVencido) {
                     statusBadgeHtml = `
                         <div class="inline-flex flex-col items-center">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                Ativo
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                Aberto
                             </span>
                             <span class="text-[10px] font-bold text-red-600 dark:text-red-400 mt-0.5 whitespace-nowrap">
                                 Vencido (${item.diasAtraso || 0}d)
@@ -1258,9 +1270,9 @@
                 else {
                     statusBadgeHtml = `
                         <div class="inline-flex flex-col items-center">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                Ativo
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                Aberto
                             </span>
                             <span class="text-[10px] font-semibold text-amber-600 dark:text-amber-400 mt-0.5 whitespace-nowrap">
                                 A Vencer
@@ -1269,14 +1281,14 @@
                     `;
                 }
                 const permutaBadgeHtml = isPermuta
-                    ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60" title="Conta aberta por Permuta">🔄 Permuta</span>`
+                    ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60" title="Conta com Permuta">🔄 Permuta</span>`
                     : '';
                 html += `
-                    <tr class="hover:bg-rose-50/30 dark:hover:bg-slate-800/50 transition-colors ${isCancelado ? 'opacity-60 bg-zinc-50/40 dark:bg-zinc-950/30' : ''}">
+                    <tr class="hover:bg-rose-50/30 dark:hover:bg-slate-800/50 transition-colors ${isCancelado ? 'opacity-60 bg-zinc-50/40 dark:bg-zinc-950/30' : (isPago ? 'bg-emerald-50/20 dark:bg-emerald-950/10' : '')}">
                         <td class="py-2.5 px-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
                             ${formatDateBR(item.dtEmissao)}
                         </td>
-                        <td class="py-2.5 px-3 font-medium ${isVencido && !isCancelado ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
+                        <td class="py-2.5 px-3 font-medium ${isVencido && !isCancelado && !isPago ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
                             ${formatDateBR(item.dtVencimento)}
                         </td>
                         <td class="py-2.5 px-3 text-center whitespace-nowrap">
@@ -1309,7 +1321,7 @@
                         <td class="py-2.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             ${formatMoney(item.vlPago)}
                         </td>
-                        <td class="py-2.5 px-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                        <td class="py-2.5 px-3 text-right font-mono font-bold ${saldoPendente <= 0.01 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} whitespace-nowrap">
                             ${formatMoney(item.saldoPendente)}
                         </td>
                         <td class="py-2.5 px-3 text-center whitespace-nowrap">
@@ -1368,11 +1380,15 @@
         const dtFim = getEl('modalContasPagarDtFim')?.value || '';
         const tipoData = getEl('modalContasPagarTipoData')?.value || 'vencimento';
         const filtered = rawContasPagarLancamentos.filter((item) => {
-            if (selectedStatus === 'ativos' && item.isCancelado)
+            const saldo = Number(item.saldoPendente || 0);
+            const isPago = item.status === 'PAGO' || saldo <= 0.01;
+            if (selectedStatus === 'ativos' && (item.isCancelado || isPago))
                 return false;
-            if (selectedStatus === 'vencidos' && (item.isCancelado || !item.isVencido))
+            if (selectedStatus === 'pagos' && (item.isCancelado || !isPago))
                 return false;
-            if (selectedStatus === 'a_vencer' && (item.isCancelado || item.isVencido))
+            if (selectedStatus === 'vencidos' && (item.isCancelado || isPago || !item.isVencido))
+                return false;
+            if (selectedStatus === 'a_vencer' && (item.isCancelado || isPago || item.isVencido))
                 return false;
             if (selectedStatus === 'permutas' && (!item.isPermuta || item.isCancelado))
                 return false;
@@ -1402,12 +1418,15 @@
             if (r.isCancelado)
                 return; // cancelados não somam no saldo a pagar
             const val = Number(r.saldoPendente || 0);
-            if (r.isVencido)
-                sumVencido += val;
-            else
-                sumAVencer += val;
-            if (r.isPermuta)
-                sumPermuta += val;
+            const vlPerm = Number(r.vlPermutado !== undefined ? r.vlPermutado : (r.isPermuta ? r.vlParcela : 0));
+            if (r.isPermuta || vlPerm > 0)
+                sumPermuta += vlPerm;
+            if (val > 0.01) {
+                if (r.isVencido)
+                    sumVencido += val;
+                else
+                    sumAVencer += val;
+            }
         });
         const sumPagar = sumVencido + sumAVencer;
         if (getEl('modalContasPagarSummaryPagar')) {
@@ -1494,28 +1513,38 @@
         const isCancelado = Boolean(item.isCancelado);
         const isVencido = Boolean(item.isVencido);
         const isPermuta = Boolean(item.isPermuta);
-        // Status Badge (Ativo vs Cancelado)
+        const saldoPendente = Number(item.saldoPendente || 0);
+        const isPago = item.status === 'PAGO' || saldoPendente <= 0.01;
+        // Status Badge (Ativo vs Pago vs Cancelado)
         const statusBadge = getEl('histModalStatusBadge');
         if (statusBadge) {
             if (isCancelado) {
                 statusBadge.textContent = 'Cancelado';
                 statusBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700';
             }
-            else {
-                statusBadge.textContent = 'Ativo';
+            else if (isPago) {
+                statusBadge.textContent = isPermuta ? 'Pago (Permuta)' : 'Pago';
                 statusBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+            }
+            else {
+                statusBadge.textContent = 'Em Aberto';
+                statusBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800';
             }
         }
         // Filial Badge
         if (getEl('histModalFilialBadge')) {
             getEl('histModalFilialBadge').textContent = item.nomeFilial || `Filial ${item.filial}`;
         }
-        // Situação Badge (Vencido vs A Vencer vs Cancelado)
+        // Situação Badge (Vencido vs A Vencer vs Quitado vs Cancelado)
         const situacaoBadge = getEl('histModalSituacaoBadge');
         if (situacaoBadge) {
             if (isCancelado) {
                 situacaoBadge.textContent = 'Título Cancelado';
                 situacaoBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700';
+            }
+            else if (isPago) {
+                situacaoBadge.textContent = isPermuta ? 'Quitado por Permuta' : 'Quitado / Pago';
+                situacaoBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60';
             }
             else if (isVencido) {
                 situacaoBadge.textContent = `Vencido há ${item.diasAtraso || 0} dias`;
@@ -1626,11 +1655,15 @@
         const rows = rawContasPagarLancamentos.map((item) => {
             const isPermuta = Boolean(item.isPermuta);
             const vlPerm = Number(item.vlPermutado !== undefined ? item.vlPermutado : (isPermuta ? item.vlParcela : 0));
+            const saldo = Number(item.saldoPendente || 0);
+            const isPago = item.status === 'PAGO' || saldo <= 0.01;
+            const situacaoStr = item.isCancelado ? 'Cancelado' : (isPago ? 'Pago' : 'Em Aberto');
+            const statusStr = item.isCancelado ? 'Cancelado' : (isPago ? (isPermuta ? 'Pago (Permuta)' : 'Pago') : (item.isVencido ? 'Vencido' : 'A Vencer'));
             return [
                 formatDateBR(item.dtEmissao),
                 formatDateBR(item.dtVencimento),
-                item.isCancelado ? '"Cancelado"' : '"Ativo"',
-                item.isCancelado ? '"Cancelado"' : (item.isVencido ? '"Vencido"' : '"A Vencer"'),
+                `"${situacaoStr}"`,
+                `"${statusStr}"`,
                 isPermuta ? '"Permuta"' : '"Comum"',
                 item.diasAtraso || 0,
                 `"${(item.numeroDocumento || `#${item.cdConta}`).replace(/"/g, '""')}"`,
@@ -1642,7 +1675,7 @@
                 Number(item.vlParcela || 0).toFixed(2).replace('.', ','),
                 vlPerm.toFixed(2).replace('.', ','),
                 Number(item.vlPago || 0).toFixed(2).replace('.', ','),
-                Number(item.saldoPendente || 0).toFixed(2).replace('.', ',')
+                saldo.toFixed(2).replace('.', ',')
             ];
         });
         const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');

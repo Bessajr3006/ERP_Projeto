@@ -1432,24 +1432,28 @@
             });
 
             html += `
-                <tr class="bg-linear-to-r from-gray-200 via-rose-100/70 to-gray-200 dark:from-slate-950 dark:via-rose-950/50 dark:to-slate-950 font-black border-t-2 border-b-2 border-rose-400 dark:border-rose-700 text-xs text-gray-900 dark:text-white sticky bottom-0 z-10 shadow-lg">
+                <tr class="bg-linear-to-r from-gray-100 via-rose-50 to-gray-100 dark:from-slate-900 dark:via-rose-950/40 dark:to-slate-900 font-bold border-t-2 border-b-2 border-rose-300 dark:border-rose-800 text-xs text-gray-900 dark:text-white sticky bottom-0 z-10 shadow-md">
                     <td colspan="8" class="py-3 px-4 text-right">
-                        <div class="inline-flex items-center gap-1.5 uppercase tracking-wider text-rose-900 dark:text-rose-200 font-extrabold">
+                        <div class="inline-flex items-center gap-1.5 uppercase tracking-wider text-gray-800 dark:text-gray-200 font-extrabold">
                             <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                            <span>TOTAL GERAL A PAGAR (${gTitulos} ${gTitulos === 1 ? 'título' : 'títulos'}):</span>
+                            <span>Totais Consolidados (${gTitulos} títulos listados):</span>
                         </div>
                     </td>
-                    <td class="py-3 px-3 text-right font-mono font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        ${formatMoney(gParcela)}
+                    <td class="py-3 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap" title="Total Nominal Emitido das Parcelas">
+                        <div class="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-400 font-sans">Emitido</div>
+                        <div>${formatMoney(gParcela)}</div>
                     </td>
-                    <td class="py-3 px-3 text-right font-mono font-bold text-purple-800 dark:text-purple-300 whitespace-nowrap">
-                        ${gPermutado > 0 ? formatMoney(gPermutado) : '-'}
+                    <td class="py-3 px-3 text-right font-mono font-bold text-purple-800 dark:text-purple-300 whitespace-nowrap" title="Total Quitado por Permuta">
+                        <div class="text-[10px] uppercase font-semibold text-purple-500/80 font-sans">Permutado</div>
+                        <div>${gPermutado > 0 ? formatMoney(gPermutado) : '-'}</div>
                     </td>
-                    <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-                        ${formatMoney(gPago)}
+                    <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap" title="Total Pago/Baixado">
+                        <div class="text-[10px] uppercase font-semibold text-emerald-600/80 font-sans">Pago</div>
+                        <div>${formatMoney(gPago)}</div>
                     </td>
-                    <td class="py-3 px-3 text-right font-mono font-black text-rose-700 dark:text-rose-300 whitespace-nowrap text-sm">
-                        ${formatMoney(gSaldo)}
+                    <td class="py-3 px-3 text-right font-mono font-black text-rose-700 dark:text-rose-300 whitespace-nowrap bg-rose-100/60 dark:bg-rose-950/60 rounded-lg" title="Saldo Líquido em Aberto a Pagar">
+                        <div class="text-[10px] uppercase font-black text-rose-700 dark:text-rose-300 font-sans">Saldo a Pagar</div>
+                        <div class="text-sm font-black">${formatMoney(gSaldo)}</div>
                     </td>
                     <td class="py-3 px-3"></td>
                 </tr>

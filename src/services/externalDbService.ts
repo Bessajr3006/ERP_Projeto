@@ -7882,7 +7882,7 @@ export class ExternalDbService {
                             tipoData: tipoDataContasPagar
                         };
 
-                        // Resumo Geral Contas a Pagar
+                        // Resumo Geral Contas a Pagar (Incluindo Permutas e Todas as Contas em Aberto)
                         const resPagarSummary = await reqPagar.query(`
                             SELECT 
                                 COUNT(*) as qtd_titulos,
@@ -7893,11 +7893,13 @@ export class ExternalDbService {
                                 SUM(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_vencido,
                                 SUM(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_a_vencer,
                                 COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 END) as qtd_vencidos,
-                                COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer
+                                COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer,
+                                SUM(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_permuta,
+                                COUNT(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN 1 END) as qtd_permuta
                             FROM tbContaParcela cp WITH (NOLOCK)
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
-                            WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                            WHERE (ISNULL(cb.inRecebimento, 0) = 0)
                               AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
@@ -7917,6 +7919,8 @@ export class ExternalDbService {
                             totalPago: Number(pagarRow.total_pago || 0),
                             totalVencido: totVencidoPagar,
                             totalAVencer: totAVencerPagar,
+                            totalPermuta: Number(pagarRow.total_permuta || 0),
+                            qtdPermuta: Number(pagarRow.qtd_permuta || 0),
                             qtdTitulos: qtdTotPagar,
                             qtdVencidos: qtdVencPagar,
                             qtdAVencer: qtdAVencPagar,
@@ -7937,7 +7941,7 @@ export class ExternalDbService {
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                             LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
-                            WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                            WHERE (ISNULL(cb.inRecebimento, 0) = 0)
                               AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
@@ -7970,12 +7974,14 @@ export class ExternalDbService {
                                 SUM(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_vencido,
                                 SUM(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_a_vencer,
                                 COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 END) as qtd_vencidos,
-                                COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer
+                                COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer,
+                                SUM(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_permuta,
+                                COUNT(CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN 1 END) as qtd_permuta
                             FROM tbContaParcela cp WITH (NOLOCK)
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                             LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
-                            WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                            WHERE (ISNULL(cb.inRecebimento, 0) = 0)
                               AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                               ${dateFilterClausePagar}
                               ${filialClausePagar}
@@ -7998,6 +8004,8 @@ export class ExternalDbService {
                                 totalAPagar: totPagar,
                                 totalVencido: totVenc,
                                 totalAVencer: totAVenc,
+                                totalPermuta: Number(f.total_permuta || 0),
+                                qtdPermuta: Number(f.qtd_permuta || 0),
                                 totalEmitido: Number(f.total_emitido || 0),
                                 totalPago: Number(f.total_pago || 0)
                             };
@@ -8011,6 +8019,8 @@ export class ExternalDbService {
                                     cp.cdConta,
                                     cp.cdContaParcela,
                                     c.cdPessoaComercial,
+                                    c.cdContaTipo,
+                                    c.cdPagamentoTipo,
                                     COALESCE(NULLIF(RTRIM(LTRIM(pj.RazaoSocial)), ''), NULLIF(RTRIM(LTRIM(pf.nmCompleto)), ''), NULLIF(RTRIM(LTRIM(p.nmPessoa)), ''), 'Fornecedor não identificado') as fornecedor,
                                     COALESCE(
                                         CASE WHEN pj.cdPessoaJuridica IS NOT NULL THEN CONCAT(pj.CNPJEmpresa, pj.CNPJFilial, pj.CNPJDV) END,
@@ -8030,6 +8040,7 @@ export class ExternalDbService {
                                     CAST(ISNULL(cp.vlDesconto, 0) AS FLOAT) as vlDesconto,
                                     CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
                                     CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cp.dtParcela, GETDATE()) ELSE 0 END as diasAtraso,
+                                    CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN 1 ELSE 0 END as isPermuta,
                                     ISNULL(cp.Historico, '') as historico,
                                     ISNULL(cb.Historico, '') as historicoBaixa,
                                     cp.cdContaBaixa,
@@ -8045,7 +8056,7 @@ export class ExternalDbService {
                                 LEFT JOIN tbPessoaJuridica pj WITH (NOLOCK) ON pj.cdPessoaJuridica = p.cdPessoa
                                 LEFT JOIN tbPessoaFisica pf WITH (NOLOCK) ON pf.cdPessoaFisica = p.cdPessoa
                                 LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
-                                WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                                WHERE (ISNULL(cb.inRecebimento, 0) = 0)
                                   AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                                   ${dateFilterClausePagar}
                                   ${filialClausePagar}
@@ -8058,6 +8069,8 @@ export class ExternalDbService {
                                     cp.cdConta,
                                     cp.cdContaParcela,
                                     c.cdPessoaComercial,
+                                    c.cdContaTipo,
+                                    c.cdPagamentoTipo,
                                     ISNULL(NULLIF(RTRIM(LTRIM(p.nmPessoa)), ''), 'Fornecedor não identificado') as fornecedor,
                                     '' as documentoPessoa,
                                     c.Documento as numeroDocumento,
@@ -8073,6 +8086,7 @@ export class ExternalDbService {
                                     CAST(ISNULL(cp.vlDesconto, 0) AS FLOAT) as vlDesconto,
                                     CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END as isVencido,
                                     CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN DATEDIFF(day, cp.dtParcela, GETDATE()) ELSE 0 END as diasAtraso,
+                                    CASE WHEN (UPPER(ISNULL(cp.Historico, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(c.Documento, '')) LIKE '%PERMUT%' OR UPPER(ISNULL(cb.Historico, '')) LIKE '%PERMUT%') THEN 1 ELSE 0 END as isPermuta,
                                     ISNULL(cp.Historico, '') as historico,
                                     ISNULL(cb.Historico, '') as historicoBaixa,
                                     cp.cdContaBaixa,
@@ -8085,7 +8099,7 @@ export class ExternalDbService {
                                 LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
                                 LEFT JOIN tbPessoa p WITH (NOLOCK) ON p.cdPessoa = c.cdPessoaComercial
                                 LEFT JOIN tbPessoa fil WITH (NOLOCK) ON fil.cdPessoa = c.cdPessoaFilialConta
-                                WHERE (c.cdContaTipo = 4 OR c.cdContaTipo IS NULL OR cb.inRecebimento = 0)
+                                WHERE (ISNULL(cb.inRecebimento, 0) = 0)
                                   AND (cp.cdContaBaixa IS NULL OR (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) > 0.01)
                                   ${dateFilterClausePagar}
                                   ${filialClausePagar}
@@ -8096,6 +8110,10 @@ export class ExternalDbService {
                         contasPagar.lancamentos = (resPagarList?.recordset || []).map((cp: any) => {
                             const isCancelado = Number(cp.inCancelado || 0) === 1;
                             const isVencido = Boolean(cp.isVencido);
+                            const isPermuta = Boolean(cp.isPermuta) || 
+                                (String(cp.historico || '').toUpperCase().includes('PERMUT')) ||
+                                (String(cp.numeroDocumento || '').toUpperCase().includes('PERMUT')) ||
+                                (String(cp.historicoBaixa || '').toUpperCase().includes('PERMUT'));
                             const saldoPendente = Number(cp.saldoPendente || 0);
                             const status = isCancelado ? 'CANCELADO' : (saldoPendente <= 0.01 ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A_VENCER'));
                             const statusLabel = isCancelado ? 'Cancelado' : (saldoPendente <= 0.01 ? 'Pago' : (isVencido ? 'Vencido' : 'A Vencer'));
@@ -8105,6 +8123,9 @@ export class ExternalDbService {
                                 cdConta: Number(cp.cdConta || 0),
                                 cdContaParcela: Number(cp.cdContaParcela || 1),
                                 cdPessoaComercial: String(cp.cdPessoaComercial || ''),
+                                cdContaTipo: cp.cdContaTipo !== undefined ? Number(cp.cdContaTipo) : null,
+                                cdPagamentoTipo: cp.cdPagamentoTipo !== undefined ? Number(cp.cdPagamentoTipo) : null,
+                                isPermuta: isPermuta,
                                 fornecedor: String(cp.fornecedor || 'Fornecedor').trim(),
                                 documentoPessoa: String(cp.documentoPessoa || '').trim(),
                                 numeroDocumento: String(cp.numeroDocumento || '').trim(),
@@ -8715,6 +8736,8 @@ export class ExternalDbService {
         let cpSumPagar = 0;
         let cpSumAVencer = 0;
         let cpSumVencido = 0;
+        let cpSumPermuta = 0;
+        let cpQtdPermuta = 0;
         let cpQtdTitulos = 0;
         let cpSumEmitido = 0;
         let cpSumPago = 0;
@@ -8731,6 +8754,8 @@ export class ExternalDbService {
                 cpSumPagar += sPag;
                 cpSumAVencer += sAVenc;
                 cpSumVencido += sVenc;
+                cpSumPermuta += Number(cp.summary.totalPermuta || 0);
+                cpQtdPermuta += Number(cp.summary.qtdPermuta || 0);
                 cpSumEmitido += Number(cp.summary.totalEmitido || 0);
                 cpSumPago += Number(cp.summary.totalPago || 0);
                 const qVenc = Number(cp.summary.qtdVencidos || 0);
@@ -8751,11 +8776,13 @@ export class ExternalDbService {
             (cp?.byFilial || []).forEach((f: any) => {
                 const k = String(f.filial || f.nomeFilial || 'Outros');
                 if (!cpFiliaisMap[k]) {
-                    cpFiliaisMap[k] = { ...f, totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0 };
+                    cpFiliaisMap[k] = { ...f, totalAPagar: 0, totalVencido: 0, totalAVencer: 0, totalPermuta: 0, qtdPermuta: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0 };
                 }
                 cpFiliaisMap[k].totalAPagar += Number(f.totalAPagar || 0);
                 cpFiliaisMap[k].totalVencido += Number(f.totalVencido || 0);
                 cpFiliaisMap[k].totalAVencer += Number(f.totalAVencer || 0);
+                cpFiliaisMap[k].totalPermuta += Number(f.totalPermuta || 0);
+                cpFiliaisMap[k].qtdPermuta += Number(f.qtdPermuta || 0);
                 cpFiliaisMap[k].qtdTitulos += Number(f.qtdTitulos || 0);
                 cpFiliaisMap[k].qtdVencidos += Number(f.qtdVencidos || 0);
                 cpFiliaisMap[k].qtdAVencer += Number(f.qtdAVencer || 0);
@@ -8780,6 +8807,8 @@ export class ExternalDbService {
                 totalPago: cpSumPago,
                 totalAVencer: cpSumAVencer,
                 totalVencido: cpSumVencido,
+                totalPermuta: cpSumPermuta,
+                qtdPermuta: cpQtdPermuta,
                 qtdTitulos: cpQtdTitulos,
                 qtdVencidos: results.reduce((acc, r) => acc + Number(r.contasPagar?.summary?.qtdVencidos || 0), 0),
                 qtdAVencer: results.reduce((acc, r) => acc + Number(r.contasPagar?.summary?.qtdAVencer || 0), 0),

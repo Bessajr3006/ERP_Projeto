@@ -853,6 +853,10 @@
                 getEl('cardContasPagarTotalAVencer').textContent = 'R$ 0,00';
             if (getEl('cardContasPagarQtdAVencer'))
                 getEl('cardContasPagarQtdAVencer').textContent = 'Defina o período e filtre';
+            if (getEl('cardContasPagarTotalPermuta'))
+                getEl('cardContasPagarTotalPermuta').textContent = 'R$ 0,00';
+            if (getEl('cardContasPagarQtdPermuta'))
+                getEl('cardContasPagarQtdPermuta').textContent = 'Defina o período e filtre';
             if (getEl('badgeContasPagarStatus'))
                 getEl('badgeContasPagarStatus').textContent = 'Aguardando Filtro';
             if (getEl('badgeCardContasPagarCount'))
@@ -879,6 +883,8 @@
         const qtdTitulos = (qtdVencidos + qtdAVencer > 0)
             ? (qtdVencidos + qtdAVencer)
             : Number(summary.qtdTitulos || 0);
+        const totalPermuta = Number(summary.totalPermuta || 0);
+        const qtdPermuta = Number(summary.qtdPermuta || 0);
         if (getEl('cardContasPagarTotalPagar')) {
             getEl('cardContasPagarTotalPagar').textContent = formatMoney(totalAPagar);
         }
@@ -893,6 +899,12 @@
         }
         if (getEl('cardContasPagarQtdAVencer')) {
             getEl('cardContasPagarQtdAVencer').textContent = `${qtdAVencer.toLocaleString('pt-BR')} títulos a vencer`;
+        }
+        if (getEl('cardContasPagarTotalPermuta')) {
+            getEl('cardContasPagarTotalPermuta').textContent = formatMoney(totalPermuta);
+        }
+        if (getEl('cardContasPagarQtdPermuta')) {
+            getEl('cardContasPagarQtdPermuta').textContent = `${qtdPermuta.toLocaleString('pt-BR')} ${qtdPermuta === 1 ? 'título de permuta' : 'títulos de permuta'}`;
         }
         if (getEl('badgeContasPagarStatus')) {
             getEl('badgeContasPagarStatus').textContent = `${qtdTitulos.toLocaleString('pt-BR')} Títulos a Pagar`;
@@ -1084,7 +1096,7 @@
         if (!currentContasPagarData || !currentContasPagarData.loaded) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="12" class="py-12 text-center text-gray-500 dark:text-gray-400">
                         <div class="flex flex-col items-center justify-center gap-2">
                             <svg class="w-8 h-8 text-rose-400 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             <span class="font-medium text-gray-700 dark:text-gray-200">Contas a Pagar não consultadas</span>
@@ -1098,7 +1110,7 @@
         if (!list || list.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="12" class="py-12 text-center text-gray-500 dark:text-gray-400">
                         <div class="flex flex-col items-center justify-center gap-2">
                             <svg class="w-8 h-8 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             <span class="font-medium">Nenhum título a pagar encontrado para os filtros selecionados.</span>
@@ -1125,8 +1137,10 @@
                     saldoPendente: 0,
                     totalVencido: 0,
                     totalAVencer: 0,
+                    totalPermuta: 0,
                     qtdVencidos: 0,
-                    qtdAVencer: 0
+                    qtdAVencer: 0,
+                    qtdPermuta: 0
                 });
             }
             const group = groupsMap.get(key);
@@ -1137,13 +1151,22 @@
             group.totalParcela += parcela;
             group.totalPago += pago;
             group.saldoPendente += saldo;
-            if (item.isVencido) {
-                group.totalVencido += saldo;
-                group.qtdVencidos += 1;
+            if (item.isCancelado) {
+                // cancelado não soma em vencido/a vencer/permuta
             }
             else {
-                group.totalAVencer += saldo;
-                group.qtdAVencer += 1;
+                if (item.isVencido) {
+                    group.totalVencido += saldo;
+                    group.qtdVencidos += 1;
+                }
+                else {
+                    group.totalAVencer += saldo;
+                    group.qtdAVencer += 1;
+                }
+                if (item.isPermuta) {
+                    group.totalPermuta += saldo;
+                    group.qtdPermuta += 1;
+                }
             }
         });
         // Sort groups by filial ID or name
@@ -1186,6 +1209,11 @@
                                 <span class="text-gray-600 dark:text-gray-300">
                                     A Vencer: <strong class="text-amber-600 dark:text-amber-400 font-bold">${formatMoney(group.totalAVencer)}</strong> <span class="text-[10px] font-medium text-gray-500">(${group.qtdAVencer})</span>
                                 </span>
+                                ${group.qtdPermuta > 0 ? `
+                                <span class="text-gray-300 dark:text-gray-700">|</span>
+                                <span class="text-purple-700 dark:text-purple-300 font-semibold">
+                                    Permutas: <strong class="font-bold">${formatMoney(group.totalPermuta)}</strong> <span class="text-[10px] font-medium opacity-80">(${group.qtdPermuta})</span>
+                                </span>` : ''}
                                 <span class="text-gray-300 dark:text-gray-700">|</span>
                                 <span class="text-gray-700 dark:text-gray-200 font-semibold">
                                     Total Filial: <strong class="text-rose-700 dark:text-rose-300 font-black text-sm">${formatMoney(group.saldoPendente)}</strong>
@@ -1199,6 +1227,7 @@
             group.items.forEach((item) => {
                 const isCancelado = Boolean(item.isCancelado);
                 const isVencido = Boolean(item.isVencido);
+                const isPermuta = Boolean(item.isPermuta);
                 let statusBadgeHtml = '';
                 if (isCancelado) {
                     statusBadgeHtml = `
@@ -1234,6 +1263,9 @@
                         </div>
                     `;
                 }
+                const permutaBadgeHtml = isPermuta
+                    ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60" title="Conta aberta por Permuta">🔄 Permuta</span>`
+                    : '';
                 html += `
                     <tr class="hover:bg-rose-50/30 dark:hover:bg-slate-800/50 transition-colors ${isCancelado ? 'opacity-60 bg-zinc-50/40 dark:bg-zinc-950/30' : ''}">
                         <td class="py-2.5 px-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
@@ -1246,7 +1278,10 @@
                             ${statusBadgeHtml}
                         </td>
                         <td class="py-2.5 px-3 font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs font-semibold" title="Conta #${item.cdConta}">
-                            ${escapeHtml(item.numeroDocumento || `#${item.cdConta}`)}
+                            <div class="inline-flex items-center gap-1.5">
+                                <span>${escapeHtml(item.numeroDocumento || `#${item.cdConta}`)}</span>
+                                ${permutaBadgeHtml}
+                            </div>
                         </td>
                         <td class="py-2.5 px-2 text-center font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
                             ${item.cdContaParcela || 1}
@@ -1328,6 +1363,10 @@
                 return false;
             if (selectedStatus === 'a_vencer' && (item.isCancelado || item.isVencido))
                 return false;
+            if (selectedStatus === 'permutas' && (!item.isPermuta || item.isCancelado))
+                return false;
+            if (selectedStatus === 'sem_permutas' && (item.isPermuta || item.isCancelado))
+                return false;
             if (selectedStatus === 'cancelados' && !item.isCancelado)
                 return false;
             if (selectedFilial && String(item.filial) !== selectedFilial)
@@ -1347,6 +1386,7 @@
         // Update Ribbon Summary
         let sumVencido = 0;
         let sumAVencer = 0;
+        let sumPermuta = 0;
         filtered.forEach((r) => {
             if (r.isCancelado)
                 return; // cancelados não somam no saldo a pagar
@@ -1355,6 +1395,8 @@
                 sumVencido += val;
             else
                 sumAVencer += val;
+            if (r.isPermuta)
+                sumPermuta += val;
         });
         const sumPagar = sumVencido + sumAVencer;
         if (getEl('modalContasPagarSummaryPagar')) {
@@ -1365,6 +1407,9 @@
         }
         if (getEl('modalContasPagarSummaryAVencer')) {
             getEl('modalContasPagarSummaryAVencer').textContent = formatMoney(sumAVencer);
+        }
+        if (getEl('modalContasPagarSummaryPermuta')) {
+            getEl('modalContasPagarSummaryPermuta').textContent = formatMoney(sumPermuta);
         }
         if (getEl('modalContasPagarItemCount')) {
             getEl('modalContasPagarItemCount').textContent = `Exibindo ${filtered.length} de ${rawContasPagarLancamentos.length} títulos`;
@@ -1437,6 +1482,7 @@
         }
         const isCancelado = Boolean(item.isCancelado);
         const isVencido = Boolean(item.isVencido);
+        const isPermuta = Boolean(item.isPermuta);
         // Status Badge (Ativo vs Cancelado)
         const statusBadge = getEl('histModalStatusBadge');
         if (statusBadge) {
@@ -1467,6 +1513,16 @@
             else {
                 situacaoBadge.textContent = 'A Vencer (Dentro do Prazo)';
                 situacaoBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50';
+            }
+        }
+        // Permuta Badge
+        const permutaBadgeEl = getEl('histModalPermutaBadge');
+        if (permutaBadgeEl) {
+            if (isPermuta) {
+                permutaBadgeEl.classList.remove('hidden');
+            }
+            else {
+                permutaBadgeEl.classList.add('hidden');
             }
         }
         // Saldo Pendente
@@ -1552,12 +1608,13 @@
             showAlert('Não há títulos a pagar para exportar.', 'info');
             return;
         }
-        const headers = ['Emissão', 'Vencimento', 'Situação', 'Status', 'Dias de Atraso', 'Documento/NF', 'Parcela', 'Filial', 'CNPJ/CPF Fornecedor', 'Fornecedor', 'Histórico', 'Valor Parcela', 'Valor Pago', 'Saldo a Pagar'];
+        const headers = ['Emissão', 'Vencimento', 'Situação', 'Status', 'Tipo Operação', 'Dias de Atraso', 'Documento/NF', 'Parcela', 'Filial', 'CNPJ/CPF Fornecedor', 'Fornecedor', 'Histórico', 'Valor Parcela', 'Valor Pago', 'Saldo a Pagar'];
         const rows = rawContasPagarLancamentos.map((item) => [
             formatDateBR(item.dtEmissao),
             formatDateBR(item.dtVencimento),
             item.isCancelado ? '"Cancelado"' : '"Ativo"',
             item.isCancelado ? '"Cancelado"' : (item.isVencido ? '"Vencido"' : '"A Vencer"'),
+            item.isPermuta ? '"Permuta"' : '"Comum"',
             item.diasAtraso || 0,
             `"${(item.numeroDocumento || `#${item.cdConta}`).replace(/"/g, '""')}"`,
             item.cdContaParcela || 1,
@@ -1640,7 +1697,7 @@
                 throw new Error('Falha ao obter dados de contas a pagar do servidor.');
             currentContasPagarData = data.contasPagar || {
                 loaded: true,
-                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, ticketMedio: 0 },
+                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, totalPermuta: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, qtdPermuta: 0, ticketMedio: 0 },
                 topFornecedores: [],
                 byFilial: [],
                 lancamentos: []
@@ -1972,7 +2029,7 @@
             else if (!currentContasPagarData || !currentContasPagarData.loaded) {
                 currentContasPagarData = {
                     loaded: false,
-                    summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, ticketMedio: 0 },
+                    summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, totalPermuta: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, qtdPermuta: 0, ticketMedio: 0 },
                     topFornecedores: [],
                     byFilial: [],
                     lancamentos: []
@@ -2045,7 +2102,7 @@
             // Reset contas a pagar so stale data from prior company isn't shown
             currentContasPagarData = {
                 loaded: false,
-                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, ticketMedio: 0 },
+                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, totalPermuta: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, qtdPermuta: 0, ticketMedio: 0 },
                 topFornecedores: [],
                 byFilial: [],
                 lancamentos: []
@@ -2083,7 +2140,7 @@
             // Reset contas a pagar
             currentContasPagarData = {
                 loaded: false,
-                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, ticketMedio: 0 },
+                summary: { totalAPagar: 0, totalVencido: 0, totalAVencer: 0, totalPermuta: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0, qtdPermuta: 0, ticketMedio: 0 },
                 topFornecedores: [],
                 byFilial: [],
                 lancamentos: []

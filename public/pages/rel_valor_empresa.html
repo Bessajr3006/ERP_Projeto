@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Rel.Valor_Empresa</title>
-    <link href="/css/style.css?v=20261007133839" rel="stylesheet">
+    <link href="/css/style.css?v=20261007141831" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261007133839"></script>
+    <script src="/js/pwa.js?v=20261007141831"></script>
 </head>
 <body data-required-module="rel_valor_empresa" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -426,9 +426,9 @@
                 </div>
 
                 <!-- Main Highlight KPI & Secondary Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-5 items-stretch">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-5 items-stretch">
                     <!-- Highlight: Total a Pagar -->
-                    <div class="md:col-span-1 p-4 rounded-xl bg-linear-to-br from-rose-50 to-red-50 dark:from-rose-950/40 dark:to-red-950/30 border border-rose-200/80 dark:border-rose-800/40 flex flex-col justify-between">
+                    <div class="p-4 rounded-xl bg-linear-to-br from-rose-50 to-red-50 dark:from-rose-950/40 dark:to-red-950/30 border border-rose-200/80 dark:border-rose-800/40 flex flex-col justify-between">
                         <div>
                             <span class="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300">
                                 Total Geral a Pagar
@@ -469,6 +469,21 @@
                         </div>
                         <div id="cardContasPagarQtdAVencer" class="text-[11px] text-amber-600/80 dark:text-amber-400/80 mt-2 font-medium">
                             0 títulos a vencer
+                        </div>
+                    </div>
+
+                    <!-- Permutas em Aberto -->
+                    <div class="p-4 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/70 dark:border-purple-900/40 flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 flex items-center gap-1">
+                                <span>🔄 Permutas em Aberto</span>
+                            </span>
+                            <div id="cardContasPagarTotalPermuta" class="text-xl sm:text-2xl font-bold text-purple-700 dark:text-purple-300 mt-1">
+                                R$ 0,00
+                            </div>
+                        </div>
+                        <div id="cardContasPagarQtdPermuta" class="text-[11px] text-purple-700/80 dark:text-purple-300/80 mt-2 font-medium">
+                            0 títulos de permuta
                         </div>
                     </div>
                 </div>
@@ -823,10 +838,12 @@
                         <!-- Status Filter -->
                         <div>
                             <select id="modalContasPagarFilterStatus" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-slate-700 rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 transition-all">
-                                <option value="all">Todos os Status</option>
-                                <option value="ativos">Somente Ativos</option>
+                                <option value="all">Todos os Status / Tipos</option>
+                                <option value="ativos">Somente Ativos (Todos)</option>
                                 <option value="vencidos">Somente Vencidos (Ativos)</option>
                                 <option value="a_vencer">Somente a Vencer (Ativos)</option>
+                                <option value="permutas">Somente Permutas (Em Aberto)</option>
+                                <option value="sem_permutas">Sem Permutas (Comuns)</option>
                                 <option value="cancelados">Somente Cancelados</option>
                             </select>
                         </div>
@@ -895,10 +912,11 @@
 
                 <!-- Modal Mini Summary Ribbon -->
                 <div class="px-4 py-2.5 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-xs gap-3">
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
                         <span class="text-gray-500 dark:text-gray-400">Total a Pagar: <strong id="modalContasPagarSummaryPagar" class="text-rose-600 dark:text-rose-400 font-bold">R$ 0,00</strong></span>
                         <span class="text-gray-500 dark:text-gray-400">Vencidos: <strong id="modalContasPagarSummaryVencido" class="text-red-600 dark:text-red-400 font-bold">R$ 0,00</strong></span>
                         <span class="text-gray-500 dark:text-gray-400">A Vencer: <strong id="modalContasPagarSummaryAVencer" class="text-amber-600 dark:text-amber-400 font-bold">R$ 0,00</strong></span>
+                        <span class="text-gray-500 dark:text-gray-400">Permutas: <strong id="modalContasPagarSummaryPermuta" class="text-purple-600 dark:text-purple-400 font-bold">R$ 0,00</strong></span>
                     </div>
                     <div id="modalContasPagarItemCount" class="text-gray-500 dark:text-gray-400 font-medium">
                         Exibindo 0 títulos
@@ -987,6 +1005,9 @@
                             </span>
                             <span id="histModalSituacaoBadge" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
                                 A Vencer
+                            </span>
+                            <span id="histModalPermutaBadge" class="hidden inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                                🔄 Permuta
                             </span>
                         </div>
                         <div class="flex items-center gap-3">
@@ -1134,11 +1155,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261007133839"></script>
-    <script src="/js/rel_valor_empresa.js?v=20261007133839"></script>
-    <script src="/js/components/navbar.js?v=20261007133839"></script>
+    <script src="/js/api.js?v=20261007141831"></script>
+    <script src="/js/rel_valor_empresa.js?v=20261007141831"></script>
+    <script src="/js/components/navbar.js?v=20261007141831"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261007133839"></script>
+    <script src="/js/components/footer.js?v=20261007141831"></script>
 </body>
 </html>
 

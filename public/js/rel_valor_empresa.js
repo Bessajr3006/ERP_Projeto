@@ -1184,6 +1184,35 @@
         });
         let html = '';
         groups.forEach((group) => {
+            if (groups.length > 1) {
+                const pendentesFilial = group.qtdVencidos + group.qtdAVencer;
+                const pendentesText = (pendentesFilial > 0 && pendentesFilial !== group.items.length)
+                    ? `${pendentesFilial} a pagar de ${group.items.length} listados`
+                    : `${pendentesFilial > 0 ? pendentesFilial : group.items.length} ${group.saldoPendente > 0.01 ? 'títulos a pagar' : 'títulos'}`;
+                html += `
+                    <tr class="bg-gray-100/90 dark:bg-slate-800/90 border-t-2 border-b border-gray-300 dark:border-slate-700 text-xs text-gray-800 dark:text-gray-200">
+                        <td colspan="8" class="py-2 px-3 font-extrabold">
+                            <div class="inline-flex items-center gap-1.5">
+                                <span class="text-rose-600 dark:text-rose-400 font-bold">🏢 ${escapeHtml(group.nomeFilial)}</span>
+                                <span class="text-[11px] font-medium text-gray-500 dark:text-gray-400">(${pendentesText})</span>
+                            </div>
+                        </td>
+                        <td class="py-2 px-3 text-right font-mono font-bold text-gray-600 dark:text-gray-400 whitespace-nowrap text-[11px]">
+                            ${formatMoney(group.totalParcela)}
+                        </td>
+                        <td class="py-2 px-3 text-right font-mono font-bold text-purple-700 dark:text-purple-400 whitespace-nowrap text-[11px]">
+                            ${group.totalPermutado > 0 ? formatMoney(group.totalPermutado) : '-'}
+                        </td>
+                        <td class="py-2 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap text-[11px]">
+                            ${formatMoney(group.totalPago)}
+                        </td>
+                        <td class="py-2 px-3 text-right font-mono font-black text-rose-700 dark:text-rose-400 whitespace-nowrap text-[11px]">
+                            ${formatMoney(group.saldoPendente)}
+                        </td>
+                        <td class="py-2 px-3"></td>
+                    </tr>
+                `;
+            }
             // Individual Title Rows for this Filial
             group.items.forEach((item) => {
                 const isCancelado = Boolean(item.isCancelado);
@@ -1298,19 +1327,24 @@
             let gPago = 0;
             let gSaldo = 0;
             let gTitulos = 0;
+            let gTitulosPendente = 0;
             groups.forEach(g => {
                 gParcela += g.totalParcela;
                 gPermutado += g.totalPermutado;
                 gPago += g.totalPago;
                 gSaldo += g.saldoPendente;
                 gTitulos += g.items.length;
+                gTitulosPendente += (g.qtdVencidos + g.qtdAVencer);
             });
+            const titulosLabel = (gTitulosPendente > 0 && gTitulosPendente !== gTitulos)
+                ? `${gTitulosPendente} a pagar de ${gTitulos} listados`
+                : `${gTitulos} títulos ${gSaldo > 0.01 ? 'a pagar' : 'listados'}`;
             html += `
                 <tr class="bg-linear-to-r from-gray-100 via-rose-50 to-gray-100 dark:from-slate-900 dark:via-rose-950/40 dark:to-slate-900 font-bold border-t-2 border-b-2 border-rose-300 dark:border-rose-800 text-xs text-gray-900 dark:text-white sticky bottom-0 z-10 shadow-md">
                     <td colspan="8" class="py-3 px-4 text-right">
                         <div class="inline-flex items-center gap-1.5 uppercase tracking-wider text-gray-800 dark:text-gray-200 font-extrabold">
                             <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                            <span>Totais Consolidados (${gTitulos} títulos listados):</span>
+                            <span>Totais Consolidados (${titulosLabel}):</span>
                         </div>
                     </td>
                     <td class="py-3 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap" title="Total Nominal Emitido das Parcelas">
@@ -1415,8 +1449,9 @@
         if (getEl('modalContasPagarSummaryPermuta')) {
             getEl('modalContasPagarSummaryPermuta').textContent = formatMoney(sumPermuta);
         }
+        const filteredPending = filtered.filter((r) => !r.isCancelado && r.status !== 'PAGO' && Number(r.saldoPendente || 0) > 0.01).length;
         if (getEl('modalContasPagarItemCount')) {
-            getEl('modalContasPagarItemCount').textContent = `Exibindo ${filtered.length} de ${rawContasPagarLancamentos.length} títulos`;
+            getEl('modalContasPagarItemCount').textContent = `Exibindo ${filtered.length} de ${rawContasPagarLancamentos.length} títulos${filteredPending !== filtered.length ? ` (${filteredPending} a pagar)` : ''}`;
         }
         renderModalContasPagarTable(filtered);
     };

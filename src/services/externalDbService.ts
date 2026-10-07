@@ -8313,7 +8313,7 @@ export class ExternalDbService {
                                 }
                             });
 
-                            const qtdTit = contasPagar.lancamentos.length;
+                            const qtdTit = (qtdVenc + qtdAVenc > 0) ? (qtdVenc + qtdAVenc) : contasPagar.lancamentos.length;
                             contasPagar.summary = {
                                 totalAPagar: totAPagar,
                                 totalPagar: totAPagar,
@@ -8330,7 +8330,10 @@ export class ExternalDbService {
                                 ticketMedio: qtdTit > 0 ? totAPagar / qtdTit : 0
                             };
 
-                            contasPagar.byFilial = Object.values(filiaisMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar);
+                            contasPagar.byFilial = Object.values(filiaisMap).map((f: any) => ({
+                                ...f,
+                                qtdTitulos: (Number(f.qtdVencidos || 0) + Number(f.qtdAVencer || 0) > 0) ? (Number(f.qtdVencidos || 0) + Number(f.qtdAVencer || 0)) : Number(f.qtdTitulos || 0)
+                            })).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar);
 
                             const topFornList = Object.values(fornecedoresMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar).slice(0, 10);
                             topFornList.forEach((t: any) => {
@@ -9114,7 +9117,7 @@ export class ExternalDbService {
                 }
             });
 
-            const mQtdTit = cpLancamentos.length;
+            const mQtdTit = (mQtdVenc + mQtdAVenc > 0) ? (mQtdVenc + mQtdAVenc) : cpLancamentos.length;
             contasPagar.summary = {
                 totalAPagar: mTotAPagar,
                 totalPagar: mTotAPagar,
@@ -9130,7 +9133,10 @@ export class ExternalDbService {
                 qtdFornecedores: Object.keys(mFornecedoresMap).length,
                 ticketMedio: mQtdTit > 0 ? mTotAPagar / mQtdTit : 0
             };
-            contasPagar.byFilial = Object.values(mFiliaisMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar);
+            contasPagar.byFilial = Object.values(mFiliaisMap).map((f: any) => ({
+                ...f,
+                qtdTitulos: (Number(f.qtdVencidos || 0) + Number(f.qtdAVencer || 0) > 0) ? (Number(f.qtdVencidos || 0) + Number(f.qtdAVencer || 0)) : Number(f.qtdTitulos || 0)
+            })).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar);
             const mTopForn = Object.values(mFornecedoresMap).sort((a: any, b: any) => b.totalAPagar - a.totalAPagar).slice(0, 10);
             mTopForn.forEach((t: any) => {
                 t.percentual = mTotAPagar > 0 ? Number(((t.totalAPagar / mTotAPagar) * 100).toFixed(1)) : 0;

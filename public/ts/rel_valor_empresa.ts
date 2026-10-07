@@ -956,14 +956,126 @@
         }
     };
 
-    // ─── Modal Contas a Pagar: Populate & Filter ─────────────────────────────
+    // ─── Modal Contas a Pagar: Filiais Cards, Populate & Filter ─────────────
+    const renderModalContasPagarFiliaisCards = (data?: any) => {
+        const targetData = data || currentContasPagarData;
+        const container = getEl('modalContasPagarFiliaisCards');
+        const countBadge = getEl('modalContasPagarFiliaisCount');
+        if (!container) return;
+
+        if (!targetData || !targetData.loaded) {
+            container.innerHTML = `
+                <div class="col-span-full py-3 text-center text-xs text-gray-500 dark:text-gray-400">
+                    Aguardando consulta do servidor...
+                </div>
+            `;
+            if (countBadge) countBadge.textContent = '0 filiais';
+            return;
+        }
+
+        const filiais = targetData.byFilial || [];
+        if (countBadge) {
+            countBadge.textContent = `${filiais.length} ${filiais.length === 1 ? 'filial' : 'filiais'}`;
+        }
+
+        const currentSelectedFilial = getEl<HTMLSelectElement>('modalContasPagarFilterFilial')?.value || '';
+
+        const summary = targetData.summary || {};
+        const totalVencido = Number(summary.totalVencido || 0);
+        const totalAVencer = Number(summary.totalAVencer || 0);
+        const totalAPagar = (totalVencido + totalAVencer > 0)
+            ? (totalVencido + totalAVencer)
+            : Number(summary.totalAPagar || summary.totalPagar || 0);
+        const qtdTitulos = (Number(summary.qtdVencidos || 0) + Number(summary.qtdAVencer || 0) > 0)
+            ? (Number(summary.qtdVencidos || 0) + Number(summary.qtdAVencer || 0))
+            : Number(summary.qtdTitulos || 0);
+
+        const isAllActive = currentSelectedFilial === '';
+
+        let html = `
+            <!-- Card Todas as Filiais -->
+            <button type="button" data-filial="" class="filial-card-btn text-left p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                isAllActive
+                    ? 'border-rose-500 bg-rose-50/80 dark:bg-rose-950/40 ring-2 ring-rose-500/40 shadow-xs'
+                    : 'border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-rose-300 dark:hover:border-rose-700/60 hover:bg-rose-50/30'
+            }">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <span class="text-[11px] font-bold text-gray-900 dark:text-white truncate">Todas as Filiais</span>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isAllActive ? 'bg-rose-200 text-rose-800 dark:bg-rose-900 dark:text-rose-200' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}">
+                        ${qtdTitulos} tit.
+                    </span>
+                </div>
+                <div class="text-sm font-extrabold text-rose-700 dark:text-rose-400">
+                    ${formatMoney(totalAPagar)}
+                </div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 flex items-center justify-between">
+                    <span class="text-red-600 dark:text-red-400 font-semibold">${formatMoney(totalVencido)} venc.</span>
+                    <span class="text-amber-600 dark:text-amber-400 font-semibold">${formatMoney(totalAVencer)} a venc.</span>
+                </div>
+            </button>
+        `;
+
+        filiais.forEach((f: any) => {
+            const filialId = String(f.filial);
+            const isActive = currentSelectedFilial === filialId;
+            const fVenc = Number(f.totalVencido || 0);
+            const fAVenc = Number(f.totalAVencer || 0);
+            const fTotal = (fVenc + fAVenc > 0) ? (fVenc + fAVenc) : Number(f.totalAPagar || 0);
+            const fQtd = Number(f.qtdTitulos || 0);
+
+            html += `
+                <button type="button" data-filial="${escapeHtml(filialId)}" class="filial-card-btn text-left p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                    isActive
+                        ? 'border-rose-500 bg-rose-50/80 dark:bg-rose-950/40 ring-2 ring-rose-500/40 shadow-xs'
+                        : 'border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-rose-300 dark:hover:border-rose-700/60 hover:bg-rose-50/30'
+                }">
+                    <div class="flex items-center justify-between gap-1 mb-1">
+                        <span class="text-[11px] font-bold text-gray-900 dark:text-white truncate" title="${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}">
+                            ${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}
+                        </span>
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? 'bg-rose-200 text-rose-800 dark:bg-rose-900 dark:text-rose-200' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}">
+                            ${fQtd} tit.
+                        </span>
+                    </div>
+                    <div class="text-sm font-extrabold text-rose-700 dark:text-rose-400">
+                        ${formatMoney(fTotal)}
+                    </div>
+                    <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 flex items-center justify-between">
+                        <span class="text-red-600 dark:text-red-400 font-semibold">${formatMoney(fVenc)} venc.</span>
+                        <span class="text-amber-600 dark:text-amber-400 font-semibold">${formatMoney(fAVenc)} a venc.</span>
+                    </div>
+                </button>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Attach click listeners to cards
+        container.querySelectorAll('.filial-card-btn').forEach((btn: any) => {
+            btn.addEventListener('click', () => {
+                const targetFilial = btn.getAttribute('data-filial') || '';
+                const select = getEl<HTMLSelectElement>('modalContasPagarFilterFilial');
+                if (select) {
+                    select.value = targetFilial;
+                }
+                renderModalContasPagarFiliaisCards(currentContasPagarData);
+                applyModalContasPagarFilters();
+            });
+        });
+    };
+
     const populateModalContasPagarFilters = (data: any) => {
         const filialSelect = getEl<HTMLSelectElement>('modalContasPagarFilterFilial');
+        const filiais = data.byFilial || [];
         if (filialSelect) {
-            const filiais = data.byFilial || [];
+            const currentVal = filialSelect.value;
             filialSelect.innerHTML = '<option value="">Todas as Filiais</option>' +
                 filiais.map((f: any) => `<option value="${escapeHtml(f.filial)}">${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}</option>`).join('');
+            if (currentVal && filiais.some((f: any) => String(f.filial) === currentVal)) {
+                filialSelect.value = currentVal;
+            }
         }
+        renderModalContasPagarFiliaisCards(data);
     };
 
     const renderModalContasPagarTable = (list: any[]) => {
@@ -999,56 +1111,188 @@
             return;
         }
 
-        tbody.innerHTML = list.map((item: any) => {
-            const isVencido = item.isVencido;
-            const statusBadgeClass = isVencido
-                ? 'bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800/40'
-                : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40';
+        // Group list items by Filial
+        const groupsMap = new Map<string, {
+            filialKey: string;
+            filialId: any;
+            nomeFilial: string;
+            items: any[];
+            totalParcela: number;
+            totalPago: number;
+            saldoPendente: number;
+            totalVencido: number;
+            totalAVencer: number;
+            qtdVencidos: number;
+            qtdAVencer: number;
+        }>();
 
-            const statusText = isVencido
-                ? `Vencido (${item.diasAtraso}d)`
-                : 'A Vencer';
+        list.forEach((item: any) => {
+            const filialId = item.filial !== undefined && item.filial !== null ? String(item.filial) : '0';
+            const nomeFilial = item.nomeFilial || `Filial ${filialId}`;
+            const key = filialId;
 
-            return `
-                <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                    <td class="py-2.5 px-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        ${formatDateBR(item.dtEmissao)}
-                    </td>
-                    <td class="py-2.5 px-4 font-medium ${isVencido ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
-                        ${formatDateBR(item.dtVencimento)}
-                    </td>
-                    <td class="py-2.5 px-4 text-center whitespace-nowrap">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${statusBadgeClass}">
-                            ${statusText}
-                        </span>
-                    </td>
-                    <td class="py-2.5 px-4 font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs font-semibold" title="Conta #${item.cdConta}">
-                        ${escapeHtml(item.numeroDocumento || `#${item.cdConta}`)}
-                    </td>
-                    <td class="py-2.5 px-4 text-center font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
-                        ${item.cdContaParcela || 1}
-                    </td>
-                    <td class="py-2.5 px-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        ${escapeHtml(item.nomeFilial || `Filial ${item.filial}`)}
-                    </td>
-                    <td class="py-2.5 px-4 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate" title="${escapeHtml(item.fornecedor)} - ${escapeHtml(item.historico || '')}">
-                        ${escapeHtml(item.fornecedor)}
-                    </td>
-                    <td class="py-2.5 px-4 font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">
-                        ${escapeHtml(item.documentoPessoa || '-')}
-                    </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
-                        ${formatMoney(item.vlParcela)}
-                    </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                        ${formatMoney(item.vlPago)}
-                    </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                        ${formatMoney(item.saldoPendente)}
+            if (!groupsMap.has(key)) {
+                groupsMap.set(key, {
+                    filialKey: key,
+                    filialId: item.filial,
+                    nomeFilial,
+                    items: [],
+                    totalParcela: 0,
+                    totalPago: 0,
+                    saldoPendente: 0,
+                    totalVencido: 0,
+                    totalAVencer: 0,
+                    qtdVencidos: 0,
+                    qtdAVencer: 0
+                });
+            }
+
+            const group = groupsMap.get(key)!;
+            group.items.push(item);
+            const parcela = Number(item.vlParcela || 0);
+            const pago = Number(item.vlPago || 0);
+            const saldo = Number(item.saldoPendente || 0);
+
+            group.totalParcela += parcela;
+            group.totalPago += pago;
+            group.saldoPendente += saldo;
+
+            if (item.isVencido) {
+                group.totalVencido += saldo;
+                group.qtdVencidos += 1;
+            } else {
+                group.totalAVencer += saldo;
+                group.qtdAVencer += 1;
+            }
+        });
+
+        // Sort groups by filial ID or name
+        const groups = Array.from(groupsMap.values()).sort((a, b) => {
+            const numA = Number(a.filialId);
+            const numB = Number(b.filialId);
+            if (!isNaN(numA) && !isNaN(numB)) {
+                return numA - numB;
+            }
+            return a.nomeFilial.localeCompare(b.nomeFilial);
+        });
+
+        let html = '';
+
+        groups.forEach((group) => {
+            // Group Header Banner
+            html += `
+                <tr class="bg-linear-to-r from-rose-50 via-rose-50/70 to-gray-50 dark:from-slate-800 dark:via-rose-950/30 dark:to-slate-800/80 border-t-2 border-b border-rose-200 dark:border-rose-800/60 sticky top-10 z-5">
+                    <td colspan="11" class="py-2.5 px-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <span class="p-1 rounded-lg bg-rose-600 text-white shadow-xs">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                </span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-black text-xs sm:text-sm text-gray-900 dark:text-white uppercase tracking-wide">
+                                        ${escapeHtml(group.nomeFilial)}
+                                    </span>
+                                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 shadow-2xs">
+                                        Filial #${escapeHtml(String(group.filialId))}
+                                    </span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800/50">
+                                        ${group.items.length} ${group.items.length === 1 ? 'título' : 'títulos'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-3 text-xs">
+                                <span class="text-gray-600 dark:text-gray-300">
+                                    Vencidos: <strong class="text-red-600 dark:text-red-400 font-bold">${formatMoney(group.totalVencido)}</strong> <span class="text-[10px] font-medium text-gray-500">(${group.qtdVencidos})</span>
+                                </span>
+                                <span class="text-gray-300 dark:text-gray-700">|</span>
+                                <span class="text-gray-600 dark:text-gray-300">
+                                    A Vencer: <strong class="text-amber-600 dark:text-amber-400 font-bold">${formatMoney(group.totalAVencer)}</strong> <span class="text-[10px] font-medium text-gray-500">(${group.qtdAVencer})</span>
+                                </span>
+                                <span class="text-gray-300 dark:text-gray-700">|</span>
+                                <span class="text-gray-700 dark:text-gray-200 font-semibold">
+                                    Total Filial: <strong class="text-rose-700 dark:text-rose-300 font-black text-sm">${formatMoney(group.saldoPendente)}</strong>
+                                </span>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             `;
-        }).join('');
+
+            // Individual Title Rows for this Filial
+            group.items.forEach((item: any) => {
+                const isVencido = item.isVencido;
+                const statusBadgeClass = isVencido
+                    ? 'bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800/40'
+                    : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40';
+
+                const statusText = isVencido
+                    ? `Vencido (${item.diasAtraso}d)`
+                    : 'A Vencer';
+
+                html += `
+                    <tr class="hover:bg-rose-50/30 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="py-2.5 px-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                            ${formatDateBR(item.dtEmissao)}
+                        </td>
+                        <td class="py-2.5 px-4 font-medium ${isVencido ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
+                            ${formatDateBR(item.dtVencimento)}
+                        </td>
+                        <td class="py-2.5 px-4 text-center whitespace-nowrap">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${statusBadgeClass}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-4 font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs font-semibold" title="Conta #${item.cdConta}">
+                            ${escapeHtml(item.numeroDocumento || `#${item.cdConta}`)}
+                        </td>
+                        <td class="py-2.5 px-4 text-center font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
+                            ${item.cdContaParcela || 1}
+                        </td>
+                        <td class="py-2.5 px-4 text-gray-700 dark:text-gray-300 whitespace-nowrap text-xs">
+                            ${escapeHtml(item.nomeFilial || `Filial ${item.filial}`)}
+                        </td>
+                        <td class="py-2.5 px-4 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate text-xs" title="${escapeHtml(item.fornecedor)} - ${escapeHtml(item.historico || '')}">
+                            ${escapeHtml(item.fornecedor)}
+                        </td>
+                        <td class="py-2.5 px-4 font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">
+                            ${escapeHtml(item.documentoPessoa || '-')}
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                            ${formatMoney(item.vlParcela)}
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                            ${formatMoney(item.vlPago)}
+                        </td>
+                        <td class="py-2.5 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                            ${formatMoney(item.saldoPendente)}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Group Subtotal Row
+            html += `
+                <tr class="bg-gray-100/90 dark:bg-slate-900/90 font-bold border-b-2 border-gray-200 dark:border-slate-700 text-xs text-gray-700 dark:text-gray-200">
+                    <td colspan="8" class="py-2.5 px-4 text-right">
+                        <div class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400 font-semibold">
+                            <span>Subtotal ${escapeHtml(group.nomeFilial)}</span>
+                            <span class="text-[11px] font-normal text-gray-500 dark:text-gray-400">(${group.items.length} ${group.items.length === 1 ? 'título' : 'títulos'}):</span>
+                        </div>
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
+                        ${formatMoney(group.totalParcela)}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        ${formatMoney(group.totalPago)}
+                    </td>
+                    <td class="py-2.5 px-4 text-right font-mono font-black text-rose-600 dark:text-rose-400 whitespace-nowrap text-sm">
+                        ${formatMoney(group.saldoPendente)}
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
     };
 
     const applyModalContasPagarFilters = () => {
@@ -1130,9 +1374,16 @@
             getEl<HTMLSelectElement>('modalContasPagarTipoData')!.value = cardTipoData;
         }
 
-        applyModalContasPagarFilters();
         modal.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
+
+        // Se ainda não estiver carregado, dispara automaticamente a consulta das contas a pagar por filial
+        if (!currentContasPagarData || !currentContasPagarData.loaded) {
+            void loadContasPagar();
+        } else {
+            populateModalContasPagarFilters(currentContasPagarData);
+            applyModalContasPagarFilters();
+        }
     };
 
     const closeModalContasPagar = () => {
@@ -1885,6 +2136,7 @@
         });
 
         getEl('modalContasPagarFilterFilial')?.addEventListener('change', () => {
+            renderModalContasPagarFiliaisCards(currentContasPagarData);
             applyModalContasPagarFilters();
         });
 

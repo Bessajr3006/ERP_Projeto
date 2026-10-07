@@ -7964,7 +7964,13 @@ export class ExternalDbService {
                                 c.cdPessoaFilialConta as filial,
                                 ISNULL(fil.nmPessoa, CONCAT('Filial ', CAST(c.cdPessoaFilialConta AS VARCHAR(20)))) as nomeFilial,
                                 COUNT(*) as qtd_titulos,
-                                SUM(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) as total_a_pagar
+                                SUM(ISNULL(cp.vlParcela, 0)) as total_emitido,
+                                SUM(ISNULL(cb.vlContaBaixa, 0)) as total_pago,
+                                SUM(ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) as total_a_pagar,
+                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_vencido,
+                                SUM(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN (ISNULL(cp.vlParcela, 0) - ISNULL(cb.vlContaBaixa, 0)) ELSE 0 END) as total_a_vencer,
+                                COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) < CAST(GETDATE() AS DATE) THEN 1 END) as qtd_vencidos,
+                                COUNT(CASE WHEN CAST(cp.dtParcela AS DATE) >= CAST(GETDATE() AS DATE) THEN 1 END) as qtd_a_vencer
                             FROM tbContaParcela cp WITH (NOLOCK)
                             INNER JOIN tbConta c WITH (NOLOCK) ON c.cdConta = cp.cdConta AND c.cdPessoaFilialConta = cp.cdPessoaFilialConta
                             LEFT JOIN tbContaBaixa cb WITH (NOLOCK) ON cb.cdContaBaixa = cp.cdContaBaixa AND cb.cdPessoaFilialContaBaixa = cp.cdPessoaFilialContaBaixa
@@ -7976,12 +7982,26 @@ export class ExternalDbService {
                             GROUP BY c.cdPessoaFilialConta, fil.nmPessoa
                             ORDER BY total_a_pagar DESC
                         `);
-                        contasPagar.byFilial = (resPagarFilial.recordset || []).map((f: any) => ({
-                            filial: Number(f.filial || 1),
-                            nomeFilial: String(f.nomeFilial || `Filial ${f.filial}`).trim(),
-                            qtdTitulos: Number(f.qtd_titulos || 0),
-                            totalAPagar: Number(f.total_a_pagar || 0)
-                        }));
+                        contasPagar.byFilial = (resPagarFilial.recordset || []).map((f: any) => {
+                            const totVenc = Number(f.total_vencido || 0);
+                            const totAVenc = Number(f.total_a_vencer || 0);
+                            const totPagar = (totVenc + totAVenc > 0) ? (totVenc + totAVenc) : Number(f.total_a_pagar || 0);
+                            const qtdVenc = Number(f.qtd_vencidos || 0);
+                            const qtdAVenc = Number(f.qtd_a_vencer || 0);
+                            const qtdTot = (qtdVenc + qtdAVenc > 0) ? (qtdVenc + qtdAVenc) : Number(f.qtd_titulos || 0);
+                            return {
+                                filial: Number(f.filial || 1),
+                                nomeFilial: String(f.nomeFilial || `Filial ${f.filial}`).trim(),
+                                qtdTitulos: qtdTot,
+                                qtdVencidos: qtdVenc,
+                                qtdAVencer: qtdAVenc,
+                                totalAPagar: totPagar,
+                                totalVencido: totVenc,
+                                totalAVencer: totAVenc,
+                                totalEmitido: Number(f.total_emitido || 0),
+                                totalPago: Number(f.total_pago || 0)
+                            };
+                        });
 
                         // Lista detalhada dos títulos a pagar (Top 2000)
                         const resPagarList = await reqPagar.query(`
@@ -8654,10 +8674,14 @@ export class ExternalDbService {
             (cp?.byFilial || []).forEach((f: any) => {
                 const k = String(f.filial || f.nomeFilial || 'Outros');
                 if (!cpFiliaisMap[k]) {
-                    cpFiliaisMap[k] = { ...f, totalAPagar: 0, qtdTitulos: 0 };
+                    cpFiliaisMap[k] = { ...f, totalAPagar: 0, totalVencido: 0, totalAVencer: 0, qtdTitulos: 0, qtdVencidos: 0, qtdAVencer: 0 };
                 }
                 cpFiliaisMap[k].totalAPagar += Number(f.totalAPagar || 0);
+                cpFiliaisMap[k].totalVencido += Number(f.totalVencido || 0);
+                cpFiliaisMap[k].totalAVencer += Number(f.totalAVencer || 0);
                 cpFiliaisMap[k].qtdTitulos += Number(f.qtdTitulos || 0);
+                cpFiliaisMap[k].qtdVencidos += Number(f.qtdVencidos || 0);
+                cpFiliaisMap[k].qtdAVencer += Number(f.qtdAVencer || 0);
             });
             if (Array.isArray(cp?.lancamentos)) {
                 cpLancamentos = cpLancamentos.concat(cp.lancamentos);

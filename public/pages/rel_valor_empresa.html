@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Rel.Valor_Empresa</title>
-    <link href="/css/style.css?v=20261006201720" rel="stylesheet">
+    <link href="/css/style.css?v=20261007122006" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261006201720"></script>
+    <script src="/js/pwa.js?v=20261007122006"></script>
 </head>
 <body data-required-module="rel_valor_empresa" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -863,6 +863,20 @@
                     </div>
                 </div>
 
+                <!-- Resumo e Seleção por Filial no Modal -->
+                <div id="modalContasPagarFiliaisSection" class="p-3 sm:p-4 bg-gray-50/70 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            <span>Contas a Pagar por Filial:</span>
+                        </div>
+                        <span id="modalContasPagarFiliaisCount" class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">0 filiais</span>
+                    </div>
+                    <div id="modalContasPagarFiliaisCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 max-h-36 overflow-y-auto pr-1">
+                        <!-- Dynamic Filial Cards -->
+                    </div>
+                </div>
+
                 <!-- Modal Mini Summary Ribbon -->
                 <div class="px-4 py-2.5 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-xs gap-3">
                     <div class="flex items-center gap-4">
@@ -917,11 +931,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261006201720"></script>
-    <script src="/js/rel_valor_empresa.js?v=20261006201720"></script>
-    <script src="/js/components/navbar.js?v=20261006201720"></script>
+    <script src="/js/api.js?v=20261007122006"></script>
+    <script src="/js/rel_valor_empresa.js?v=20261007122006"></script>
+    <script src="/js/components/navbar.js?v=20261007122006"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261006201720"></script>
+    <script src="/js/components/footer.js?v=20261007122006"></script>
 </body>
 </html>
 

@@ -41,15 +41,23 @@ export class StorageService {
     static ensureDirectories(): void {
         const buckets: StorageBucket[] = ['products', 'company-logos', 'documents', 'Impkey'];
         for (const bucket of buckets) {
-            const dir = path.join(UPLOADS_ROOT, bucket);
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-                logger.info({ dir }, '[Storage] Diretório criado');
+            try {
+                const dir = path.join(UPLOADS_ROOT, bucket);
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                    logger.info({ dir }, '[Storage] Diretório criado');
+                }
+            } catch (err: any) {
+                logger.warn({ bucket, error: err?.message }, '[Storage] Aviso ao criar diretório de uploads');
             }
         }
-        const rootImpkey = path.join(process.cwd(), 'Impkey');
-        if (!fs.existsSync(rootImpkey)) {
-            fs.mkdirSync(rootImpkey, { recursive: true });
+        try {
+            const rootImpkey = path.join(process.cwd(), 'Impkey');
+            if (!fs.existsSync(rootImpkey)) {
+                fs.mkdirSync(rootImpkey, { recursive: true });
+            }
+        } catch (err: any) {
+            logger.warn({ error: err?.message }, '[Storage] Aviso ao criar pasta raiz Impkey');
         }
     }
 
@@ -66,14 +74,18 @@ export class StorageService {
     ): SaveResult {
         const safeOriginal = path.basename(originalFilename).replace(/[^a-zA-Z0-9._-]/g, '_');
         const companyDir = path.join(UPLOADS_ROOT, 'Impkey', String(companyId));
-        if (!fs.existsSync(companyDir)) {
-            fs.mkdirSync(companyDir, { recursive: true });
-        }
+        try {
+            if (!fs.existsSync(companyDir)) {
+                fs.mkdirSync(companyDir, { recursive: true });
+            }
+        } catch (_) {}
 
         const rootCompanyDir = path.join(process.cwd(), 'Impkey', String(companyId));
-        if (!fs.existsSync(rootCompanyDir)) {
-            fs.mkdirSync(rootCompanyDir, { recursive: true });
-        }
+        try {
+            if (!fs.existsSync(rootCompanyDir)) {
+                fs.mkdirSync(rootCompanyDir, { recursive: true });
+            }
+        } catch (_) {}
 
         const filename = safeOriginal;
         const absolutePath = path.join(companyDir, filename);

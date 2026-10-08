@@ -26,7 +26,7 @@ export class ProductRepository {
     }
 
     static async create(companyId: number, data: CreateProductData): Promise<Product> {
-        const { name, description, sku, ean, external_code, is_imported = false, cost_price = 0, selling_price = 0, is_promotional = false, promotional_price = 0, initial_stock = 0, min_stock = 0, max_stock = 0, category_id, stock_type_id, product_type_id, manufacturer_id, tax_rule_id, measure_id, image_base64, image_url: imageUrlParam, idprodutopos, status_pos_id: statusPosIdParam, active = true } = data;
+        const { name, description, sku, ean, external_code, is_imported = false, ncm, cest, cost_price = 0, selling_price = 0, is_promotional = false, promotional_price = 0, initial_stock = 0, min_stock = 0, max_stock = 0, category_id, stock_type_id, product_type_id, manufacturer_id, tax_rule_id, measure_id, image_base64, image_url: imageUrlParam, idprodutopos, status_pos_id: statusPosIdParam, active = true } = data;
 
         if (sku) {
             const [existing] = await pool.query<RowDataPacket[]>('SELECT id FROM products WHERE sku = ? AND company_id = ? LIMIT 1', [sku, companyId]);
@@ -56,8 +56,8 @@ export class ProductRepository {
             await conn.beginTransaction();
 
             const [result] = await conn.query<ResultSetHeader>(
-                `INSERT INTO products (public_id, company_id, name, description, sku, ean, external_code, is_imported, cost_price, selling_price, is_promotional, promotional_price, current_stock, min_stock, max_stock, category_id, stock_type_id, product_type_id, manufacturer_id, tax_rule_id, measure_id, image_base64, image_url, idprodutopos, status_pos_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [publicId, companyId, name, description || null, sku || null, ean || null, external_code || null, is_imported ? 1 : 0, cost_price, selling_price, is_promotional ? 1 : 0, promotional_price, min_stock, max_stock, category_id || null, stock_type_id || null, product_type_id || null, manufacturer_id || null, tax_rule_id || null, measure_id || null, image_base64 || null, resolvedImageUrl, idprodutopos || null, status_pos_id, active ? 1 : 0]
+                `INSERT INTO products (public_id, company_id, name, description, sku, ean, external_code, is_imported, ncm, cest, cost_price, selling_price, is_promotional, promotional_price, current_stock, min_stock, max_stock, category_id, stock_type_id, product_type_id, manufacturer_id, tax_rule_id, measure_id, image_base64, image_url, idprodutopos, status_pos_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [publicId, companyId, name, description || null, sku || null, ean || null, external_code || null, is_imported ? 1 : 0, ncm || null, cest || null, cost_price, selling_price, is_promotional ? 1 : 0, promotional_price, min_stock, max_stock, category_id || null, stock_type_id || null, product_type_id || null, manufacturer_id || null, tax_rule_id || null, measure_id || null, image_base64 || null, resolvedImageUrl, idprodutopos || null, status_pos_id, active ? 1 : 0]
             );
 
             const productId = result.insertId;
@@ -178,6 +178,8 @@ export class ProductRepository {
         if (data.ean !== undefined) { updates.push('ean = ?'); values.push(data.ean || null); }
         if (data.external_code !== undefined) { updates.push('external_code = ?'); values.push(data.external_code || null); }
         if (data.is_imported !== undefined) { updates.push('is_imported = ?'); values.push(data.is_imported ? 1 : 0); }
+        if (data.ncm !== undefined) { updates.push('ncm = ?'); values.push(data.ncm || null); }
+        if (data.cest !== undefined) { updates.push('cest = ?'); values.push(data.cest || null); }
         if (data.cost_price !== undefined) { updates.push('cost_price = ?'); values.push(data.cost_price); }
         if (data.selling_price !== undefined) { updates.push('selling_price = ?'); values.push(data.selling_price); }
         if (data.is_promotional !== undefined) { updates.push('is_promotional = ?'); values.push(data.is_promotional ? 1 : 0); }

@@ -158,8 +158,12 @@
             const unitPriceText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(unitPrice);
             const totalText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
             const xml = parseJsonSafe(item.xml_item_data) || {};
+            const cstCsosn = xml.csosn || xml.cst_icms || xml.icms?.csosn || xml.icms?.cst || '-';
+            const cest = xml.cest || '-';
+            const vDesc = Number(xml.vDesc || 0);
+            const vDescText = vDesc > 0 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(vDesc) : '-';
 
-            return `<tr><td>${item.product_name || 'Produto sem nome'}</td><td>${item.sku || '-'}</td><td>${xml.cProd || '-'}</td><td>${xml.cEAN || '-'}</td><td>${xml.ncm || '-'}</td><td>${xml.cfop || '-'}</td><td>${xml.uCom || '-'}</td><td style="text-align:right;">${qty}</td><td style="text-align:right;">${unitPriceText}</td><td style="text-align:right;">${totalText}</td></tr>`;
+            return `<tr><td>${item.product_name || 'Produto sem nome'}</td><td>${item.sku || '-'}</td><td>${xml.cProd || '-'}</td><td>${xml.cEAN || '-'}</td><td>${xml.ncm || '-'}</td><td>${cest}</td><td>${xml.cfop || '-'}</td><td>${cstCsosn}</td><td>${xml.uCom || '-'}</td><td style="text-align:right;">${qty}</td><td style="text-align:right;">${unitPriceText}</td><td style="text-align:right;">${vDescText}</td><td style="text-align:right;">${totalText}</td></tr>`;
         }).join('');
 
         printWindow.document.write(`
@@ -187,15 +191,18 @@
                                 <th>cProd</th>
                                 <th>EAN</th>
                                 <th>NCM</th>
+                                <th>CEST</th>
                                 <th>CFOP</th>
+                                <th>CST/CSOSN</th>
                                 <th>Un.</th>
                                 <th>Qtd</th>
                                 <th>Unit.</th>
+                                <th>Desc.</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${rows || '<tr><td colspan="10" style="text-align:center;">Nenhum item para exibir.</td></tr>'}
+                            ${rows || '<tr><td colspan="13" style="text-align:center;">Nenhum item para exibir.</td></tr>'}
                         </tbody>
                     </table>
                     <p class="summary">Total da Nota: ${totalAmountText}</p>
@@ -214,7 +221,7 @@
 
         const items = Array.isArray(sale?.items) ? sale.items : [];
         if (items.length === 0) {
-            notaItensModalBody.innerHTML = '<tr><td colspan="10" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum item para exibir.</td></tr>';
+            notaItensModalBody.innerHTML = '<tr><td colspan="13" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum item para exibir.</td></tr>';
         } else {
             notaItensModalBody.innerHTML = items.map((item) => {
                 const qty = Number(item.quantity || 0);
@@ -223,6 +230,10 @@
                 const unitPriceText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(unitPrice);
                 const totalText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
                 const xml = parseJsonSafe(item.xml_item_data) || {};
+                const cstCsosn = xml.csosn || xml.cst_icms || xml.icms?.csosn || xml.icms?.cst || '-';
+                const cest = xml.cest || '-';
+                const vDesc = Number(xml.vDesc || 0);
+                const vDescText = vDesc > 0 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(vDesc) : '-';
 
                 return `
                     <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40">
@@ -231,10 +242,13 @@
                         <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.cProd || '-'}</td>
                         <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.cEAN || '-'}</td>
                         <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.ncm || '-'}</td>
+                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${cest}</td>
                         <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.cfop || '-'}</td>
+                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${cstCsosn}</td>
                         <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.uCom || '-'}</td>
                         <td class="px-4 py-2 text-sm text-right text-gray-700 dark:text-gray-300">${qty}</td>
                         <td class="px-4 py-2 text-sm text-right text-gray-700 dark:text-gray-300">${unitPriceText}</td>
+                        <td class="px-4 py-2 text-sm text-right text-gray-700 dark:text-gray-300">${vDescText}</td>
                         <td class="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">${totalText}</td>
                     </tr>
                 `;

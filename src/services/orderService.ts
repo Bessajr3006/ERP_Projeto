@@ -7,7 +7,8 @@ import { toBrazilDate } from '../utils/dateTime';
 import { ProductRepository } from '../repositories/productRepository';
 import pool from '../config/db';
 import { RowDataPacket } from 'mysql2/promise';
-import { Product } from '../types/Product';
+import { Product, CreateProductData } from '../types/Product';
+import { EntityService } from './entityService';
 
 interface ImportSaleFromXmlData {
     xml_content: string;
@@ -18,40 +19,19 @@ interface ImportSaleFromXmlData {
     date?: string | null | undefined;
 }
 
-interface ParsedNfeItem {
+export interface ParsedNfeItem {
     sku: string | null;
     ean: string | null;
     name: string;
     quantity: number;
     unitPrice: number;
-    xmlItemData: {
-        cProd: string | null;
-        cEAN: string | null;
-        cEANTrib: string | null;
-        ncm: string | null;
-        cest: string | null;
-        cfop: string | null;
-        uCom: string | null;
-        qCom: number;
-        vUnCom: number;
-        vProd: number;
-    };
+    xmlItemData: Record<string, any>;
 }
 
-interface ParsedNfeHeader {
+export interface ParsedNfeHeader {
     nfeKey: string | null;
     nfeIssueDate: string | null;
-    headerData: {
-        numero: string | null;
-        serie: string | null;
-        naturezaOperacao: string | null;
-        modelo: string | null;
-        emitenteNome: string | null;
-        emitenteDocumento: string | null;
-        destinatarioNome: string | null;
-        destinatarioDocumento: string | null;
-        tributosTotal: number | null;
-    };
+    headerData: Record<string, any>;
 }
 
 export class OrderService {
@@ -94,10 +74,8 @@ export class OrderService {
             `SELECT id FROM companies 
              WHERE REPLACE(REPLACE(REPLACE(REPLACE(cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = ?
                 OR cnpj = ?
-                OR REPLACE(REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?
-                OR cpf = ?
              LIMIT 1`,
-            [emitterDigits, emitterDigits, emitterDigits, emitterDigits]
+            [emitterDigits, emitterDigits]
         );
 
         if (rows[0]) {
@@ -219,9 +197,14 @@ export class OrderService {
         const detNodes = Array.from(doc.getElementsByTagName('det'));
         const parsed: ParsedNfeItem[] = [];
 
+        let itemIndex = 0;
         for (const detNode of detNodes) {
+            itemIndex++;
             const prodNode = detNode.getElementsByTagName('prod')[0];
             if (!prodNode) continue;
+
+            const nItemAttr = detNode.getAttribute('nItem');
+            const nItem = nItemAttr ? Number(nItemAttr) : itemIndex;
 
             const sku = this.getTagText(prodNode, 'cProd') || null;
             const rawEan = this.getTagText(prodNode, 'cEAN') || this.getTagText(prodNode, 'cEANTrib');
@@ -233,6 +216,150 @@ export class OrderService {
 
             if (!name || quantity <= 0) continue;
 
+            // Extração de Impostos do Item (det -> imposto)
+            const impostoNode = detNode.getElementsByTagName('imposto')[0];
+            const vTotTribItem = impostoNode ? this.parseDecimal(this.getTagText(impostoNode, 'vTotTrib')) : 0;
+
+            // ICMS
+            let icmsData: Record<string, any> | null = null;
+            let cstIcms: string | null = null;
+            let csosnIcms: string | null = null;
+            let vIcmsVal = 0;
+
+            const icmsParent = impostoNode?.getElementsByTagName('ICMS')[0];
+            if (icmsParent) {
+                let groupNode: any = null;
+                for (let i = 0; i < (icmsParent.childNodes?.length || 0); i++) {
+                    const node = icmsParent.childNodes[i];
+                    if (node && node.nodeType === 1) {
+                        groupNode = node;
+                        break;
+                    }
+                }
+
+                if (groupNode) {
+                    cstIcms = this.getTagText(groupNode, 'CST') || null;
+                    csosnIcms = this.getTagText(groupNode, 'CSOSN') || null;
+                    vIcmsVal = this.parseDecimal(this.getTagText(groupNode, 'vICMS'));
+
+                    icmsData = {
+                        grupo: groupNode.nodeName || groupNode.localName || null,
+                        orig: this.getTagText(groupNode, 'orig') || null,
+                        cst: cstIcms,
+                        csosn: csosnIcms,
+                        modBC: this.getTagText(groupNode, 'modBC') || null,
+                        vBC: this.parseDecimal(this.getTagText(groupNode, 'vBC')),
+                        pICMS: this.parseDecimal(this.getTagText(groupNode, 'pICMS')),
+                        vICMS: vIcmsVal,
+                        modBCST: this.getTagText(groupNode, 'modBCST') || null,
+                        pMVAST: this.parseDecimal(this.getTagText(groupNode, 'pMVAST')),
+                        pRedBCST: this.parseDecimal(this.getTagText(groupNode, 'pRedBCST')),
+                        vBCST: this.parseDecimal(this.getTagText(groupNode, 'vBCST')),
+                        pICMSST: this.parseDecimal(this.getTagText(groupNode, 'pICMSST')),
+                        vICMSST: this.parseDecimal(this.getTagText(groupNode, 'vICMSST')),
+                        pRedBC: this.parseDecimal(this.getTagText(groupNode, 'pRedBC')),
+                        vICMSDeson: this.parseDecimal(this.getTagText(groupNode, 'vICMSDeson')),
+                        motDesICMS: this.getTagText(groupNode, 'motDesICMS') || null,
+                        vBCFCP: this.parseDecimal(this.getTagText(groupNode, 'vBCFCP')),
+                        pFCP: this.parseDecimal(this.getTagText(groupNode, 'pFCP')),
+                        vFCP: this.parseDecimal(this.getTagText(groupNode, 'vFCP')),
+                        vBCSTRet: this.parseDecimal(this.getTagText(groupNode, 'vBCSTRet')),
+                        pST: this.parseDecimal(this.getTagText(groupNode, 'pST')),
+                        vICMSSubstituto: this.parseDecimal(this.getTagText(groupNode, 'vICMSSubstituto')),
+                        vICMSSTRet: this.parseDecimal(this.getTagText(groupNode, 'vICMSSTRet')),
+                        pCredSN: this.parseDecimal(this.getTagText(groupNode, 'pCredSN')),
+                        vCredICMSSN: this.parseDecimal(this.getTagText(groupNode, 'vCredICMSSN')),
+                    };
+                }
+            }
+
+            // PIS
+            let pisData: Record<string, any> | null = null;
+            let vPisVal = 0;
+            const pisParent = impostoNode?.getElementsByTagName('PIS')[0];
+            if (pisParent) {
+                let pisGroup: any = null;
+                for (let i = 0; i < (pisParent.childNodes?.length || 0); i++) {
+                    const node = pisParent.childNodes[i];
+                    if (node && node.nodeType === 1) {
+                        pisGroup = node;
+                        break;
+                    }
+                }
+                if (pisGroup) {
+                    vPisVal = this.parseDecimal(this.getTagText(pisGroup, 'vPIS'));
+                    pisData = {
+                        grupo: pisGroup.nodeName || pisGroup.localName || null,
+                        cst: this.getTagText(pisGroup, 'CST') || null,
+                        vBC: this.parseDecimal(this.getTagText(pisGroup, 'vBC')),
+                        pPIS: this.parseDecimal(this.getTagText(pisGroup, 'pPIS')),
+                        vPIS: vPisVal,
+                        qBCProd: this.parseDecimal(this.getTagText(pisGroup, 'qBCProd')),
+                        vAliqProd: this.parseDecimal(this.getTagText(pisGroup, 'vAliqProd')),
+                    };
+                }
+            }
+
+            // COFINS
+            let cofinsData: Record<string, any> | null = null;
+            let vCofinsVal = 0;
+            const cofinsParent = impostoNode?.getElementsByTagName('COFINS')[0];
+            if (cofinsParent) {
+                let cofinsGroup: any = null;
+                for (let i = 0; i < (cofinsParent.childNodes?.length || 0); i++) {
+                    const node = cofinsParent.childNodes[i];
+                    if (node && node.nodeType === 1) {
+                        cofinsGroup = node;
+                        break;
+                    }
+                }
+                if (cofinsGroup) {
+                    vCofinsVal = this.parseDecimal(this.getTagText(cofinsGroup, 'vCOFINS'));
+                    cofinsData = {
+                        grupo: cofinsGroup.nodeName || cofinsGroup.localName || null,
+                        cst: this.getTagText(cofinsGroup, 'CST') || null,
+                        vBC: this.parseDecimal(this.getTagText(cofinsGroup, 'vBC')),
+                        pCOFINS: this.parseDecimal(this.getTagText(cofinsGroup, 'pCOFINS')),
+                        vCOFINS: vCofinsVal,
+                        qBCProd: this.parseDecimal(this.getTagText(cofinsGroup, 'qBCProd')),
+                        vAliqProd: this.parseDecimal(this.getTagText(cofinsGroup, 'vAliqProd')),
+                    };
+                }
+            }
+
+            // IPI
+            let ipiData: Record<string, any> | null = null;
+            let vIpiVal = 0;
+            const ipiParent = impostoNode?.getElementsByTagName('IPI')[0];
+            if (ipiParent) {
+                const ipiTrib = ipiParent.getElementsByTagName('IPITrib')[0] || ipiParent.getElementsByTagName('IPINT')[0];
+                vIpiVal = ipiTrib ? this.parseDecimal(this.getTagText(ipiTrib, 'vIPI')) : 0;
+                ipiData = {
+                    cEnq: this.getTagText(ipiParent, 'cEnq') || null,
+                    cst: ipiTrib ? this.getTagText(ipiTrib, 'CST') || null : null,
+                    vBC: ipiTrib ? this.parseDecimal(this.getTagText(ipiTrib, 'vBC')) : 0,
+                    pIPI: ipiTrib ? this.parseDecimal(this.getTagText(ipiTrib, 'pIPI')) : 0,
+                    vIPI: vIpiVal,
+                    qUnid: ipiTrib ? this.parseDecimal(this.getTagText(ipiTrib, 'qUnid')) : 0,
+                    vUnid: ipiTrib ? this.parseDecimal(this.getTagText(ipiTrib, 'vUnid')) : 0,
+                };
+            }
+
+            // II (Imposto de Importação)
+            let iiData: Record<string, any> | null = null;
+            const iiParent = impostoNode?.getElementsByTagName('II')[0];
+            if (iiParent) {
+                iiData = {
+                    vBC: this.parseDecimal(this.getTagText(iiParent, 'vBC')),
+                    vDespAdu: this.parseDecimal(this.getTagText(iiParent, 'vDespAdu')),
+                    vII: this.parseDecimal(this.getTagText(iiParent, 'vII')),
+                    vIOF: this.parseDecimal(this.getTagText(iiParent, 'vIOF')),
+                };
+            }
+
+            // Informações Adicionais do Produto
+            const infAdProd = this.getTagText(detNode, 'infAdProd') || null;
+
             parsed.push({
                 sku,
                 ean,
@@ -240,16 +367,53 @@ export class OrderService {
                 quantity,
                 unitPrice,
                 xmlItemData: {
-                    cProd: this.getTagText(prodNode, 'cProd') || null,
+                    // Propriedades Diretas / Top-level
+                    nItem,
+                    cProd: sku,
                     cEAN: this.getTagText(prodNode, 'cEAN') || null,
                     cEANTrib: this.getTagText(prodNode, 'cEANTrib') || null,
+                    xProd: name,
                     ncm: this.getTagText(prodNode, 'NCM') || null,
+                    nve: this.getTagText(prodNode, 'NVE') || null,
                     cest: this.getTagText(prodNode, 'CEST') || null,
+                    indEscala: this.getTagText(prodNode, 'indEscala') || null,
+                    cBenef: this.getTagText(prodNode, 'cBenef') || null,
+                    extipi: this.getTagText(prodNode, 'EXTIPI') || null,
                     cfop: this.getTagText(prodNode, 'CFOP') || null,
                     uCom: this.getTagText(prodNode, 'uCom') || null,
                     qCom: quantity,
                     vUnCom: unitPrice,
                     vProd,
+                    uTrib: this.getTagText(prodNode, 'uTrib') || null,
+                    qTrib: this.parseDecimal(this.getTagText(prodNode, 'qTrib')) || quantity,
+                    vUnTrib: this.parseDecimal(this.getTagText(prodNode, 'vUnTrib')) || unitPrice,
+                    vFrete: this.parseDecimal(this.getTagText(prodNode, 'vFrete')),
+                    vSeg: this.parseDecimal(this.getTagText(prodNode, 'vSeg')),
+                    vDesc: this.parseDecimal(this.getTagText(prodNode, 'vDesc')),
+                    vOutro: this.parseDecimal(this.getTagText(prodNode, 'vOutro')),
+                    indTot: this.getTagText(prodNode, 'indTot') || null,
+                    xPed: this.getTagText(prodNode, 'xPed') || null,
+                    nItemPed: this.getTagText(prodNode, 'nItemPed') || null,
+
+                    // Atalhos fiscais
+                    cst_icms: cstIcms,
+                    csosn: csosnIcms,
+                    vTotTrib: vTotTribItem,
+                    vICMS: vIcmsVal,
+                    vPIS: vPisVal,
+                    vCOFINS: vCofinsVal,
+                    vIPI: vIpiVal,
+
+                    // Árvore completa de impostos e infAdProd
+                    imposto: {
+                        vTotTrib: vTotTribItem,
+                        icms: icmsData,
+                        pis: pisData,
+                        cofins: cofinsData,
+                        ipi: ipiData,
+                        ii: iiData,
+                    },
+                    infAdProd,
                 },
             });
         }
@@ -259,40 +423,262 @@ export class OrderService {
 
     public static parseNfeHeader(xmlContent: string): ParsedNfeHeader {
         const doc = new DOMParser().parseFromString(xmlContent, 'text/xml');
+        if (doc.getElementsByTagName('parsererror').length > 0) {
+            throw new Error('XML invalido para importacao de notas.');
+        }
 
         const infNFeNode = doc.getElementsByTagName('infNFe')[0];
         const ideNode = doc.getElementsByTagName('ide')[0];
         const emitNode = doc.getElementsByTagName('emit')[0];
+        const enderEmitNode = emitNode?.getElementsByTagName('enderEmit')[0];
         const destNode = doc.getElementsByTagName('dest')[0];
+        const enderDestNode = destNode?.getElementsByTagName('enderDest')[0];
         const totalNode = doc.getElementsByTagName('total')[0];
         const icmsTotNode = totalNode?.getElementsByTagName('ICMSTot')[0];
+        const transpNode = doc.getElementsByTagName('transp')[0];
+        const transportaNode = transpNode?.getElementsByTagName('transporta')[0];
+        const veicTranspNode = transpNode?.getElementsByTagName('veicTransp')[0];
+        const cobrNode = doc.getElementsByTagName('cobr')[0];
+        const fatNode = cobrNode?.getElementsByTagName('fat')[0];
+        const pagNode = doc.getElementsByTagName('pag')[0];
+        const infAdicNode = doc.getElementsByTagName('infAdic')[0];
 
+        // Chave NFe
         const infNFeId = String(infNFeNode?.getAttribute('Id') || '').trim();
         const possibleKey = infNFeId.startsWith('NFe') ? infNFeId.slice(3) : infNFeId;
-        const nfeKey = /^\d{44}$/.test(possibleKey) ? possibleKey : null;
+        const nfeKey = /^\d{44}$/.test(possibleKey)
+            ? possibleKey
+            : (doc.getElementsByTagName('chNFe')[0]?.textContent?.trim() || null);
 
+        // Datas
         const dhEmi = this.getTagText(ideNode, 'dhEmi');
         const dEmi = this.getTagText(ideNode, 'dEmi');
         const issueDateRaw = dhEmi || dEmi;
         const issueDate = issueDateRaw ? new Date(issueDateRaw) : null;
+        const nfeIssueDate = issueDate && !Number.isNaN(issueDate.getTime())
+            ? (issueDate.toISOString().split('T')[0] as string)
+            : null;
+
+        const dhSaiEnt = this.getTagText(ideNode, 'dhSaiEnt') || this.getTagText(ideNode, 'dSaiEnt') || null;
+
+        // Emitente
+        const emitDoc = this.getTagText(emitNode, 'CNPJ') || this.getTagText(emitNode, 'CPF') || null;
+        const emitNome = this.getTagText(emitNode, 'xNome') || null;
+        const emitFant = this.getTagText(emitNode, 'xFant') || null;
+        const emitIE = this.getTagText(emitNode, 'IE') || null;
+        const emitIEST = this.getTagText(emitNode, 'IEST') || null;
+        const emitIM = this.getTagText(emitNode, 'IM') || null;
+        const emitCNAE = this.getTagText(emitNode, 'CNAE') || null;
+        const emitCRT = this.getTagText(emitNode, 'CRT') || null;
+
+        const emitEndereco = enderEmitNode ? {
+            xLgr: this.getTagText(enderEmitNode, 'xLgr') || null,
+            nro: this.getTagText(enderEmitNode, 'nro') || null,
+            xCpl: this.getTagText(enderEmitNode, 'xCpl') || null,
+            xBairro: this.getTagText(enderEmitNode, 'xBairro') || null,
+            cMun: this.getTagText(enderEmitNode, 'cMun') || null,
+            xMun: this.getTagText(enderEmitNode, 'xMun') || null,
+            UF: this.getTagText(enderEmitNode, 'UF') || null,
+            CEP: this.getTagText(enderEmitNode, 'CEP') || null,
+            cPais: this.getTagText(enderEmitNode, 'cPais') || null,
+            xPais: this.getTagText(enderEmitNode, 'xPais') || null,
+            fone: this.getTagText(enderEmitNode, 'fone') || null,
+        } : null;
+
+        // Destinatário
+        const destDoc = this.getTagText(destNode, 'CNPJ') || this.getTagText(destNode, 'CPF') || this.getTagText(destNode, 'idEstrangeiro') || null;
+        const destNome = this.getTagText(destNode, 'xNome') || null;
+        const destIndIEDest = this.getTagText(destNode, 'indIEDest') || null;
+        const destIE = this.getTagText(destNode, 'IE') || null;
+        const destISUF = this.getTagText(destNode, 'ISUF') || null;
+        const destIM = this.getTagText(destNode, 'IM') || null;
+        const destEmail = this.getTagText(destNode, 'email') || null;
+
+        const destEndereco = enderDestNode ? {
+            xLgr: this.getTagText(enderDestNode, 'xLgr') || null,
+            nro: this.getTagText(enderDestNode, 'nro') || null,
+            xCpl: this.getTagText(enderDestNode, 'xCpl') || null,
+            xBairro: this.getTagText(enderDestNode, 'xBairro') || null,
+            cMun: this.getTagText(enderDestNode, 'cMun') || null,
+            xMun: this.getTagText(enderDestNode, 'xMun') || null,
+            UF: this.getTagText(enderDestNode, 'UF') || null,
+            CEP: this.getTagText(enderDestNode, 'CEP') || null,
+            cPais: this.getTagText(enderDestNode, 'cPais') || null,
+            xPais: this.getTagText(enderDestNode, 'xPais') || null,
+            fone: this.getTagText(enderDestNode, 'fone') || null,
+        } : null;
+
+        // Totais
         const vTotTribRaw = this.getTagText(icmsTotNode, 'vTotTrib');
         const tributosTotal = vTotTribRaw ? this.parseDecimal(vTotTribRaw) : null;
 
+        const totais = icmsTotNode ? {
+            vBC: this.parseDecimal(this.getTagText(icmsTotNode, 'vBC')),
+            vICMS: this.parseDecimal(this.getTagText(icmsTotNode, 'vICMS')),
+            vICMSDeson: this.parseDecimal(this.getTagText(icmsTotNode, 'vICMSDeson')),
+            vFCPUFDest: this.parseDecimal(this.getTagText(icmsTotNode, 'vFCPUFDest')),
+            vICMSUFDest: this.parseDecimal(this.getTagText(icmsTotNode, 'vICMSUFDest')),
+            vICMSUFFrem: this.parseDecimal(this.getTagText(icmsTotNode, 'vICMSUFFrem')),
+            vFCP: this.parseDecimal(this.getTagText(icmsTotNode, 'vFCP')),
+            vBCST: this.parseDecimal(this.getTagText(icmsTotNode, 'vBCST')),
+            vST: this.parseDecimal(this.getTagText(icmsTotNode, 'vST')),
+            vFCPST: this.parseDecimal(this.getTagText(icmsTotNode, 'vFCPST')),
+            vFCPSTRet: this.parseDecimal(this.getTagText(icmsTotNode, 'vFCPSTRet')),
+            vProd: this.parseDecimal(this.getTagText(icmsTotNode, 'vProd')),
+            vFrete: this.parseDecimal(this.getTagText(icmsTotNode, 'vFrete')),
+            vSeg: this.parseDecimal(this.getTagText(icmsTotNode, 'vSeg')),
+            vDesc: this.parseDecimal(this.getTagText(icmsTotNode, 'vDesc')),
+            vII: this.parseDecimal(this.getTagText(icmsTotNode, 'vII')),
+            vIPI: this.parseDecimal(this.getTagText(icmsTotNode, 'vIPI')),
+            vIPIDevol: this.parseDecimal(this.getTagText(icmsTotNode, 'vIPIDevol')),
+            vPIS: this.parseDecimal(this.getTagText(icmsTotNode, 'vPIS')),
+            vCOFINS: this.parseDecimal(this.getTagText(icmsTotNode, 'vCOFINS')),
+            vOutro: this.parseDecimal(this.getTagText(icmsTotNode, 'vOutro')),
+            vNF: this.parseDecimal(this.getTagText(icmsTotNode, 'vNF')),
+            vTotTrib: tributosTotal ?? 0,
+        } : null;
+
+        // Transporte
+        const volNodes = transpNode ? Array.from(transpNode.getElementsByTagName('vol')) : [];
+        const volumes = volNodes.map((vol) => ({
+            qVol: this.parseDecimal(this.getTagText(vol, 'qVol')),
+            esp: this.getTagText(vol, 'esp') || null,
+            marca: this.getTagText(vol, 'marca') || null,
+            nVol: this.getTagText(vol, 'nVol') || null,
+            pesoL: this.parseDecimal(this.getTagText(vol, 'pesoL')),
+            pesoB: this.parseDecimal(this.getTagText(vol, 'pesoB')),
+        }));
+
+        const transporte = transpNode ? {
+            modFrete: this.getTagText(transpNode, 'modFrete') || null,
+            transporta: transportaNode ? {
+                CNPJ: this.getTagText(transportaNode, 'CNPJ') || null,
+                CPF: this.getTagText(transportaNode, 'CPF') || null,
+                xNome: this.getTagText(transportaNode, 'xNome') || null,
+                IE: this.getTagText(transportaNode, 'IE') || null,
+                xEnder: this.getTagText(transportaNode, 'xEnder') || null,
+                xMun: this.getTagText(transportaNode, 'xMun') || null,
+                UF: this.getTagText(transportaNode, 'UF') || null,
+            } : null,
+            veiculo: veicTranspNode ? {
+                placa: this.getTagText(veicTranspNode, 'placa') || null,
+                UF: this.getTagText(veicTranspNode, 'UF') || null,
+                RNTC: this.getTagText(veicTranspNode, 'RNTC') || null,
+            } : null,
+            volumes,
+        } : null;
+
+        // Cobrança
+        const dupNodes = cobrNode ? Array.from(cobrNode.getElementsByTagName('dup')) : [];
+        const duplicatas = dupNodes.map((dup) => ({
+            nDup: this.getTagText(dup, 'nDup') || null,
+            dVenc: this.getTagText(dup, 'dVenc') || null,
+            vDup: this.parseDecimal(this.getTagText(dup, 'vDup')),
+        }));
+
+        const cobranca = cobrNode ? {
+            fat: fatNode ? {
+                nFat: this.getTagText(fatNode, 'nFat') || null,
+                vOrig: this.parseDecimal(this.getTagText(fatNode, 'vOrig')),
+                vDesc: this.parseDecimal(this.getTagText(fatNode, 'vDesc')),
+                vLiq: this.parseDecimal(this.getTagText(fatNode, 'vLiq')),
+            } : null,
+            duplicatas,
+        } : null;
+
+        // Pagamento
+        const detPagNodes = pagNode ? Array.from(pagNode.getElementsByTagName('detPag')) : [];
+        const pagamentos = detPagNodes.map((dp) => {
+            const cardNode = dp.getElementsByTagName('card')[0];
+            return {
+                indPag: this.getTagText(dp, 'indPag') || null,
+                tPag: this.getTagText(dp, 'tPag') || null,
+                vPag: this.parseDecimal(this.getTagText(dp, 'vPag')),
+                tpIntegra: this.getTagText(cardNode || dp, 'tpIntegra') || null,
+                CNPJ: this.getTagText(cardNode || dp, 'CNPJ') || null,
+                tBand: this.getTagText(cardNode || dp, 'tBand') || null,
+                cAut: this.getTagText(cardNode || dp, 'cAut') || null,
+            };
+        });
+        const vTroco = pagNode ? this.parseDecimal(this.getTagText(pagNode, 'vTroco')) : 0;
+
+        // Informações Adicionais
+        const infAdic = infAdicNode ? {
+            infAdFisco: this.getTagText(infAdicNode, 'infAdFisco') || null,
+            infCpl: this.getTagText(infAdicNode, 'infCpl') || null,
+        } : null;
+
         return {
             nfeKey,
-            nfeIssueDate: issueDate && !Number.isNaN(issueDate.getTime())
-                ? issueDate.toISOString().split('T')[0] as string
-                : null,
+            nfeIssueDate,
             headerData: {
+                // Principais para compatibilidade direta
                 numero: this.getTagText(ideNode, 'nNF') || null,
                 serie: this.getTagText(ideNode, 'serie') || null,
                 naturezaOperacao: this.getTagText(ideNode, 'natOp') || null,
                 modelo: this.getTagText(ideNode, 'mod') || null,
-                emitenteNome: this.getTagText(emitNode, 'xNome') || null,
-                emitenteDocumento: this.getTagText(emitNode, 'CNPJ') || this.getTagText(emitNode, 'CPF') || null,
-                destinatarioNome: this.getTagText(destNode, 'xNome') || null,
-                destinatarioDocumento: this.getTagText(destNode, 'CNPJ') || this.getTagText(destNode, 'CPF') || null,
+                emitenteNome: emitNome,
+                emitenteDocumento: emitDoc,
+                destinatarioNome: destNome,
+                destinatarioDocumento: destDoc,
                 tributosTotal,
+
+                // Tags estruturadas completas
+                ide: {
+                    cUF: this.getTagText(ideNode, 'cUF') || null,
+                    cNF: this.getTagText(ideNode, 'cNF') || null,
+                    natOp: this.getTagText(ideNode, 'natOp') || null,
+                    mod: this.getTagText(ideNode, 'mod') || null,
+                    serie: this.getTagText(ideNode, 'serie') || null,
+                    nNF: this.getTagText(ideNode, 'nNF') || null,
+                    dhEmi: dhEmi || null,
+                    dEmi: dEmi || null,
+                    dhSaiEnt: dhSaiEnt,
+                    tpNF: this.getTagText(ideNode, 'tpNF') || null,
+                    idDest: this.getTagText(ideNode, 'idDest') || null,
+                    cMunFG: this.getTagText(ideNode, 'cMunFG') || null,
+                    tpImp: this.getTagText(ideNode, 'tpImp') || null,
+                    tpEmis: this.getTagText(ideNode, 'tpEmis') || null,
+                    cDV: this.getTagText(ideNode, 'cDV') || null,
+                    tpAmb: this.getTagText(ideNode, 'tpAmb') || null,
+                    finNFe: this.getTagText(ideNode, 'finNFe') || null,
+                    indFinal: this.getTagText(ideNode, 'indFinal') || null,
+                    indPres: this.getTagText(ideNode, 'indPres') || null,
+                    procEmi: this.getTagText(ideNode, 'procEmi') || null,
+                    verProc: this.getTagText(ideNode, 'verProc') || null,
+                },
+                emit: {
+                    CNPJ: this.getTagText(emitNode, 'CNPJ') || null,
+                    CPF: this.getTagText(emitNode, 'CPF') || null,
+                    xNome: emitNome,
+                    xFant: emitFant,
+                    IE: emitIE,
+                    IEST: emitIEST,
+                    IM: emitIM,
+                    CNAE: emitCNAE,
+                    CRT: emitCRT,
+                    enderEmit: emitEndereco,
+                },
+                dest: destNode ? {
+                    CNPJ: this.getTagText(destNode, 'CNPJ') || null,
+                    CPF: this.getTagText(destNode, 'CPF') || null,
+                    idEstrangeiro: this.getTagText(destNode, 'idEstrangeiro') || null,
+                    xNome: destNome,
+                    indIEDest: destIndIEDest,
+                    IE: destIE,
+                    ISUF: destISUF,
+                    IM: destIM,
+                    email: destEmail,
+                    enderDest: destEndereco,
+                } : null,
+                total: totais,
+                transp: transporte,
+                cobr: cobranca,
+                pag: {
+                    detPag: pagamentos,
+                    vTroco,
+                },
+                infAdic,
             },
         };
     }
@@ -309,6 +695,19 @@ export class OrderService {
         }
 
         if (product) {
+            const updates: Partial<CreateProductData> = {};
+            if (!product.ncm && item.xmlItemData?.ncm) updates.ncm = String(item.xmlItemData.ncm).slice(0, 8);
+            if (!product.cest && item.xmlItemData?.cest) updates.cest = String(item.xmlItemData.cest).slice(0, 7);
+            if (!product.ean && item.ean) updates.ean = item.ean;
+            if (!product.sku && item.sku) updates.sku = item.sku;
+
+            if (Object.keys(updates).length > 0) {
+                try {
+                    await ProductRepository.update(product.public_id, companyId, updates);
+                } catch (_) {
+                    // Ignora eventuais colisões não críticas
+                }
+            }
             return product;
         }
 
@@ -318,6 +717,8 @@ export class OrderService {
             ean: item.ean || undefined,
             external_code: item.sku || undefined,
             is_imported: true,
+            ncm: item.xmlItemData?.ncm ? String(item.xmlItemData.ncm).slice(0, 8) : undefined,
+            cest: item.xmlItemData?.cest ? String(item.xmlItemData.cest).slice(0, 7) : undefined,
             cost_price: item.unitPrice > 0 ? item.unitPrice : 0,
             selling_price: item.unitPrice > 0 ? item.unitPrice : 0,
             initial_stock: 0,
@@ -379,22 +780,52 @@ export class OrderService {
     private static async resolveCustomerPublicIdByDocument(companyId: number, xmlContent: string): Promise<string | null> {
         const doc = new DOMParser().parseFromString(xmlContent, 'text/xml');
         const destNode = doc.getElementsByTagName('dest')[0];
+        if (!destNode) return null;
+
         const cnpj = this.getTagText(destNode, 'CNPJ').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         const cpf = this.getTagText(destNode, 'CPF').replace(/\D/g, '');
         const documentDigits = cnpj || cpf;
 
-        if (!documentDigits) return null;
+        if (documentDigits) {
+            const [rows] = await pool.query<RowDataPacket[]>(
+                `SELECT public_id
+                 FROM customers
+                 WHERE company_id = ?
+                   AND REPLACE(REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?
+                 LIMIT 1`,
+                [companyId, documentDigits]
+            );
 
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT public_id
-             FROM customers
-             WHERE company_id = ?
-               AND REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', '') = ?
-             LIMIT 1`,
-            [companyId, documentDigits]
-        );
+            if (rows.length > 0) {
+                return String(rows[0]!.public_id || '').trim() || null;
+            }
 
-        return rows.length > 0 ? String(rows[0]!.public_id || '').trim() || null : null;
+            const name = this.getTagText(destNode, 'xNome');
+            if (name) {
+                try {
+                    const enderDest = destNode.getElementsByTagName('enderDest')[0];
+                    const created = await EntityService.createCustomer(companyId, {
+                        name,
+                        cnpj_cpf: documentDigits,
+                        inscricao_estadual: this.getTagText(destNode, 'IE') || undefined,
+                        email: this.getTagText(destNode, 'email') || undefined,
+                        street: this.getTagText(enderDest, 'xLgr') || undefined,
+                        number: this.getTagText(enderDest, 'nro') || undefined,
+                        complement: this.getTagText(enderDest, 'xCpl') || undefined,
+                        neighborhood: this.getTagText(enderDest, 'xBairro') || undefined,
+                        city: this.getTagText(enderDest, 'xMun') || undefined,
+                        state: this.getTagText(enderDest, 'UF') || undefined,
+                        zipcode: this.getTagText(enderDest, 'CEP') || undefined,
+                        phone: this.getTagText(enderDest, 'fone') || undefined,
+                    });
+                    return created.public_id;
+                } catch (err) {
+                    console.error('Erro ao auto-criar cliente a partir do XML:', err);
+                }
+            }
+        }
+
+        return null;
     }
 
     private static resolveOrderDate(xmlContent: string): string {
@@ -488,9 +919,25 @@ export class OrderService {
         const customerPublicId = data.customer_public_id
             || await this.resolveCustomerPublicIdByDocument(effectiveCompanyId, xmlContent);
 
+        // Auto preenche endereço de entrega se houver endereço do destinatário
+        let deliveryAddress = data.delivery_address || null;
+        if (!deliveryAddress && parsedHeader.headerData.dest?.enderDest) {
+            const e = parsedHeader.headerData.dest.enderDest;
+            const parts = [
+                e.xLgr ? `${e.xLgr}, ${e.nro || 'S/N'}` : null,
+                e.xCpl,
+                e.xBairro,
+                e.xMun && e.UF ? `${e.xMun}/${e.UF}` : (e.xMun || e.UF),
+                e.CEP ? `CEP: ${e.CEP}` : null
+            ].filter(Boolean);
+            if (parts.length > 0) {
+                deliveryAddress = parts.join(' - ');
+            }
+        }
+
         const sale = await this.createSalesOrder(effectiveCompanyId, userPublicId, {
             customer_public_id: customerPublicId,
-            delivery_address: data.delivery_address || null,
+            delivery_address: deliveryAddress,
             bank_account_public_id: bankAccountPublicId,
             category_public_id: categoryPublicId,
             date: data.date || this.resolveOrderDate(xmlContent),

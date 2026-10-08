@@ -27,6 +27,11 @@
     let rawContasPagarLancamentos: any[] = [];
     let isContasPagarLoading = false;
 
+    // State for Contas Geral Solidcon (BI / RDUPHOLD_CONTAS_A_PAGAR_BI)
+    let currentContasGeralData: any = null;
+    let rawContasGeralLancamentos: any[] = [];
+    let isContasGeralLoading = false;
+
 
     function escapeHtml(value: any): string {
         return String(value ?? '')
@@ -1869,6 +1874,1044 @@
         }
     };
 
+    // ─── Contas Geral Solidcon (BI): Render Card ─────────────────────────────
+    const renderContasGeralCard = (data: any) => {
+        const card = getEl('cardContasGeralSolidcon');
+        if (!card) return;
+
+        if (!data || !data.loaded) {
+            if (getEl('cardContasGeralTotalPago')) getEl('cardContasGeralTotalPago')!.textContent = 'R$ 0,00';
+            if (getEl('cardContasGeralQtdPago')) getEl('cardContasGeralQtdPago')!.textContent = 'Defina o período e filtre';
+            if (getEl('cardContasGeralTotalAberto')) getEl('cardContasGeralTotalAberto')!.textContent = 'R$ 0,00';
+            if (getEl('cardContasGeralQtdAberto')) getEl('cardContasGeralQtdAberto')!.textContent = 'Defina o período e filtre';
+            if (getEl('cardContasGeralSubAberto')) getEl('cardContasGeralSubAberto')!.textContent = 'Vencidos: R$ 0,00 • A Vencer: R$ 0,00';
+            if (getEl('cardContasGeralTotalGeral')) getEl('cardContasGeralTotalGeral')!.textContent = 'R$ 0,00';
+            if (getEl('cardContasGeralQtdTotal')) getEl('cardContasGeralQtdTotal')!.textContent = 'Defina o período e filtre';
+            if (getEl('cardContasGeralTotalPermuta')) getEl('cardContasGeralTotalPermuta')!.textContent = 'R$ 0,00';
+            if (getEl('cardContasGeralQtdPermuta')) getEl('cardContasGeralQtdPermuta')!.textContent = 'Defina o período e filtre';
+            if (getEl('badgeContasGeralStatus')) {
+                getEl('badgeContasGeralStatus')!.textContent = 'Aguardando Filtro';
+                getEl('badgeContasGeralStatus')!.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-slate-700/80 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-600';
+            }
+            if (getEl('badgeCardContasGeralCount')) getEl('badgeCardContasGeralCount')!.textContent = '0';
+            if (getEl('cardContasGeralPeriodoBadge')) getEl('cardContasGeralPeriodoBadge')!.textContent = 'Clique em Filtrar para carregar';
+            if (getEl('modalContasGeralBadgePeriodo')) getEl('modalContasGeralBadgePeriodo')!.textContent = 'Não Consultado';
+            if (getEl('cardContasGeralFiliaisCount')) getEl('cardContasGeralFiliaisCount')!.textContent = '0 filiais';
+            if (getEl('cardContasGeralFiliaisCards')) {
+                getEl('cardContasGeralFiliaisCards')!.innerHTML = '<span class="text-xs text-gray-400 col-span-full">Clique em Filtrar para carregar as filiais</span>';
+            }
+            return;
+        }
+
+        const summary = data.summary || {};
+        const totalPago = Number(summary.totalPago || 0);
+        const totalAberto = Number(summary.totalAberto || 0);
+        const totalVencido = Number(summary.totalVencido || 0);
+        const totalAVencer = Number(summary.totalAVencer || 0);
+        const totalEmitido = Number(summary.totalEmitido || 0);
+        const totalPermuta = Number(summary.totalPermuta || 0);
+        const qtdTitulos = Number(summary.qtdTitulos || 0);
+        const qtdPagos = Number(summary.qtdPagos || 0);
+        const qtdAberto = Number(summary.qtdAberto || 0);
+        const qtdVencidos = Number(summary.qtdVencidos || 0);
+        const qtdAVencer = Number(summary.qtdAVencer || 0);
+        const qtdPermuta = Number(summary.qtdPermuta || 0);
+
+        if (getEl('cardContasGeralTotalPago')) {
+            getEl('cardContasGeralTotalPago')!.textContent = formatMoney(totalPago);
+        }
+        if (getEl('cardContasGeralQtdPago')) {
+            getEl('cardContasGeralQtdPago')!.textContent = `${qtdPagos.toLocaleString('pt-BR')} ${qtdPagos === 1 ? 'título pago' : 'títulos pagos'}`;
+        }
+        if (getEl('cardContasGeralTotalAberto')) {
+            getEl('cardContasGeralTotalAberto')!.textContent = formatMoney(totalAberto);
+        }
+        if (getEl('cardContasGeralQtdAberto')) {
+            getEl('cardContasGeralQtdAberto')!.textContent = `${qtdAberto.toLocaleString('pt-BR')} ${qtdAberto === 1 ? 'título em aberto' : 'títulos em aberto'}`;
+        }
+        if (getEl('cardContasGeralSubAberto')) {
+            getEl('cardContasGeralSubAberto')!.textContent = `Vencidos: ${formatMoney(totalVencido)} (${qtdVencidos}) • A Vencer: ${formatMoney(totalAVencer)} (${qtdAVencer})`;
+        }
+        if (getEl('cardContasGeralTotalGeral')) {
+            getEl('cardContasGeralTotalGeral')!.textContent = formatMoney(totalEmitido);
+        }
+        if (getEl('cardContasGeralQtdTotal')) {
+            getEl('cardContasGeralQtdTotal')!.textContent = `${qtdTitulos.toLocaleString('pt-BR')} ${qtdTitulos === 1 ? 'título no total' : 'títulos no total'}`;
+        }
+        if (getEl('cardContasGeralTotalPermuta')) {
+            getEl('cardContasGeralTotalPermuta')!.textContent = formatMoney(totalPermuta);
+        }
+        if (getEl('cardContasGeralQtdPermuta')) {
+            getEl('cardContasGeralQtdPermuta')!.textContent = `${qtdPermuta.toLocaleString('pt-BR')} ${qtdPermuta === 1 ? 'título de permuta' : 'títulos de permuta'}`;
+        }
+        if (getEl('badgeContasGeralStatus')) {
+            getEl('badgeContasGeralStatus')!.textContent = `${qtdTitulos.toLocaleString('pt-BR')} Títulos BI`;
+            getEl('badgeContasGeralStatus')!.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800';
+        }
+        if (getEl('badgeCardContasGeralCount')) {
+            getEl('badgeCardContasGeralCount')!.textContent = String(qtdTitulos);
+        }
+
+        // Badges Período
+        const filtros = data.filtrosAplicados || {};
+        const dtIni = filtros.dtInicio || '';
+        const dtFim = filtros.dtFim || '';
+        const tipoDt = filtros.tipoData || 'vencimento';
+        const tipoLabelMap: Record<string, string> = {
+            vencimento: 'Vencimento',
+            pagamento: 'Pagamento',
+            emissao: 'Emissão',
+            competencia: 'Competência'
+        };
+        const tipoLabel = tipoLabelMap[tipoDt] || 'Vencimento';
+
+        let badgePeriodoText = 'Todos os Lançamentos';
+        if (dtIni && dtFim) {
+            badgePeriodoText = `${formatDateBR(dtIni)} a ${formatDateBR(dtFim)} (${tipoLabel})`;
+        } else if (dtIni) {
+            badgePeriodoText = `A partir de ${formatDateBR(dtIni)} (${tipoLabel})`;
+        } else if (dtFim) {
+            badgePeriodoText = `Até ${formatDateBR(dtFim)} (${tipoLabel})`;
+        }
+
+        if (getEl('cardContasGeralPeriodoBadge')) {
+            getEl('cardContasGeralPeriodoBadge')!.textContent = badgePeriodoText;
+        }
+        if (getEl('modalContasGeralBadgePeriodo')) {
+            getEl('modalContasGeralBadgePeriodo')!.textContent = badgePeriodoText;
+        }
+
+        // Filiais no Card Principal
+        const mainFiliaisContainer = getEl('cardContasGeralFiliaisCards');
+        const mainCountBadge = getEl('cardContasGeralFiliaisCount');
+        if (mainFiliaisContainer) {
+            const filiais = data.byFilial || [];
+            if (mainCountBadge) {
+                mainCountBadge.textContent = `${filiais.length} ${filiais.length === 1 ? 'filial' : 'filiais'}`;
+            }
+            if (filiais.length === 0) {
+                mainFiliaisContainer.innerHTML = '<span class="text-xs text-gray-400 col-span-full">Nenhum título no período</span>';
+            } else {
+                mainFiliaisContainer.innerHTML = filiais.map((f: any) => {
+                    const fId = String(f.filial);
+                    const fEmit = Number(f.totalEmitido || 0);
+                    const fPago = Number(f.totalPago || 0);
+                    const fAberto = Number(f.totalAberto || 0);
+                    const fQtd = Number(f.qtdTitulos || 0);
+                    const fQtdPago = Number(f.qtdPagos || 0);
+                    const fQtdAberto = Number(f.qtdAberto || 0);
+
+                    return `
+                        <button type="button" data-filial="${escapeHtml(fId)}" class="card-filial-geral-btn text-left p-3.5 rounded-xl border border-blue-200/80 dark:border-slate-700/80 bg-blue-50/40 dark:bg-slate-900/50 hover:bg-blue-100/60 dark:hover:bg-slate-800/80 hover:border-blue-400 transition-all cursor-pointer flex flex-col justify-between group shadow-2xs">
+                            <div class="flex items-center justify-between gap-1 mb-1.5">
+                                <span class="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 transition-colors" title="${escapeHtml(fId)}">
+                                    ${escapeHtml(fId)}
+                                </span>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60">
+                                    ${fQtd} tit.
+                                </span>
+                            </div>
+                            <div class="space-y-1 mt-1">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-emerald-700 dark:text-emerald-400 font-semibold">Pago (${fQtdPago}):</span>
+                                    <strong class="text-emerald-700 dark:text-emerald-400 font-mono">${formatMoney(fPago)}</strong>
+                                </div>
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-amber-700 dark:text-amber-400 font-semibold">Aberto (${fQtdAberto}):</span>
+                                    <strong class="text-amber-700 dark:text-amber-400 font-mono font-bold">${formatMoney(fAberto)}</strong>
+                                </div>
+                                <div class="pt-1 border-t border-blue-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                                    <span>Total Emitido:</span>
+                                    <span class="font-mono font-bold text-gray-800 dark:text-gray-200">${formatMoney(fEmit)}</span>
+                                </div>
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+
+                mainFiliaisContainer.querySelectorAll('.card-filial-geral-btn').forEach((btn: any) => {
+                    btn.addEventListener('click', () => {
+                        const targetFilial = btn.getAttribute('data-filial');
+                        openModalContasGeral(targetFilial);
+                    });
+                });
+            }
+        }
+    };
+
+    // ─── Modal Contas Geral (BI): Filiais Cards & Populate ───────────────────
+    const renderModalContasGeralFiliaisCards = (data?: any) => {
+        const targetData = data || currentContasGeralData;
+        const container = getEl('modalContasGeralFiliaisCards');
+        const countBadge = getEl('modalContasGeralFiliaisCount');
+        if (!container) return;
+
+        if (!targetData || !targetData.loaded) {
+            container.innerHTML = `
+                <div class="col-span-full py-3 text-center text-xs text-gray-500 dark:text-gray-400">
+                    Aguardando consulta do servidor...
+                </div>
+            `;
+            if (countBadge) countBadge.textContent = '0 filiais';
+            return;
+        }
+
+        const filiais = targetData.byFilial || [];
+        if (countBadge) {
+            countBadge.textContent = `${filiais.length} ${filiais.length === 1 ? 'filial' : 'filiais'}`;
+        }
+
+        const currentSelectedFilial = getEl<HTMLSelectElement>('modalContasGeralFilterFilial')?.value || '';
+        const summary = targetData.summary || {};
+        const totalPago = Number(summary.totalPago || 0);
+        const totalAberto = Number(summary.totalAberto || 0);
+        const qtdTitulos = Number(summary.qtdTitulos || 0);
+
+        const isAllActive = currentSelectedFilial === '';
+
+        let html = `
+            <!-- Card Todas as Filiais -->
+            <button type="button" data-filial="" class="filial-geral-card-btn text-left p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                isAllActive
+                    ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/40 ring-2 ring-blue-500/40 shadow-xs'
+                    : 'border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-700/60 hover:bg-blue-50/30'
+            }">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <span class="text-[11px] font-bold text-gray-900 dark:text-white truncate">Todas as Filiais</span>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isAllActive ? 'bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}">
+                        ${qtdTitulos} tit.
+                    </span>
+                </div>
+                <div class="text-xs space-y-0.5 mt-0.5">
+                    <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <span>Pago:</span>
+                        <span class="font-mono">${formatMoney(totalPago)}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 font-bold">
+                        <span>Aberto:</span>
+                        <span class="font-mono">${formatMoney(totalAberto)}</span>
+                    </div>
+                </div>
+            </button>
+        `;
+
+        filiais.forEach((f: any) => {
+            const filialId = String(f.filial);
+            const isActive = currentSelectedFilial === filialId;
+            const fPago = Number(f.totalPago || 0);
+            const fAberto = Number(f.totalAberto || 0);
+            const fQtd = Number(f.qtdTitulos || 0);
+
+            html += `
+                <button type="button" data-filial="${escapeHtml(filialId)}" class="filial-geral-card-btn text-left p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                    isActive
+                        ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/40 ring-2 ring-blue-500/40 shadow-xs'
+                        : 'border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-700/60 hover:bg-blue-50/30'
+                }">
+                    <div class="flex items-center justify-between gap-1 mb-1">
+                        <span class="text-[11px] font-bold text-gray-900 dark:text-white truncate" title="${escapeHtml(filialId)}">
+                            ${escapeHtml(filialId)}
+                        </span>
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? 'bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}">
+                            ${fQtd} tit.
+                        </span>
+                    </div>
+                    <div class="text-xs space-y-0.5 mt-0.5">
+                        <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+                            <span>Pago:</span>
+                            <span class="font-mono">${formatMoney(fPago)}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 font-bold">
+                            <span>Aberto:</span>
+                            <span class="font-mono">${formatMoney(fAberto)}</span>
+                        </div>
+                    </div>
+                </button>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        container.querySelectorAll('.filial-geral-card-btn').forEach((btn: any) => {
+            btn.addEventListener('click', () => {
+                const targetFilial = btn.getAttribute('data-filial') || '';
+                const select = getEl<HTMLSelectElement>('modalContasGeralFilterFilial');
+                if (select) {
+                    select.value = targetFilial;
+                }
+                renderModalContasGeralFiliaisCards(currentContasGeralData);
+                applyModalContasGeralFilters();
+            });
+        });
+    };
+
+    const populateModalContasGeralFilters = (data: any) => {
+        const filialSelect = getEl<HTMLSelectElement>('modalContasGeralFilterFilial');
+        const filiais = data.byFilial || [];
+        if (filialSelect) {
+            const currentVal = filialSelect.value;
+            filialSelect.innerHTML = '<option value="">Todas as Filiais</option>' +
+                filiais.map((f: any) => `<option value="${escapeHtml(f.filial)}">${escapeHtml(f.filial)}</option>`).join('');
+            if (currentVal && filiais.some((f: any) => String(f.filial) === currentVal)) {
+                filialSelect.value = currentVal;
+            }
+        }
+        renderModalContasGeralFiliaisCards(data);
+    };
+
+    const renderModalContasGeralTable = (list: any[]) => {
+        const tbody = getEl('modalContasGeralTableBody');
+        if (!tbody) return;
+
+        if (!currentContasGeralData || !currentContasGeralData.loaded) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="14" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <svg class="w-8 h-8 text-blue-400 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            <span class="font-medium text-gray-700 dark:text-gray-200">Contas Geral (BI) não consultadas</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Defina o período acima e clique em "Consultar Servidor" ou "Filtrar" para carregar os títulos.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="14" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <svg class="w-8 h-8 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="font-medium text-gray-700 dark:text-gray-200">Nenhum título encontrado com os filtros selecionados</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Tente ajustar a busca, a situação de pagamento, a filial ou o período.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const filiaisMap: Record<string, {
+            filialName: string;
+            items: any[];
+            totalParcela: number;
+            totalPago: number;
+            totalAberto: number;
+            totalPermuta: number;
+            qtdPagos: number;
+            qtdAberto: number;
+            qtdVencidos: number;
+            qtdAVencer: number;
+        }> = {};
+
+        list.forEach(item => {
+            const fKey = String(item.Filial || 'Matriz / Geral').trim();
+            if (!filiaisMap[fKey]) {
+                filiaisMap[fKey] = {
+                    filialName: fKey,
+                    items: [],
+                    totalParcela: 0,
+                    totalPago: 0,
+                    totalAberto: 0,
+                    totalPermuta: 0,
+                    qtdPagos: 0,
+                    qtdAberto: 0,
+                    qtdVencidos: 0,
+                    qtdAVencer: 0
+                };
+            }
+            const g = filiaisMap[fKey];
+            g.items.push(item);
+            g.totalParcela += Number(item.vlParcela || 0);
+            g.totalPago += Number(item.vlPago || 0);
+            g.totalAberto += Number(item.saldoAberto || 0);
+            g.totalPermuta += Number(item.vlPermuta || 0);
+            if (item.hasPagto) {
+                g.qtdPagos++;
+            } else {
+                g.qtdAberto++;
+                if (item.situacao === 'vencido') g.qtdVencidos++;
+                else g.qtdAVencer++;
+            }
+        });
+
+        const groups = Object.values(filiaisMap).sort((a, b) => b.totalAberto - a.totalAberto);
+        let html = '';
+
+        groups.forEach(g => {
+            html += `
+                <tr class="bg-linear-to-r from-blue-50/80 via-blue-50/30 to-transparent dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900 border-t-2 border-b border-blue-200 dark:border-blue-900/60 sticky top-10 z-5 font-bold text-xs">
+                    <td colspan="14" class="py-2.5 px-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-xs"></span>
+                                <span class="text-sm font-black text-gray-900 dark:text-white tracking-tight">${escapeHtml(g.filialName)}</span>
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
+                                    ${g.items.length} ${g.items.length === 1 ? 'título' : 'títulos'}
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-4 text-xs">
+                                <span class="text-gray-500 dark:text-gray-400">Total Emitido: <strong class="font-mono text-gray-800 dark:text-gray-200">${formatMoney(g.totalParcela)}</strong></span>
+                                <span class="text-emerald-700 dark:text-emerald-400 font-semibold">Pago (${g.qtdPagos}): <strong class="font-mono">${formatMoney(g.totalPago)}</strong></span>
+                                <span class="text-amber-700 dark:text-amber-400 font-black">Aberto (${g.qtdAberto}): <strong class="font-mono">${formatMoney(g.totalAberto)}</strong></span>
+                                ${g.totalPermuta > 0 ? `<span class="text-purple-700 dark:text-purple-300 font-semibold">Permuta: <strong class="font-mono">${formatMoney(g.totalPermuta)}</strong></span>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            g.items.forEach((item, idx) => {
+                const isPago = item.hasPagto;
+                const isVencido = !isPago && item.situacao === 'vencido';
+                const vlPermuta = Number(item.vlPermuta || 0);
+
+                let statusBadgeHtml = '';
+                if (isPago) {
+                    statusBadgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Pago</span>`;
+                } else if (isVencido) {
+                    statusBadgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-200 dark:border-red-800"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>Vencido</span>`;
+                } else {
+                    statusBadgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>A Vencer</span>`;
+                }
+
+                let pagtoBadgeHtml = '';
+                if (item.Pagto) {
+                    pagtoBadgeHtml = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">${formatDateBR(item.Pagto)}</span>`;
+                } else {
+                    pagtoBadgeHtml = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Em Aberto</span>`;
+                }
+
+                const rawIndex = rawContasGeralLancamentos.indexOf(item);
+
+                html += `
+                    <tr class="hover:bg-blue-50/40 dark:hover:bg-slate-800/60 transition-colors ${idx % 2 === 1 ? 'bg-gray-50/50 dark:bg-slate-900/40' : ''}">
+                        <td class="py-2.5 px-3 text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
+                            ${formatDateBR(item.dtEmissao)}
+                        </td>
+                        <td class="py-2.5 px-3 font-medium ${isVencido ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
+                            ${formatDateBR(item.dtParcela)}
+                        </td>
+                        <td class="py-2.5 px-3 whitespace-nowrap">
+                            ${pagtoBadgeHtml}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            ${statusBadgeHtml}
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs font-semibold" title="Conta #${item.cdConta}">
+                            ${escapeHtml(item.Documento || `#${item.cdConta}`)}
+                        </td>
+                        <td class="py-2.5 px-2 text-center font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
+                            ${escapeHtml(item.NumeroParcela || '1')}
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-700 dark:text-gray-300 whitespace-nowrap text-xs">
+                            ${escapeHtml(item.Filial || '-')}
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate text-xs" title="${escapeHtml(item.Fornecedor)} - ${escapeHtml(item.Historico || '')}">
+                            ${escapeHtml(item.Fornecedor || '-')}
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">
+                            ${escapeHtml(item.CNPJ_CPF || '-')}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                            ${formatMoney(item.vlParcela)}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-bold ${vlPermuta > 0 ? 'text-purple-700 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} whitespace-nowrap">
+                            ${vlPermuta > 0 ? formatMoney(vlPermuta) : '-'}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                            ${formatMoney(item.vlPago)}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-bold ${item.saldoAberto <= 0.01 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'} whitespace-nowrap">
+                            ${formatMoney(item.saldoAberto)}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <button type="button" class="btn-view-contas-geral-detalhes p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 shadow-2xs hover:scale-110 transition-all cursor-pointer inline-flex items-center justify-center" data-index="${rawIndex >= 0 ? rawIndex : idx}" title="Visualizar Detalhes do Lançamento">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+
+        // Sticky Grand Total Consolidado Row
+        if (groups.length > 0) {
+            let gParcela = 0;
+            let gPermuta = 0;
+            let gPago = 0;
+            let gSaldo = 0;
+            let gTitulos = 0;
+            let gPagos = 0;
+            let gAberto = 0;
+
+            groups.forEach(g => {
+                gParcela += g.totalParcela;
+                gPermuta += g.totalPermuta;
+                gPago += g.totalPago;
+                gSaldo += g.totalAberto;
+                gTitulos += g.items.length;
+                gPagos += g.qtdPagos;
+                gAberto += g.qtdAberto;
+            });
+
+            html += `
+                <tr class="bg-linear-to-r from-gray-100 via-blue-50 to-gray-100 dark:from-slate-900 dark:via-blue-950/40 dark:to-slate-900 font-bold border-t-2 border-b-2 border-blue-300 dark:border-blue-800 text-xs text-gray-900 dark:text-white sticky bottom-0 z-10 shadow-md">
+                    <td colspan="9" class="py-3 px-4 text-right">
+                        <div class="inline-flex items-center gap-1.5 uppercase tracking-wider text-gray-800 dark:text-gray-200 font-extrabold">
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            <span>Totais Consolidados (${gTitulos} títulos | ${gPagos} pagos • ${gAberto} em aberto):</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap" title="Total Emitido das Parcelas">
+                        <div class="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-400 font-sans">Emitido</div>
+                        <div>${formatMoney(gParcela)}</div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-purple-800 dark:text-purple-300 whitespace-nowrap" title="Total Permutado">
+                        <div class="text-[10px] uppercase font-semibold text-purple-500/80 font-sans">Permuta</div>
+                        <div>${gPermuta > 0 ? formatMoney(gPermuta) : '-'}</div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap" title="Total Pago">
+                        <div class="text-[10px] uppercase font-semibold text-emerald-600/80 font-sans">Pago</div>
+                        <div>${formatMoney(gPago)}</div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-black text-amber-700 dark:text-amber-300 whitespace-nowrap bg-amber-100/60 dark:bg-amber-950/60 rounded-lg" title="Saldo em Aberto">
+                        <div class="text-[10px] uppercase font-black text-amber-700 dark:text-amber-300 font-sans">Saldo Aberto</div>
+                        <div class="text-sm font-black">${formatMoney(gSaldo)}</div>
+                    </td>
+                    <td class="py-3 px-3"></td>
+                </tr>
+            `;
+        }
+
+        tbody.innerHTML = html;
+
+        tbody.querySelectorAll<HTMLButtonElement>('.btn-view-contas-geral-detalhes').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idxStr = btn.getAttribute('data-index');
+                if (idxStr !== null) {
+                    const idx = parseInt(idxStr, 10);
+                    const item = rawContasGeralLancamentos[idx] || list[idx];
+                    if (item) {
+                        openModalContasGeralDetalhes(item);
+                    }
+                }
+            });
+        });
+    };
+
+    const applyModalContasGeralFilters = () => {
+        const query = (getEl<HTMLInputElement>('modalContasGeralSearch')?.value || '').toLowerCase().trim();
+        const selectedStatus = getEl<HTMLSelectElement>('modalContasGeralFilterStatus')?.value || 'all';
+        const selectedFilial = getEl<HTMLSelectElement>('modalContasGeralFilterFilial')?.value || '';
+        const dtInicio = getEl<HTMLInputElement>('modalContasGeralDtInicio')?.value || '';
+        const dtFim = getEl<HTMLInputElement>('modalContasGeralDtFim')?.value || '';
+        const tipoData = getEl<HTMLSelectElement>('modalContasGeralTipoData')?.value || 'vencimento';
+
+        const filtered = rawContasGeralLancamentos.filter((item: any) => {
+            const hasPagto = item.hasPagto || item.Pagto !== null;
+            const isVencido = !hasPagto && item.situacao === 'vencido';
+            const isAVencer = !hasPagto && item.situacao === 'a_vencer';
+            const vlPermuta = Number(item.vlPermuta || 0);
+
+            if (selectedStatus === 'com_pagto' && !hasPagto) return false;
+            if (selectedStatus === 'sem_pagto' && hasPagto) return false;
+            if (selectedStatus === 'vencidos' && !isVencido) return false;
+            if (selectedStatus === 'a_vencer' && !isAVencer) return false;
+            if (selectedStatus === 'permutas' && vlPermuta <= 0) return false;
+
+            if (selectedFilial && String(item.Filial || '') !== selectedFilial && String(item.FilialDebito || '') !== selectedFilial) {
+                return false;
+            }
+
+            let targetDate = item.dtParcela;
+            if (tipoData === 'pagamento') targetDate = item.Pagto;
+            else if (tipoData === 'emissao') targetDate = item.dtEmissao;
+            else if (tipoData === 'competencia') targetDate = item.dtCompetencia;
+
+            if (dtInicio && targetDate && targetDate < dtInicio) return false;
+            if (dtFim && targetDate && targetDate > dtFim) return false;
+
+            if (query) {
+                const combined = `${item.Fornecedor || ''} ${item.CNPJ_CPF || ''} ${item.Documento || ''} ${item.Historico || ''} ${item.Filial || ''} ${item.FilialDebito || ''} ${item.SmartContabil || ''} ${item.OrigemModuloERP || ''} ${item.CentroCusto || ''} ${item.ContaCorrente || ''} ${item.Comprador || ''}`.toLowerCase();
+                if (!combined.includes(query)) return false;
+            }
+            return true;
+        });
+
+        // Update Ribbon Summary
+        let sumGeral = 0;
+        let sumPago = 0;
+        let sumAberto = 0;
+        let sumVencido = 0;
+        let sumAVencer = 0;
+        let sumPermuta = 0;
+        let countPagos = 0;
+        let countAberto = 0;
+
+        filtered.forEach((r: any) => {
+            const parcela = Number(r.vlParcela || 0);
+            const pago = Number(r.vlPago || 0);
+            const saldo = Number(r.saldoAberto || 0);
+            const perm = Number(r.vlPermuta || 0);
+            sumGeral += parcela;
+            sumPago += pago;
+            sumAberto += saldo;
+            sumPermuta += perm;
+            if (r.hasPagto) {
+                countPagos++;
+            } else {
+                countAberto++;
+                if (r.situacao === 'vencido') sumVencido += saldo;
+                else sumAVencer += saldo;
+            }
+        });
+
+        if (getEl('modalContasGeralSummaryGeral')) {
+            getEl('modalContasGeralSummaryGeral')!.textContent = formatMoney(sumGeral);
+        }
+        if (getEl('modalContasGeralSummaryPago')) {
+            getEl('modalContasGeralSummaryPago')!.textContent = formatMoney(sumPago);
+        }
+        if (getEl('modalContasGeralSummaryAberto')) {
+            getEl('modalContasGeralSummaryAberto')!.textContent = formatMoney(sumAberto);
+        }
+        if (getEl('modalContasGeralSummaryVencido')) {
+            getEl('modalContasGeralSummaryVencido')!.textContent = formatMoney(sumVencido);
+        }
+        if (getEl('modalContasGeralSummaryAVencer')) {
+            getEl('modalContasGeralSummaryAVencer')!.textContent = formatMoney(sumAVencer);
+        }
+        if (getEl('modalContasGeralSummaryPermuta')) {
+            getEl('modalContasGeralSummaryPermuta')!.textContent = formatMoney(sumPermuta);
+        }
+        if (getEl('modalContasGeralItemCount')) {
+            getEl('modalContasGeralItemCount')!.textContent = `Exibindo ${filtered.length} de ${rawContasGeralLancamentos.length} títulos (${countPagos} pagos • ${countAberto} em aberto)`;
+        }
+
+        renderModalContasGeralTable(filtered);
+    };
+
+    const openModalContasGeral = (initialFilial?: string) => {
+        const modal = getEl('modalContasGeralSolidcon');
+        if (!modal) return;
+
+        if (getEl<HTMLInputElement>('modalContasGeralSearch')) {
+            getEl<HTMLInputElement>('modalContasGeralSearch')!.value = '';
+        }
+        if (getEl<HTMLSelectElement>('modalContasGeralFilterStatus')) {
+            getEl<HTMLSelectElement>('modalContasGeralFilterStatus')!.value = 'all';
+        }
+        if (getEl<HTMLSelectElement>('modalContasGeralFilterFilial')) {
+            getEl<HTMLSelectElement>('modalContasGeralFilterFilial')!.value = initialFilial || '';
+        }
+
+        // Sync card dates into modal
+        const cardDtIni = getEl<HTMLInputElement>('cardContasGeralDtInicio')?.value || '';
+        const cardDtFim = getEl<HTMLInputElement>('cardContasGeralDtFim')?.value || '';
+        const cardTipo = getEl<HTMLSelectElement>('cardContasGeralTipoData')?.value || 'vencimento';
+
+        if (getEl<HTMLInputElement>('modalContasGeralDtInicio')) getEl<HTMLInputElement>('modalContasGeralDtInicio')!.value = cardDtIni;
+        if (getEl<HTMLInputElement>('modalContasGeralDtFim')) getEl<HTMLInputElement>('modalContasGeralDtFim')!.value = cardDtFim;
+        if (getEl<HTMLSelectElement>('modalContasGeralTipoData')) getEl<HTMLSelectElement>('modalContasGeralTipoData')!.value = cardTipo;
+
+        renderModalContasGeralFiliaisCards(currentContasGeralData);
+        applyModalContasGeralFilters();
+
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const closeModalContasGeral = () => {
+        const modal = getEl('modalContasGeralSolidcon');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    };
+
+    const openModalContasGeralDetalhes = (item: any) => {
+        const modal = getEl('modalContasGeralDetalhes');
+        if (!modal || !item) return;
+
+        const isPago = item.hasPagto || item.Pagto !== null;
+        const isVencido = !isPago && item.situacao === 'vencido';
+
+        if (getEl('modalGeralDetDocNum')) {
+            getEl('modalGeralDetDocNum')!.textContent = item.Documento || `#${item.cdConta || '-'}`;
+        }
+        if (getEl('modalGeralDetStatusBadge')) {
+            if (isPago) {
+                getEl('modalGeralDetStatusBadge')!.textContent = 'Pago / Baixado';
+                getEl('modalGeralDetStatusBadge')!.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+            } else if (isVencido) {
+                getEl('modalGeralDetStatusBadge')!.textContent = 'Vencido em Aberto';
+                getEl('modalGeralDetStatusBadge')!.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800';
+            } else {
+                getEl('modalGeralDetStatusBadge')!.textContent = 'A Vencer em Aberto';
+                getEl('modalGeralDetStatusBadge')!.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+            }
+        }
+
+        if (getEl('modalGeralDetFilialBadge')) {
+            getEl('modalGeralDetFilialBadge')!.textContent = item.Filial || 'Matriz';
+        }
+        if (getEl('modalGeralDetSituacaoBadge')) {
+            getEl('modalGeralDetSituacaoBadge')!.textContent = isPago ? 'Quitado' : (isVencido ? 'Vencido' : 'A Vencer');
+            getEl('modalGeralDetSituacaoBadge')!.className = `inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${isPago ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200' : (isVencido ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200' : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200')}`;
+        }
+        if (getEl('modalGeralDetPermutaBadge')) {
+            const vlPerm = Number(item.vlPermuta || 0);
+            if (vlPerm > 0) {
+                getEl('modalGeralDetPermutaBadge')!.classList.remove('hidden');
+            } else {
+                getEl('modalGeralDetPermutaBadge')!.classList.add('hidden');
+            }
+        }
+        if (getEl('modalGeralDetSaldoPendente')) {
+            getEl('modalGeralDetSaldoPendente')!.textContent = formatMoney(item.saldoAberto);
+        }
+        if (getEl('modalGeralDetVlParcela')) {
+            getEl('modalGeralDetVlParcela')!.textContent = formatMoney(item.vlParcela);
+        }
+        if (getEl('modalGeralDetVlPermuta')) {
+            getEl('modalGeralDetVlPermuta')!.textContent = formatMoney(item.vlPermuta);
+        }
+        if (getEl('modalGeralDetVlPago')) {
+            getEl('modalGeralDetVlPago')!.textContent = formatMoney(item.vlPago);
+        }
+        if (getEl('modalGeralDetSaldoAberto')) {
+            getEl('modalGeralDetSaldoAberto')!.textContent = formatMoney(item.saldoAberto);
+        }
+        if (getEl('modalGeralDetVlDesconto')) {
+            getEl('modalGeralDetVlDesconto')!.textContent = formatMoney(item.vlDesconto);
+        }
+        if (getEl('modalGeralDetVlMulta')) {
+            getEl('modalGeralDetVlMulta')!.textContent = formatMoney(item.vlMulta);
+        }
+        if (getEl('modalGeralDetVlMora')) {
+            getEl('modalGeralDetVlMora')!.textContent = formatMoney(item.vlMora);
+        }
+        if (getEl('modalGeralDetFornecedor')) {
+            getEl('modalGeralDetFornecedor')!.textContent = item.Fornecedor || '-';
+        }
+        if (getEl('modalGeralDetCNPJ')) {
+            getEl('modalGeralDetCNPJ')!.textContent = item.CNPJ_CPF || '-';
+        }
+        if (getEl('modalGeralDetTipoFaturamento')) {
+            getEl('modalGeralDetTipoFaturamento')!.textContent = item.TipoFaturamento || '-';
+        }
+        if (getEl('modalGeralDetComprador')) {
+            getEl('modalGeralDetComprador')!.textContent = item.Comprador || '-';
+        }
+        if (getEl('modalGeralDetFilial')) {
+            getEl('modalGeralDetFilial')!.textContent = item.Filial || '-';
+        }
+        if (getEl('modalGeralDetFilialDebito')) {
+            getEl('modalGeralDetFilialDebito')!.textContent = item.FilialDebito || '-';
+        }
+        if (getEl('modalGeralDetDocumento')) {
+            getEl('modalGeralDetDocumento')!.textContent = item.Documento || '-';
+        }
+        if (getEl('modalGeralDetParcela')) {
+            getEl('modalGeralDetParcela')!.textContent = item.NumeroParcela || '1';
+        }
+        if (getEl('modalGeralDetDtEmissao')) {
+            getEl('modalGeralDetDtEmissao')!.textContent = formatDateBR(item.dtEmissao);
+        }
+        if (getEl('modalGeralDetDtParcela')) {
+            getEl('modalGeralDetDtParcela')!.textContent = formatDateBR(item.dtParcela);
+        }
+        if (getEl('modalGeralDetPagto')) {
+            getEl('modalGeralDetPagto')!.textContent = item.Pagto ? formatDateBR(item.Pagto) : 'Em Aberto (Sem Pagto)';
+        }
+        if (getEl('modalGeralDetDtCompetencia')) {
+            getEl('modalGeralDetDtCompetencia')!.textContent = formatDateBR(item.dtCompetencia);
+        }
+        if (getEl('modalGeralDetDtMovimento')) {
+            getEl('modalGeralDetDtMovimento')!.textContent = formatDateBR(item.dtMovimento);
+        }
+        if (getEl('modalGeralDetHistorico')) {
+            getEl('modalGeralDetHistorico')!.textContent = item.Historico || 'Nenhum histórico registrado no lançamento.';
+        }
+        const histBaixaContainer = getEl('modalGeralDetHistBaixaContainer');
+        const histBaixaEl = getEl('modalGeralDetHistBaixa');
+        if (histBaixaContainer && histBaixaEl) {
+            if (item.HistBaixa && String(item.HistBaixa).trim()) {
+                histBaixaContainer.classList.remove('hidden');
+                histBaixaEl.textContent = item.HistBaixa;
+            } else {
+                histBaixaContainer.classList.add('hidden');
+                histBaixaEl.textContent = '-';
+            }
+        }
+        if (getEl('modalGeralDetCdConta')) {
+            getEl('modalGeralDetCdConta')!.textContent = item.cdConta || '-';
+        }
+        if (getEl('modalGeralDetCdContaBaixa')) {
+            getEl('modalGeralDetCdContaBaixa')!.textContent = item.cdContaBaixa || '-';
+        }
+        if (getEl('modalGeralDetContaCorrente')) {
+            getEl('modalGeralDetContaCorrente')!.textContent = item.ContaCorrente || '-';
+        }
+        if (getEl('modalGeralDetSmartContabil')) {
+            getEl('modalGeralDetSmartContabil')!.textContent = item.SmartContabil || '-';
+        }
+        if (getEl('modalGeralDetOrigemModulo')) {
+            getEl('modalGeralDetOrigemModulo')!.textContent = item.OrigemModuloERP || '-';
+        }
+        if (getEl('modalGeralDetCentroCusto')) {
+            getEl('modalGeralDetCentroCusto')!.textContent = item.CentroCusto || '-';
+        }
+        if (getEl('modalGeralDetCdReceDesp')) {
+            getEl('modalGeralDetCdReceDesp')!.textContent = item.cdReceDesp || '-';
+        }
+        if (getEl('modalGeralDetCdReceDespTipo')) {
+            getEl('modalGeralDetCdReceDespTipo')!.textContent = item.cdReceDespTipo || '-';
+        }
+
+        modal.classList.remove('hidden');
+    };
+
+    const closeModalContasGeralDetalhes = () => {
+        const modal = getEl('modalContasGeralDetalhes');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    };
+
+    const exportContasGeralCsv = () => {
+        if (!rawContasGeralLancamentos || rawContasGeralLancamentos.length === 0) {
+            showAlert('Não há dados de Contas Geral Solidcon para exportar.', 'error');
+            return;
+        }
+
+        const query = (getEl<HTMLInputElement>('modalContasGeralSearch')?.value || '').toLowerCase().trim();
+        const selectedStatus = getEl<HTMLSelectElement>('modalContasGeralFilterStatus')?.value || 'all';
+        const selectedFilial = getEl<HTMLSelectElement>('modalContasGeralFilterFilial')?.value || '';
+        const dtInicio = getEl<HTMLInputElement>('modalContasGeralDtInicio')?.value || '';
+        const dtFim = getEl<HTMLInputElement>('modalContasGeralDtFim')?.value || '';
+        const tipoData = getEl<HTMLSelectElement>('modalContasGeralTipoData')?.value || 'vencimento';
+
+        const filtered = rawContasGeralLancamentos.filter((item: any) => {
+            const hasPagto = item.hasPagto || item.Pagto !== null;
+            const isVencido = !hasPagto && item.situacao === 'vencido';
+            const isAVencer = !hasPagto && item.situacao === 'a_vencer';
+            const vlPermuta = Number(item.vlPermuta || 0);
+
+            if (selectedStatus === 'com_pagto' && !hasPagto) return false;
+            if (selectedStatus === 'sem_pagto' && hasPagto) return false;
+            if (selectedStatus === 'vencidos' && !isVencido) return false;
+            if (selectedStatus === 'a_vencer' && !isAVencer) return false;
+            if (selectedStatus === 'permutas' && vlPermuta <= 0) return false;
+
+            if (selectedFilial && String(item.Filial || '') !== selectedFilial && String(item.FilialDebito || '') !== selectedFilial) {
+                return false;
+            }
+
+            let targetDate = item.dtParcela;
+            if (tipoData === 'pagamento') targetDate = item.Pagto;
+            else if (tipoData === 'emissao') targetDate = item.dtEmissao;
+            else if (tipoData === 'competencia') targetDate = item.dtCompetencia;
+
+            if (dtInicio && targetDate && targetDate < dtInicio) return false;
+            if (dtFim && targetDate && targetDate > dtFim) return false;
+
+            if (query) {
+                const combined = `${item.Fornecedor || ''} ${item.CNPJ_CPF || ''} ${item.Documento || ''} ${item.Historico || ''} ${item.Filial || ''} ${item.FilialDebito || ''} ${item.SmartContabil || ''} ${item.OrigemModuloERP || ''} ${item.CentroCusto || ''} ${item.ContaCorrente || ''} ${item.Comprador || ''}`.toLowerCase();
+                if (!combined.includes(query)) return false;
+            }
+            return true;
+        });
+
+        const headers = [
+            'Filial',
+            'Fornecedor',
+            'CNPJ_CPF',
+            'Documento',
+            'NumeroParcela',
+            'dtEmissao',
+            'dtParcela_Vencimento',
+            'Data_Pagamento',
+            'Situacao',
+            'Valor_Parcela',
+            'Total_Permutado',
+            'Valor_Pago',
+            'Saldo_Aberto',
+            'Desconto',
+            'Multa',
+            'Mora_Juros',
+            'TipoFaturamento',
+            'Comprador',
+            'ContaCorrente',
+            'SmartContabil',
+            'OrigemModuloERP',
+            'CentroCusto',
+            'cdConta',
+            'cdContaBaixa',
+            'dtCompetencia',
+            'dtMovimento',
+            'cdReceDesp',
+            'cdReceDespTipo',
+            'Historico',
+            'HistBaixa'
+        ];
+
+        const rows = filtered.map((item: any) => {
+            const hasPagto = item.hasPagto || item.Pagto !== null;
+            const situacaoText = hasPagto ? 'Pago' : (item.situacao === 'vencido' ? 'Vencido' : 'A Vencer');
+
+            return [
+                `"${(item.Filial || '').replace(/"/g, '""')}"`,
+                `"${(item.Fornecedor || '').replace(/"/g, '""')}"`,
+                `"${(item.CNPJ_CPF || '').replace(/"/g, '""')}"`,
+                `"${(item.Documento || '').replace(/"/g, '""')}"`,
+                `"${(item.NumeroParcela || '1').replace(/"/g, '""')}"`,
+                formatDateBR(item.dtEmissao),
+                formatDateBR(item.dtParcela),
+                item.Pagto ? formatDateBR(item.Pagto) : 'Em Aberto',
+                situacaoText,
+                Number(item.vlParcela || 0).toFixed(2).replace('.', ','),
+                Number(item.vlPermuta || 0).toFixed(2).replace('.', ','),
+                Number(item.vlPago || 0).toFixed(2).replace('.', ','),
+                Number(item.saldoAberto || 0).toFixed(2).replace('.', ','),
+                Number(item.vlDesconto || 0).toFixed(2).replace('.', ','),
+                Number(item.vlMulta || 0).toFixed(2).replace('.', ','),
+                Number(item.vlMora || 0).toFixed(2).replace('.', ','),
+                `"${(item.TipoFaturamento || '').replace(/"/g, '""')}"`,
+                `"${(item.Comprador || '').replace(/"/g, '""')}"`,
+                `"${(item.ContaCorrente || '').replace(/"/g, '""')}"`,
+                `"${(item.SmartContabil || '').replace(/"/g, '""')}"`,
+                `"${(item.OrigemModuloERP || '').replace(/"/g, '""')}"`,
+                `"${(item.CentroCusto || '').replace(/"/g, '""')}"`,
+                item.cdConta || '',
+                item.cdContaBaixa || '',
+                formatDateBR(item.dtCompetencia),
+                formatDateBR(item.dtMovimento),
+                item.cdReceDesp || '',
+                item.cdReceDespTipo || '',
+                `"${(item.Historico || '').replace(/"/g, '""')}"`,
+                `"${(item.HistBaixa || '').replace(/"/g, '""')}"`
+            ];
+        });
+
+        const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `contas_geral_solidcon_bi_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // ─── Load Contas Geral Solidcon (BI / Sob Demanda) ───────────────────────
+    const loadContasGeralSolidconBI = async (options?: { resetDates?: boolean; targetFilial?: string }) => {
+        if (isContasGeralLoading) return;
+        isContasGeralLoading = true;
+
+        const btnCard = getEl<HTMLButtonElement>('btnFilterContasGeralCard');
+        const btnModal = getEl<HTMLButtonElement>('btnFilterContasGeralModal');
+        const origBtnCardHtml = btnCard?.innerHTML;
+        const origBtnModalHtml = btnModal?.innerHTML;
+
+        if (btnCard) {
+            btnCard.disabled = true;
+            btnCard.classList.add('opacity-70');
+            btnCard.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Filtrando...</span>`;
+        }
+        if (btnModal) {
+            btnModal.disabled = true;
+            btnModal.classList.add('opacity-70');
+            btnModal.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Consultando...</span>`;
+        }
+
+        try {
+            if (options?.resetDates) {
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+                const defaultIni = `${y}-${m}-01`;
+                const defaultFim = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
+
+                if (getEl<HTMLInputElement>('cardContasGeralDtInicio')) getEl<HTMLInputElement>('cardContasGeralDtInicio')!.value = defaultIni;
+                if (getEl<HTMLInputElement>('cardContasGeralDtFim')) getEl<HTMLInputElement>('cardContasGeralDtFim')!.value = defaultFim;
+                if (getEl<HTMLSelectElement>('cardContasGeralTipoData')) getEl<HTMLSelectElement>('cardContasGeralTipoData')!.value = 'vencimento';
+                if (getEl<HTMLInputElement>('modalContasGeralDtInicio')) getEl<HTMLInputElement>('modalContasGeralDtInicio')!.value = defaultIni;
+                if (getEl<HTMLInputElement>('modalContasGeralDtFim')) getEl<HTMLInputElement>('modalContasGeralDtFim')!.value = defaultFim;
+                if (getEl<HTMLSelectElement>('modalContasGeralTipoData')) getEl<HTMLSelectElement>('modalContasGeralTipoData')!.value = 'vencimento';
+            }
+
+            const companyParam = getEl<HTMLSelectElement>('filterCompany')?.value || '';
+            const connId = getEl<HTMLSelectElement>('filterConnection')?.value || '';
+
+            const cardDtInicio = getEl<HTMLInputElement>('cardContasGeralDtInicio')?.value || '';
+            const cardDtFim = getEl<HTMLInputElement>('cardContasGeralDtFim')?.value || '';
+            const cardTipoData = getEl<HTMLSelectElement>('cardContasGeralTipoData')?.value || 'vencimento';
+
+            if (getEl<HTMLInputElement>('modalContasGeralDtInicio')) getEl<HTMLInputElement>('modalContasGeralDtInicio')!.value = cardDtInicio;
+            if (getEl<HTMLInputElement>('modalContasGeralDtFim')) getEl<HTMLInputElement>('modalContasGeralDtFim')!.value = cardDtFim;
+            if (getEl<HTMLSelectElement>('modalContasGeralTipoData')) getEl<HTMLSelectElement>('modalContasGeralTipoData')!.value = cardTipoData;
+
+            const queryParams = new URLSearchParams({
+                ...(companyParam ? { targetCompanyId: companyParam } : {}),
+                ...(connId ? { connectionId: connId } : {}),
+                ...(cardDtInicio ? { dtInicio: cardDtInicio } : {}),
+                ...(cardDtFim ? { dtFim: cardDtFim } : {}),
+                ...(cardTipoData ? { tipoData: cardTipoData } : {})
+            });
+
+            const res = await api(`/finance/reports/contas-geral-solidcon-bi?${queryParams.toString()}`);
+            const data = res?.data;
+            if (!data) throw new Error('Falha ao obter dados de Contas Geral Solidcon (BI).');
+
+            currentContasGeralData = {
+                ...data,
+                loaded: true
+            };
+            rawContasGeralLancamentos = currentContasGeralData.lancamentos || [];
+
+            renderContasGeralCard(currentContasGeralData);
+            populateModalContasGeralFilters(currentContasGeralData);
+
+            if (options?.targetFilial !== undefined) {
+                const filialSelect = getEl<HTMLSelectElement>('modalContasGeralFilterFilial');
+                if (filialSelect) filialSelect.value = options.targetFilial;
+                renderModalContasGeralFiliaisCards(currentContasGeralData);
+            }
+
+            if (!getEl('modalContasGeralSolidcon')?.classList.contains('hidden')) {
+                applyModalContasGeralFilters();
+            }
+
+            const totalTitulos = currentContasGeralData.summary?.qtdTitulos || 0;
+            showAlert(`Contas Geral Solidcon (BI) carregadas com sucesso (${totalTitulos.toLocaleString('pt-BR')} títulos).`, 'success');
+        } catch (err: any) {
+            showAlert(`Erro ao carregar Contas Geral Solidcon (BI): ${err?.message || err}`, 'error');
+        } finally {
+            isContasGeralLoading = false;
+            if (btnCard) {
+                btnCard.disabled = false;
+                btnCard.classList.remove('opacity-70');
+                if (origBtnCardHtml) btnCard.innerHTML = origBtnCardHtml;
+            }
+            if (btnModal) {
+                btnModal.disabled = false;
+                btnModal.classList.remove('opacity-70');
+                if (origBtnModalHtml) btnModal.innerHTML = origBtnModalHtml;
+            }
+        }
+    };
+
     // ─── Load Cartões Não Baixados (Sob Demanda) ──────────────────────────────
     let isCartoesLoading = false;
 
@@ -2243,6 +3286,17 @@
             rawContasPagarLancamentos = [];
             renderContasPagarCard(currentContasPagarData);
 
+            // Reset contas geral solidcon bi so stale data from prior company isn't shown
+            currentContasGeralData = {
+                loaded: false,
+                summary: { totalGeral: 0, totalPago: 0, totalAberto: 0, totalVencido: 0, totalAVencer: 0, totalPermuta: 0, qtdTitulos: 0, qtdPagos: 0, qtdAbertos: 0, qtdVencidos: 0, qtdAVencer: 0, qtdPermuta: 0, ticketMedio: 0 },
+                topFornecedores: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            rawContasGeralLancamentos = [];
+            renderContasGeralCard(currentContasGeralData);
+
             await loadSolidconConnections(selectedCompany);
             await loadReport();
         });
@@ -2286,8 +3340,40 @@
             rawContasPagarLancamentos = [];
             renderContasPagarCard(currentContasPagarData);
 
+            // Reset contas geral solidcon bi
+            currentContasGeralData = {
+                loaded: false,
+                summary: { totalGeral: 0, totalPago: 0, totalAberto: 0, totalVencido: 0, totalAVencer: 0, totalPermuta: 0, qtdTitulos: 0, qtdPagos: 0, qtdAbertos: 0, qtdVencidos: 0, qtdAVencer: 0, qtdPermuta: 0, ticketMedio: 0 },
+                topFornecedores: [],
+                byFilial: [],
+                lancamentos: []
+            };
+            rawContasGeralLancamentos = [];
+            renderContasGeralCard(currentContasGeralData);
+
             void loadReport();
         });
+
+        // Initialize default dates for Contas Geral Card and Modal
+        const nowGeral = new Date();
+        const yGeral = nowGeral.getFullYear();
+        const mGeral = String(nowGeral.getMonth() + 1).padStart(2, '0');
+        const lastDayGeral = new Date(yGeral, nowGeral.getMonth() + 1, 0).getDate();
+        const defaultIniGeral = `${yGeral}-${mGeral}-01`;
+        const defaultFimGeral = `${yGeral}-${mGeral}-${String(lastDayGeral).padStart(2, '0')}`;
+
+        if (getEl<HTMLInputElement>('cardContasGeralDtInicio') && !getEl<HTMLInputElement>('cardContasGeralDtInicio')!.value) {
+            getEl<HTMLInputElement>('cardContasGeralDtInicio')!.value = defaultIniGeral;
+        }
+        if (getEl<HTMLInputElement>('cardContasGeralDtFim') && !getEl<HTMLInputElement>('cardContasGeralDtFim')!.value) {
+            getEl<HTMLInputElement>('cardContasGeralDtFim')!.value = defaultFimGeral;
+        }
+        if (getEl<HTMLInputElement>('modalContasGeralDtInicio') && !getEl<HTMLInputElement>('modalContasGeralDtInicio')!.value) {
+            getEl<HTMLInputElement>('modalContasGeralDtInicio')!.value = defaultIniGeral;
+        }
+        if (getEl<HTMLInputElement>('modalContasGeralDtFim') && !getEl<HTMLInputElement>('modalContasGeralDtFim')!.value) {
+            getEl<HTMLInputElement>('modalContasGeralDtFim')!.value = defaultFimGeral;
+        }
 
         // ─── Modal Cartões Listeners ──────────────────────────────────────────
         getEl('btnOpenModalCartoes')?.addEventListener('click', () => {
@@ -2534,21 +3620,127 @@
             }
         });
 
+        // ─── Contas Geral Solidcon (BI) Card Date Filter Listeners ────────────
+        getEl('btnFilterContasGeralCard')?.addEventListener('click', () => {
+            void loadContasGeralSolidconBI();
+        });
+
+        getEl('btnResetContasGeralCard')?.addEventListener('click', () => {
+            void loadContasGeralSolidconBI({ resetDates: true });
+        });
+
+        const onCardContasGeralInputKey = (e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                void loadContasGeralSolidconBI();
+            }
+        };
+        getEl('cardContasGeralDtInicio')?.addEventListener('keydown', onCardContasGeralInputKey);
+        getEl('cardContasGeralDtFim')?.addEventListener('keydown', onCardContasGeralInputKey);
+
+        // ─── Modal Contas Geral Solidcon Listeners ────────────────────────────
+        getEl('btnOpenModalContasGeral')?.addEventListener('click', () => {
+            openModalContasGeral();
+        });
+
+        getEl('btnCloseModalContasGeral')?.addEventListener('click', () => {
+            closeModalContasGeral();
+        });
+
+        getEl('btnCloseModalContasGeralFooter')?.addEventListener('click', () => {
+            closeModalContasGeral();
+        });
+
+        getEl('modalContasGeralSolidcon')?.addEventListener('click', (e) => {
+            if (e.target === getEl('modalContasGeralSolidcon')) {
+                closeModalContasGeral();
+            }
+        });
+
+        getEl('modalContasGeralSearch')?.addEventListener('input', () => {
+            applyModalContasGeralFilters();
+        });
+
+        getEl('modalContasGeralFilterStatus')?.addEventListener('change', () => {
+            applyModalContasGeralFilters();
+        });
+
+        getEl('modalContasGeralFilterFilial')?.addEventListener('change', () => {
+            renderModalContasGeralFiliaisCards(currentContasGeralData);
+            applyModalContasGeralFilters();
+        });
+
+        getEl('modalContasGeralDtInicio')?.addEventListener('change', () => {
+            applyModalContasGeralFilters();
+        });
+
+        getEl('modalContasGeralDtFim')?.addEventListener('change', () => {
+            applyModalContasGeralFilters();
+        });
+
+        getEl('modalContasGeralTipoData')?.addEventListener('change', () => {
+            applyModalContasGeralFilters();
+        });
+
+        getEl('btnFilterContasGeralModal')?.addEventListener('click', () => {
+            const dtIni = getEl<HTMLInputElement>('modalContasGeralDtInicio')?.value || '';
+            const dtFim = getEl<HTMLInputElement>('modalContasGeralDtFim')?.value || '';
+            const tipo = getEl<HTMLSelectElement>('modalContasGeralTipoData')?.value || 'vencimento';
+            if (getEl<HTMLInputElement>('cardContasGeralDtInicio')) getEl<HTMLInputElement>('cardContasGeralDtInicio')!.value = dtIni;
+            if (getEl<HTMLInputElement>('cardContasGeralDtFim')) getEl<HTMLInputElement>('cardContasGeralDtFim')!.value = dtFim;
+            if (getEl<HTMLSelectElement>('cardContasGeralTipoData')) getEl<HTMLSelectElement>('cardContasGeralTipoData')!.value = tipo;
+            void loadContasGeralSolidconBI();
+        });
+
+        getEl('btnResetContasGeralModal')?.addEventListener('click', () => {
+            void loadContasGeralSolidconBI({ resetDates: true });
+        });
+
+        getEl('btnExportContasGeralCsv')?.addEventListener('click', () => {
+            exportContasGeralCsv();
+        });
+
+        // ─── Modal Detalhes Contas Geral Listeners ───────────────────────────
+        getEl('btnCloseModalContasGeralDetalhes')?.addEventListener('click', () => {
+            closeModalContasGeralDetalhes();
+        });
+
+        getEl('btnCloseModalContasGeralDetalhesFooter')?.addEventListener('click', () => {
+            closeModalContasGeralDetalhes();
+        });
+
+        getEl('modalContasGeralDetalhes')?.addEventListener('click', (e) => {
+            if (e.target === getEl('modalContasGeralDetalhes')) {
+                closeModalContasGeralDetalhes();
+            }
+        });
+
         // ─── Global Keyboard Listener (ESC to close any modal) ───────────────
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                if (!getEl('modalContasGeralDetalhes')?.classList.contains('hidden')) {
+                    closeModalContasGeralDetalhes();
+                    return;
+                }
+                if (!getEl('modalContasGeralSolidcon')?.classList.contains('hidden')) {
+                    closeModalContasGeral();
+                    return;
+                }
                 if (!getEl('modalContasPagarHistorico')?.classList.contains('hidden')) {
                     closeModalContasPagarHistorico();
                     return;
                 }
                 if (!getEl('modalCartoesNaoBaixados')?.classList.contains('hidden')) {
                     closeModalCartoes();
+                    return;
                 }
                 if (!getEl('modalCrediarioReceber')?.classList.contains('hidden')) {
                     closeModalCrediario();
+                    return;
                 }
                 if (!getEl('modalContasPagar')?.classList.contains('hidden')) {
                     closeModalContasPagar();
+                    return;
                 }
             }
         });

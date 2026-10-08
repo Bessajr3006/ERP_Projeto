@@ -9165,5 +9165,473 @@ export class ExternalDbService {
             filiais
         };
     }
+
+    /**
+     * Consulta os dados da view RDUPHOLD_CONTAS_A_PAGAR_BI no banco Solidcon (SQL Server)
+     */
+    static async getContasGeralSolidconBIData(
+        config: {
+            host?: string | null;
+            database?: string | null;
+            user?: string | null;
+            password?: string | null;
+        },
+        params: {
+            dtInicio?: string | null;
+            dtFim?: string | null;
+            tipoData?: 'vencimento' | 'pagamento' | 'emissao' | 'competencia' | string | null;
+            cdFilial?: string | null;
+            status?: 'all' | 'com_pagto' | 'sem_pagto' | 'vencidos' | 'a_vencer' | 'permutas' | string | null;
+        }
+    ): Promise<any> {
+        let server = (config.host || '').trim();
+        let port = 1433;
+        if (server.includes(',')) {
+            const parts = server.split(',');
+            server = (parts[0] || '').trim();
+            port = parseInt((parts[1] || '').trim(), 10) || 1433;
+        } else if (server.includes(':')) {
+            const parts = server.split(':');
+            server = (parts[0] || '').trim();
+            port = parseInt((parts[1] || '').trim(), 10) || 1433;
+        }
+
+        if (!server) {
+            throw new Error('Servidor Solidcon não informado.');
+        }
+
+        let database = (config.database || 'solidcon').trim();
+        if (database.toLowerCase() === 'dorsal' || !database) {
+            database = 'solidcon';
+        }
+
+        const sqlConfig: sql.config = {
+            user: (config.user || 'aporttec').trim(),
+            password: config.password || '',
+            database: database,
+            server: server,
+            port: port,
+            pool: {
+                max: 5,
+                min: 0,
+                idleTimeoutMillis: 30000
+            },
+            options: {
+                encrypt: false,
+                trustServerCertificate: true,
+                connectTimeout: 30000,
+                requestTimeout: 60000
+            },
+            connectionTimeout: 30000,
+            requestTimeout: 60000
+        };
+
+        const poolMSSQL = new sql.ConnectionPool(sqlConfig);
+        try {
+            await poolMSSQL.connect();
+
+            // 1. Verificar se a view existe
+            const checkViewReq = poolMSSQL.request();
+            const viewCheck = await checkViewReq.query(`
+                SELECT 1 AS view_exists
+                FROM INFORMATION_SCHEMA.VIEWS
+                WHERE TABLE_NAME = 'RDUPHOLD_CONTAS_A_PAGAR_BI'
+            `);
+
+            if (!viewCheck.recordset || viewCheck.recordset.length === 0) {
+                return {
+                    isAvailable: false,
+                    message: 'A view RDUPHOLD_CONTAS_A_PAGAR_BI não está disponível neste banco Solidcon.',
+                    filtrosAplicados: params,
+                    summary: {
+                        totalEmitido: 0,
+                        totalPago: 0,
+                        totalAberto: 0,
+                        totalVencido: 0,
+                        totalAVencer: 0,
+                        totalPermuta: 0,
+                        totalDesconto: 0,
+                        qtdTitulos: 0,
+                        qtdPagos: 0,
+                        qtdAberto: 0,
+                        qtdVencidos: 0,
+                        qtdAVencer: 0,
+                        qtdPermuta: 0,
+                        qtdFornecedores: 0,
+                        qtdFiliais: 0
+                    },
+                    byFilial: [],
+                    lancamentos: []
+                };
+            }
+
+            // 2. Montar filtros
+            const dtInicio = params.dtInicio ? String(params.dtInicio).trim() : null;
+            const dtFim = params.dtFim ? String(params.dtFim).trim() : null;
+            const tipoData = (params.tipoData || 'vencimento').toLowerCase();
+            const cdFilial = params.cdFilial ? String(params.cdFilial).trim() : null;
+            const status = (params.status || 'all').toLowerCase();
+
+            let targetCol = 'dtParcela';
+            if (tipoData === 'pagamento' || tipoData === 'pgto') {
+                targetCol = 'Pagto';
+            } else if (tipoData === 'emissao') {
+                targetCol = 'dtEmissao';
+            } else if (tipoData === 'competencia') {
+                targetCol = 'dtCompetencia';
+            }
+
+            const whereClauses: string[] = ['1=1'];
+            const reqSummary = poolMSSQL.request();
+            const reqFilial = poolMSSQL.request();
+            const reqList = poolMSSQL.request();
+
+            if (dtInicio && dtFim) {
+                whereClauses.push(`(${targetCol} >= @dtInicio AND ${targetCol} < DATEADD(day, 1, @dtFim))`);
+                reqSummary.input('dtInicio', sql.VarChar(10), dtInicio);
+                reqSummary.input('dtFim', sql.VarChar(10), dtFim);
+                reqFilial.input('dtInicio', sql.VarChar(10), dtInicio);
+                reqFilial.input('dtFim', sql.VarChar(10), dtFim);
+                reqList.input('dtInicio', sql.VarChar(10), dtInicio);
+                reqList.input('dtFim', sql.VarChar(10), dtFim);
+            } else if (dtInicio) {
+                whereClauses.push(`(${targetCol} >= @dtInicio)`);
+                reqSummary.input('dtInicio', sql.VarChar(10), dtInicio);
+                reqFilial.input('dtInicio', sql.VarChar(10), dtInicio);
+                reqList.input('dtInicio', sql.VarChar(10), dtInicio);
+            } else if (dtFim) {
+                whereClauses.push(`(${targetCol} < DATEADD(day, 1, @dtFim))`);
+                reqSummary.input('dtFim', sql.VarChar(10), dtFim);
+                reqFilial.input('dtFim', sql.VarChar(10), dtFim);
+                reqList.input('dtFim', sql.VarChar(10), dtFim);
+            }
+
+            if (cdFilial && cdFilial !== 'all' && cdFilial !== 'todas') {
+                whereClauses.push(`(Filial = @cdFilial OR FilialDebito = @cdFilial)`);
+                reqSummary.input('cdFilial', sql.VarChar(100), cdFilial);
+                reqFilial.input('cdFilial', sql.VarChar(100), cdFilial);
+                reqList.input('cdFilial', sql.VarChar(100), cdFilial);
+            }
+
+            if (status === 'com_pagto' || status === 'pagos') {
+                whereClauses.push(`(Pagto IS NOT NULL)`);
+            } else if (status === 'sem_pagto' || status === 'abertos') {
+                whereClauses.push(`(Pagto IS NULL)`);
+            } else if (status === 'vencidos') {
+                whereClauses.push(`(Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE))`);
+            } else if (status === 'a_vencer') {
+                whereClauses.push(`(Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE))`);
+            } else if (status === 'permutas') {
+                whereClauses.push(`(ISNULL(vlPermuta, 0) > 0)`);
+            }
+
+            const whereSql = whereClauses.join(' AND ');
+
+            // 3. Query Resumo Agregado
+            const querySummary = `
+                SELECT 
+                    COUNT(*) AS qtdTitulos,
+                    ISNULL(SUM(CAST(vlParcela AS float)), 0) AS totalEmitido,
+                    ISNULL(SUM(CASE WHEN Pagto IS NOT NULL THEN ISNULL(CAST(vlPago AS float), CAST(vlParcela AS float)) ELSE 0 END), 0) AS totalPago,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAberto,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalVencido,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAVencer,
+                    ISNULL(SUM(ISNULL(CAST(vlPermuta AS float), 0)), 0) AS totalPermuta,
+                    ISNULL(SUM(ISNULL(CAST(vlDesconto AS float), 0)), 0) AS totalDesconto,
+                    COUNT(CASE WHEN Pagto IS NOT NULL THEN 1 END) AS qtdPagos,
+                    COUNT(CASE WHEN Pagto IS NULL THEN 1 END) AS qtdAberto,
+                    COUNT(CASE WHEN Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE) THEN 1 END) AS qtdVencidos,
+                    COUNT(CASE WHEN Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE) THEN 1 END) AS qtdAVencer,
+                    COUNT(CASE WHEN ISNULL(vlPermuta, 0) > 0 THEN 1 END) AS qtdPermuta,
+                    COUNT(DISTINCT Fornecedor) AS qtdFornecedores,
+                    COUNT(DISTINCT Filial) AS qtdFiliais
+                FROM RDUPHOLD_CONTAS_A_PAGAR_BI WITH (NOLOCK)
+                WHERE ${whereSql}
+            `;
+
+            // 4. Query Resumo por Filial
+            const queryFilial = `
+                SELECT 
+                    ISNULL(Filial, 'Matriz / Geral') AS filial,
+                    COUNT(*) AS qtdTitulos,
+                    ISNULL(SUM(CAST(vlParcela AS float)), 0) AS totalEmitido,
+                    ISNULL(SUM(CASE WHEN Pagto IS NOT NULL THEN ISNULL(CAST(vlPago AS float), CAST(vlParcela AS float)) ELSE 0 END), 0) AS totalPago,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAberto,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalVencido,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAVencer,
+                    ISNULL(SUM(ISNULL(CAST(vlPermuta AS float), 0)), 0) AS totalPermuta,
+                    COUNT(CASE WHEN Pagto IS NOT NULL THEN 1 END) AS qtdPagos,
+                    COUNT(CASE WHEN Pagto IS NULL THEN 1 END) AS qtdAberto,
+                    COUNT(CASE WHEN Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE) THEN 1 END) AS qtdVencidos,
+                    COUNT(CASE WHEN Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE) THEN 1 END) AS qtdAVencer
+                FROM RDUPHOLD_CONTAS_A_PAGAR_BI WITH (NOLOCK)
+                WHERE ${whereSql}
+                GROUP BY ISNULL(Filial, 'Matriz / Geral')
+                ORDER BY totalAberto DESC, totalEmitido DESC
+            `;
+
+            // 5. Query Lançamentos Detalhados (TOP 10000)
+            const queryList = `
+                SELECT TOP 10000
+                    Filial,
+                    Fornecedor,
+                    TipoFaturamento,
+                    CNPJ_CPF,
+                    cdConta,
+                    dtParcela,
+                    CAST(vlParcela AS float) AS vlParcela,
+                    Historico,
+                    Documento,
+                    HistBaixa,
+                    CAST(vlDesconto AS float) AS vlDesconto,
+                    CAST(vlMulta AS float) AS vlMulta,
+                    CAST(vlMora AS float) AS vlMora,
+                    CAST(vlPermuta AS float) AS vlPermuta,
+                    Comprador,
+                    CAST(vlPago AS float) AS vlPago,
+                    Pagto,
+                    cdContaBaixa,
+                    dtCompetencia,
+                    dtEmissao,
+                    dtMovimento,
+                    ContaCorrente,
+                    NumeroParcela,
+                    FilialDebito,
+                    SmartContabil,
+                    OrigemModuloERP,
+                    CentroCusto,
+                    cdReceDesp,
+                    cdReceDespTipo
+                FROM RDUPHOLD_CONTAS_A_PAGAR_BI WITH (NOLOCK)
+                WHERE ${whereSql}
+                ORDER BY dtParcela ASC, dtEmissao ASC
+            `;
+
+            const [resSummary, resFilial, resList] = await Promise.all([
+                reqSummary.query(querySummary),
+                reqFilial.query(queryFilial),
+                reqList.query(queryList)
+            ]);
+
+            const sumRow = resSummary.recordset?.[0] || {};
+            const summary = {
+                totalEmitido: Number(sumRow.totalEmitido || 0),
+                totalPago: Number(sumRow.totalPago || 0),
+                totalAberto: Number(sumRow.totalAberto || 0),
+                totalVencido: Number(sumRow.totalVencido || 0),
+                totalAVencer: Number(sumRow.totalAVencer || 0),
+                totalPermuta: Number(sumRow.totalPermuta || 0),
+                totalDesconto: Number(sumRow.totalDesconto || 0),
+                qtdTitulos: Number(sumRow.qtdTitulos || 0),
+                qtdPagos: Number(sumRow.qtdPagos || 0),
+                qtdAberto: Number(sumRow.qtdAberto || 0),
+                qtdVencidos: Number(sumRow.qtdVencidos || 0),
+                qtdAVencer: Number(sumRow.qtdAVencer || 0),
+                qtdPermuta: Number(sumRow.qtdPermuta || 0),
+                qtdFornecedores: Number(sumRow.qtdFornecedores || 0),
+                qtdFiliais: Number(sumRow.qtdFiliais || 0)
+            };
+
+            const byFilial = (resFilial.recordset || []).map((f: any) => ({
+                filial: String(f.filial || 'Matriz / Geral'),
+                totalEmitido: Number(f.totalEmitido || 0),
+                totalPago: Number(f.totalPago || 0),
+                totalAberto: Number(f.totalAberto || 0),
+                totalVencido: Number(f.totalVencido || 0),
+                totalAVencer: Number(f.totalAVencer || 0),
+                totalPermuta: Number(f.totalPermuta || 0),
+                qtdTitulos: Number(f.qtdTitulos || 0),
+                qtdPagos: Number(f.qtdPagos || 0),
+                qtdAberto: Number(f.qtdAberto || 0),
+                qtdVencidos: Number(f.qtdVencidos || 0),
+                qtdAVencer: Number(f.qtdAVencer || 0)
+            }));
+
+            const lancamentos = (resList.recordset || []).map((row: any) => {
+                const vlParcela = Number(row.vlParcela || 0);
+                const vlPago = Number(row.vlPago || 0);
+                const vlDesconto = Number(row.vlDesconto || 0);
+                const vlPermuta = Number(row.vlPermuta || 0);
+                const vlMulta = Number(row.vlMulta || 0);
+                const vlMora = Number(row.vlMora || 0);
+                const hasPagto = row.Pagto !== null && row.Pagto !== undefined;
+                const saldoAberto = hasPagto ? 0 : Math.max(0, vlParcela - vlPago - vlDesconto);
+
+                let situacao = 'a_vencer';
+                if (hasPagto) {
+                    situacao = 'pago';
+                } else if (row.dtParcela) {
+                    const dtVenc = new Date(row.dtParcela);
+                    const hoje = new Date();
+                    hoje.setHours(0, 0, 0, 0);
+                    if (dtVenc < hoje) {
+                        situacao = 'vencido';
+                    }
+                }
+
+                return {
+                    ...row,
+                    vlParcela,
+                    vlPago,
+                    vlDesconto,
+                    vlPermuta,
+                    vlMulta,
+                    vlMora,
+                    hasPagto,
+                    saldoAberto,
+                    situacao,
+                    dtParcela: row.dtParcela ? new Date(row.dtParcela).toISOString().slice(0, 10) : null,
+                    dtEmissao: row.dtEmissao ? new Date(row.dtEmissao).toISOString().slice(0, 10) : null,
+                    dtCompetencia: row.dtCompetencia ? new Date(row.dtCompetencia).toISOString().slice(0, 10) : null,
+                    dtMovimento: row.dtMovimento ? new Date(row.dtMovimento).toISOString().slice(0, 10) : null,
+                    Pagto: row.Pagto ? new Date(row.Pagto).toISOString().slice(0, 10) : null
+                };
+            });
+
+            return {
+                isAvailable: true,
+                filtrosAplicados: {
+                    dtInicio,
+                    dtFim,
+                    tipoData,
+                    cdFilial,
+                    status
+                },
+                summary,
+                byFilial,
+                lancamentos
+            };
+        } finally {
+            try {
+                await poolMSSQL.close();
+            } catch {}
+        }
+    }
+
+    /**
+     * Unifica os resultados de múltiplas conexões Solidcon para o relatório Contas Geral BI
+     */
+    static mergeContasGeralSolidconBIResults(results: any[]): any {
+        if (!results || results.length === 0) {
+            return {
+                isAvailable: false,
+                message: 'Nenhum dado retornado.',
+                summary: {},
+                byFilial: [],
+                lancamentos: []
+            };
+        }
+
+        const validResults = results.filter(r => r && r.isAvailable !== false);
+        if (validResults.length === 0) {
+            return results[0] || { isAvailable: false, message: 'Nenhum servidor com a view disponível.' };
+        }
+
+        const first = validResults[0];
+        let totalEmitido = 0;
+        let totalPago = 0;
+        let totalAberto = 0;
+        let totalVencido = 0;
+        let totalAVencer = 0;
+        let totalPermuta = 0;
+        let totalDesconto = 0;
+        let qtdTitulos = 0;
+        let qtdPagos = 0;
+        let qtdAberto = 0;
+        let qtdVencidos = 0;
+        let qtdAVencer = 0;
+        let qtdPermuta = 0;
+
+        const filiaisMap: Record<string, any> = {};
+        const fornecedoresSet = new Set<string>();
+        const allLancamentos: any[] = [];
+
+        validResults.forEach(r => {
+            const s = r.summary || {};
+            totalEmitido += Number(s.totalEmitido || 0);
+            totalPago += Number(s.totalPago || 0);
+            totalAberto += Number(s.totalAberto || 0);
+            totalVencido += Number(s.totalVencido || 0);
+            totalAVencer += Number(s.totalAVencer || 0);
+            totalPermuta += Number(s.totalPermuta || 0);
+            totalDesconto += Number(s.totalDesconto || 0);
+            qtdTitulos += Number(s.qtdTitulos || 0);
+            qtdPagos += Number(s.qtdPagos || 0);
+            qtdAberto += Number(s.qtdAberto || 0);
+            qtdVencidos += Number(s.qtdVencidos || 0);
+            qtdAVencer += Number(s.qtdAVencer || 0);
+            qtdPermuta += Number(s.qtdPermuta || 0);
+
+            (r.byFilial || []).forEach((f: any) => {
+                const k = String(f.filial || 'Matriz / Geral').trim();
+                if (!filiaisMap[k]) {
+                    filiaisMap[k] = {
+                        filial: k,
+                        totalEmitido: 0,
+                        totalPago: 0,
+                        totalAberto: 0,
+                        totalVencido: 0,
+                        totalAVencer: 0,
+                        totalPermuta: 0,
+                        qtdTitulos: 0,
+                        qtdPagos: 0,
+                        qtdAberto: 0,
+                        qtdVencidos: 0,
+                        qtdAVencer: 0
+                    };
+                }
+                filiaisMap[k].totalEmitido += Number(f.totalEmitido || 0);
+                filiaisMap[k].totalPago += Number(f.totalPago || 0);
+                filiaisMap[k].totalAberto += Number(f.totalAberto || 0);
+                filiaisMap[k].totalVencido += Number(f.totalVencido || 0);
+                filiaisMap[k].totalAVencer += Number(f.totalAVencer || 0);
+                filiaisMap[k].totalPermuta += Number(f.totalPermuta || 0);
+                filiaisMap[k].qtdTitulos += Number(f.qtdTitulos || 0);
+                filiaisMap[k].qtdPagos += Number(f.qtdPagos || 0);
+                filiaisMap[k].qtdAberto += Number(f.qtdAberto || 0);
+                filiaisMap[k].qtdVencidos += Number(f.qtdVencidos || 0);
+                filiaisMap[k].qtdAVencer += Number(f.qtdAVencer || 0);
+            });
+
+            (r.lancamentos || []).forEach((item: any) => {
+                if (item.Fornecedor) {
+                    fornecedoresSet.add(String(item.Fornecedor).trim());
+                }
+                allLancamentos.push(item);
+            });
+        });
+
+        allLancamentos.sort((a, b) => {
+            const dtA = a.dtParcela || a.dtEmissao || '';
+            const dtB = b.dtParcela || b.dtEmissao || '';
+            return dtA.localeCompare(dtB);
+        });
+
+        const byFilial = Object.values(filiaisMap).sort((a: any, b: any) => b.totalAberto - a.totalAberto);
+
+        return {
+            isAvailable: true,
+            filtrosAplicados: first.filtrosAplicados || {},
+            summary: {
+                totalEmitido,
+                totalPago,
+                totalAberto,
+                totalVencido,
+                totalAVencer,
+                totalPermuta,
+                totalDesconto,
+                qtdTitulos,
+                qtdPagos,
+                qtdAberto,
+                qtdVencidos,
+                qtdAVencer,
+                qtdPermuta,
+                qtdFornecedores: fornecedoresSet.size,
+                qtdFiliais: Object.keys(filiaisMap).length
+            },
+            byFilial,
+            lancamentos: allLancamentos.slice(0, 10000)
+        };
+    }
 }
 

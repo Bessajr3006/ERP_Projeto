@@ -2596,6 +2596,159 @@ export class FinanceController {
             });
         }
     }
+
+    static async getContasGeralSolidconBI(req: Request, res: Response): Promise<void> {
+        try {
+            const requestedCompany = req.query.targetCompanyId || req.query.companyId || req.query.company_id || req.query.company;
+            const company = await FinanceController.resolveReportCompany(req, requestedCompany);
+            if (!company) {
+                res.status(401).json({ status: 'error', message: 'Empresa não identificada ou sem acesso.' });
+                return;
+            }
+
+            const { 
+                dtInicio, 
+                dtFim, 
+                tipoData, 
+                cdFilial, 
+                status, 
+                connectionId 
+            } = req.query;
+
+            const isAllConnections = String(connectionId || '').toLowerCase() === 'all' || String(connectionId || '').toLowerCase() === 'todas';
+
+            const { SolidconConfigService } = await import('../services/solidconConfigService');
+            let configsToQuery: any[] = [];
+
+            if (isAllConnections) {
+                const configs = await SolidconConfigService.list(company.id);
+                if (configs && configs.length > 0) {
+                    const seenDbs = new Set<string>();
+                    configsToQuery = configs.filter((c: any) => {
+                        if (!c.serv_solidcon || !c.serv_solidcon.trim()) return false;
+                        const key = `${c.serv_solidcon.trim().toLowerCase()}_${(c.bd_solidcon || 'solidcon').trim().toLowerCase()}`;
+                        if (seenDbs.has(key)) return false;
+                        seenDbs.add(key);
+                        return true;
+                    });
+                }
+            } else if (connectionId) {
+                const cleanId = parseInt(String(connectionId).replace('solidcon_', ''), 10);
+                if (!isNaN(cleanId)) {
+                    const cfg = await SolidconConfigService.getById(cleanId, company.id);
+                    if (cfg && cfg.serv_solidcon && cfg.serv_solidcon.trim()) {
+                        configsToQuery = [cfg];
+                    }
+                }
+            }
+
+            if (configsToQuery.length === 0 && !isAllConnections) {
+                const configs = await SolidconConfigService.list(company.id);
+                const defaultCfg = configs.find((c: any) => c.is_default) || configs[0] || null;
+                if (defaultCfg && defaultCfg.serv_solidcon && defaultCfg.serv_solidcon.trim()) {
+                    configsToQuery = [defaultCfg];
+                }
+            }
+
+            if (configsToQuery.length === 0) {
+                const [compRows]: any = await pool.query('SELECT serv_solidcon, bd_solidcon, login_solidcon, senha_solidcon, trade_name, company_name FROM companies WHERE id = ?', [company.id]);
+                const comp = compRows?.[0];
+                if (comp && comp.serv_solidcon && comp.serv_solidcon.trim()) {
+                    configsToQuery = [{
+                        name: comp.trade_name || comp.company_name || 'Padrão da Empresa',
+                        serv_solidcon: comp.serv_solidcon,
+                        bd_solidcon: comp.bd_solidcon || 'solidcon',
+                        login_solidcon: comp.login_solidcon,
+                        senha_solidcon: decrypt(comp.senha_solidcon) || comp.senha_solidcon
+                    }];
+                }
+            }
+
+            if (configsToQuery.length === 0) {
+                const compName = company.trade_name || company.company_name || `Empresa #${company.id}`;
+                res.status(400).json({
+                    status: 'error',
+                    message: `A empresa "${compName}" não possui servidor Solidcon configurado.`
+                });
+                return;
+            }
+
+            const queryParamsObj = {
+                dtInicio: dtInicio ? String(dtInicio).trim() : null,
+                dtFim: dtFim ? String(dtFim).trim() : null,
+                tipoData: tipoData ? String(tipoData).trim() : 'vencimento',
+                cdFilial: cdFilial ? String(cdFilial).trim() : null,
+                status: status ? String(status).trim() : 'all'
+            };
+
+            const queryPromises = configsToQuery.map(async (cfg) => {
+                const host = (cfg.serv_solidcon || '').trim();
+                const database = (cfg.bd_solidcon || 'solidcon').trim();
+                const user = (cfg.login_solidcon || 'aporttec').trim();
+                const password = (cfg.senha_solidcon ? (decrypt(cfg.senha_solidcon) || cfg.senha_solidcon) : '') || '';
+
+                return ExternalDbService.getContasGeralSolidconBIData(
+                    {
+                        host,
+                        database: database === 'dorsal' ? 'solidcon' : database,
+                        user,
+                        password
+                    },
+                    queryParamsObj
+                );
+            });
+
+            const queryResults = await Promise.allSettled(queryPromises);
+            const successfulData: any[] = [];
+            const errors: string[] = [];
+
+            queryResults.forEach((resItem, idx) => {
+                if (resItem.status === 'fulfilled') {
+                    successfulData.push(resItem.value);
+                } else {
+                    const cfgName = configsToQuery[idx]?.name || `Conexão #${idx + 1}`;
+                    errors.push(`${cfgName}: ${resItem.reason?.message || resItem.reason}`);
+                }
+            });
+
+            if (successfulData.length === 0) {
+                throw new Error(`Falha ao consultar servidor(es) Solidcon: ${errors.join('; ')}`);
+            }
+
+            const data = ExternalDbService.mergeContasGeralSolidconBIResults(successfulData);
+
+            const connMeta = isAllConnections
+                ? {
+                    id: 'all',
+                    name: `Todas as Conexões (${successfulData.length}/${configsToQuery.length} servidor${configsToQuery.length === 1 ? '' : 'es'})`,
+                    host: configsToQuery.map(c => c.serv_solidcon).join(', '),
+                    database: 'Todas'
+                }
+                : {
+                    id: configsToQuery[0]?.id || null,
+                    name: configsToQuery[0]?.name || 'Solidcon Principal',
+                    host: (configsToQuery[0]?.serv_solidcon || '').trim(),
+                    database: (configsToQuery[0]?.bd_solidcon || 'solidcon').trim()
+                };
+
+            res.status(200).json({
+                status: 'success',
+                data,
+                company: {
+                    id: company.id,
+                    public_id: company.public_id,
+                    trade_name: company.trade_name,
+                    company_name: company.company_name
+                },
+                connection: connMeta
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                status: 'error',
+                message: error?.message || 'Erro ao carregar Contas Geral Solidcon (BI).'
+            });
+        }
+    }
 }
 
 

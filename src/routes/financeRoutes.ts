@@ -563,6 +563,7 @@ router.get('/card-transactions', (req, res, next) => FinanceController.listCardT
 router.get('/reports/solidcon-connections', (req, res, next) => FinanceController.listSolidconConnections(req, res).catch(next));
 router.get('/reports/dorsal-connections', (req, res, next) => FinanceController.listDorsalConnections(req, res).catch(next));
 router.get('/reports/external-connections', (req, res, next) => FinanceController.listExternalConnections(req, res).catch(next));
+router.get('/reports/contas-geral-solidcon-bi', (req, res, next) => FinanceController.getContasGeralSolidconBI(req, res).catch(next));
 router.get('/reports/rafael', (req, res, next) => FinanceController.getReportRafael(req, res).catch(next));
 
 /**

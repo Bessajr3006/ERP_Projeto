@@ -1729,8 +1729,13 @@ export class WhatsAppBusinessService {
     }
 
     private static isBrowserAlreadyRunningError(error: unknown): boolean {
-        const message = error instanceof Error ? error.message : String(error || '');
-        return message.includes('The browser is already running for');
+        const message = String(error instanceof Error ? (error.stack || error.message) : error || '');
+        return message.includes('The browser is already running for')
+            || message.includes('The profile appears to be in use by another Chromium process')
+            || message.includes('locked the profile')
+            || message.includes('SingletonLock')
+            || message.includes('Code: 21')
+            || message.includes('Failed to launch the browser process');
     }
 
     private static isKnownChatHistoryFetchError(error: unknown): boolean {
@@ -2551,6 +2556,23 @@ export class WhatsAppBusinessService {
         return path.join(SESSION_ROOT, `session-${sessionKey}`);
     }
 
+    private static async removeLockFilesRecursively(dir: string, depth = 0): Promise<void> {
+        if (!fs.existsSync(dir) || depth > 3) return;
+        try {
+            const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+            for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.name.startsWith('Singleton') || entry.name === 'DevToolsActivePort' || entry.name === 'lockfile') {
+                    await fs.promises.rm(fullPath, { force: true, recursive: true }).catch(() => undefined);
+                } else if (entry.isDirectory() && (entry.name === 'Default' || depth === 0)) {
+                    await this.removeLockFilesRecursively(fullPath, depth + 1);
+                }
+            }
+        } catch {
+            // ignore
+        }
+    }
+
     private static async releaseSessionRuntimeLock(sessionKey: string): Promise<void> {
         const sessionDirectory = this.buildSessionDirectory(sessionKey);
 
@@ -2569,12 +2591,7 @@ export class WhatsAppBusinessService {
             }
         }
 
-        await Promise.all([
-            fs.promises.rm(path.join(sessionDirectory, 'SingletonLock'), { force: true }),
-            fs.promises.rm(path.join(sessionDirectory, 'SingletonCookie'), { force: true }),
-            fs.promises.rm(path.join(sessionDirectory, 'SingletonSocket'), { force: true }),
-            fs.promises.rm(path.join(sessionDirectory, 'DevToolsActivePort'), { force: true }),
-        ]).catch(() => undefined);
+        await this.removeLockFilesRecursively(sessionDirectory);
     }
 
     private static async clearPersistedSessionData(sessionKey: string): Promise<void> {

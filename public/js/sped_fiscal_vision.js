@@ -442,7 +442,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('dtlSaidaOutros').textContent = formatBRL(totals.venda_outros);
         document.getElementById('dtlSaidaPis').textContent = formatBRL(totals.venda_pis);
         document.getElementById('dtlSaidaCofins').textContent = formatBRL(totals.venda_cofins);
-        // Tab 2: CFOPs Table
+        // Tab 1 & Tab 2: Saídas por Alíquota e CFOPs
+        const saidasPorAliquota = data.saidasPorAliquota || [];
+        const totalSaidasVal = Number(totals.venda_valor || 0);
+        // Tab 1 Mini Saídas por Alíquota
+        renderTab1SaidasAliquotaMini(saidasPorAliquota);
+        // Tab 2: Quadro de Saídas por Alíquota e Valor
+        renderSaidasPorAliquotaCards(saidasPorAliquota, totalSaidasVal);
+        renderSaidasPorAliquotaTable(saidasPorAliquota, totalSaidasVal);
+        // Tab 2: Tabela Analítica Geral por CFOP e Alíquota
         renderCfopTable(cfopDetails);
         // Tab 3: Documents Table
         renderDocsTable(documents);
@@ -509,27 +517,241 @@ document.addEventListener('DOMContentLoaded', async () => {
             </tr>
         `).join('');
     }
-    // Render CFOPs
-    function renderCfopTable(cfopList) {
-        const tbody = document.getElementById('cfopTableBody');
-        const countSpan = document.getElementById('cfopCountSummary');
-        const query = (searchCfop?.value || '').toLowerCase().trim();
-        const filtered = cfopList.filter(item => {
-            if (!query)
-                return true;
-            return item.cfop.toLowerCase().includes(query) || item.type.toLowerCase().includes(query);
-        });
-        countSpan.textContent = `${filtered.length} CFOPs encontrados`;
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Nenhum CFOP corresponde à busca.</td></tr>`;
+    // Render Mini-breakdown on Tab 1
+    function renderTab1SaidasAliquotaMini(saidasList) {
+        const container = document.getElementById('tab1SaidasAliquotaSection');
+        const listDiv = document.getElementById('tab1SaidasAliquotaList');
+        if (!container || !listDiv)
+            return;
+        if (!saidasList || saidasList.length === 0) {
+            container.classList.add('hidden');
             return;
         }
+        container.classList.remove('hidden');
+        listDiv.innerHTML = saidasList.map(item => {
+            const isAliq = item.aliquota > 0;
+            const badgeClass = isAliq
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+            const cfopLabel = (item.cfops && item.cfops.length > 0) ? `CFOP ${item.cfops.join(', ')}` : 'Saída';
+            return `
+                <div class="flex items-center justify-between py-1 text-xs border-b border-emerald-100/60 dark:border-emerald-900/20 last:border-0">
+                    <div class="flex items-center gap-1.5">
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeClass}">
+                            ${item.aliquotaLabel || (item.aliquota > 0 ? `${item.aliquota}%` : '0%')}
+                        </span>
+                        <span class="text-gray-600 dark:text-gray-400 text-[11px] truncate max-w-36">${cfopLabel}</span>
+                    </div>
+                    <div class="text-right font-mono">
+                        <span class="font-bold text-gray-900 dark:text-gray-100">${formatBRL(item.valorTotal)}</span>
+                        ${item.valorIcms > 0 ? `<span class="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1 font-semibold">(ICMS: ${formatBRL(item.valorIcms)})</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    // Render Saídas por Alíquota Cards (KPI Grid)
+    function renderSaidasPorAliquotaCards(saidasList, totalSaidas) {
+        const grid = document.getElementById('saidasAliquotaCardsGrid');
+        if (!grid)
+            return;
+        if (!saidasList || saidasList.length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full p-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 text-center text-xs text-gray-400">
+                    Nenhum lançamento analítico de saída encontrado para esta competência.
+                </div>
+            `;
+            return;
+        }
+        grid.innerHTML = saidasList.map(item => {
+            const isAliq = item.aliquota > 0;
+            const cardBg = isAliq
+                ? 'bg-white dark:bg-slate-800 border-emerald-200/80 dark:border-emerald-900/50'
+                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700';
+            const badgeBg = isAliq
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+            const iconBg = isAliq ? 'bg-emerald-500' : 'bg-slate-400';
+            return `
+                <div class="p-3.5 sm:p-4 rounded-xl border ${cardBg} shadow-xs hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold ${badgeBg}">
+                            <span class="w-1.5 h-1.5 rounded-full ${iconBg}"></span>
+                            ${item.aliquotaLabel || (item.aliquota > 0 ? `${item.aliquota.toFixed(2).replace('.', ',')}%` : '0,00%')}
+                        </span>
+                        <span class="text-[11px] font-mono font-semibold text-gray-500 dark:text-gray-400">
+                            ${item.percent.toFixed(1)}% das Saídas
+                        </span>
+                    </div>
+
+                    <div class="mb-2">
+                        <span class="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 block">Valor da Operação / Total</span>
+                        <span class="text-base sm:text-lg font-bold font-mono text-gray-900 dark:text-gray-100">${formatBRL(item.valorTotal)}</span>
+                    </div>
+
+                    <div class="pt-2 border-t border-gray-100 dark:border-slate-700/60 grid grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                            <span class="text-gray-500 dark:text-gray-400 block text-[10px]">Base ICMS:</span>
+                            <span class="font-mono font-medium text-gray-800 dark:text-gray-200">${formatBRL(item.baseCalculo)}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-gray-500 dark:text-gray-400 block text-[10px]">ICMS Debitado:</span>
+                            <span class="font-mono font-bold ${item.valorIcms > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}">${formatBRL(item.valorIcms)}</span>
+                        </div>
+                    </div>
+
+                    ${item.cfops && item.cfops.length > 0 ? `
+                        <div class="mt-2.5 pt-2 border-t border-gray-100 dark:border-slate-700/40 flex items-center gap-1 flex-wrap">
+                            <span class="text-[10px] text-gray-400">CFOPs:</span>
+                            ${item.cfops.map((c) => `<span class="px-1.5 py-0.2 rounded font-mono text-[10px] font-medium bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300">${c}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+    // Render Saídas por Alíquota Table
+    function renderSaidasPorAliquotaTable(saidasList, totalSaidas) {
+        const tbody = document.getElementById('saidasAliquotaTableBody');
+        const tfoot = document.getElementById('saidasAliquotaTableFoot');
+        const totalHeader = document.getElementById('saidasConsolidadoTotalVal');
+        if (!tbody)
+            return;
+        if (totalHeader)
+            totalHeader.textContent = formatBRL(totalSaidas);
+        if (!saidasList || saidasList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-gray-400">Nenhum dado analítico de saída encontrado.</td></tr>`;
+            if (tfoot)
+                tfoot.innerHTML = '';
+            return;
+        }
+        let totBase = 0;
+        let totVal = 0;
+        let totIcms = 0;
+        tbody.innerHTML = saidasList.map(item => {
+            totBase += (item.baseCalculo || 0);
+            totVal += (item.valorTotal || 0);
+            totIcms += (item.valorIcms || 0);
+            const isAliq = item.aliquota > 0;
+            const badgeClass = isAliq
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+            let descr = 'Tributada Integralmente';
+            if (!isAliq) {
+                if (item.csts?.includes('060') || item.csts?.includes('500') || item.cfops?.some((c) => c.endsWith('405'))) {
+                    descr = 'Substituição Tributária (ST Retido)';
+                }
+                else {
+                    descr = 'Isenta / Não Tributada';
+                }
+            }
+            else if (item.aliquota === 12 || item.aliquota === 7 || item.aliquota === 4) {
+                descr = 'Operação Interestadual / Diferenciada';
+            }
+            else if (item.aliquota >= 18) {
+                descr = 'Alíquota Padrão Interna Estadual';
+            }
+            const cfopTags = (item.cfops || []).map((c) => `
+                <span class="inline-block px-1.5 py-0.5 rounded font-mono text-[11px] font-semibold bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200">
+                    ${c}
+                </span>
+            `).join(' ');
+            return `
+                <tr class="hover:bg-emerald-50/40 dark:hover:bg-slate-700/50 transition-colors">
+                    <td class="px-4 py-3">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${badgeClass}">
+                            ${item.aliquotaLabel || (item.aliquota > 0 ? `${item.aliquota.toFixed(2).replace('.', ',')}%` : '0,00%')}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-700 dark:text-gray-300 font-medium">
+                        ${descr}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-1 flex-wrap">
+                            ${cfopTags || '-'}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono font-medium text-gray-800 dark:text-gray-200">
+                        ${formatBRL(item.baseCalculo)}
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono font-bold text-gray-900 dark:text-gray-100">
+                        ${formatBRL(item.valorTotal)}
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono font-bold ${item.valorIcms > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}">
+                        ${formatBRL(item.valorIcms)}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 bg-gray-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                <div class="bg-emerald-500 h-full rounded-full" style="width: ${Math.min(100, item.percent)}%"></div>
+                            </div>
+                            <span class="font-mono text-xs text-gray-500 dark:text-gray-400 w-12 text-right">${item.percent.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        if (tfoot) {
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="3" class="px-4 py-3 text-right uppercase tracking-wider text-xs font-bold">Total Consolidado de Saídas:</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold">${formatBRL(totBase)}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">${formatBRL(totVal)}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">${formatBRL(totIcms)}</td>
+                    <td class="px-4 py-3 text-right font-mono text-xs font-bold">100,0%</td>
+                </tr>
+            `;
+        }
+    }
+    let currentCfopFilter = 'all';
+    // Render CFOPs & Analítico
+    function renderCfopTable(cfopList) {
+        const tbody = document.getElementById('cfopTableBody');
+        const tfoot = document.getElementById('cfopTableFoot');
+        const countSpan = document.getElementById('cfopCountSummary');
+        const query = (searchCfop?.value || '').toLowerCase().trim();
+        const filtered = (cfopList || []).filter(item => {
+            // Filter by Tab/Button (all, saida, entrada)
+            if (currentCfopFilter === 'saida' && item.type !== 'Saída')
+                return false;
+            if (currentCfopFilter === 'entrada' && item.type !== 'Entrada')
+                return false;
+            if (!query)
+                return true;
+            const cfopStr = String(item.cfop || '').toLowerCase();
+            const typeStr = String(item.type || '').toLowerCase();
+            const aliqStr = String(item.aliquota || '').toLowerCase();
+            const aliqLabel = String(item.aliquotaLabel || '').toLowerCase();
+            const cstStr = String(item.cstIcms || '').toLowerCase();
+            return cfopStr.includes(query) || typeStr.includes(query) || aliqStr.includes(query) || aliqLabel.includes(query) || cstStr.includes(query);
+        });
+        if (countSpan)
+            countSpan.textContent = `${filtered.length} registro(s) analítico(s)`;
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-gray-400">Nenhum lançamento analítico corresponde aos filtros.</td></tr>`;
+            if (tfoot)
+                tfoot.innerHTML = '';
+            return;
+        }
+        let totBase = 0;
+        let totVal = 0;
+        let totIcms = 0;
         tbody.innerHTML = filtered.map(item => {
             const isSaida = item.type === 'Saída';
             const badgeClass = isSaida
                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
                 : 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300';
             const barClass = isSaida ? 'bg-emerald-500' : 'bg-blue-500';
+            const aliqVal = Number(item.aliquota || 0);
+            const aliqBadge = aliqVal > 0
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300';
+            const baseVal = Number(item.baseCalculo || (aliqVal > 0 ? item.total : 0));
+            const icmsVal = Number(item.valorIcms || (aliqVal > 0 ? baseVal * (aliqVal / 100) : 0));
+            const itemTotal = Number(item.total || 0);
+            totBase += baseVal;
+            totVal += itemTotal;
+            totIcms += icmsVal;
             return `
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                     <td class="px-4 py-3 font-mono font-bold text-gray-900 dark:text-gray-100">${item.cfop}</td>
@@ -538,18 +760,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${item.type}
                         </span>
                     </td>
-                    <td class="px-4 py-3 text-right font-mono font-semibold text-gray-900 dark:text-gray-100">${formatBRL(item.total)}</td>
+                    <td class="px-4 py-3 text-center font-mono text-gray-600 dark:text-gray-300 font-semibold">
+                        ${item.cstIcms || '-'}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold font-mono ${aliqBadge}">
+                            ${item.aliquotaLabel || (aliqVal > 0 ? `${aliqVal.toFixed(2).replace('.', ',')}%` : '0,00%')}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-right font-mono text-gray-800 dark:text-gray-200">${formatBRL(baseVal)}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold text-gray-900 dark:text-gray-100">${formatBRL(itemTotal)}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold ${icmsVal > 0 ? (isSaida ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400') : 'text-gray-400'}">${formatBRL(icmsVal)}</td>
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2">
                             <div class="flex-1 bg-gray-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                                <div class="${barClass} h-full rounded-full" style="width: ${Math.min(100, item.percent)}%"></div>
+                                <div class="${barClass} h-full rounded-full" style="width: ${Math.min(100, item.percent || 0)}%"></div>
                             </div>
-                            <span class="font-mono text-xs text-gray-500 dark:text-gray-400 w-12 text-right">${item.percent.toFixed(1)}%</span>
+                            <span class="font-mono text-xs text-gray-500 dark:text-gray-400 w-12 text-right">${(item.percent || 0).toFixed(1)}%</span>
                         </div>
                     </td>
                 </tr>
             `;
         }).join('');
+        if (tfoot) {
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-4 py-3 text-right uppercase tracking-wider text-xs font-bold">Total Filtrado:</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold">${formatBRL(totBase)}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold text-gray-900 dark:text-gray-100">${formatBRL(totVal)}</td>
+                    <td class="px-4 py-3 text-right font-mono font-bold text-teal-600 dark:text-teal-400">${formatBRL(totIcms)}</td>
+                    <td class="px-4 py-3 text-right font-mono text-xs font-bold">-</td>
+                </tr>
+            `;
+        }
     }
     // Render Documents
     function renderDocsTable(docList) {
@@ -683,6 +926,42 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             `;
         }).join('');
+    }
+    // CFOP Filter Function
+    function setCfopFilter(filter) {
+        currentCfopFilter = filter;
+        const filterBtns = document.querySelectorAll('.filter-cfop-btn');
+        filterBtns.forEach(btn => {
+            const f = btn.getAttribute('data-filter');
+            if (f === filter) {
+                btn.classList.add('active', 'bg-white', 'dark:bg-slate-800', 'text-gray-900', 'dark:text-gray-100', 'shadow-xs', 'font-semibold');
+                btn.classList.remove('font-medium');
+            }
+            else {
+                btn.classList.remove('active', 'bg-white', 'dark:bg-slate-800', 'shadow-xs', 'font-semibold');
+                btn.classList.add('font-medium');
+            }
+        });
+        if (currentSpedData?.cfopDetails) {
+            renderCfopTable(currentSpedData.cfopDetails);
+        }
+    }
+    document.getElementById('btnFilterCfopAll')?.addEventListener('click', () => setCfopFilter('all'));
+    document.getElementById('btnFilterCfopSaidas')?.addEventListener('click', () => setCfopFilter('saida'));
+    document.getElementById('btnFilterCfopEntradas')?.addEventListener('click', () => setCfopFilter('entrada'));
+    // Link do mini-quadro na Aba 1 para ir direto ao analítico de Saídas
+    const btnTab1VerAliquotas = document.getElementById('btnTab1VerAliquotas');
+    if (btnTab1VerAliquotas) {
+        btnTab1VerAliquotas.addEventListener('click', () => {
+            const tabCfopBtn = document.getElementById('tabCfopBtn');
+            if (tabCfopBtn) {
+                tabCfopBtn.click();
+                setCfopFilter('saida');
+                setTimeout(() => {
+                    document.getElementById('tabPanelCfop')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        });
     }
     // Search event listeners
     searchCfop?.addEventListener('input', () => {

@@ -892,6 +892,49 @@ export class FechamentoService {
             type: 'Entrada' | 'Saída';
             total: number;
             percent: number;
+            cstIcms?: string;
+            aliquota?: number;
+            aliquotaLabel?: string;
+            baseCalculo?: number;
+            valorIcms?: number;
+        }>;
+        saidasPorAliquota?: Array<{
+            aliquota: number;
+            aliquotaLabel: string;
+            valorTotal: number;
+            baseCalculo: number;
+            valorIcms: number;
+            cfops: string[];
+            csts: string[];
+            countRegistros: number;
+            percent: number;
+        }>;
+        entradasPorAliquota?: Array<{
+            aliquota: number;
+            aliquotaLabel: string;
+            valorTotal: number;
+            baseCalculo: number;
+            valorIcms: number;
+            cfops: string[];
+            csts: string[];
+            countRegistros: number;
+            percent: number;
+        }>;
+        analiticoC190?: Array<{
+            reg: string;
+            cfop: string;
+            type: 'Saída' | 'Entrada';
+            cstIcms: string;
+            aliquota: number;
+            aliquotaLabel: string;
+            vlOpr: number;
+            vlBcIcms: number;
+            vlIcms: number;
+            vlBcIcmsSt: number;
+            vlIcmsSt: number;
+            vlRedBc: number;
+            vlIpi: number;
+            isExempt: boolean;
         }>;
         participants?: Array<{
             codPart: string;
@@ -1162,6 +1205,21 @@ export class FechamentoService {
         };
 
         const cfopTotals: Record<string, number> = {};
+        const cfopAliquotaMap = new Map<string, {
+            reg: string;
+            cfop: string;
+            type: 'Saída' | 'Entrada';
+            cstIcms: string;
+            aliquota: number;
+            vlOpr: number;
+            vlBcIcms: number;
+            vlIcms: number;
+            vlBcIcmsSt: number;
+            vlIcmsSt: number;
+            vlRedBc: number;
+            vlIpi: number;
+            isExempt: boolean;
+        }>();
         const errors: string[] = [];
 
         const supplierCodes = new Set<string>();
@@ -1471,18 +1529,55 @@ export class FechamentoService {
             ) {
                 const cstIcms = fields[2] || '';
                 const cfop = fields[3] || '';
+                const aliqIcms = sanitizeNumber(fields[4] || '');
                 const vlOpr = sanitizeNumber(fields[5] || '');
                 const vlBcIcms = sanitizeNumber(fields[6] || '');
                 const vlIcms = sanitizeNumber(fields[7] || '');
+                const vlBcIcmsSt = sanitizeNumber(fields[8] || '');
+                const vlIcmsSt = sanitizeNumber(fields[9] || '');
+                const vlRedBc = sanitizeNumber(fields[10] || '');
+                const vlIpi = sanitizeNumber(fields[11] || '');
                 
                 const isExempt = ['40', '41', '50', '60'].includes(cstIcms) || 
                                  ['102', '103', '300', '400', '500'].includes(cstIcms) || 
                                  cfop.endsWith('405') || 
                                  cfop.endsWith('403') || 
-                                 cfop.endsWith('401') ||
+                                 cfop.endsWith('401') || 
                                  cfop.endsWith('656');
                 
-                if (cfop.startsWith('5') || cfop.startsWith('6') || cfop.startsWith('7')) {
+                const isSaida = cfop.startsWith('5') || cfop.startsWith('6') || cfop.startsWith('7');
+                const operType: 'Saída' | 'Entrada' = isSaida ? 'Saída' : 'Entrada';
+
+                // Agrupamento analítico detalhado por CFOP + Alíquota + CST
+                const groupKey = `${operType}|${cfop}|${aliqIcms.toFixed(2)}|${cstIcms}`;
+                const existingGroup = cfopAliquotaMap.get(groupKey);
+                if (existingGroup) {
+                    existingGroup.vlOpr += vlOpr;
+                    existingGroup.vlBcIcms += vlBcIcms;
+                    existingGroup.vlIcms += vlIcms;
+                    existingGroup.vlBcIcmsSt += vlBcIcmsSt;
+                    existingGroup.vlIcmsSt += vlIcmsSt;
+                    existingGroup.vlRedBc += vlRedBc;
+                    existingGroup.vlIpi += vlIpi;
+                } else {
+                    cfopAliquotaMap.set(groupKey, {
+                        reg,
+                        cfop,
+                        type: operType,
+                        cstIcms,
+                        aliquota: aliqIcms,
+                        vlOpr,
+                        vlBcIcms,
+                        vlIcms,
+                        vlBcIcmsSt,
+                        vlIcmsSt,
+                        vlRedBc,
+                        vlIpi,
+                        isExempt
+                    });
+                }
+
+                if (isSaida) {
                     cfopTotals[cfop] = (cfopTotals[cfop] || 0) + vlOpr;
                     totals.venda_valor += vlOpr;
                     if (vlIcms > 0) docIcmsDebitosSaida += vlIcms;
@@ -1770,17 +1865,167 @@ export class FechamentoService {
             }
         }
 
-        // Build CFOP Details
+        // Build CFOP Details & Analítico por Alíquota
         const totalMovement = totals.compra_valor + totals.venda_valor;
-        const cfopDetails = Object.entries(cfopTotals).map(([cfop, total]) => {
+
+        // Lista Analítica C190 completa
+        const analiticoC190 = Array.from(cfopAliquotaMap.values()).map(item => ({
+            ...item,
+            aliquotaLabel: item.aliquota > 0 ? `${item.aliquota.toFixed(2).replace('.', ',')}%` : (item.isExempt ? 'Isento / ST (0%)' : '0,00%'),
+            percent: totalMovement > 0 ? (item.vlOpr / totalMovement) * 100 : 0
+        })).sort((a, b) => b.vlOpr - a.vlOpr);
+
+        // CFOP Details enriquecido com separação por alíquota e valor
+        const cfopDetails = analiticoC190.length > 0 ? analiticoC190.map(item => ({
+            cfop: item.cfop,
+            type: item.type,
+            cstIcms: item.cstIcms,
+            aliquota: item.aliquota,
+            aliquotaLabel: item.aliquota > 0 ? `${item.aliquota.toFixed(2).replace('.', ',')}%` : (item.isExempt ? 'Isento / ST (0%)' : '0,00%'),
+            total: item.vlOpr,
+            baseCalculo: item.vlBcIcms,
+            valorIcms: item.vlIcms,
+            percent: totalMovement > 0 ? (item.vlOpr / totalMovement) * 100 : 0
+        })) : Object.entries(cfopTotals).map(([cfop, total]) => {
             const isSaida = cfop.startsWith('5') || cfop.startsWith('6') || cfop.startsWith('7');
             return {
                 cfop,
                 type: (isSaida ? 'Saída' : 'Entrada') as 'Entrada' | 'Saída',
+                cstIcms: '',
+                aliquota: 0,
+                aliquotaLabel: '-',
                 total,
+                baseCalculo: 0,
+                valorIcms: 0,
                 percent: totalMovement > 0 ? (total / totalMovement) * 100 : 0
             };
         }).sort((a, b) => b.total - a.total);
+
+        // Agrupamento exclusivo de Saídas por Alíquota e Valor
+        const saidasAliquotaMap = new Map<string, {
+            aliquota: number;
+            aliquotaLabel: string;
+            valorTotal: number;
+            baseCalculo: number;
+            valorIcms: number;
+            cfops: Set<string>;
+            csts: Set<string>;
+            countRegistros: number;
+        }>();
+
+        const saidasItems = analiticoC190.filter(i => i.type === 'Saída');
+        const totalSaidasVal = totals.venda_valor || saidasItems.reduce((acc, i) => acc + i.vlOpr, 0);
+
+        for (const item of saidasItems) {
+            let aliqKey = '';
+            let label = '';
+            if (item.aliquota > 0) {
+                aliqKey = `aliq_${item.aliquota.toFixed(2)}`;
+                label = `${item.aliquota.toFixed(2).replace('.', ',')}%`;
+            } else if (item.isExempt || item.cfop.endsWith('405') || ['60', '500'].includes(item.cstIcms)) {
+                aliqKey = 'isento_st';
+                label = 'Substituição Tributária / Isento (0%)';
+            } else {
+                aliqKey = 'outros_0';
+                label = 'Outras / Não Tributadas (0%)';
+            }
+
+            const existing = saidasAliquotaMap.get(aliqKey);
+            if (existing) {
+                existing.valorTotal += item.vlOpr;
+                existing.baseCalculo += item.vlBcIcms;
+                existing.valorIcms += item.vlIcms;
+                existing.cfops.add(item.cfop);
+                if (item.cstIcms) existing.csts.add(item.cstIcms);
+                existing.countRegistros += 1;
+            } else {
+                saidasAliquotaMap.set(aliqKey, {
+                    aliquota: item.aliquota,
+                    aliquotaLabel: label,
+                    valorTotal: item.vlOpr,
+                    baseCalculo: item.vlBcIcms,
+                    valorIcms: item.vlIcms,
+                    cfops: new Set([item.cfop]),
+                    csts: new Set(item.cstIcms ? [item.cstIcms] : []),
+                    countRegistros: 1
+                });
+            }
+        }
+
+        const saidasPorAliquota = Array.from(saidasAliquotaMap.values()).map(s => ({
+            aliquota: s.aliquota,
+            aliquotaLabel: s.aliquotaLabel,
+            valorTotal: s.valorTotal,
+            baseCalculo: s.baseCalculo,
+            valorIcms: s.valorIcms,
+            cfops: Array.from(s.cfops).sort(),
+            csts: Array.from(s.csts).sort(),
+            countRegistros: s.countRegistros,
+            percent: totalSaidasVal > 0 ? (s.valorTotal / totalSaidasVal) * 100 : 0
+        })).sort((a, b) => b.aliquota - a.aliquota || b.valorTotal - a.valorTotal);
+
+        // Agrupamento exclusivo de Entradas por Alíquota e Valor
+        const entradasAliquotaMap = new Map<string, {
+            aliquota: number;
+            aliquotaLabel: string;
+            valorTotal: number;
+            baseCalculo: number;
+            valorIcms: number;
+            cfops: Set<string>;
+            csts: Set<string>;
+            countRegistros: number;
+        }>();
+
+        const entradasItems = analiticoC190.filter(i => i.type === 'Entrada');
+        const totalEntradasVal = totals.compra_valor || entradasItems.reduce((acc, i) => acc + i.vlOpr, 0);
+
+        for (const item of entradasItems) {
+            let aliqKey = '';
+            let label = '';
+            if (item.aliquota > 0) {
+                aliqKey = `aliq_${item.aliquota.toFixed(2)}`;
+                label = `${item.aliquota.toFixed(2).replace('.', ',')}%`;
+            } else if (item.isExempt || item.cfop.endsWith('403') || ['60', '500'].includes(item.cstIcms)) {
+                aliqKey = 'isento_st';
+                label = 'Substituição Tributária / Isento (0%)';
+            } else {
+                aliqKey = 'outros_0';
+                label = 'Outras / Não Tributadas (0%)';
+            }
+
+            const existing = entradasAliquotaMap.get(aliqKey);
+            if (existing) {
+                existing.valorTotal += item.vlOpr;
+                existing.baseCalculo += item.vlBcIcms;
+                existing.valorIcms += item.vlIcms;
+                existing.cfops.add(item.cfop);
+                if (item.cstIcms) existing.csts.add(item.cstIcms);
+                existing.countRegistros += 1;
+            } else {
+                entradasAliquotaMap.set(aliqKey, {
+                    aliquota: item.aliquota,
+                    aliquotaLabel: label,
+                    valorTotal: item.vlOpr,
+                    baseCalculo: item.vlBcIcms,
+                    valorIcms: item.vlIcms,
+                    cfops: new Set([item.cfop]),
+                    csts: new Set(item.cstIcms ? [item.cstIcms] : []),
+                    countRegistros: 1
+                });
+            }
+        }
+
+        const entradasPorAliquota = Array.from(entradasAliquotaMap.values()).map(e => ({
+            aliquota: e.aliquota,
+            aliquotaLabel: e.aliquotaLabel,
+            valorTotal: e.valorTotal,
+            baseCalculo: e.baseCalculo,
+            valorIcms: e.valorIcms,
+            cfops: Array.from(e.cfops).sort(),
+            csts: Array.from(e.csts).sort(),
+            countRegistros: e.countRegistros,
+            percent: totalEntradasVal > 0 ? (e.valorTotal / totalEntradasVal) * 100 : 0
+        })).sort((a, b) => b.aliquota - a.aliquota || b.valorTotal - a.valorTotal);
 
         // Se não houver Bloco E110 ou apurIcmsDebitos e apurIcmsRecolher forem 0, calcula a partir dos documentos fiscais
         if (!hasE110 || (apurIcmsDebitos === 0 && apurIcmsCreditos === 0 && apurIcmsRecolher === 0)) {
@@ -1890,6 +2135,9 @@ export class FechamentoService {
                 apuracao,
                 cfopTotals,
                 cfopDetails,
+                saidasPorAliquota,
+                entradasPorAliquota,
+                analiticoC190,
                 products: products0200,
                 participants: participantsList,
                 documents
@@ -2045,6 +2293,9 @@ export class FechamentoService {
             apuracao,
             cfopTotals,
             cfopDetails,
+            saidasPorAliquota,
+            entradasPorAliquota,
+            analiticoC190,
             products: products0200,
             participants: participantsList,
             documents,
@@ -2529,53 +2780,158 @@ export class FechamentoService {
             fech.apuracao_fecp = Number((sumVendas * 0.02).toFixed(2));
         }
 
-        // CFOP Details
-        let finalCfopDetails: Array<{ cfop: string; type: 'Entrada' | 'Saída'; total: number; percent: number }> = [];
+        // Resolves saidasPorAliquota, entradasPorAliquota, analiticoC190, cfopDetails
+        let finalSaidasPorAliquota: any[] = [];
+        let finalEntradasPorAliquota: any[] = [];
+        let finalAnaliticoC190: any[] = [];
+        let finalCfopDetails: any[] = [];
+
+        if (parsedSpedData?.saidasPorAliquota && Array.isArray(parsedSpedData.saidasPorAliquota) && parsedSpedData.saidasPorAliquota.length > 0) {
+            finalSaidasPorAliquota = parsedSpedData.saidasPorAliquota;
+        }
+        if (parsedSpedData?.entradasPorAliquota && Array.isArray(parsedSpedData.entradasPorAliquota) && parsedSpedData.entradasPorAliquota.length > 0) {
+            finalEntradasPorAliquota = parsedSpedData.entradasPorAliquota;
+        }
+        if (parsedSpedData?.analiticoC190 && Array.isArray(parsedSpedData.analiticoC190) && parsedSpedData.analiticoC190.length > 0) {
+            finalAnaliticoC190 = parsedSpedData.analiticoC190;
+        }
         if (parsedSpedData?.cfopDetails && Array.isArray(parsedSpedData.cfopDetails) && parsedSpedData.cfopDetails.length > 0) {
             finalCfopDetails = parsedSpedData.cfopDetails;
-        } else {
-            const totalMov = Number(fech.venda_valor || 0) + Number(fech.compra_valor || 0);
-            if (Number(fech.venda_valor || 0) > 0) {
-                const vTaxed = Number(fech.venda_bs_icms || fech.simples_valor_tributado || (Number(fech.venda_valor) - Number(fech.venda_isento || 0)));
-                const vExempt = Number(fech.venda_isento || fech.simples_valor_nao_tributado || 0);
-                if (vTaxed > 0) {
-                    finalCfopDetails.push({
-                        cfop: '5102',
-                        type: 'Saída',
-                        total: vTaxed,
-                        percent: totalMov > 0 ? (vTaxed / totalMov) * 100 : 0
-                    });
-                }
-                if (vExempt > 0) {
-                    finalCfopDetails.push({
-                        cfop: '5405',
-                        type: 'Saída',
-                        total: vExempt,
-                        percent: totalMov > 0 ? (vExempt / totalMov) * 100 : 0
-                    });
-                }
-            }
+        }
 
-            if (Number(fech.compra_valor || 0) > 0) {
-                const cTaxed = Number(fech.compra_bs_icms || (Number(fech.compra_valor) - Number(fech.compra_isento || 0)));
-                const cExempt = Number(fech.compra_isento || 0);
-                if (cTaxed > 0) {
-                    finalCfopDetails.push({
-                        cfop: '1102',
-                        type: 'Entrada',
-                        total: cTaxed,
-                        percent: totalMov > 0 ? (cTaxed / totalMov) * 100 : 0
-                    });
-                }
-                if (cExempt > 0) {
-                    finalCfopDetails.push({
-                        cfop: '1403',
-                        type: 'Entrada',
-                        total: cExempt,
-                        percent: totalMov > 0 ? (cExempt / totalMov) * 100 : 0
-                    });
-                }
+        const totalVenda = Number(fech.venda_valor || 0);
+        const totalCompra = Number(fech.compra_valor || 0);
+        const totalMov = totalVenda + totalCompra;
+
+        // Se saidasPorAliquota não existir no JSON salvo (SPED legado ou gerado por fechamento financeiro), constrói dinamicamente
+        if (finalSaidasPorAliquota.length === 0 && totalVenda > 0) {
+            const vTaxed = Number(fech.venda_bs_icms || fech.simples_valor_tributado || (totalVenda - Number(fech.venda_isento || 0) - Number(fech.venda_outros || 0)));
+            const vExempt = Number(fech.venda_isento || fech.simples_valor_nao_tributado || 0);
+            const vOutros = Number(fech.venda_outros || 0);
+            const defaultAliq = 20.0; // Padrão estadual (ex: RJ 20% / 18%)
+
+            if (vTaxed > 0) {
+                const icmsTaxed = Number(fech.apuracao_icms || Number((vTaxed * 0.20).toFixed(2)));
+                finalSaidasPorAliquota.push({
+                    aliquota: defaultAliq,
+                    aliquotaLabel: `${defaultAliq.toFixed(2).replace('.', ',')}%`,
+                    valorTotal: vTaxed,
+                    baseCalculo: vTaxed,
+                    valorIcms: icmsTaxed,
+                    cfops: ['5102'],
+                    csts: ['000'],
+                    countRegistros: 1,
+                    percent: (vTaxed / totalVenda) * 100
+                });
             }
+            if (vExempt > 0) {
+                finalSaidasPorAliquota.push({
+                    aliquota: 0,
+                    aliquotaLabel: 'Isentas / Não Tributadas (0%)',
+                    valorTotal: vExempt,
+                    baseCalculo: 0,
+                    valorIcms: 0,
+                    cfops: ['5405'],
+                    csts: ['040'],
+                    countRegistros: 1,
+                    percent: (vExempt / totalVenda) * 100
+                });
+            }
+            if (vOutros > 0) {
+                finalSaidasPorAliquota.push({
+                    aliquota: 0,
+                    aliquotaLabel: 'Substituição Tributária / Outras (0%)',
+                    valorTotal: vOutros,
+                    baseCalculo: 0,
+                    valorIcms: 0,
+                    cfops: ['5405'],
+                    csts: ['060'],
+                    countRegistros: 1,
+                    percent: (vOutros / totalVenda) * 100
+                });
+            }
+        }
+
+        if (finalEntradasPorAliquota.length === 0 && totalCompra > 0) {
+            const cTaxed = Number(fech.compra_bs_icms || (totalCompra - Number(fech.compra_isento || 0) - Number(fech.compra_outros || 0)));
+            const cExempt = Number(fech.compra_isento || 0);
+            const cOutros = Number(fech.compra_outros || 0);
+            const defaultAliq = 20.0;
+
+            if (cTaxed > 0) {
+                finalEntradasPorAliquota.push({
+                    aliquota: defaultAliq,
+                    aliquotaLabel: `${defaultAliq.toFixed(2).replace('.', ',')}%`,
+                    valorTotal: cTaxed,
+                    baseCalculo: cTaxed,
+                    valorIcms: Number((cTaxed * 0.20).toFixed(2)),
+                    cfops: ['1102'],
+                    csts: ['000'],
+                    countRegistros: 1,
+                    percent: (cTaxed / totalCompra) * 100
+                });
+            }
+            if (cExempt > 0 || cOutros > 0) {
+                finalEntradasPorAliquota.push({
+                    aliquota: 0,
+                    aliquotaLabel: 'Isentas / ST (0%)',
+                    valorTotal: cExempt + cOutros,
+                    baseCalculo: 0,
+                    valorIcms: 0,
+                    cfops: ['1403'],
+                    csts: ['060'],
+                    countRegistros: 1,
+                    percent: ((cExempt + cOutros) / totalCompra) * 100
+                });
+            }
+        }
+
+        // Garante que cada item de cfopDetails tenha aliquota, baseCalculo e valorIcms
+        if (finalCfopDetails.length === 0) {
+            for (const s of finalSaidasPorAliquota) {
+                finalCfopDetails.push({
+                    cfop: s.cfops?.[0] || (s.aliquota > 0 ? '5102' : '5405'),
+                    type: 'Saída',
+                    cstIcms: s.csts?.[0] || (s.aliquota > 0 ? '000' : '060'),
+                    aliquota: s.aliquota,
+                    aliquotaLabel: s.aliquotaLabel,
+                    total: s.valorTotal,
+                    baseCalculo: s.baseCalculo,
+                    valorIcms: s.valorIcms,
+                    percent: totalMov > 0 ? (s.valorTotal / totalMov) * 100 : 0
+                });
+            }
+            for (const e of finalEntradasPorAliquota) {
+                finalCfopDetails.push({
+                    cfop: e.cfops?.[0] || (e.aliquota > 0 ? '1102' : '1403'),
+                    type: 'Entrada',
+                    cstIcms: e.csts?.[0] || (e.aliquota > 0 ? '000' : '060'),
+                    aliquota: e.aliquota,
+                    aliquotaLabel: e.aliquotaLabel,
+                    total: e.valorTotal,
+                    baseCalculo: e.baseCalculo,
+                    valorIcms: e.valorIcms,
+                    percent: totalMov > 0 ? (e.valorTotal / totalMov) * 100 : 0
+                });
+            }
+        } else {
+            // Enriquece itens legados caso não tenham campos de alíquota
+            finalCfopDetails = finalCfopDetails.map((item: any) => {
+                const isSaida = item.type === 'Saída' || item.cfop?.startsWith('5') || item.cfop?.startsWith('6') || item.cfop?.startsWith('7');
+                const isExempt = item.cfop?.endsWith('405') || item.cfop?.endsWith('403') || item.cfop?.endsWith('401') || ['60', '40', '41', '500'].includes(item.cstIcms);
+                const aliq = item.aliquota !== undefined ? Number(item.aliquota) : (isExempt ? 0 : 20);
+                const bc = item.baseCalculo !== undefined ? Number(item.baseCalculo) : (aliq > 0 ? Number(item.total || 0) : 0);
+                const icmsVal = item.valorIcms !== undefined ? Number(item.valorIcms) : (aliq > 0 ? Number((bc * (aliq / 100)).toFixed(2)) : 0);
+                return {
+                    ...item,
+                    type: isSaida ? 'Saída' : 'Entrada',
+                    aliquota: aliq,
+                    aliquotaLabel: item.aliquotaLabel || (aliq > 0 ? `${aliq.toFixed(2).replace('.', ',')}%` : (isExempt ? 'Isento / ST (0%)' : '0,00%')),
+                    baseCalculo: bc,
+                    valorIcms: icmsVal,
+                    percent: item.percent !== undefined ? Number(item.percent) : (totalMov > 0 ? (Number(item.total || 0) / totalMov) * 100 : 0)
+                };
+            });
         }
 
         const nextMonth = m === 12 ? 1 : m + 1;
@@ -2750,6 +3106,9 @@ export class FechamentoService {
             products: finalProducts,
             cfopTotals: parsedSpedData?.cfopTotals || {},
             cfopDetails: finalCfopDetails,
+            saidasPorAliquota: finalSaidasPorAliquota,
+            entradasPorAliquota: finalEntradasPorAliquota,
+            analiticoC190: finalAnaliticoC190,
             participants: finalParticipants,
             documents: finalDocuments,
             errors: []

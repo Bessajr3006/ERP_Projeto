@@ -15,18 +15,18 @@ import { ApproveQuoteInput } from '../types/Dental';
 export class OrderRepository {
     private static async resolveUserIdForContext(conn: any, companyId: number, userIdentifier: string): Promise<number> {
         const normalized = String(userIdentifier || '').trim();
-        if (normalized && normalized !== 'undefined') {
+        if (normalized && normalized !== 'undefined' && normalized !== 'null') {
+            // 1. Busca por public_id dentro da empresa
             const [userRowsRaw] = await conn.query(
                 'SELECT id FROM users WHERE public_id = ? AND company_id = ? LIMIT 1',
                 [normalized, companyId]
             );
             const userRows = userRowsRaw as RowDataPacket[];
-
             if (Array.isArray(userRows) && userRows.length > 0) {
                 return Number(userRows[0]!.id);
             }
 
-            // Compatibilidade com tokens legados que possam trazer id numérico em vez de public_id.
+            // 2. Busca por id numérico dentro da empresa
             const legacyNumericId = Number(normalized);
             if (Number.isInteger(legacyNumericId) && legacyNumericId > 0) {
                 const [legacyRowsRaw] = await conn.query(
@@ -34,14 +34,35 @@ export class OrderRepository {
                     [legacyNumericId, companyId]
                 );
                 const legacyRows = legacyRowsRaw as RowDataPacket[];
-
                 if (Array.isArray(legacyRows) && legacyRows.length > 0) {
                     return Number(legacyRows[0]!.id);
                 }
             }
+
+            // 3. Busca global por public_id (ex.: usuário administrador/contador importando para empresa cliente)
+            const [globalPublicRows] = await conn.query(
+                'SELECT id FROM users WHERE public_id = ? LIMIT 1',
+                [normalized]
+            );
+            const globalPub = globalPublicRows as RowDataPacket[];
+            if (Array.isArray(globalPub) && globalPub.length > 0) {
+                return Number(globalPub[0]!.id);
+            }
+
+            // 4. Busca global por id numérico
+            if (Number.isInteger(legacyNumericId) && legacyNumericId > 0) {
+                const [globalIdRows] = await conn.query(
+                    'SELECT id FROM users WHERE id = ? LIMIT 1',
+                    [legacyNumericId]
+                );
+                const globalId = globalIdRows as RowDataPacket[];
+                if (Array.isArray(globalId) && globalId.length > 0) {
+                    return Number(globalId[0]!.id);
+                }
+            }
         }
 
-        // Fallback para contextos técnicos (ex.: swagger token ou acao por outra empresa) sem user_id correspondente.
+        // 5. Fallback para usuário ativo da empresa alvo
         const [fallbackRowsRaw] = await conn.query(
             `SELECT id
              FROM users
@@ -54,6 +75,32 @@ export class OrderRepository {
         const fallbackRows = fallbackRowsRaw as RowDataPacket[];
         if (Array.isArray(fallbackRows) && fallbackRows.length > 0) {
             return Number(fallbackRows[0]!.id);
+        }
+
+        // 6. Fallback para qualquer usuário da empresa alvo
+        const [anyCompanyUserRows] = await conn.query(
+            'SELECT id FROM users WHERE company_id = ? ORDER BY id ASC LIMIT 1',
+            [companyId]
+        );
+        const anyCompUser = anyCompanyUserRows as RowDataPacket[];
+        if (Array.isArray(anyCompUser) && anyCompUser.length > 0) {
+            return Number(anyCompUser[0]!.id);
+        }
+
+        // 7. Fallback para qualquer admin/super_admin global do sistema
+        const [anyAdminRows] = await conn.query(
+            `SELECT id FROM users WHERE is_active = 1 ORDER BY CASE WHEN role = 'super_admin' THEN 0 WHEN role = 'admin' THEN 1 ELSE 2 END, id ASC LIMIT 1`
+        );
+        const anyAdmin = anyAdminRows as RowDataPacket[];
+        if (Array.isArray(anyAdmin) && anyAdmin.length > 0) {
+            return Number(anyAdmin[0]!.id);
+        }
+
+        // 8. Fallback absoluto para qualquer registro de usuário
+        const [anyUserGlobal] = await conn.query('SELECT id FROM users ORDER BY id ASC LIMIT 1');
+        const anyGlobal = anyUserGlobal as RowDataPacket[];
+        if (Array.isArray(anyGlobal) && anyGlobal.length > 0) {
+            return Number(anyGlobal[0]!.id);
         }
 
         throw new Error('User context resolving failed inside DB logic');

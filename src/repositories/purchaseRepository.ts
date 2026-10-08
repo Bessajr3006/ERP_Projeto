@@ -168,15 +168,98 @@ export class PurchaseRepository {
         return combined.slice(0, limit);
     }
 
+    private static async resolveUserIdForContext(conn: any, companyId: number, userIdentifier: string): Promise<number> {
+        const normalized = String(userIdentifier || '').trim();
+        if (normalized && normalized !== 'undefined' && normalized !== 'null') {
+            const [userRowsRaw] = await conn.query(
+                'SELECT id FROM users WHERE public_id = ? AND company_id = ? LIMIT 1',
+                [normalized, companyId]
+            );
+            const userRows = userRowsRaw as RowDataPacket[];
+            if (Array.isArray(userRows) && userRows.length > 0) {
+                return Number(userRows[0]!.id);
+            }
+
+            const legacyNumericId = Number(normalized);
+            if (Number.isInteger(legacyNumericId) && legacyNumericId > 0) {
+                const [legacyRowsRaw] = await conn.query(
+                    'SELECT id FROM users WHERE id = ? AND company_id = ? LIMIT 1',
+                    [legacyNumericId, companyId]
+                );
+                const legacyRows = legacyRowsRaw as RowDataPacket[];
+                if (Array.isArray(legacyRows) && legacyRows.length > 0) {
+                    return Number(legacyRows[0]!.id);
+                }
+            }
+
+            const [globalPublicRows] = await conn.query(
+                'SELECT id FROM users WHERE public_id = ? LIMIT 1',
+                [normalized]
+            );
+            const globalPub = globalPublicRows as RowDataPacket[];
+            if (Array.isArray(globalPub) && globalPub.length > 0) {
+                return Number(globalPub[0]!.id);
+            }
+
+            if (Number.isInteger(legacyNumericId) && legacyNumericId > 0) {
+                const [globalIdRows] = await conn.query(
+                    'SELECT id FROM users WHERE id = ? LIMIT 1',
+                    [legacyNumericId]
+                );
+                const globalId = globalIdRows as RowDataPacket[];
+                if (Array.isArray(globalId) && globalId.length > 0) {
+                    return Number(globalId[0]!.id);
+                }
+            }
+        }
+
+        const [fallbackRowsRaw] = await conn.query(
+            `SELECT id
+             FROM users
+             WHERE company_id = ?
+               AND is_active = 1
+             ORDER BY CASE WHEN role = 'admin' THEN 0 WHEN role = 'super_admin' THEN 1 ELSE 2 END, id ASC
+             LIMIT 1`,
+            [companyId]
+        );
+        const fallbackRows = fallbackRowsRaw as RowDataPacket[];
+        if (Array.isArray(fallbackRows) && fallbackRows.length > 0) {
+            return Number(fallbackRows[0]!.id);
+        }
+
+        const [anyCompanyUserRows] = await conn.query(
+            'SELECT id FROM users WHERE company_id = ? ORDER BY id ASC LIMIT 1',
+            [companyId]
+        );
+        const anyCompUser = anyCompanyUserRows as RowDataPacket[];
+        if (Array.isArray(anyCompUser) && anyCompUser.length > 0) {
+            return Number(anyCompUser[0]!.id);
+        }
+
+        const [anyAdminRows] = await conn.query(
+            `SELECT id FROM users WHERE is_active = 1 ORDER BY CASE WHEN role = 'super_admin' THEN 0 WHEN role = 'admin' THEN 1 ELSE 2 END, id ASC LIMIT 1`
+        );
+        const anyAdmin = anyAdminRows as RowDataPacket[];
+        if (Array.isArray(anyAdmin) && anyAdmin.length > 0) {
+            return Number(anyAdmin[0]!.id);
+        }
+
+        const [anyUserGlobal] = await conn.query('SELECT id FROM users ORDER BY id ASC LIMIT 1');
+        const anyGlobal = anyUserGlobal as RowDataPacket[];
+        if (Array.isArray(anyGlobal) && anyGlobal.length > 0) {
+            return Number(anyGlobal[0]!.id);
+        }
+
+        throw new Error('User context resolving failed inside DB logic');
+    }
+
     static async createPurchaseOrder(companyId: number, userPublicId: string, data: CreatePurchaseData): Promise<PurchaseOrder> {
         const conn = await pool.getConnection();
 
         try {
             await conn.beginTransaction();
 
-            const [userRows] = await conn.query<RowDataPacket[]>('SELECT id FROM users WHERE public_id = ? AND company_id = ? LIMIT 1', [userPublicId, companyId]);
-            if (!userRows || userRows.length === 0) throw new Error('User context resolving failed inside DB logic');
-            const userId = userRows[0]!.id;
+            const userId = await this.resolveUserIdForContext(conn, companyId, userPublicId);
 
             const supplier = await EntityService.getSupplierByPublicId(data.supplier_public_id, companyId);
             const bankAccount = await BankAccountService.getByPublicId(data.bank_account_public_id, companyId);

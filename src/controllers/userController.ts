@@ -158,7 +158,12 @@ export class UserController {
             const currentUser = await UserService.getScopedUser(req.user!.company_id, requesterId);
             return String(currentUser.public_id) === normalizedTargetId || String(currentUser.id) === normalizedTargetId;
         } catch (_error) {
-            return false;
+            try {
+                const currentUser = await UserService.getScopedUserGlobal(requesterId);
+                return String(currentUser.public_id) === normalizedTargetId || String(currentUser.id) === normalizedTargetId;
+            } catch (_err) {
+                return false;
+            }
         }
     }
 
@@ -181,7 +186,20 @@ export class UserController {
             throw new AppError('Not authorized to manage another user\'s WhatsApp session', 403);
         }
 
-        return UserService.getScopedUser(companyId, targetId);
+        try {
+            return await UserService.getScopedUser(companyId, targetId);
+        } catch (error) {
+            const originCompanyId = (req.user as any).group_master_company_id || (req.user as any).general_admin_company_id;
+            if (originCompanyId && originCompanyId !== companyId) {
+                try {
+                    return await UserService.getScopedUser(originCompanyId, targetId);
+                } catch (_e) {}
+            }
+            if (isSelf || req.user!.role === 'super_admin' || Boolean((req.user as any).general_admin_company_id)) {
+                return await UserService.getScopedUserGlobal(targetId);
+            }
+            throw error;
+        }
     }
 
     static async getAll(req: Request, res: Response) {
@@ -226,8 +244,23 @@ export class UserController {
             throw new AppError('Not authorized to view this user', 403);
         }
 
-        const user = await UserService.getById(companyId, targetId);
-        return res.status(200).json({ status: 'success', data: serializeSafeUser(user) });
+        try {
+            const user = await UserService.getById(companyId, targetId);
+            return res.status(200).json({ status: 'success', data: serializeSafeUser(user) });
+        } catch (error) {
+            const originCompanyId = (req.user as any).group_master_company_id || (req.user as any).general_admin_company_id;
+            if (originCompanyId && originCompanyId !== companyId) {
+                try {
+                    const user = await UserService.getById(originCompanyId, targetId);
+                    return res.status(200).json({ status: 'success', data: serializeSafeUser(user) });
+                } catch (_e) {}
+            }
+            if (isSelf || callerRole === 'super_admin' || Boolean((req.user as any).general_admin_company_id)) {
+                const user = await UserService.getByIdGlobal(targetId);
+                return res.status(200).json({ status: 'success', data: serializeSafeUser(user) });
+            }
+            throw error;
+        }
     }
 
     static async create(req: Request, res: Response): Promise<any> {
@@ -291,8 +324,26 @@ export class UserController {
             throw new AppError('Not authorized to update this profile', 403);
         }
 
-        // Busca o usuário alvo dentro da empresa do chamador (retorna 404 se pertencer a outra empresa)
-        const targetUser = await UserService.getById(companyId, targetId);
+        let targetUser: any;
+        let effectiveCompanyId = companyId;
+        try {
+            targetUser = await UserService.getById(companyId, targetId);
+        } catch (error) {
+            const originCompanyId = (req.user as any).group_master_company_id || (req.user as any).general_admin_company_id;
+            if (originCompanyId && originCompanyId !== companyId) {
+                try {
+                    targetUser = await UserService.getById(originCompanyId, targetId);
+                    effectiveCompanyId = originCompanyId;
+                } catch (_e) {}
+            }
+            if (!targetUser && (isSelf || callerRole === 'super_admin' || Boolean((req.user as any).general_admin_company_id))) {
+                targetUser = await UserService.getByIdGlobal(targetId);
+                effectiveCompanyId = targetUser.company_id || companyId;
+            }
+            if (!targetUser) {
+                throw error;
+            }
+        }
 
         // Se não for edição do próprio perfil, ninguém edita usuário com papel superior ao seu
         if (!isSelf && !canManageRole(callerRole, targetUser.role)) {
@@ -317,7 +368,7 @@ export class UserController {
              throw new AppError('Password must be at least 10 characters', 400);
         }
 
-        const updatedUser = await UserService.update(companyId, targetId, validatedData);
+        const updatedUser = await UserService.update(effectiveCompanyId, targetId, validatedData);
 
         return res.status(200).json({ status: 'success', message: 'User updated successfully', data: serializeSafeUser(updatedUser) });
     }

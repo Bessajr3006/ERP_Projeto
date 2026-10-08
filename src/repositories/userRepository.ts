@@ -194,6 +194,42 @@ export class UserRepository {
         return null;
     }
 
+    static async resolvePublicIdByIdentifierGlobal(identifier: string): Promise<string | null> {
+        const normalized = String(identifier || '').trim();
+        if (!normalized) {
+            return null;
+        }
+
+        const [publicRows] = await pool.query<RowDataPacket[]>(
+            `SELECT public_id
+             FROM users
+             WHERE public_id = ?
+             LIMIT 1`,
+            [normalized]
+        );
+
+        if (publicRows.length > 0) {
+            return String(publicRows[0]!.public_id);
+        }
+
+        const numericId = Number(normalized);
+        if (Number.isInteger(numericId) && numericId > 0) {
+            const [legacyRows] = await pool.query<RowDataPacket[]>(
+                `SELECT public_id
+                 FROM users
+                 WHERE id = ?
+                 LIMIT 1`,
+                [numericId]
+            );
+
+            if (legacyRows.length > 0) {
+                return String(legacyRows[0]!.public_id);
+            }
+        }
+
+        return null;
+    }
+
     static async getAllByRole(companyId: number, role: string): Promise<RowDataPacket[]> {
         const baseColumns = [
             'public_id',
@@ -396,6 +432,87 @@ export class UserRepository {
              WHERE company_id = ? AND public_id = ? LIMIT 1`,
             [companyId, publicId]
         );
+    }
+
+    static async getScopedGlobal(identifier: string): Promise<RowDataPacket[]> {
+        const publicId = await this.resolvePublicIdByIdentifierGlobal(identifier);
+        if (!publicId) return [];
+
+        return queryRowsWithRetry(
+            `SELECT id, public_id, company_id, email, full_name, role, is_active
+             FROM users
+             WHERE public_id = ? LIMIT 1`,
+            [publicId]
+        );
+    }
+
+    static async getByIdGlobal(identifier: string): Promise<RowDataPacket[]> {
+        const publicId = await this.resolvePublicIdByIdentifierGlobal(identifier);
+        if (!publicId) return [];
+
+        const baseColumns = [
+            'id',
+            'company_id',
+            'public_id',
+            'email',
+            'full_name',
+            'cpf_cnpj',
+            'crc',
+            'phone',
+            'zipcode',
+            'street',
+            'number',
+            'complement',
+            'neighborhood',
+            'city',
+            'state',
+            'default_page',
+            'whatsapp_auto_reply_mode',
+            'whatsapp_enable_manual_billing',
+            'whatsapp_auto_send_boleto',
+            'default_bank_account_id',
+            '(SELECT public_id FROM bank_accounts WHERE id = users.default_bank_account_id) AS default_bank_account_public_id',
+            'role',
+            'is_active',
+            'is_default_declaration_signer',
+            'photo_base64',
+            'photo_filename',
+            'face_descriptor',
+            'created_at',
+            '(NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM sales_orders s WHERE s.seller_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.seller_user_id = users.id LIMIT 1) AND NOT EXISTS (SELECT 1 FROM tasks tk WHERE tk.assigned_user_public_id = users.public_id LIMIT 1)) AS is_deletable'
+        ];
+        let currentColumns = [...baseColumns];
+
+        while (true) {
+            try {
+                const [rows] = await pool.query<RowDataPacket[]>(
+                    `SELECT ${currentColumns.join(', ')}
+                     FROM users
+                     WHERE public_id = ? LIMIT 1`,
+                    [publicId]
+                );
+                return rows;
+            } catch (error: unknown) {
+                const missingColumn = parseMissingColumnFromError(error);
+                if (!missingColumn) {
+                    throw error;
+                }
+
+                if (await ensureUserColumn(missingColumn)) {
+                    continue;
+                }
+
+                const reduced = removeListItem(currentColumns, (column) => {
+                    const colName = column.trim().split(/\s+/)[0];
+                    return colName === missingColumn;
+                });
+                if (!reduced.removed) {
+                    throw error;
+                }
+
+                currentColumns = reduced.list;
+            }
+        }
     }
 
     static async getByEmail(email: string): Promise<RowDataPacket[]> {

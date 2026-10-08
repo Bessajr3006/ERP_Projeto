@@ -4664,7 +4664,21 @@ export class ExternalDbService {
             requestTimeout: 15000
         };
 
-        const pool = await sql.connect(sqlConfig);
+        let pool: sql.ConnectionPool;
+        try {
+            pool = await sql.connect(sqlConfig);
+        } catch (connErr: any) {
+            const msg = connErr?.message || '';
+            const code = connErr?.code || '';
+            if (code === 'ETIMEOUT' || code === 'ESOCKET' || code === 'ECONNREFUSED' || msg.includes('timeout') || msg.includes('Failed to connect') || msg.includes('getaddrinfo') || msg.includes('ENOTFOUND') || msg.includes('connect')) {
+                throw new Error(`Não foi possível conectar ao banco de dados (${server}:${port}). O servidor está fora do ar, inacessível ou o endereço DDNS/Host não pôde ser resolvido.`);
+            }
+            if (msg.includes('Login failed') || code === 'ELOGIN') {
+                throw new Error(`Falha de autenticação ao conectar no banco de dados (${server}:${port}). Verifique usuário e senha.`);
+            }
+            throw new Error(`Não foi possível conectar ao banco de dados (${server}:${port}): ${msg || 'O servidor está fora do ar ou inacessível'}`);
+        }
+
         try {
             const result = await pool.request().query(query);
             return result.recordset || [];
@@ -5907,6 +5921,8 @@ export class ExternalDbService {
             let msg = err.message || String(err);
             if (msg.includes('ELOGIN') || msg.includes('Login failed')) {
                 msg = `Falha de autenticação ao conectar no banco Solidcon (${server}:${port}). Verifique o usuário e a senha.`;
+            } else if (msg.includes('ENOTFOUND') || msg.includes('getaddrinfo')) {
+                msg = `Endereço/Host não encontrado (${server}). O domínio DDNS ou nome do servidor não pôde ser resolvido pelo DNS. Verifique se o DDNS está ativo ou use o IP diretamente.`;
             } else if (msg.includes('ETIMEOUT') || msg.includes('ESOCKET') || msg.includes('ECONNREFUSED')) {
                 msg = `Não foi possível conectar ao servidor Solidcon (${server}:${port}). Verifique o IP/Host e se o servidor está acessível.`;
             }
@@ -5984,6 +6000,8 @@ export class ExternalDbService {
             let msg = err.message || String(err);
             if (msg.includes('ELOGIN') || msg.includes('Login failed')) {
                 msg = `Falha de autenticação ao conectar no banco Dorsal (${server}:${port}). Verifique o usuário e a senha.`;
+            } else if (msg.includes('ENOTFOUND') || msg.includes('getaddrinfo')) {
+                msg = `Endereço/Host não encontrado (${server}). O domínio DDNS ou nome do servidor não pôde ser resolvido pelo DNS. Verifique se o DDNS está ativo ou use o IP diretamente.`;
             } else if (msg.includes('ETIMEOUT') || msg.includes('ESOCKET') || msg.includes('ECONNREFUSED')) {
                 msg = `Não foi possível conectar ao servidor Dorsal (${server}:${port}). Verifique o IP/Host e se o servidor está acessível.`;
             }
@@ -6070,7 +6088,9 @@ export class ExternalDbService {
             }
 
             let msg = pgError.message || String(pgError);
-            if (msg.includes('ETIMEDOUT') || msg.includes('timeout')) {
+            if (msg.includes('ENOTFOUND') || msg.includes('getaddrinfo')) {
+                msg = `Endereço/Host não encontrado (${server}). O domínio DDNS ou nome do servidor não pôde ser resolvido pelo DNS. Verifique se o DDNS está ativo ou use o IP diretamente.`;
+            } else if (msg.includes('ETIMEDOUT') || msg.includes('timeout')) {
                 msg = `Tempo limite de conexão esgotado ao tentar alcançar ${server}:${pgPort}. Verifique se o servidor está online e acessível.`;
             } else if (msg.includes('ECONNREFUSED')) {
                 msg = `Conexão recusada em ${server}:${pgPort}. Verifique se o banco de dados está ativo nesta porta.`;
@@ -6103,24 +6123,36 @@ export class ExternalDbService {
             requestTimeout: 8000
         };
 
-        const pool = await sql.connect(sqlConfig);
         try {
-            const req = pool.request();
-            const res = await req.query('SELECT @@VERSION as version');
-            const versionStr = res.recordset?.[0]?.version || 'SQL Server';
-            return {
-                success: true,
-                message: 'Conexão com o banco de dados Alterdata estabelecida com sucesso!',
-                details: {
-                    type: 'SQL Server',
-                    server: config.server,
-                    port: config.port,
-                    database: config.database,
-                    version: versionStr
-                }
-            };
-        } finally {
-            await pool.close();
+            const pool = await sql.connect(sqlConfig);
+            try {
+                const req = pool.request();
+                const res = await req.query('SELECT @@VERSION as version');
+                const versionStr = res.recordset?.[0]?.version || 'SQL Server';
+                return {
+                    success: true,
+                    message: 'Conexão com o banco de dados Alterdata estabelecida com sucesso!',
+                    details: {
+                        type: 'SQL Server',
+                        server: config.server,
+                        port: config.port,
+                        database: config.database,
+                        version: versionStr
+                    }
+                };
+            } finally {
+                await pool.close();
+            }
+        } catch (err: any) {
+            let msg = err.message || String(err);
+            if (msg.includes('ELOGIN') || msg.includes('Login failed')) {
+                msg = `Falha de autenticação ao conectar no banco Alterdata (${config.server}:${config.port || 1433}). Verifique o usuário e a senha.`;
+            } else if (msg.includes('ENOTFOUND') || msg.includes('getaddrinfo')) {
+                msg = `Endereço/Host não encontrado (${config.server}). O domínio DDNS ou nome do servidor não pôde ser resolvido pelo DNS. Verifique se o DDNS está ativo ou use o IP diretamente.`;
+            } else if (msg.includes('ETIMEOUT') || msg.includes('ESOCKET') || msg.includes('ECONNREFUSED')) {
+                msg = `Não foi possível conectar ao servidor Alterdata (${config.server}:${config.port || 1433}). Verifique o IP/Host e se o servidor está acessível.`;
+            }
+            throw new Error(msg);
         }
     }
 

@@ -134,6 +134,7 @@ router.get('/:id/whatsapp-business/session', (req, res, next) => UserController.
  *       200: { description: Sessao iniciada }
  */
 router.post('/:id/whatsapp-business/session', (req, res, next) => UserController.startWhatsAppBusinessSession(req, res).catch(next));
+router.post('/:id/whatsapp-business/session/pairing-code', (req, res, next) => UserController.startWhatsAppBusinessSession(req, res).catch(next));
 /**
  * @openapi
  * /users/{id}/whatsapp-business/session:

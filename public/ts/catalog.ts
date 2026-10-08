@@ -363,7 +363,7 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">Senha</label>
-                            <input type="password" id="sellerPassword" required placeholder="••••••••" class="w-full text-xs border dark:border-slate-700 p-2.5 rounded-xl bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+                            <input type="password" id="sellerPassword" autocomplete="current-password" required placeholder="••••••••" class="w-full text-xs border dark:border-slate-700 p-2.5 rounded-xl bg-gray-50 dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
                         </div>
                         <div id="sellerLoginError" class="text-red-500 text-xs font-semibold hidden text-center mt-1"></div>
                         <button type="submit" id="btnSubmitSellerLogin" class="w-full h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all active:scale-[0.98] mt-2">

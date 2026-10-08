@@ -146,9 +146,21 @@ export class UserService {
         return PublicUserSchema.parse(rows[0]);
     }
 
+    static async getByIdGlobal(identifier: string) {
+        const rows = await UserRepository.getByIdGlobal(identifier);
+        if (rows.length === 0) throw new AppError('Usuário não encontrado', 404);
+        return PublicUserSchema.parse(rows[0]);
+    }
+
     static async getScopedUser(companyId: number, identifier: string) {
         const publicId = await this.resolveTargetPublicId(companyId, identifier);
         const rows = await UserRepository.getScoped(companyId, publicId);
+        if (rows.length === 0) throw new AppError('Usuário não encontrado', 404);
+        return ScopedUserSchema.parse(rows[0]);
+    }
+
+    static async getScopedUserGlobal(identifier: string) {
+        const rows = await UserRepository.getScopedGlobal(identifier);
         if (rows.length === 0) throw new AppError('Usuário não encontrado', 404);
         return ScopedUserSchema.parse(rows[0]);
     }

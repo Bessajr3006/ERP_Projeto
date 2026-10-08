@@ -2222,13 +2222,19 @@
                     qtdAVencer: 0
                 };
             }
+            const isPago = item.hasPagto || (item.Pagto !== null && item.Pagto !== undefined && String(item.Pagto).trim() !== '');
+            const vlParcela = Number(item.vlParcela || 0);
+            const vlPago = isPago ? Number(item.vlPago || vlParcela || 0) : 0;
+            const saldoAberto = isPago ? 0 : (Number(item.saldoAberto ?? 0) > 0 ? Number(item.saldoAberto) : Math.max(0, vlParcela - Number(item.vlDesconto || 0)));
+            const vlPermuta = Number(item.vlPermuta || 0);
+
             const g = filiaisMap[fKey];
             g.items.push(item);
-            g.totalParcela += Number(item.vlParcela || 0);
-            g.totalPago += Number(item.vlPago || 0);
-            g.totalAberto += Number(item.saldoAberto || 0);
-            g.totalPermuta += Number(item.vlPermuta || 0);
-            if (item.hasPagto) {
+            g.totalParcela += vlParcela;
+            g.totalPago += vlPago;
+            g.totalAberto += saldoAberto;
+            g.totalPermuta += vlPermuta;
+            if (isPago) {
                 g.qtdPagos++;
             } else {
                 g.qtdAberto++;
@@ -2264,9 +2270,12 @@
             `;
 
             g.items.forEach((item, idx) => {
-                const isPago = item.hasPagto;
+                const isPago = item.hasPagto || (item.Pagto !== null && item.Pagto !== undefined && String(item.Pagto).trim() !== '');
                 const isVencido = !isPago && item.situacao === 'vencido';
                 const vlPermuta = Number(item.vlPermuta || 0);
+                const vlParcela = Number(item.vlParcela || 0);
+                const vlPago = isPago ? Number(item.vlPago || vlParcela || 0) : 0;
+                const saldoAberto = isPago ? 0 : (Number(item.saldoAberto ?? 0) > 0 ? Number(item.saldoAberto) : Math.max(0, vlParcela - Number(item.vlDesconto || 0)));
 
                 let statusBadgeHtml = '';
                 if (isPago) {
@@ -2316,16 +2325,16 @@
                             ${escapeHtml(item.CNPJ_CPF || '-')}
                         </td>
                         <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
-                            ${formatMoney(item.vlParcela)}
+                            ${formatMoney(vlParcela)}
                         </td>
                         <td class="py-2.5 px-3 text-right font-mono font-bold ${vlPermuta > 0 ? 'text-purple-700 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} whitespace-nowrap">
                             ${vlPermuta > 0 ? formatMoney(vlPermuta) : '-'}
                         </td>
                         <td class="py-2.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                            ${formatMoney(item.vlPago)}
+                            ${formatMoney(vlPago)}
                         </td>
-                        <td class="py-2.5 px-3 text-right font-mono font-bold ${item.saldoAberto <= 0.01 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'} whitespace-nowrap">
-                            ${formatMoney(item.saldoAberto)}
+                        <td class="py-2.5 px-3 text-right font-mono font-bold ${saldoAberto <= 0.01 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'} whitespace-nowrap">
+                            ${formatMoney(saldoAberto)}
                         </td>
                         <td class="py-2.5 px-3 text-center whitespace-nowrap">
                             <button type="button" class="btn-view-contas-geral-detalhes p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 shadow-2xs hover:scale-110 transition-all cursor-pointer inline-flex items-center justify-center" data-index="${rawIndex >= 0 ? rawIndex : idx}" title="Visualizar Detalhes do Lançamento">
@@ -2415,7 +2424,7 @@
         const tipoData = getEl<HTMLSelectElement>('modalContasGeralTipoData')?.value || 'vencimento';
 
         const filtered = rawContasGeralLancamentos.filter((item: any) => {
-            const hasPagto = item.hasPagto || item.Pagto !== null;
+            const hasPagto = item.hasPagto || (item.Pagto !== null && item.Pagto !== undefined && String(item.Pagto).trim() !== '');
             const isVencido = !hasPagto && item.situacao === 'vencido';
             const isAVencer = !hasPagto && item.situacao === 'a_vencer';
             const vlPermuta = Number(item.vlPermuta || 0);
@@ -2456,15 +2465,16 @@
         let countAberto = 0;
 
         filtered.forEach((r: any) => {
+            const hasPagto = r.hasPagto || (r.Pagto !== null && r.Pagto !== undefined && String(r.Pagto).trim() !== '');
             const parcela = Number(r.vlParcela || 0);
-            const pago = Number(r.vlPago || 0);
-            const saldo = Number(r.saldoAberto || 0);
+            const pago = hasPagto ? Number(r.vlPago || parcela || 0) : 0;
+            const saldo = hasPagto ? 0 : (Number(r.saldoAberto ?? 0) > 0 ? Number(r.saldoAberto) : Math.max(0, parcela - Number(r.vlDesconto || 0)));
             const perm = Number(r.vlPermuta || 0);
             sumGeral += parcela;
             sumPago += pago;
             sumAberto += saldo;
             sumPermuta += perm;
-            if (r.hasPagto) {
+            if (hasPagto) {
                 countPagos++;
             } else {
                 countAberto++;
@@ -2540,8 +2550,12 @@
         const modal = getEl('modalContasGeralDetalhes');
         if (!modal || !item) return;
 
-        const isPago = item.hasPagto || item.Pagto !== null;
+        const isPago = item.hasPagto || (item.Pagto !== null && item.Pagto !== undefined && String(item.Pagto).trim() !== '');
         const isVencido = !isPago && item.situacao === 'vencido';
+        const vlParcela = Number(item.vlParcela || 0);
+        const vlDesconto = Number(item.vlDesconto || 0);
+        const vlPago = isPago ? Number(item.vlPago || vlParcela || 0) : 0;
+        const saldoAberto = isPago ? 0 : (Number(item.saldoAberto ?? 0) > 0 ? Number(item.saldoAberto) : Math.max(0, vlParcela - vlDesconto));
 
         if (getEl('modalGeralDetDocNum')) {
             getEl('modalGeralDetDocNum')!.textContent = item.Documento || `#${item.cdConta || '-'}`;
@@ -2575,22 +2589,22 @@
             }
         }
         if (getEl('modalGeralDetSaldoPendente')) {
-            getEl('modalGeralDetSaldoPendente')!.textContent = formatMoney(item.saldoAberto);
+            getEl('modalGeralDetSaldoPendente')!.textContent = formatMoney(saldoAberto);
         }
         if (getEl('modalGeralDetVlParcela')) {
-            getEl('modalGeralDetVlParcela')!.textContent = formatMoney(item.vlParcela);
+            getEl('modalGeralDetVlParcela')!.textContent = formatMoney(vlParcela);
         }
         if (getEl('modalGeralDetVlPermuta')) {
             getEl('modalGeralDetVlPermuta')!.textContent = formatMoney(item.vlPermuta);
         }
         if (getEl('modalGeralDetVlPago')) {
-            getEl('modalGeralDetVlPago')!.textContent = formatMoney(item.vlPago);
+            getEl('modalGeralDetVlPago')!.textContent = formatMoney(vlPago);
         }
         if (getEl('modalGeralDetSaldoAberto')) {
-            getEl('modalGeralDetSaldoAberto')!.textContent = formatMoney(item.saldoAberto);
+            getEl('modalGeralDetSaldoAberto')!.textContent = formatMoney(saldoAberto);
         }
         if (getEl('modalGeralDetVlDesconto')) {
-            getEl('modalGeralDetVlDesconto')!.textContent = formatMoney(item.vlDesconto);
+            getEl('modalGeralDetVlDesconto')!.textContent = formatMoney(vlDesconto);
         }
         if (getEl('modalGeralDetVlMulta')) {
             getEl('modalGeralDetVlMulta')!.textContent = formatMoney(item.vlMulta);
@@ -2700,7 +2714,7 @@
         const tipoData = getEl<HTMLSelectElement>('modalContasGeralTipoData')?.value || 'vencimento';
 
         const filtered = rawContasGeralLancamentos.filter((item: any) => {
-            const hasPagto = item.hasPagto || item.Pagto !== null;
+            const hasPagto = item.hasPagto || (item.Pagto !== null && item.Pagto !== undefined && String(item.Pagto).trim() !== '');
             const isVencido = !hasPagto && item.situacao === 'vencido';
             const isAVencer = !hasPagto && item.situacao === 'a_vencer';
             const vlPermuta = Number(item.vlPermuta || 0);
@@ -2764,8 +2778,12 @@
         ];
 
         const rows = filtered.map((item: any) => {
-            const hasPagto = item.hasPagto || item.Pagto !== null;
+            const hasPagto = item.hasPagto || (item.Pagto !== null && item.Pagto !== undefined && String(item.Pagto).trim() !== '');
             const situacaoText = hasPagto ? 'Pago' : (item.situacao === 'vencido' ? 'Vencido' : 'A Vencer');
+            const vlParcela = Number(item.vlParcela || 0);
+            const vlDesconto = Number(item.vlDesconto || 0);
+            const vlPago = hasPagto ? Number(item.vlPago || vlParcela || 0) : 0;
+            const saldoAberto = hasPagto ? 0 : (Number(item.saldoAberto ?? 0) > 0 ? Number(item.saldoAberto) : Math.max(0, vlParcela - vlDesconto));
 
             return [
                 `"${(item.Filial || '').replace(/"/g, '""')}"`,
@@ -2777,11 +2795,11 @@
                 formatDateBR(item.dtParcela),
                 item.Pagto ? formatDateBR(item.Pagto) : 'Em Aberto',
                 situacaoText,
-                Number(item.vlParcela || 0).toFixed(2).replace('.', ','),
+                vlParcela.toFixed(2).replace('.', ','),
                 Number(item.vlPermuta || 0).toFixed(2).replace('.', ','),
-                Number(item.vlPago || 0).toFixed(2).replace('.', ','),
-                Number(item.saldoAberto || 0).toFixed(2).replace('.', ','),
-                Number(item.vlDesconto || 0).toFixed(2).replace('.', ','),
+                vlPago.toFixed(2).replace('.', ','),
+                saldoAberto.toFixed(2).replace('.', ','),
+                vlDesconto.toFixed(2).replace('.', ','),
                 Number(item.vlMulta || 0).toFixed(2).replace('.', ','),
                 Number(item.vlMora || 0).toFixed(2).replace('.', ','),
                 `"${(item.TipoFaturamento || '').replace(/"/g, '""')}"`,

@@ -9333,9 +9333,9 @@ export class ExternalDbService {
                     COUNT(*) AS qtdTitulos,
                     ISNULL(SUM(CAST(vlParcela AS float)), 0) AS totalEmitido,
                     ISNULL(SUM(CASE WHEN Pagto IS NOT NULL THEN ISNULL(CAST(vlPago AS float), CAST(vlParcela AS float)) ELSE 0 END), 0) AS totalPago,
-                    ISNULL(SUM(CASE WHEN Pagto IS NULL THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAberto,
-                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalVencido,
-                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAVencer,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAberto,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalVencido,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAVencer,
                     ISNULL(SUM(ISNULL(CAST(vlPermuta AS float), 0)), 0) AS totalPermuta,
                     ISNULL(SUM(ISNULL(CAST(vlDesconto AS float), 0)), 0) AS totalDesconto,
                     COUNT(CASE WHEN Pagto IS NOT NULL THEN 1 END) AS qtdPagos,
@@ -9356,9 +9356,9 @@ export class ExternalDbService {
                     COUNT(*) AS qtdTitulos,
                     ISNULL(SUM(CAST(vlParcela AS float)), 0) AS totalEmitido,
                     ISNULL(SUM(CASE WHEN Pagto IS NOT NULL THEN ISNULL(CAST(vlPago AS float), CAST(vlParcela AS float)) ELSE 0 END), 0) AS totalPago,
-                    ISNULL(SUM(CASE WHEN Pagto IS NULL THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAberto,
-                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalVencido,
-                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlPago AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAVencer,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAberto,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela < CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalVencido,
+                    ISNULL(SUM(CASE WHEN Pagto IS NULL AND dtParcela >= CAST(GETDATE() AS DATE) THEN (ISNULL(CAST(vlParcela AS float), 0) - ISNULL(CAST(vlDesconto AS float), 0)) ELSE 0 END), 0) AS totalAVencer,
                     ISNULL(SUM(ISNULL(CAST(vlPermuta AS float), 0)), 0) AS totalPermuta,
                     COUNT(CASE WHEN Pagto IS NOT NULL THEN 1 END) AS qtdPagos,
                     COUNT(CASE WHEN Pagto IS NULL THEN 1 END) AS qtdAberto,
@@ -9449,13 +9449,14 @@ export class ExternalDbService {
 
             const lancamentos = (resList.recordset || []).map((row: any) => {
                 const vlParcela = Number(row.vlParcela || 0);
-                const vlPago = Number(row.vlPago || 0);
                 const vlDesconto = Number(row.vlDesconto || 0);
                 const vlPermuta = Number(row.vlPermuta || 0);
                 const vlMulta = Number(row.vlMulta || 0);
                 const vlMora = Number(row.vlMora || 0);
-                const hasPagto = row.Pagto !== null && row.Pagto !== undefined;
-                const saldoAberto = hasPagto ? 0 : Math.max(0, vlParcela - vlPago - vlDesconto);
+                const hasPagto = row.Pagto !== null && row.Pagto !== undefined && String(row.Pagto).trim() !== '';
+                // Se a data de pgto está em aberto/vazia: o valor pago é 0.00 e o saldo em aberto fica com o valor integral da parcela (menos desconto se houver)
+                const vlPago = hasPagto ? Number(row.vlPago || vlParcela || 0) : 0;
+                const saldoAberto = hasPagto ? 0 : Math.max(0, vlParcela - vlDesconto);
 
                 let situacao = 'a_vencer';
                 if (hasPagto) {

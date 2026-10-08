@@ -12,14 +12,16 @@
     const toggleFilterBtn = document.getElementById('toggleFilterBtn');
     const filterChevron = document.getElementById('filterChevron');
     const filterBody = document.getElementById('filterBody');
-    const filterSearch = document.getElementById('notasFilterSearch');
-    const filterNfeKey = document.getElementById('notasFilterNfeKey');
-    const filterStatus = document.getElementById('notasFilterStatus');
-    const filterNfeStartDate = document.getElementById('notasFilterNfeStartDate');
-    const filterNfeEndDate = document.getElementById('notasFilterNfeEndDate');
-    const filterTipo = document.getElementById('notasFilterTipo');
-    const btnCurrentMonthFilter = document.getElementById('btnCurrentMonthFilter');
-    const btnClearNotasFilter = document.getElementById('btnClearNotasFilter');
+    const filterDescription = document.getElementById('filterDescription') || document.getElementById('notasFilterSearch');
+    const filterPeriod = document.getElementById('filterPeriod');
+    const filterStartDate = document.getElementById('filterStartDate') || document.getElementById('notasFilterNfeStartDate');
+    const filterEndDate = document.getElementById('filterEndDate') || document.getElementById('notasFilterNfeEndDate');
+    const filterTipo = document.getElementById('filterTipo') || document.getElementById('notasFilterTipo');
+    const filterStatus = document.getElementById('filterStatus') || document.getElementById('notasFilterStatus');
+    const filterNfeKey = document.getElementById('filterNfeKey') || document.getElementById('notasFilterNfeKey');
+    const filterSortBy = document.getElementById('filterSortBy');
+    const filterPaginationMode = document.getElementById('filterPaginationMode');
+    const btnClearFilters = document.getElementById('btnClearFilters') || document.getElementById('btnClearNotasFilter');
     const footerCount = document.getElementById('footerCount');
     const footerTotal = document.getElementById('footerTotal');
     const footerTotalIcms = document.getElementById('footerTotalIcms');
@@ -38,6 +40,7 @@
     let importOptionsLoaded = false;
     let currentSaleForPrint = null;
     let allSales = [];
+    let _tablePager = null;
     function showPageAlert(message, type = 'error', durationMillis = 4000) {
         if (window.UI && typeof window.UI.showAlert === 'function') {
             window.UI.showAlert('alertMessage', message, type, durationMillis);
@@ -86,82 +89,263 @@
             badgeClass: statusClass[rawStatus] || statusClass.pending,
         };
     }
-    const STORAGE_KEY_NOTAS_VENDIDAS_FILTERS = 'bessa_erp_notas_vendidas_filters_v1';
-    function getCurrentMonthRange() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const firstDay = `${year}-${month}-01`;
-        const lastDate = new Date(year, now.getMonth() + 1, 0).getDate();
-        const lastDay = `${year}-${month}-${String(lastDate).padStart(2, '0')}`;
-        return { startDate: firstDay, endDate: lastDay };
+    // ─── Column Visibility Management (Modelo revenues.html) ───────────────────
+    const STORAGE_KEY_COLUMNS = 'erp_notas_vendidas_columns_visibility';
+    const defaultColumnsState = {
+        tipo: true,
+        numero: true,
+        serie: true,
+        emissao: true,
+        transmissao: true,
+        protocolo: true,
+        chave: true,
+        cliente: true,
+        valor: true,
+        'bc-icms': true,
+        'v-icms': true,
+        pis: true,
+        cofins: true,
+        ipi: true,
+        trib: true,
+        status: true,
+        itens: true,
+    };
+    function saveColumnVisibility() {
+        const preferences = {};
+        const checkboxes = document.querySelectorAll('#columnsDropdownMenu input[data-column-target]');
+        checkboxes.forEach((cb) => {
+            const target = cb.getAttribute('data-column-target');
+            if (target) {
+                preferences[target] = cb.checked;
+            }
+        });
+        if (window.CompanyStorage) {
+            window.CompanyStorage.setItem(STORAGE_KEY_COLUMNS, JSON.stringify(preferences));
+        }
+        else {
+            localStorage.setItem(STORAGE_KEY_COLUMNS, JSON.stringify(preferences));
+        }
     }
+    function loadColumnVisibility() {
+        try {
+            const saved = window.CompanyStorage?.getItem(STORAGE_KEY_COLUMNS) ?? localStorage.getItem(STORAGE_KEY_COLUMNS);
+            const preferences = saved ? JSON.parse(saved) : defaultColumnsState;
+            const checkboxes = document.querySelectorAll('#columnsDropdownMenu input[data-column-target]');
+            checkboxes.forEach((cb) => {
+                const target = cb.getAttribute('data-column-target');
+                if (target && target in preferences) {
+                    cb.checked = preferences[target];
+                }
+            });
+        }
+        catch (e) {
+            console.error('Erro ao carregar preferências de colunas:', e);
+        }
+    }
+    function applyColumnVisibility() {
+        const checkboxes = document.querySelectorAll('#columnsDropdownMenu input[data-column-target]');
+        checkboxes.forEach((cb) => {
+            const target = cb.getAttribute('data-column-target');
+            if (!target)
+                return;
+            const elements = document.querySelectorAll(`.col-${target}`);
+            elements.forEach((el) => {
+                if (cb.checked) {
+                    el.style.display = '';
+                    el.classList.remove('hidden');
+                }
+                else {
+                    el.style.display = 'none';
+                    el.classList.add('hidden');
+                }
+            });
+        });
+    }
+    function initColumnVisibility() {
+        const btnToggle = document.getElementById('btnToggleColumns');
+        const menu = document.getElementById('columnsDropdownMenu');
+        const btnReset = document.getElementById('btnResetColumns');
+        const checkboxes = document.querySelectorAll('#columnsDropdownMenu input[data-column-target]');
+        loadColumnVisibility();
+        applyColumnVisibility();
+        checkboxes.forEach((cb) => {
+            cb.addEventListener('change', () => {
+                saveColumnVisibility();
+                applyColumnVisibility();
+            });
+        });
+        if (btnReset) {
+            btnReset.addEventListener('click', () => {
+                checkboxes.forEach((cb) => {
+                    const target = cb.getAttribute('data-column-target');
+                    if (target && target in defaultColumnsState) {
+                        cb.checked = defaultColumnsState[target];
+                    }
+                });
+                saveColumnVisibility();
+                applyColumnVisibility();
+            });
+        }
+        if (btnToggle && menu) {
+            btnToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                const target = e.target;
+                if (menu && !menu.contains(target) && target !== btnToggle && !btnToggle.contains(target)) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+    }
+    // ─── Filter State & Period Calculation (Modelo revenues.html) ─────────────
+    const STORAGE_KEY_NOTAS_VENDIDAS_FILTERS = 'bessa_erp_notas_vendidas_filters_v2';
+    const filterSelectors = ['filterDescription', 'filterPeriod', 'filterStartDate', 'filterEndDate', 'filterTipo', 'filterStatus', 'filterNfeKey', 'filterSortBy', 'filterPaginationMode'];
+    const formatLocalDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    const updateDatesFromPeriod = () => {
+        if (!filterPeriod || !filterStartDate || !filterEndDate)
+            return false;
+        const period = filterPeriod.value;
+        if (period === 'custom')
+            return false;
+        let startVal = '';
+        let endVal = '';
+        const now = new Date();
+        if (period === 'today') {
+            const todayStr = formatLocalDate(now);
+            startVal = todayStr;
+            endVal = todayStr;
+        }
+        else if (period === 'yesterday') {
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            const yesterdayStr = formatLocalDate(yesterday);
+            startVal = yesterdayStr;
+            endVal = yesterdayStr;
+        }
+        else if (period === 'this_month') {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            startVal = formatLocalDate(start);
+            endVal = formatLocalDate(end);
+        }
+        else if (period === 'last_month') {
+            const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const end = new Date(now.getFullYear(), now.getMonth(), 0);
+            startVal = formatLocalDate(start);
+            endVal = formatLocalDate(end);
+        }
+        else if (period === 'this_year') {
+            const start = new Date(now.getFullYear(), 0, 1);
+            const end = new Date(now.getFullYear(), 11, 31);
+            startVal = formatLocalDate(start);
+            endVal = formatLocalDate(end);
+        }
+        let changed = false;
+        if (filterStartDate.value !== startVal) {
+            filterStartDate.value = startVal;
+            changed = true;
+        }
+        if (filterEndDate.value !== endVal) {
+            filterEndDate.value = endVal;
+            changed = true;
+        }
+        return changed;
+    };
     function saveFiltersState() {
         const state = {
-            search: filterSearch?.value || '',
-            nfeKey: filterNfeKey?.value || '',
+            description: filterDescription?.value || '',
+            period: filterPeriod?.value || 'this_month',
+            nfeStartDate: filterStartDate?.value || '',
+            nfeEndDate: filterEndDate?.value || '',
+            tipo: filterTipo?.value || '',
             status: filterStatus?.value || '',
-            tipo: filterTipo ? filterTipo.value : '',
-            nfeStartDate: filterNfeStartDate?.value || '',
-            nfeEndDate: filterNfeEndDate?.value || '',
+            nfeKey: filterNfeKey?.value || '',
+            sortBy: filterSortBy?.value || 'date_desc',
+            paginationMode: filterPaginationMode?.value || 'paginated_20',
         };
         try {
-            localStorage.setItem(STORAGE_KEY_NOTAS_VENDIDAS_FILTERS, JSON.stringify(state));
+            if (window.CompanyStorage) {
+                window.CompanyStorage.setItem(STORAGE_KEY_NOTAS_VENDIDAS_FILTERS, JSON.stringify(state));
+            }
+            else {
+                localStorage.setItem(STORAGE_KEY_NOTAS_VENDIDAS_FILTERS, JSON.stringify(state));
+            }
         }
         catch (_) { }
     }
     function loadSavedFiltersOrDefault() {
-        const defaultRange = getCurrentMonthRange();
         let saved = null;
         try {
-            const raw = localStorage.getItem(STORAGE_KEY_NOTAS_VENDIDAS_FILTERS);
+            const raw = window.CompanyStorage?.getItem(STORAGE_KEY_NOTAS_VENDIDAS_FILTERS) ?? localStorage.getItem(STORAGE_KEY_NOTAS_VENDIDAS_FILTERS);
             if (raw)
                 saved = JSON.parse(raw);
         }
         catch (_) { }
         if (saved && typeof saved === 'object') {
-            if (filterSearch)
-                filterSearch.value = saved.search || '';
-            if (filterNfeKey)
-                filterNfeKey.value = saved.nfeKey || '';
+            if (filterDescription)
+                filterDescription.value = saved.description || '';
+            if (filterPeriod)
+                filterPeriod.value = saved.period || 'this_month';
+            if (filterStartDate)
+                filterStartDate.value = saved.nfeStartDate || '';
+            if (filterEndDate)
+                filterEndDate.value = saved.nfeEndDate || '';
+            if (filterTipo)
+                filterTipo.value = saved.tipo || '';
             if (filterStatus)
                 filterStatus.value = saved.status || '';
-            if (filterTipo && saved.tipo)
-                filterTipo.value = saved.tipo;
-            if (filterNfeStartDate)
-                filterNfeStartDate.value = saved.nfeStartDate || defaultRange.startDate;
-            if (filterNfeEndDate)
-                filterNfeEndDate.value = saved.nfeEndDate || defaultRange.endDate;
+            if (filterNfeKey)
+                filterNfeKey.value = saved.nfeKey || '';
+            if (filterSortBy)
+                filterSortBy.value = saved.sortBy || 'date_desc';
+            if (filterPaginationMode)
+                filterPaginationMode.value = saved.paginationMode || 'paginated_20';
+            // Se o período não for personalizado e as datas estiverem vazias, atualiza pelo período
+            if (saved.period && saved.period !== 'custom' && (!saved.nfeStartDate || !saved.nfeEndDate)) {
+                updateDatesFromPeriod();
+            }
         }
         else {
-            if (filterSearch)
-                filterSearch.value = '';
-            if (filterNfeKey)
-                filterNfeKey.value = '';
-            if (filterStatus)
-                filterStatus.value = '';
+            if (filterDescription)
+                filterDescription.value = '';
+            if (filterPeriod)
+                filterPeriod.value = 'this_month';
             if (filterTipo)
                 filterTipo.value = '';
-            if (filterNfeStartDate)
-                filterNfeStartDate.value = defaultRange.startDate;
-            if (filterNfeEndDate)
-                filterNfeEndDate.value = defaultRange.endDate;
+            if (filterStatus)
+                filterStatus.value = '';
+            if (filterNfeKey)
+                filterNfeKey.value = '';
+            if (filterSortBy)
+                filterSortBy.value = 'date_desc';
+            if (filterPaginationMode)
+                filterPaginationMode.value = 'paginated_20';
+            updateDatesFromPeriod();
         }
     }
     function resetFiltersToDefault() {
-        const defaultRange = getCurrentMonthRange();
-        if (filterSearch)
-            filterSearch.value = '';
-        if (filterNfeKey)
-            filterNfeKey.value = '';
-        if (filterStatus)
-            filterStatus.value = '';
+        if (filterDescription)
+            filterDescription.value = '';
+        if (filterPeriod)
+            filterPeriod.value = 'this_month';
         if (filterTipo)
             filterTipo.value = '';
-        if (filterNfeStartDate)
-            filterNfeStartDate.value = defaultRange.startDate;
-        if (filterNfeEndDate)
-            filterNfeEndDate.value = defaultRange.endDate;
+        if (filterStatus)
+            filterStatus.value = '';
+        if (filterNfeKey)
+            filterNfeKey.value = '';
+        if (filterSortBy)
+            filterSortBy.value = 'date_desc';
+        if (filterPaginationMode)
+            filterPaginationMode.value = 'paginated_20';
+        updateDatesFromPeriod();
         saveFiltersState();
         applySalesFilters();
     }
@@ -802,15 +986,11 @@
             renderEmptyState();
             return;
         }
-        updateFooterMetrics(sales);
         tbody.innerHTML = sales.map((sale) => {
             const nfeIssueDateText = getSaleNfeDateText(sale);
             const nfeKeyText = sale?.nfe_key || '-';
             const total = Number(sale.total_amount || 0);
             const formattedTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
-            const normalizedStatus = String(sale.status || 'pending').toLowerCase();
-            const statusText = statusLabel[normalizedStatus] || sale.status || 'Pendente';
-            const badgeClass = statusClass[normalizedStatus] || statusClass.pending;
             const taxes = getSaleTaxTotals(sale);
             const meta = parseSaleNfeMetadata(sale);
             const effStatus = getEffectiveSaleStatus(sale, meta);
@@ -819,27 +999,27 @@
                     <td class="px-3 py-2.5 text-left">
                         <input type="checkbox" class="nota-checkbox rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-sale-id="${sale.id || ''}" title="Selecionar nota #${sale.id || ''}" aria-label="Selecionar nota #${sale.id || ''}">
                     </td>
-                    <td class="px-3 py-2.5 text-center">
+                    <td class="col-tipo px-2 py-2.5 text-center">
                         <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${meta.tipoBadgeClass}">${meta.tipo}</span>
                     </td>
-                    <td class="px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100">${meta.numero}</td>
-                    <td class="px-3 py-2.5 text-center text-xs text-gray-700 dark:text-gray-300 font-mono">${meta.serie}</td>
-                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">${nfeIssueDateText}</td>
-                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-300 font-mono whitespace-nowrap">${meta.transmissao}</td>
-                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-300 font-mono">${meta.protocolo}</td>
-                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200 font-mono">${nfeKeyText}</td>
-                    <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${sale.customer_name || 'Consumidor Final'}</td>
-                    <td class="px-3 py-2.5 text-sm text-right text-gray-900 dark:text-gray-100 font-bold">${formattedTotal}</td>
-                    <td class="px-3 py-2.5 text-sm text-right text-gray-600 dark:text-gray-300">${formatTaxCell(taxes.vBC)}</td>
-                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vICMS, 'text-blue-600 dark:text-blue-400')}</td>
-                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vPIS, 'text-indigo-600 dark:text-indigo-400')}</td>
-                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vCOFINS, 'text-purple-600 dark:text-purple-400')}</td>
-                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vIPI, 'text-amber-600 dark:text-amber-400')}</td>
-                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vTotTrib, 'text-emerald-600 dark:text-emerald-400')}</td>
-                    <td class="px-3 py-2.5 text-center">
+                    <td class="col-numero px-2 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100">${meta.numero}</td>
+                    <td class="col-serie px-2 py-2.5 text-center text-xs text-gray-700 dark:text-gray-300 font-mono">${meta.serie}</td>
+                    <td class="col-emissao px-2 py-2.5 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">${nfeIssueDateText}</td>
+                    <td class="col-transmissao px-2 py-2.5 text-xs text-gray-700 dark:text-gray-300 font-mono whitespace-nowrap">${meta.transmissao}</td>
+                    <td class="col-protocolo px-2 py-2.5 text-xs text-gray-700 dark:text-gray-300 font-mono">${meta.protocolo}</td>
+                    <td class="col-chave px-2 py-2.5 text-xs text-gray-700 dark:text-gray-200 font-mono">${nfeKeyText}</td>
+                    <td class="col-cliente px-2 py-2.5 text-sm text-gray-700 dark:text-gray-200">${sale.customer_name || 'Consumidor Final'}</td>
+                    <td class="col-valor px-2 py-2.5 text-sm text-right text-gray-900 dark:text-gray-100 font-bold">${formattedTotal}</td>
+                    <td class="col-bc-icms px-2 py-2.5 text-sm text-right text-gray-600 dark:text-gray-300">${formatTaxCell(taxes.vBC)}</td>
+                    <td class="col-v-icms px-2 py-2.5 text-sm text-right">${formatTaxCell(taxes.vICMS, 'text-blue-600 dark:text-blue-400')}</td>
+                    <td class="col-pis px-2 py-2.5 text-sm text-right">${formatTaxCell(taxes.vPIS, 'text-indigo-600 dark:text-indigo-400')}</td>
+                    <td class="col-cofins px-2 py-2.5 text-sm text-right">${formatTaxCell(taxes.vCOFINS, 'text-purple-600 dark:text-purple-400')}</td>
+                    <td class="col-ipi px-2 py-2.5 text-sm text-right">${formatTaxCell(taxes.vIPI, 'text-amber-600 dark:text-amber-400')}</td>
+                    <td class="col-trib px-2 py-2.5 text-sm text-right">${formatTaxCell(taxes.vTotTrib, 'text-emerald-600 dark:text-emerald-400')}</td>
+                    <td class="col-status px-3 py-2.5 text-center">
                         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${effStatus.badgeClass}">${effStatus.label}</span>
                     </td>
-                    <td class="px-3 py-2.5 text-center">
+                    <td class="col-itens px-2 py-2.5 text-center">
                         <button type="button" class="btnShowNotaItens inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/30 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-800/60 shadow-xs transition-all hover:scale-[1.03] cursor-pointer" data-sale-id="${sale.id || ''}" title="Visualizar todos os itens do XML">
                             <svg class="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -851,12 +1031,13 @@
                 </tr>
             `;
         }).join('');
+        applyColumnVisibility();
         tbody.querySelectorAll('.btnShowNotaItens').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const saleId = Number(btn.getAttribute('data-sale-id'));
                 if (!Number.isFinite(saleId))
                     return;
-                const selectedSale = sales.find((sale) => Number(sale.id) === saleId);
+                const selectedSale = allSales.find((sale) => Number(sale.id) === saleId);
                 if (!selectedSale)
                     return;
                 openNotaItensModal(selectedSale);
@@ -875,12 +1056,14 @@
     }
     function applySalesFilters() {
         saveFiltersState();
-        const searchTerm = String(filterSearch?.value || '').trim().toLowerCase();
+        const searchTerm = String(filterDescription?.value || '').trim().toLowerCase();
         const nfeKeyTerm = String(filterNfeKey?.value || '').trim().toLowerCase();
         const selectedStatus = String(filterStatus?.value || '').trim().toLowerCase();
         const selectedTipo = String(filterTipo?.value || '').trim().toLowerCase();
-        const nfeStartDate = String(filterNfeStartDate?.value || '').trim();
-        const nfeEndDate = String(filterNfeEndDate?.value || '').trim();
+        const nfeStartDate = String(filterStartDate?.value || '').trim();
+        const nfeEndDate = String(filterEndDate?.value || '').trim();
+        const sortBy = String(filterSortBy?.value || 'date_desc');
+        const paginationMode = String(filterPaginationMode?.value || 'paginated_20');
         const filtered = allSales.filter((sale) => {
             const saleId = String(sale?.id || '').toLowerCase();
             const customerName = String(sale?.customer_name || 'Consumidor Final').toLowerCase();
@@ -904,7 +1087,71 @@
             const matchNfeEndDate = !nfeEndDate || (saleNfeDate && saleNfeDate <= nfeEndDate);
             return matchSearch && matchNfeKey && matchStatus && matchTipo && matchNfeStartDate && matchNfeEndDate;
         });
-        renderRows(filtered);
+        // Ordenação
+        filtered.sort((a, b) => {
+            const metaA = parseSaleNfeMetadata(a);
+            const metaB = parseSaleNfeMetadata(b);
+            const dateA = a.nfe_issue_date || a.date || '';
+            const dateB = b.nfe_issue_date || b.date || '';
+            const valA = Number(a.total_amount || 0);
+            const valB = Number(b.total_amount || 0);
+            const numA = Number(String(metaA.numero).replace(/\D/g, '')) || Number(a.id) || 0;
+            const numB = Number(String(metaB.numero).replace(/\D/g, '')) || Number(b.id) || 0;
+            const cliA = String(a.customer_name || '').toLowerCase();
+            const cliB = String(b.customer_name || '').toLowerCase();
+            if (sortBy === 'date_asc')
+                return dateA.localeCompare(dateB);
+            if (sortBy === 'date_desc')
+                return dateB.localeCompare(dateA);
+            if (sortBy === 'number_asc')
+                return numA - numB;
+            if (sortBy === 'number_desc')
+                return numB - numA;
+            if (sortBy === 'value_asc')
+                return valA - valB;
+            if (sortBy === 'value_desc')
+                return valB - valA;
+            if (sortBy === 'client_asc')
+                return cliA.localeCompare(cliB);
+            return 0;
+        });
+        updateFooterMetrics(filtered);
+        let pageSize = 20;
+        let isDirect = false;
+        if (paginationMode === 'direct') {
+            isDirect = true;
+            pageSize = 999999;
+        }
+        else if (paginationMode === 'paginated_50') {
+            pageSize = 50;
+        }
+        else if (paginationMode === 'paginated_100') {
+            pageSize = 100;
+        }
+        else {
+            pageSize = 20;
+        }
+        if (window.Paginator) {
+            if (!_tablePager) {
+                _tablePager = new window.Paginator({
+                    containerId: 'notasVendidasPaginationContainer',
+                    pageSize: pageSize,
+                    onChange: (pageItems) => { renderRows(pageItems); },
+                });
+            }
+            else {
+                _tablePager.pageSize = pageSize;
+            }
+            _tablePager.setData(filtered);
+            if (isDirect) {
+                const pagEl = document.getElementById('notasVendidasPaginationContainer');
+                if (pagEl)
+                    pagEl.innerHTML = '';
+            }
+        }
+        else {
+            renderRows(filtered);
+        }
     }
     async function deleteSelectedSales() {
         const selectedIds = getSelectedSaleIds();
@@ -1414,31 +1661,43 @@
             closeNotaItensModal();
         }
     });
-    if (filterSearch)
-        filterSearch.addEventListener('input', applySalesFilters);
-    if (filterNfeKey)
+    // Eventos dos Filtros (Modelo revenues.ts)
+    if (filterDescription) {
+        filterDescription.addEventListener('input', applySalesFilters);
+    }
+    if (filterNfeKey) {
         filterNfeKey.addEventListener('input', applySalesFilters);
-    if (filterStatus)
-        filterStatus.addEventListener('change', applySalesFilters);
-    if (filterTipo)
-        filterTipo.addEventListener('change', applySalesFilters);
-    if (filterNfeStartDate)
-        filterNfeStartDate.addEventListener('change', applySalesFilters);
-    if (filterNfeEndDate)
-        filterNfeEndDate.addEventListener('change', applySalesFilters);
-    if (btnCurrentMonthFilter) {
-        btnCurrentMonthFilter.addEventListener('click', () => {
-            const r = getCurrentMonthRange();
-            if (filterNfeStartDate)
-                filterNfeStartDate.value = r.startDate;
-            if (filterNfeEndDate)
-                filterNfeEndDate.value = r.endDate;
-            saveFiltersState();
+    }
+    if (filterPeriod) {
+        filterPeriod.addEventListener('change', () => {
+            updateDatesFromPeriod();
             applySalesFilters();
         });
     }
-    if (btnClearNotasFilter) {
-        btnClearNotasFilter.addEventListener('click', () => {
+    if (filterStartDate) {
+        filterStartDate.addEventListener('change', () => {
+            if (filterPeriod && filterPeriod.value !== 'custom') {
+                filterPeriod.value = 'custom';
+            }
+            applySalesFilters();
+        });
+    }
+    if (filterEndDate) {
+        filterEndDate.addEventListener('change', () => {
+            if (filterPeriod && filterPeriod.value !== 'custom') {
+                filterPeriod.value = 'custom';
+            }
+            applySalesFilters();
+        });
+    }
+    ['filterTipo', 'filterStatus', 'filterSortBy', 'filterPaginationMode'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', applySalesFilters);
+        }
+    });
+    if (btnClearFilters) {
+        btnClearFilters.addEventListener('click', () => {
             resetFiltersToDefault();
         });
     }
@@ -1463,6 +1722,7 @@
             filterChevron.classList.add('-rotate-90');
         }
     });
+    initColumnVisibility();
     loadSavedFiltersOrDefault();
     loadSales();
 })();

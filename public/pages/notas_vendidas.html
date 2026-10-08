@@ -5,33 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Notas Vendidas</title>
-    <link href="/css/style.css?v=20261008134836" rel="stylesheet">
+    <link href="/css/style.css?v=20261008135919" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261008134836"></script>
+    <script src="/js/pwa.js?v=20261008135919"></script>
 </head>
 
 <body data-required-module="notas_vendidas" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
     <div id="app-navbar"></div>
 
-    <main class="pt-4 pb-4 max-w-7xl mx-auto w-full sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden">
+    <main class="pt-4 pb-4 mx-auto sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0 overflow-hidden max-w-none" style="width: 100%; margin-left: auto; margin-right: auto;">
         <div id="alertMessage" class="hidden mx-4 sm:mx-0 mb-4 p-4 rounded-xl text-sm"></div>
 
         <div class="px-4 sm:px-0 flex flex-col flex-1 min-h-0">
             <div class="bg-white dark:bg-slate-800 shadow-sm rounded-t-xl border border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Notas Vendidas</h3>
                 <div class="flex items-center gap-2">
-                    <button type="button" id="btnImportNotasXml" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-slate-800" title="Importar notas por XML" aria-label="Importar notas por XML">
+                    <div id="batchActions" class="hidden items-center gap-2">
+                        <button type="button" id="btnDeleteSelectedNotas" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors" title="Excluir notas selecionadas" aria-label="Excluir notas selecionadas" disabled>
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1m-6 0h6" />
+                            </svg>
+                            Excluir Selecionadas
+                        </button>
+                    </div>
+                    <button type="button" id="btnImportNotasXml" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-slate-800 transition-colors" title="Importar notas por XML" aria-label="Importar notas por XML">
                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0-4 4m4-4 4 4M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1" />
                         </svg>
                         Importar XML
-                    </button>
-                    <button type="button" id="btnDeleteSelectedNotas" class="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-slate-800 disabled:opacity-60 disabled:cursor-not-allowed" title="Excluir notas selecionadas" aria-label="Excluir notas selecionadas" disabled>
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1m-6 0h6" />
-                        </svg>
-                        Excluir Selecionadas
                     </button>
                     <span class="hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
                         Pedido / Nota
@@ -40,128 +42,241 @@
                 </div>
             </div>
 
+            <!-- FILTRO NO MODELO DO REVENUES.HTML -->
             <div class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-b border-gray-200 dark:border-slate-700">
                 <button type="button" id="toggleFilterBtn"
                     class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
                     <div class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
                         </svg>
                         <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filtro</h3>
                     </div>
                     <svg id="filterChevron" class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
                 </button>
 
-                <div id="filterBody" class="hidden border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div>
-                            <label for="notasFilterSearch" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Buscar</label>
-                            <input
-                                type="text"
-                                id="notasFilterSearch"
-                                placeholder="Número, cliente, protocolo ou chave"
-                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-                            />
+                <div id="filterBody" class="overflow-hidden">
+                    <div class="border-t border-gray-100 dark:border-slate-700/60 px-4 py-3">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-12 gap-3 items-end">
+                            <div>
+                                <label for="filterDescription" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Descrição</label>
+                                <input type="text" id="filterDescription" name="filterDescription" placeholder="Buscar por número, cliente, protocolo..."
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                            </div>
+                            <div>
+                                <label for="filterPeriod" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Período</label>
+                                <select id="filterPeriod" name="filterPeriod"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todos</option>
+                                    <option value="today">Hoje</option>
+                                    <option value="yesterday">Ontem</option>
+                                    <option value="this_month" selected>Este Mês</option>
+                                    <option value="last_month">Mês Passado</option>
+                                    <option value="this_year">Este Ano</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="filterStartDate" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    Data Início
+                                </label>
+                                <input type="date" id="filterStartDate" name="filterStartDate"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                            </div>
+                            <div>
+                                <label for="filterEndDate" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    Data Fim
+                                </label>
+                                <input type="date" id="filterEndDate" name="filterEndDate"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                            </div>
+                            <div>
+                                <label for="filterTipo" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Tipo Documento</label>
+                                <select id="filterTipo" name="filterTipo"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todos</option>
+                                    <option value="NF-e">NF-e (Modelo 55)</option>
+                                    <option value="NFC-e">NFC-e (Modelo 65)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="filterStatus" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Status</label>
+                                <select id="filterStatus" name="filterStatus"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="">Todos</option>
+                                    <option value="completed">Concluída (Autorizada)</option>
+                                    <option value="pending">Pendente</option>
+                                    <option value="progress">Em Andamento</option>
+                                    <option value="cancelled">Cancelada</option>
+                                    <option value="separated">Separada</option>
+                                    <option value="invoiced">Faturada</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="filterNfeKey" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Chave NF</label>
+                                <input type="text" id="filterNfeKey" name="filterNfeKey" placeholder="Chave da NF (44 dígitos)"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                            </div>
+                            <div>
+                                <label for="filterSortBy" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Ordenar por</label>
+                                <select id="filterSortBy" name="filterSortBy"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="date_desc">Emissão (Mais Recentes)</option>
+                                    <option value="date_asc">Emissão (Mais Antigos)</option>
+                                    <option value="number_desc">Número (Maior)</option>
+                                    <option value="number_asc">Número (Menor)</option>
+                                    <option value="client_asc">Cliente (A-Z)</option>
+                                    <option value="value_desc">Valor (Maior)</option>
+                                    <option value="value_asc">Valor (Menor)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="filterPaginationMode" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Exibição</label>
+                                <select id="filterPaginationMode" name="filterPaginationMode"
+                                    class="block w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 dark:text-white transition-colors">
+                                    <option value="paginated_20">Paginado (20)</option>
+                                    <option value="paginated_50">Paginado (50)</option>
+                                    <option value="paginated_100">Paginado (100)</option>
+                                    <option value="direct">Direto (Todos)</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label for="notasFilterNfeStartDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Emissão Início</label>
-                            <input
-                                type="date"
-                                id="notasFilterNfeStartDate"
-                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-                                title="Data inicial da emissão"
-                            />
-                        </div>
-                        <div>
-                            <label for="notasFilterNfeEndDate" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Emissão Fim</label>
-                            <input
-                                type="date"
-                                id="notasFilterNfeEndDate"
-                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-                                title="Data final da emissão"
-                            />
-                        </div>
-                        <div>
-                            <label for="notasFilterStatus" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Status</label>
-                            <select
-                                id="notasFilterStatus"
-                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-                            >
-                                <option value="">Todos os status</option>
-                                <option value="completed">Concluída (Autorizada)</option>
-                                <option value="pending">Pendente</option>
-                                <option value="progress">Em Andamento</option>
-                                <option value="cancelled">Cancelada</option>
-                                <option value="separated">Separada</option>
-                                <option value="invoiced">Faturada</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="notasFilterNfeKey" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Chave NF</label>
-                            <input
-                                type="text"
-                                id="notasFilterNfeKey"
-                                placeholder="Chave da NF (44 dígitos)"
-                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-                            />
-                        </div>
-                        <div>
-                            <label for="notasFilterTipo" class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-1">Tipo Documento</label>
-                            <select
-                                id="notasFilterTipo"
-                                class="w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-                            >
-                                <option value="">Todos os tipos</option>
-                                <option value="NF-e">NF-e (Modelo 55)</option>
-                                <option value="NFC-e">NFC-e (Modelo 65)</option>
-                            </select>
-                        </div>
-                        <div class="sm:col-span-2 flex items-end justify-end gap-2 pt-1">
-                            <button type="button" id="btnCurrentMonthFilter" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors cursor-pointer" title="Filtrar notas emitidas no mês atual">
-                                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                                Mês Atual
-                            </button>
-                            <button type="button" id="btnClearNotasFilter" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer" title="Limpar e resetar filtros para o padrão">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 011-1h4a1 1 0 011 1m-6 0h6"></path>
-                                </svg>
-                                Limpar Filtro
-                            </button>
+
+                        <!-- BARRA DE AÇÕES DO FILTRO COM COLUNAS E LIMPAR FILTRO -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 mt-3 border-t border-gray-100 dark:border-slate-700/60 pt-3">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <div class="relative inline-block text-left" id="colunasDropdownContainer">
+                                    <button type="button" id="btnToggleColumns" title="Exibir / Ocultar Colunas"
+                                        class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-semibold text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700/60 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors cursor-pointer">
+                                        <svg class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                        </svg>
+                                        <span>Colunas</span>
+                                    </button>
+                                    <!-- Dropdown panel -->
+                                    <div id="columnsDropdownMenu" class="hidden origin-top-left absolute left-0 mt-2 w-72 max-h-96 overflow-y-auto rounded-xl shadow-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 p-3 space-y-2.5">
+                                        <div class="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-1.5">
+                                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Exibir Colunas</span>
+                                            <button type="button" id="btnResetColumns" class="text-[10px] text-brand-600 dark:text-brand-400 hover:underline font-medium cursor-pointer">Restaurar Padrão</button>
+                                        </div>
+                                        <div class="grid grid-cols-1 gap-1">
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="tipo" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Tipo</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="numero" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Número</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="serie" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Série</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="emissao" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Emissão</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="transmissao" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Transmissão</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="protocolo" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Protocolo</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="chave" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Chave NF</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="cliente" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Cliente</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="valor" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Valor Total</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="bc-icms" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Base ICMS</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="v-icms" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Valor ICMS</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="pis" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>PIS</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="cofins" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>COFINS</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="ipi" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>IPI</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="trib" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Trib. Aprox.</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="status" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Status</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 p-1 rounded transition-colors">
+                                                <input type="checkbox" data-column-target="itens" checked class="rounded text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600">
+                                                <span>Ações</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="btnClearFilters" 
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700/60 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 cursor-pointer">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Limpar Filtro
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0 overflow-hidden">
+            <!-- TABELA NO MODELO REVENUES.HTML COM CLASSES COL-* -->
+            <div id="notasVendidasSection" class="bg-white dark:bg-slate-800 shadow-sm border border-t-0 border-b-0 border-gray-200 dark:border-slate-700 flex flex-col flex-1 min-h-0">
                 <div class="overflow-x-auto overflow-y-auto flex-1 min-h-0">
                     <table class="min-w-full divide-y divide-gray-100 dark:divide-slate-700/60">
                         <thead class="bg-gray-50 dark:bg-slate-900/40">
                             <tr>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left w-8">
+                                <th scope="col" class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left w-8">
                                     <input type="checkbox" id="selectAllNotasCheckbox" title="Selecionar todas as notas" aria-label="Selecionar todas as notas"
                                         class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
                                 </th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tipo</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Número</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Série</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Emissão</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Transmissão</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Protocolo</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Chave NF</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cliente</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor Total</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Base ICMS</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor ICMS</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">PIS</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">COFINS</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">IPI</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Trib. Aprox.</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Itens</th>
+                                <th scope="col" class="col-tipo sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th scope="col" class="col-numero sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Número</th>
+                                <th scope="col" class="col-serie sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Série</th>
+                                <th scope="col" class="col-emissao sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Emissão</th>
+                                <th scope="col" class="col-transmissao sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Transmissão</th>
+                                <th scope="col" class="col-protocolo sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Protocolo</th>
+                                <th scope="col" class="col-chave sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Chave NF</th>
+                                <th scope="col" class="col-cliente sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cliente</th>
+                                <th scope="col" class="col-valor sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor Total</th>
+                                <th scope="col" class="col-bc-icms sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Base ICMS</th>
+                                <th scope="col" class="col-v-icms sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-right text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Valor ICMS</th>
+                                <th scope="col" class="col-pis sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-right text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">PIS</th>
+                                <th scope="col" class="col-cofins sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-right text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">COFINS</th>
+                                <th scope="col" class="col-ipi sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-right text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">IPI</th>
+                                <th scope="col" class="col-trib sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-right text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Trib. Aprox.</th>
+                                <th scope="col" class="col-status sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="col-itens sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-2 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="notasVendidasTbody" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
@@ -173,8 +288,11 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Container de paginação -->
+                <div id="notasVendidasPaginationContainer" class="shrink-0 px-4 py-1 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"></div>
             </div>
 
+            <!-- RODAPÉ RESUMO -->
             <div class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-wrap items-center justify-between gap-4">
                 <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,7 +310,6 @@
                         <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Total:</span>
                         <span id="footerTotal" class="text-brand-600 dark:text-brand-400 font-bold">R$ 0,00</span>
                     </span>
-                </div>
             </div>
         </div>
     </main>
@@ -456,11 +573,12 @@
     </div>
 
     <script src="/vendor/jszip.min.js"></script>
-    <script src="/js/api.js?v=20261008134836"></script>
-    <script src="/js/notas_vendidas.js?v=20261008134836"></script>
-    <script src="/js/components/navbar.js?v=20261008134836"></script>
+    <script src="/js/api.js?v=20261008135919"></script>
+    <script src="/js/pagination.js?v=20261008135919"></script>
+    <script src="/js/notas_vendidas.js?v=20261008135919"></script>
+    <script src="/js/components/navbar.js?v=20261008135919"></script>
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261008134836"></script>
+    <script src="/js/components/footer.js?v=20261008135919"></script>
 </body>
 
 </html>

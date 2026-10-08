@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Notas Vendidas</title>
-    <link href="/css/style.css?v=20261008130820" rel="stylesheet">
+    <link href="/css/style.css?v=20261008132030" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261008130820"></script>
+    <script src="/js/pwa.js?v=20261008132030"></script>
 </head>
 
 <body data-required-module="notas_vendidas" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -141,17 +141,21 @@
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Número</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Data NF</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Chave NF</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cabecalho</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cliente</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Data</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor Total</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Base ICMS</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor ICMS</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">PIS</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">COFINS</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">IPI</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Trib. Aprox.</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Itens</th>
                             </tr>
                         </thead>
                         <tbody id="notasVendidasTbody" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
                             <tr>
-                                <td colspan="10" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <td colspan="14" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                                     Nenhuma nota vendida para exibir no momento.
                                 </td>
                             </tr>
@@ -160,7 +164,7 @@
                 </div>
             </div>
 
-            <div class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex items-center justify-between gap-4">
+            <div class="shrink-0 bg-white dark:bg-slate-800 border border-t-0 border-gray-200 dark:border-slate-700 px-5 py-3 rounded-b-xl shadow-sm flex flex-wrap items-center justify-between gap-4">
                 <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
@@ -168,10 +172,16 @@
                     <span id="footerCount" class="font-semibold text-gray-700 dark:text-gray-200">0</span>
                     <span>nota(s) exibida(s)</span>
                 </span>
-                <span class="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Total:</span>
-                    <span id="footerTotal" class="text-brand-600 dark:text-brand-400">R$ 0,00</span>
-                </span>
+                <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs">
+                    <span class="text-gray-500 dark:text-gray-400">ICMS: <strong id="footerTotalIcms" class="text-blue-600 dark:text-blue-400 font-semibold">R$ 0,00</strong></span>
+                    <span class="text-gray-500 dark:text-gray-400">PIS: <strong id="footerTotalPis" class="text-indigo-600 dark:text-indigo-400 font-semibold">R$ 0,00</strong></span>
+                    <span class="text-gray-500 dark:text-gray-400">COF: <strong id="footerTotalCofins" class="text-purple-600 dark:text-purple-400 font-semibold">R$ 0,00</strong></span>
+                    <span class="text-gray-500 dark:text-gray-400">Trib. Aprox: <strong id="footerTotalTrib" class="text-emerald-600 dark:text-emerald-400 font-semibold">R$ 0,00</strong></span>
+                    <span class="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-1.5 pl-2 sm:pl-3 border-l border-gray-200 dark:border-slate-700">
+                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Total:</span>
+                        <span id="footerTotal" class="text-brand-600 dark:text-brand-400 font-bold">R$ 0,00</span>
+                    </span>
+                </div>
             </div>
         </div>
     </main>
@@ -419,11 +429,11 @@
     </div>
 
     <script src="/vendor/jszip.min.js"></script>
-    <script src="/js/api.js?v=20261008130820"></script>
-    <script src="/js/notas_vendidas.js?v=20261008130820"></script>
-    <script src="/js/components/navbar.js?v=20261008130820"></script>
+    <script src="/js/api.js?v=20261008132030"></script>
+    <script src="/js/notas_vendidas.js?v=20261008132030"></script>
+    <script src="/js/components/navbar.js?v=20261008132030"></script>
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261008130820"></script>
+    <script src="/js/components/footer.js?v=20261008132030"></script>
 </body>
 
 </html>

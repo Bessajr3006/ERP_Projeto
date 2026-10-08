@@ -21,6 +21,10 @@
     const filterNfeEndDate = document.getElementById('notasFilterNfeEndDate');
     const footerCount = document.getElementById('footerCount');
     const footerTotal = document.getElementById('footerTotal');
+    const footerTotalIcms = document.getElementById('footerTotalIcms');
+    const footerTotalPis = document.getElementById('footerTotalPis');
+    const footerTotalCofins = document.getElementById('footerTotalCofins');
+    const footerTotalTrib = document.getElementById('footerTotalTrib');
     const bankSelect = document.getElementById('importNotasXmlBankAccount');
     const categorySelect = document.getElementById('importNotasXmlCategory');
     const notaItensModal = document.getElementById('notaItensModal');
@@ -64,25 +68,110 @@
         invoiced: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
     };
 
+    function getSaleTaxTotals(sale) {
+        if (!sale) return { vBC: 0, vICMS: 0, vBCST: 0, vST: 0, vPIS: 0, vCOFINS: 0, vIPI: 0, vTotTrib: 0 };
+        if (sale._taxTotals) return sale._taxTotals;
+
+        const header = parseJsonSafe(sale.nfe_header_json) || {};
+        const totalNode = header.total || {};
+
+        let vBC = Number(totalNode.vBC ?? header.vBC ?? 0) || 0;
+        let vICMS = Number(totalNode.vICMS ?? header.vICMS ?? 0) || 0;
+        let vBCST = Number(totalNode.vBCST ?? header.vBCST ?? 0) || 0;
+        let vST = Number(totalNode.vST ?? header.vST ?? 0) || 0;
+        let vPIS = Number(totalNode.vPIS ?? header.vPIS ?? 0) || 0;
+        let vCOFINS = Number(totalNode.vCOFINS ?? header.vCOFINS ?? 0) || 0;
+        let vIPI = Number(totalNode.vIPI ?? header.vIPI ?? 0) || 0;
+        let vTotTrib = Number(totalNode.vTotTrib ?? header.tributosTotal ?? header.vTotTrib ?? 0) || 0;
+
+        // Se temos XML bruto, podemos validar/completar direto da tag ICMSTot
+        if ((!vBC && !vICMS && !vPIS && !vCOFINS && !vIPI && !vTotTrib) && sale.nfe_xml) {
+            const doc = parseXmlSafe(sale.nfe_xml);
+            if (doc) {
+                const icmsTot = doc.getElementsByTagName('ICMSTot')[0];
+                if (icmsTot) {
+                    const getVal = (tag) => Number(icmsTot.getElementsByTagName(tag)[0]?.textContent || 0) || 0;
+                    vBC = getVal('vBC');
+                    vICMS = getVal('vICMS');
+                    vBCST = getVal('vBCST');
+                    vST = getVal('vST');
+                    vPIS = getVal('vPIS');
+                    vCOFINS = getVal('vCOFINS');
+                    vIPI = getVal('vIPI');
+                    vTotTrib = getVal('vTotTrib') || Number(doc.getElementsByTagName('vTotTrib')[0]?.textContent || 0) || 0;
+                }
+            }
+        }
+
+        // Fallback para soma dos itens
+        if ((!vICMS && !vPIS && !vCOFINS && !vIPI && !vTotTrib) && Array.isArray(sale.items)) {
+            sale.items.forEach((item) => {
+                const xml = parseJsonSafe(item.xml_item_data) || {};
+                vICMS += Number(xml.vICMS || xml.imposto?.icms?.vICMS || 0) || 0;
+                vPIS += Number(xml.vPIS || xml.imposto?.pis?.vPIS || 0) || 0;
+                vCOFINS += Number(xml.vCOFINS || xml.imposto?.cofins?.vCOFINS || 0) || 0;
+                vIPI += Number(xml.vIPI || xml.imposto?.ipi?.vIPI || 0) || 0;
+                vTotTrib += Number(xml.vTotTrib || 0) || 0;
+            });
+        }
+
+        const totals = { vBC, vICMS, vBCST, vST, vPIS, vCOFINS, vIPI, vTotTrib };
+        sale._taxTotals = totals;
+        return totals;
+    }
+
+    function formatTaxCell(val, colorClass = '') {
+        const num = Number(val || 0);
+        if (!num || num === 0) {
+            return '<span class="text-gray-400 dark:text-gray-600">-</span>';
+        }
+        const text = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
+        return `<span class="font-medium ${colorClass}">${text}</span>`;
+    }
+
     function renderEmptyState() {
         tbody.innerHTML = `
             <tr>
-                <td colspan="10" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colspan="14" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                     Nenhuma nota vendida para exibir no momento.
                 </td>
             </tr>
         `;
         footerCount.textContent = '0';
         footerTotal.textContent = 'R$ 0,00';
+        if (footerTotalIcms) footerTotalIcms.textContent = 'R$ 0,00';
+        if (footerTotalPis) footerTotalPis.textContent = 'R$ 0,00';
+        if (footerTotalCofins) footerTotalCofins.textContent = 'R$ 0,00';
+        if (footerTotalTrib) footerTotalTrib.textContent = 'R$ 0,00';
         selectAllNotasCheckbox.checked = false;
         updateBatchDeleteButtonState();
     }
 
     function updateFooterMetrics(sales) {
         const list = Array.isArray(sales) ? sales : [];
-        const totalAmount = list.reduce((acc, sale) => acc + Number(sale?.total_amount || 0), 0);
+        let totalAmount = 0;
+        let totalIcms = 0;
+        let totalPis = 0;
+        let totalCofins = 0;
+        let totalTrib = 0;
+
+        list.forEach((sale) => {
+            totalAmount += Number(sale?.total_amount || 0) || 0;
+            const taxes = getSaleTaxTotals(sale);
+            totalIcms += taxes.vICMS;
+            totalPis += taxes.vPIS;
+            totalCofins += taxes.vCOFINS;
+            totalTrib += taxes.vTotTrib;
+        });
+
+        const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
         footerCount.textContent = String(list.length);
-        footerTotal.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount);
+        footerTotal.textContent = fmt(totalAmount);
+        if (footerTotalIcms) footerTotalIcms.textContent = fmt(totalIcms);
+        if (footerTotalPis) footerTotalPis.textContent = fmt(totalPis);
+        if (footerTotalCofins) footerTotalCofins.textContent = fmt(totalCofins);
+        if (footerTotalTrib) footerTotalTrib.textContent = fmt(totalTrib);
     }
 
     function closeNotaItensModal() {
@@ -524,15 +613,14 @@
         updateFooterMetrics(sales);
 
         tbody.innerHTML = sales.map((sale) => {
-            const dateText = window.DateUtils?.formatDate(sale.date) || '-';
             const nfeIssueDateText = getSaleNfeDateText(sale);
             const nfeKeyText = sale?.nfe_key || '-';
-            const nfeHeaderSummary = getSaleNfeHeaderSummary(sale);
             const total = Number(sale.total_amount || 0);
             const formattedTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
             const normalizedStatus = String(sale.status || 'pending').toLowerCase();
             const statusText = statusLabel[normalizedStatus] || sale.status || 'Pendente';
             const badgeClass = statusClass[normalizedStatus] || statusClass.pending;
+            const taxes = getSaleTaxTotals(sale);
 
             return `
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40">
@@ -542,10 +630,14 @@
                     <td class="px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100">#${sale.id || '-'}</td>
                     <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${nfeIssueDateText}</td>
                     <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200 font-mono">${nfeKeyText}</td>
-                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200">${nfeHeaderSummary}</td>
                     <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${sale.customer_name || 'Consumidor Final'}</td>
-                    <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${dateText}</td>
-                    <td class="px-3 py-2.5 text-sm text-right text-gray-900 dark:text-gray-100 font-semibold">${formattedTotal}</td>
+                    <td class="px-3 py-2.5 text-sm text-right text-gray-900 dark:text-gray-100 font-bold">${formattedTotal}</td>
+                    <td class="px-3 py-2.5 text-sm text-right text-gray-600 dark:text-gray-300">${formatTaxCell(taxes.vBC)}</td>
+                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vICMS, 'text-blue-600 dark:text-blue-400')}</td>
+                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vPIS, 'text-indigo-600 dark:text-indigo-400')}</td>
+                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vCOFINS, 'text-purple-600 dark:text-purple-400')}</td>
+                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vIPI, 'text-amber-600 dark:text-amber-400')}</td>
+                    <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vTotTrib, 'text-emerald-600 dark:text-emerald-400')}</td>
                     <td class="px-3 py-2.5 text-center">
                         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}">${statusText}</span>
                     </td>

@@ -164,8 +164,8 @@ export class OrderRepository {
                 : null;
 
             const [orderResult] = await conn.query<ResultSetHeader>(
-                `INSERT INTO sales_orders (public_id, company_id, customer_id, total_amount, status, date, nfe_key, nfe_issue_date, nfe_header_json, delivery_address) VALUES (?, ?, ?, ?, 'progress', ?, ?, ?, ?, ?)`,
-                [publicId, companyId, customerId, 0, orderDate, data.nfe_key || null, nfeIssueDate, nfeHeaderJson, data.delivery_address || null]
+                `INSERT INTO sales_orders (public_id, company_id, customer_id, total_amount, status, date, nfe_key, nfe_issue_date, nfe_header_json, nfe_xml, delivery_address) VALUES (?, ?, ?, ?, 'progress', ?, ?, ?, ?, ?, ?)`,
+                [publicId, companyId, customerId, 0, orderDate, data.nfe_key || null, nfeIssueDate, nfeHeaderJson, data.nfe_xml || null, data.delivery_address || null]
             );
             const saleId = orderResult.insertId;
 

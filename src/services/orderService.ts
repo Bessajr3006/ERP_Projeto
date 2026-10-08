@@ -944,6 +944,7 @@ export class OrderService {
             nfe_key: parsedHeader.nfeKey,
             nfe_issue_date: parsedHeader.nfeIssueDate,
             nfe_header_json: parsedHeader.headerData,
+            nfe_xml: xmlContent,
             items: matchedItems,
         });
 

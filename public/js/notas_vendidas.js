@@ -131,62 +131,182 @@
             : '';
         return [numero, serie, natOp, tributos].filter(Boolean).join(' | ') || '-';
     }
+    function parseXmlSafe(xmlString) {
+        if (!xmlString || typeof xmlString !== 'string' || xmlString.trim().length < 20)
+            return null;
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xmlString, 'text/xml');
+            if (doc.getElementsByTagName('parsererror').length > 0)
+                return null;
+            return doc;
+        }
+        catch (_) {
+            return null;
+        }
+    }
+    function extractXmlItemsFromDoc(doc) {
+        if (!doc)
+            return [];
+        const detNodes = Array.from(doc.getElementsByTagName('det'));
+        return detNodes.map((det, index) => {
+            const getTag = (parent, tag) => {
+                const node = parent?.getElementsByTagName(tag)[0];
+                return node ? String(node.textContent || '').trim() : '';
+            };
+            const prod = det.getElementsByTagName('prod')[0];
+            const imposto = det.getElementsByTagName('imposto')[0];
+            const nItem = det.getAttribute('nItem') || String(index + 1);
+            const cProd = getTag(prod, 'cProd');
+            const cEAN = getTag(prod, 'cEAN');
+            const xProd = getTag(prod, 'xProd');
+            const ncm = getTag(prod, 'NCM');
+            const cest = getTag(prod, 'CEST');
+            const cfop = getTag(prod, 'CFOP');
+            const uCom = getTag(prod, 'uCom');
+            const qCom = Number(getTag(prod, 'qCom')) || 0;
+            const vUnCom = Number(getTag(prod, 'vUnCom')) || 0;
+            const vProd = Number(getTag(prod, 'vProd')) || (qCom * vUnCom);
+            const vDesc = Number(getTag(prod, 'vDesc')) || 0;
+            const infAdProd = getTag(det, 'infAdProd');
+            // Impostos
+            const vTotTrib = Number(getTag(imposto, 'vTotTrib')) || 0;
+            const icmsGroup = imposto?.getElementsByTagName('ICMS')[0]?.firstElementChild;
+            const cstIcms = getTag(icmsGroup, 'CST') || getTag(icmsGroup, 'CSOSN') || '';
+            const pICMS = Number(getTag(icmsGroup, 'pICMS')) || 0;
+            const vICMS = Number(getTag(icmsGroup, 'vICMS')) || 0;
+            const pisGroup = imposto?.getElementsByTagName('PIS')[0]?.firstElementChild;
+            const vPIS = Number(getTag(pisGroup, 'vPIS')) || 0;
+            const cofinsGroup = imposto?.getElementsByTagName('COFINS')[0]?.firstElementChild;
+            const vCOFINS = Number(getTag(cofinsGroup, 'vCOFINS')) || 0;
+            const ipiGroup = imposto?.getElementsByTagName('IPI')[0]?.firstElementChild;
+            const vIPI = Number(getTag(ipiGroup, 'vIPI')) || 0;
+            return {
+                nItem,
+                product_name: xProd || 'Item sem nome',
+                sku: cProd,
+                cProd,
+                cEAN: cEAN && cEAN.toUpperCase() !== 'SEM GTIN' ? cEAN : '-',
+                ncm: ncm || '-',
+                cest: cest || '-',
+                cfop: cfop || '-',
+                cstCsosn: cstIcms || '-',
+                uCom: uCom || '-',
+                quantity: qCom,
+                unit_price: vUnCom,
+                vDesc,
+                total_price: vProd,
+                vTotTrib,
+                vICMS,
+                pICMS,
+                vPIS,
+                vCOFINS,
+                vIPI,
+                infAdProd: infAdProd || null,
+            };
+        });
+    }
     function printCurrentSaleItems() {
         if (!currentSaleForPrint)
             return;
         const sale = currentSaleForPrint;
-        const items = Array.isArray(sale.items) ? sale.items : [];
+        const header = parseJsonSafe(sale?.nfe_header_json) || {};
+        const nfNum = header.numero || sale.id || '-';
+        let items = [];
+        if (sale.nfe_xml) {
+            const doc = parseXmlSafe(sale.nfe_xml);
+            if (doc) {
+                items = extractXmlItemsFromDoc(doc);
+            }
+        }
+        if (items.length === 0 && Array.isArray(sale.items)) {
+            items = sale.items.map((item, idx) => {
+                const xml = parseJsonSafe(item.xml_item_data) || {};
+                const qty = Number(item.quantity || xml.qCom || 0);
+                const unitPrice = Number(item.unit_price || xml.vUnCom || 0);
+                const vProd = Number(item.total_price || xml.vProd || (qty * unitPrice));
+                const vDesc = Number(xml.vDesc || 0);
+                const cstCsosn = xml.csosn || xml.cst_icms || xml.icms?.csosn || xml.icms?.cst || '-';
+                return {
+                    nItem: xml.nItem || String(idx + 1),
+                    product_name: item.product_name || xml.xProd || 'Produto sem nome',
+                    sku: item.sku || xml.cProd || '-',
+                    cProd: xml.cProd || item.sku || '-',
+                    cEAN: xml.cEAN || item.ean || '-',
+                    ncm: xml.ncm || '-',
+                    cest: xml.cest || '-',
+                    cfop: xml.cfop || '-',
+                    cstCsosn,
+                    uCom: xml.uCom || '-',
+                    quantity: qty,
+                    unit_price: unitPrice,
+                    vDesc,
+                    total_price: vProd,
+                };
+            });
+        }
         const totalAmount = Number(sale.total_amount || 0);
         const totalAmountText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount);
-        const printWindow = window.open('', '_blank', 'width=900,height=700');
+        const printWindow = window.open('', '_blank', 'width=1000,height=750');
         if (!printWindow)
             return;
         const rows = items.map((item) => {
             const qty = Number(item.quantity || 0);
             const unitPrice = Number(item.unit_price || 0);
-            const total = Number(item.total_price || qty * unitPrice);
+            const total = Number(item.total_price || (qty * unitPrice));
             const unitPriceText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(unitPrice);
             const totalText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
-            const xml = parseJsonSafe(item.xml_item_data) || {};
-            const cstCsosn = xml.csosn || xml.cst_icms || xml.icms?.csosn || xml.icms?.cst || '-';
-            const cest = xml.cest || '-';
-            const vDesc = Number(xml.vDesc || 0);
+            const vDesc = Number(item.vDesc || 0);
             const vDescText = vDesc > 0 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(vDesc) : '-';
-            return `<tr><td>${item.product_name || 'Produto sem nome'}</td><td>${item.sku || '-'}</td><td>${xml.cProd || '-'}</td><td>${xml.cEAN || '-'}</td><td>${xml.ncm || '-'}</td><td>${cest}</td><td>${xml.cfop || '-'}</td><td>${cstCsosn}</td><td>${xml.uCom || '-'}</td><td style="text-align:right;">${qty}</td><td style="text-align:right;">${unitPriceText}</td><td style="text-align:right;">${vDescText}</td><td style="text-align:right;">${totalText}</td></tr>`;
+            return `<tr>
+                <td style="text-align:center;">${item.nItem}</td>
+                <td>${item.product_name || 'Produto sem nome'}</td>
+                <td>${item.cProd || item.sku || '-'}</td>
+                <td>${item.cEAN || '-'}</td>
+                <td>${item.ncm || '-'}</td>
+                <td>${item.cest || '-'}</td>
+                <td>${item.cfop || '-'}</td>
+                <td>${item.cstCsosn || '-'}</td>
+                <td style="text-align:center;">${item.uCom || '-'}</td>
+                <td style="text-align:right;">${qty}</td>
+                <td style="text-align:right;">${unitPriceText}</td>
+                <td style="text-align:right;">${vDescText}</td>
+                <td style="text-align:right; font-weight: bold;">${totalText}</td>
+            </tr>`;
         }).join('');
         printWindow.document.write(`
             <html>
                 <head>
-                    <title>Nota #${sale.id || '-'}</title>
+                    <title>Itens da Nota #${nfNum}</title>
                     <style>
                         body { font-family: Arial, sans-serif; margin: 24px; color: #111827; }
-                        h1 { margin: 0 0 8px; font-size: 20px; }
-                        p { margin: 0 0 16px; color: #374151; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { border: 1px solid #d1d5db; padding: 8px; font-size: 12px; }
+                        h1 { margin: 0 0 4px; font-size: 18px; }
+                        p { margin: 0 0 12px; color: #374151; font-size: 12px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 11px; }
                         th { background: #f3f4f6; text-align: left; }
-                        .summary { margin-top: 14px; font-weight: 700; }
+                        .summary { margin-top: 14px; font-weight: 700; font-size: 14px; text-align: right; }
                     </style>
                 </head>
                 <body>
-                    <h1>Itens da Nota #${sale.id || '-'}</h1>
-                    <p>Cliente: ${sale.customer_name || 'Consumidor Final'}</p>
+                    <h1>Itens da Nota Fiscal #${nfNum}</h1>
+                    <p><strong>Cliente:</strong> ${sale.customer_name || header.destinatarioNome || 'Consumidor Final'} | <strong>Chave:</strong> ${sale.nfe_key || '-'}</p>
                     <table>
                         <thead>
                             <tr>
+                                <th style="text-align:center;">#</th>
                                 <th>Produto</th>
-                                <th>SKU</th>
                                 <th>cProd</th>
                                 <th>EAN</th>
                                 <th>NCM</th>
                                 <th>CEST</th>
                                 <th>CFOP</th>
                                 <th>CST/CSOSN</th>
-                                <th>Un.</th>
-                                <th>Qtd</th>
-                                <th>Unit.</th>
-                                <th>Desc.</th>
-                                <th>Total</th>
+                                <th style="text-align:center;">Un.</th>
+                                <th style="text-align:right;">Qtd</th>
+                                <th style="text-align:right;">Unit.</th>
+                                <th style="text-align:right;">Desc.</th>
+                                <th style="text-align:right;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -204,38 +324,159 @@
     function openNotaItensModal(sale) {
         currentSaleForPrint = sale;
         const saleId = sale?.id || '-';
-        notaItensModalTitle.textContent = `Itens da Nota #${saleId}`;
-        const items = Array.isArray(sale?.items) ? sale.items : [];
+        const header = parseJsonSafe(sale?.nfe_header_json) || {};
+        const nfNum = header.numero || saleId;
+        const modalTitle = document.getElementById('notaItensModalTitle');
+        const countBadge = document.getElementById('notaItensModalCountBadge');
+        const subtitle = document.getElementById('notaItensModalSubtitle');
+        const customerEl = document.getElementById('notaItensModalCustomer');
+        const dateEl = document.getElementById('notaItensModalDate');
+        const natOpEl = document.getElementById('notaItensModalNatOp');
+        const tributosEl = document.getElementById('notaItensModalTributos');
+        const totalEl = document.getElementById('notaItensModalTotal');
+        const btnDownloadXml = document.getElementById('btnDownloadNotaXml');
+        if (modalTitle)
+            modalTitle.textContent = `Itens da Nota Fiscal #${nfNum}`;
+        if (subtitle) {
+            subtitle.textContent = sale.nfe_key ? `Chave NFe: ${sale.nfe_key}` : `Pedido / Venda #${saleId}`;
+        }
+        if (customerEl)
+            customerEl.textContent = sale.customer_name || header.destinatarioNome || 'Consumidor Final';
+        if (dateEl)
+            dateEl.textContent = getSaleNfeDateText(sale);
+        if (natOpEl)
+            natOpEl.textContent = header.naturezaOperacao || header.ide?.natOp || '-';
+        const totalAmount = Number(sale.total_amount || 0);
+        if (totalEl) {
+            totalEl.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount);
+        }
+        const tributosTotalVal = Number(header.tributosTotal || header.total?.vTotTrib || 0);
+        if (tributosEl) {
+            tributosEl.textContent = tributosTotalVal > 0
+                ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(tributosTotalVal)
+                : 'R$ 0,00';
+        }
+        // Configura botão de download do XML original caso exista
+        if (btnDownloadXml) {
+            if (sale.nfe_xml && typeof sale.nfe_xml === 'string' && sale.nfe_xml.trim().length > 20) {
+                btnDownloadXml.classList.remove('hidden');
+                btnDownloadXml.onclick = () => {
+                    const blob = new Blob([sale.nfe_xml], { type: 'application/xml;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${sale.nfe_key || 'nota-' + sale.id}.xml`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+            }
+            else {
+                btnDownloadXml.classList.add('hidden');
+                btnDownloadXml.onclick = null;
+            }
+        }
+        let items = [];
+        // Se houver XML bruto salvo, extrai todos os itens do XML com fidelidade total
+        if (sale.nfe_xml) {
+            const doc = parseXmlSafe(sale.nfe_xml);
+            if (doc) {
+                items = extractXmlItemsFromDoc(doc);
+            }
+        }
+        // Fallback para os itens salvos em banco
+        if (items.length === 0 && Array.isArray(sale.items)) {
+            items = sale.items.map((item, idx) => {
+                const xml = parseJsonSafe(item.xml_item_data) || {};
+                const qty = Number(item.quantity || xml.qCom || 0);
+                const unitPrice = Number(item.unit_price || xml.vUnCom || 0);
+                const vProd = Number(item.total_price || xml.vProd || (qty * unitPrice));
+                const vDesc = Number(xml.vDesc || 0);
+                const cstCsosn = xml.csosn || xml.cst_icms || xml.icms?.csosn || xml.icms?.cst || '-';
+                return {
+                    nItem: xml.nItem || String(idx + 1),
+                    product_name: item.product_name || xml.xProd || 'Produto sem nome',
+                    sku: item.sku || xml.cProd || '-',
+                    cProd: xml.cProd || item.sku || '-',
+                    cEAN: xml.cEAN || item.ean || '-',
+                    ncm: xml.ncm || '-',
+                    cest: xml.cest || '-',
+                    cfop: xml.cfop || '-',
+                    cstCsosn,
+                    uCom: xml.uCom || '-',
+                    quantity: qty,
+                    unit_price: unitPrice,
+                    vDesc,
+                    total_price: vProd,
+                    vTotTrib: Number(xml.vTotTrib || 0),
+                    vICMS: Number(xml.vICMS || xml.imposto?.icms?.vICMS || 0),
+                    pICMS: Number(xml.pICMS || xml.imposto?.icms?.pICMS || 0),
+                    vPIS: Number(xml.vPIS || xml.imposto?.pis?.vPIS || 0),
+                    vCOFINS: Number(xml.vCOFINS || xml.imposto?.cofins?.vCOFINS || 0),
+                    vIPI: Number(xml.vIPI || xml.imposto?.ipi?.vIPI || 0),
+                    infAdProd: xml.infAdProd || null,
+                };
+            });
+        }
+        if (countBadge) {
+            countBadge.textContent = `${items.length} item(ns)`;
+        }
         if (items.length === 0) {
-            notaItensModalBody.innerHTML = '<tr><td colspan="13" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum item para exibir.</td></tr>';
+            notaItensModalBody.innerHTML = '<tr><td colspan="14" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Nenhum item para exibir.</td></tr>';
         }
         else {
             notaItensModalBody.innerHTML = items.map((item) => {
                 const qty = Number(item.quantity || 0);
                 const unitPrice = Number(item.unit_price || 0);
-                const total = Number(item.total_price || qty * unitPrice);
+                const total = Number(item.total_price || (qty * unitPrice));
                 const unitPriceText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(unitPrice);
                 const totalText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
-                const xml = parseJsonSafe(item.xml_item_data) || {};
-                const cstCsosn = xml.csosn || xml.cst_icms || xml.icms?.csosn || xml.icms?.cst || '-';
-                const cest = xml.cest || '-';
-                const vDesc = Number(xml.vDesc || 0);
+                const vDesc = Number(item.vDesc || 0);
                 const vDescText = vDesc > 0 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(vDesc) : '-';
+                // Badges de Impostos
+                const taxBadges = [];
+                if (item.vICMS > 0 || item.pICMS > 0) {
+                    const icmsLabel = item.pICMS > 0 ? `ICMS: ${item.pICMS}% (R$ ${item.vICMS.toFixed(2)})` : `ICMS: R$ ${item.vICMS.toFixed(2)}`;
+                    taxBadges.push(`<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">${icmsLabel}</span>`);
+                }
+                if (item.vPIS > 0) {
+                    taxBadges.push(`<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300">PIS: R$ ${item.vPIS.toFixed(2)}</span>`);
+                }
+                if (item.vCOFINS > 0) {
+                    taxBadges.push(`<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">COF: R$ ${item.vCOFINS.toFixed(2)}</span>`);
+                }
+                if (item.vIPI > 0) {
+                    taxBadges.push(`<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">IPI: R$ ${item.vIPI.toFixed(2)}</span>`);
+                }
+                if (item.vTotTrib > 0) {
+                    taxBadges.push(`<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Trib: R$ ${item.vTotTrib.toFixed(2)}</span>`);
+                }
+                const taxInfoHtml = taxBadges.length > 0 ? `<div class="flex flex-wrap gap-1">${taxBadges.join('')}</div>` : '<span class="text-gray-400">-</span>';
+                const infAdProdHtml = item.infAdProd
+                    ? `<p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 italic">${item.infAdProd}</p>`
+                    : '';
                 return `
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40">
-                        <td class="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">${item.product_name || 'Produto sem nome'}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.sku || '-'}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.cProd || '-'}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.cEAN || '-'}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.ncm || '-'}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${cest}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.cfop || '-'}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${cstCsosn}</td>
-                        <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${xml.uCom || '-'}</td>
-                        <td class="px-4 py-2 text-sm text-right text-gray-700 dark:text-gray-300">${qty}</td>
-                        <td class="px-4 py-2 text-sm text-right text-gray-700 dark:text-gray-300">${unitPriceText}</td>
-                        <td class="px-4 py-2 text-sm text-right text-gray-700 dark:text-gray-300">${vDescText}</td>
-                        <td class="px-4 py-2 text-sm text-right font-semibold text-gray-900 dark:text-gray-100">${totalText}</td>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+                        <td class="px-3 py-2 text-center font-mono text-gray-500 dark:text-gray-400">${item.nItem}</td>
+                        <td class="px-3 py-2 text-gray-900 dark:text-gray-100 font-medium">
+                            <div>${item.product_name}</div>
+                            ${infAdProdHtml}
+                        </td>
+                        <td class="px-3 py-2 text-gray-600 dark:text-gray-300 font-mono">${item.cProd || '-'}</td>
+                        <td class="px-3 py-2 text-gray-600 dark:text-gray-300 font-mono">${item.cEAN || '-'}</td>
+                        <td class="px-3 py-2 text-gray-600 dark:text-gray-300 font-mono">${item.ncm || '-'}</td>
+                        <td class="px-3 py-2 text-gray-600 dark:text-gray-300 font-mono">${item.cest || '-'}</td>
+                        <td class="px-3 py-2 text-gray-600 dark:text-gray-300 font-mono">${item.cfop || '-'}</td>
+                        <td class="px-3 py-2">
+                            <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">${item.cstCsosn || '-'}</span>
+                        </td>
+                        <td class="px-3 py-2 text-center text-gray-600 dark:text-gray-300 font-mono">${item.uCom || '-'}</td>
+                        <td class="px-3 py-2 text-right font-medium text-gray-800 dark:text-gray-200">${qty}</td>
+                        <td class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">${unitPriceText}</td>
+                        <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">${vDescText}</td>
+                        <td class="px-3 py-2 text-right font-bold text-gray-900 dark:text-gray-100">${totalText}</td>
+                        <td class="px-3 py-2">${taxInfoHtml}</td>
                     </tr>
                 `;
             }).join('');
@@ -266,7 +507,7 @@
                     </td>
                     <td class="px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100">#${sale.id || '-'}</td>
                     <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${nfeIssueDateText}</td>
-                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200">${nfeKeyText}</td>
+                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200 font-mono">${nfeKeyText}</td>
                     <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200">${nfeHeaderSummary}</td>
                     <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${sale.customer_name || 'Consumidor Final'}</td>
                     <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${dateText}</td>
@@ -275,7 +516,13 @@
                         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}">${statusText}</span>
                     </td>
                     <td class="px-3 py-2.5 text-center">
-                        <button type="button" class="btnShowNotaItens inline-flex items-center rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600" data-sale-id="${sale.id || ''}">Ver Itens</button>
+                        <button type="button" class="btnShowNotaItens inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/30 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-800/60 shadow-xs transition-all hover:scale-[1.03] cursor-pointer" data-sale-id="${sale.id || ''}" title="Visualizar todos os itens do XML">
+                            <svg class="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>Itens</span>
+                        </button>
                     </td>
                 </tr>
             `;

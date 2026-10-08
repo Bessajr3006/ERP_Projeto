@@ -61,6 +61,7 @@ export interface SalesOrder {
     nfe_key?: string | null;
     nfe_issue_date?: Date | string | null;
     nfe_header_json?: string | null;
+    nfe_xml?: string | null;
     delivery_address?: string | null;
     observation?: string | null;
     created_at: Date;
@@ -112,6 +113,7 @@ export interface CreateSalesData {
     nfe_key?: string | null | undefined;
     nfe_issue_date?: string | Date | null | undefined;
     nfe_header_json?: Record<string, any> | string | null | undefined;
+    nfe_xml?: string | null | undefined;
     items: CreateSalesItemData[];
     payments?: CreateSalesPaymentData[] | undefined;
 }

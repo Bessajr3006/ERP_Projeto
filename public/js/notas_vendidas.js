@@ -16,9 +16,10 @@
     const filterNfeKey = document.getElementById('notasFilterNfeKey');
     const filterStatus = document.getElementById('notasFilterStatus');
     const filterNfeStartDate = document.getElementById('notasFilterNfeStartDate');
-    const filterStartDate = document.getElementById('notasFilterStartDate');
-    const filterEndDate = document.getElementById('notasFilterEndDate');
     const filterNfeEndDate = document.getElementById('notasFilterNfeEndDate');
+    const filterTipo = document.getElementById('notasFilterTipo');
+    const btnCurrentMonthFilter = document.getElementById('btnCurrentMonthFilter');
+    const btnClearNotasFilter = document.getElementById('btnClearNotasFilter');
     const footerCount = document.getElementById('footerCount');
     const footerTotal = document.getElementById('footerTotal');
     const footerTotalIcms = document.getElementById('footerTotalIcms');
@@ -32,7 +33,7 @@
     const notaItensModalBody = document.getElementById('notaItensModalBody');
     const btnCloseNotaItensModal = document.getElementById('btnCloseNotaItensModal');
     const btnPrintNotaItens = document.getElementById('btnPrintNotaItens');
-    if (!button || !tbody || !modal || !modalClose || !modalCancel || !modalConfirm || !selectAllNotasCheckbox || !btnDeleteSelectedNotas || !toggleFilterBtn || !filterChevron || !filterBody || !filterSearch || !filterNfeKey || !filterStatus || !filterNfeStartDate || !filterStartDate || !filterEndDate || !filterNfeEndDate || !footerCount || !footerTotal || !bankSelect || !categorySelect || !notaItensModal || !notaItensModalTitle || !notaItensModalBody || !btnCloseNotaItensModal || !btnPrintNotaItens)
+    if (!button || !tbody || !modal || !modalClose || !modalCancel || !modalConfirm || !selectAllNotasCheckbox || !btnDeleteSelectedNotas || !toggleFilterBtn || !filterChevron || !filterBody || !footerCount || !footerTotal || !bankSelect || !categorySelect || !notaItensModal || !notaItensModalTitle || !notaItensModalBody || !btnCloseNotaItensModal || !btnPrintNotaItens)
         return;
     let importOptionsLoaded = false;
     let currentSaleForPrint = null;
@@ -62,6 +63,108 @@
         separated: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
         invoiced: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
     };
+    function getEffectiveSaleStatus(sale, meta) {
+        const rawStatus = String(sale?.status || 'pending').toLowerCase();
+        if (rawStatus === 'cancelled' || rawStatus === 'cancelada') {
+            return {
+                key: 'cancelled',
+                label: 'Cancelada',
+                badgeClass: statusClass.cancelled,
+            };
+        }
+        // Se a nota possui protocolo de autorização, o status exibido é Concluída
+        if (meta?.protocolo && meta.protocolo !== '-' && String(meta.protocolo).trim() !== '') {
+            return {
+                key: 'completed',
+                label: 'Concluida',
+                badgeClass: statusClass.completed,
+            };
+        }
+        return {
+            key: rawStatus,
+            label: statusLabel[rawStatus] || sale?.status || 'Pendente',
+            badgeClass: statusClass[rawStatus] || statusClass.pending,
+        };
+    }
+    const STORAGE_KEY_NOTAS_VENDIDAS_FILTERS = 'bessa_erp_notas_vendidas_filters_v1';
+    function getCurrentMonthRange() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const firstDay = `${year}-${month}-01`;
+        const lastDate = new Date(year, now.getMonth() + 1, 0).getDate();
+        const lastDay = `${year}-${month}-${String(lastDate).padStart(2, '0')}`;
+        return { startDate: firstDay, endDate: lastDay };
+    }
+    function saveFiltersState() {
+        const state = {
+            search: filterSearch?.value || '',
+            nfeKey: filterNfeKey?.value || '',
+            status: filterStatus?.value || '',
+            tipo: filterTipo ? filterTipo.value : '',
+            nfeStartDate: filterNfeStartDate?.value || '',
+            nfeEndDate: filterNfeEndDate?.value || '',
+        };
+        try {
+            localStorage.setItem(STORAGE_KEY_NOTAS_VENDIDAS_FILTERS, JSON.stringify(state));
+        }
+        catch (_) { }
+    }
+    function loadSavedFiltersOrDefault() {
+        const defaultRange = getCurrentMonthRange();
+        let saved = null;
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_NOTAS_VENDIDAS_FILTERS);
+            if (raw)
+                saved = JSON.parse(raw);
+        }
+        catch (_) { }
+        if (saved && typeof saved === 'object') {
+            if (filterSearch)
+                filterSearch.value = saved.search || '';
+            if (filterNfeKey)
+                filterNfeKey.value = saved.nfeKey || '';
+            if (filterStatus)
+                filterStatus.value = saved.status || '';
+            if (filterTipo && saved.tipo)
+                filterTipo.value = saved.tipo;
+            if (filterNfeStartDate)
+                filterNfeStartDate.value = saved.nfeStartDate || defaultRange.startDate;
+            if (filterNfeEndDate)
+                filterNfeEndDate.value = saved.nfeEndDate || defaultRange.endDate;
+        }
+        else {
+            if (filterSearch)
+                filterSearch.value = '';
+            if (filterNfeKey)
+                filterNfeKey.value = '';
+            if (filterStatus)
+                filterStatus.value = '';
+            if (filterTipo)
+                filterTipo.value = '';
+            if (filterNfeStartDate)
+                filterNfeStartDate.value = defaultRange.startDate;
+            if (filterNfeEndDate)
+                filterNfeEndDate.value = defaultRange.endDate;
+        }
+    }
+    function resetFiltersToDefault() {
+        const defaultRange = getCurrentMonthRange();
+        if (filterSearch)
+            filterSearch.value = '';
+        if (filterNfeKey)
+            filterNfeKey.value = '';
+        if (filterStatus)
+            filterStatus.value = '';
+        if (filterTipo)
+            filterTipo.value = '';
+        if (filterNfeStartDate)
+            filterNfeStartDate.value = defaultRange.startDate;
+        if (filterNfeEndDate)
+            filterNfeEndDate.value = defaultRange.endDate;
+        saveFiltersState();
+        applySalesFilters();
+    }
     function getSaleTaxTotals(sale) {
         if (!sale)
             return { vBC: 0, vICMS: 0, vBCST: 0, vST: 0, vPIS: 0, vCOFINS: 0, vIPI: 0, vTotTrib: 0 };
@@ -710,6 +813,7 @@
             const badgeClass = statusClass[normalizedStatus] || statusClass.pending;
             const taxes = getSaleTaxTotals(sale);
             const meta = parseSaleNfeMetadata(sale);
+            const effStatus = getEffectiveSaleStatus(sale, meta);
             return `
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40">
                     <td class="px-3 py-2.5 text-left">
@@ -733,7 +837,7 @@
                     <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vIPI, 'text-amber-600 dark:text-amber-400')}</td>
                     <td class="px-3 py-2.5 text-sm text-right">${formatTaxCell(taxes.vTotTrib, 'text-emerald-600 dark:text-emerald-400')}</td>
                     <td class="px-3 py-2.5 text-center">
-                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}">${statusText}</span>
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${effStatus.badgeClass}">${effStatus.label}</span>
                     </td>
                     <td class="px-3 py-2.5 text-center">
                         <button type="button" class="btnShowNotaItens inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/30 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-800/60 shadow-xs transition-all hover:scale-[1.03] cursor-pointer" data-sale-id="${sale.id || ''}" title="Visualizar todos os itens do XML">
@@ -770,21 +874,21 @@
         });
     }
     function applySalesFilters() {
-        const searchTerm = String(filterSearch.value || '').trim().toLowerCase();
-        const nfeKeyTerm = String(filterNfeKey.value || '').trim().toLowerCase();
-        const selectedStatus = String(filterStatus.value || '').trim().toLowerCase();
-        const nfeStartDate = String(filterNfeStartDate.value || '').trim();
-        const startDate = String(filterStartDate.value || '').trim();
-        const endDate = String(filterEndDate.value || '').trim();
-        const nfeEndDate = String(filterNfeEndDate.value || '').trim();
+        saveFiltersState();
+        const searchTerm = String(filterSearch?.value || '').trim().toLowerCase();
+        const nfeKeyTerm = String(filterNfeKey?.value || '').trim().toLowerCase();
+        const selectedStatus = String(filterStatus?.value || '').trim().toLowerCase();
+        const selectedTipo = String(filterTipo?.value || '').trim().toLowerCase();
+        const nfeStartDate = String(filterNfeStartDate?.value || '').trim();
+        const nfeEndDate = String(filterNfeEndDate?.value || '').trim();
         const filtered = allSales.filter((sale) => {
             const saleId = String(sale?.id || '').toLowerCase();
             const customerName = String(sale?.customer_name || 'Consumidor Final').toLowerCase();
             const saleNfeKey = String(sale?.nfe_key || '').toLowerCase();
-            const saleStatus = String(sale?.status || '').toLowerCase();
             const saleDate = window.DateUtils?.toDateInputValue(sale?.date) || '';
-            const saleNfeDate = window.DateUtils?.toDateInputValue(sale?.nfe_issue_date) || '';
+            const saleNfeDate = window.DateUtils?.toDateInputValue(sale?.nfe_issue_date) || saleDate || '';
             const meta = parseSaleNfeMetadata(sale);
+            const effStatus = getEffectiveSaleStatus(sale, meta);
             const matchSearch = !searchTerm ||
                 saleId.includes(searchTerm) ||
                 customerName.includes(searchTerm) ||
@@ -794,12 +898,11 @@
                 String(meta.protocolo || '').toLowerCase().includes(searchTerm) ||
                 String(meta.tipo || '').toLowerCase().includes(searchTerm);
             const matchNfeKey = !nfeKeyTerm || saleNfeKey.includes(nfeKeyTerm);
-            const matchStatus = !selectedStatus || saleStatus === selectedStatus;
+            const matchStatus = !selectedStatus || effStatus.key === selectedStatus;
+            const matchTipo = !selectedTipo || String(meta.tipo || '').toLowerCase() === selectedTipo;
             const matchNfeStartDate = !nfeStartDate || (saleNfeDate && saleNfeDate >= nfeStartDate);
-            const matchStartDate = !startDate || (saleDate && saleDate >= startDate);
-            const matchEndDate = !endDate || (saleDate && saleDate <= endDate);
             const matchNfeEndDate = !nfeEndDate || (saleNfeDate && saleNfeDate <= nfeEndDate);
-            return matchSearch && matchNfeKey && matchStatus && matchNfeStartDate && matchStartDate && matchEndDate && matchNfeEndDate;
+            return matchSearch && matchNfeKey && matchStatus && matchTipo && matchNfeStartDate && matchNfeEndDate;
         });
         renderRows(filtered);
     }
@@ -1311,13 +1414,34 @@
             closeNotaItensModal();
         }
     });
-    filterSearch.addEventListener('input', applySalesFilters);
-    filterNfeKey.addEventListener('input', applySalesFilters);
-    filterStatus.addEventListener('change', applySalesFilters);
-    filterNfeStartDate.addEventListener('change', applySalesFilters);
-    filterStartDate.addEventListener('change', applySalesFilters);
-    filterEndDate.addEventListener('change', applySalesFilters);
-    filterNfeEndDate.addEventListener('change', applySalesFilters);
+    if (filterSearch)
+        filterSearch.addEventListener('input', applySalesFilters);
+    if (filterNfeKey)
+        filterNfeKey.addEventListener('input', applySalesFilters);
+    if (filterStatus)
+        filterStatus.addEventListener('change', applySalesFilters);
+    if (filterTipo)
+        filterTipo.addEventListener('change', applySalesFilters);
+    if (filterNfeStartDate)
+        filterNfeStartDate.addEventListener('change', applySalesFilters);
+    if (filterNfeEndDate)
+        filterNfeEndDate.addEventListener('change', applySalesFilters);
+    if (btnCurrentMonthFilter) {
+        btnCurrentMonthFilter.addEventListener('click', () => {
+            const r = getCurrentMonthRange();
+            if (filterNfeStartDate)
+                filterNfeStartDate.value = r.startDate;
+            if (filterNfeEndDate)
+                filterNfeEndDate.value = r.endDate;
+            saveFiltersState();
+            applySalesFilters();
+        });
+    }
+    if (btnClearNotasFilter) {
+        btnClearNotasFilter.addEventListener('click', () => {
+            resetFiltersToDefault();
+        });
+    }
     selectAllNotasCheckbox.addEventListener('change', () => {
         const shouldCheck = selectAllNotasCheckbox.checked;
         tbody.querySelectorAll('.nota-checkbox').forEach((checkbox) => {
@@ -1339,5 +1463,6 @@
             filterChevron.classList.add('-rotate-90');
         }
     });
+    loadSavedFiltersOrDefault();
     loadSales();
 })();

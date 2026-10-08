@@ -608,6 +608,14 @@ export class OrderService {
             infCpl: this.getTagText(infAdicNode, 'infCpl') || null,
         } : null;
 
+        // Protocolo de autorização (protNFe / infProt)
+        const protNode = doc.getElementsByTagName('protNFe')[0] || doc.getElementsByTagName('protNFCe')[0];
+        const infProtNode = protNode?.getElementsByTagName('infProt')[0];
+        const nProt = this.getTagText(infProtNode, 'nProt') || this.getTagText(doc, 'nProt') || null;
+        const dhRecbto = this.getTagText(infProtNode, 'dhRecbto') || this.getTagText(doc, 'dhRecbto') || null;
+        const cStat = this.getTagText(infProtNode, 'cStat') || null;
+        const xMotivo = this.getTagText(infProtNode, 'xMotivo') || null;
+
         return {
             nfeKey,
             nfeIssueDate,
@@ -617,6 +625,8 @@ export class OrderService {
                 serie: this.getTagText(ideNode, 'serie') || null,
                 naturezaOperacao: this.getTagText(ideNode, 'natOp') || null,
                 modelo: this.getTagText(ideNode, 'mod') || null,
+                protocolo: nProt,
+                dhRecbto,
                 emitenteNome: emitNome,
                 emitenteDocumento: emitDoc,
                 destinatarioNome: destNome,
@@ -624,6 +634,12 @@ export class OrderService {
                 tributosTotal,
 
                 // Tags estruturadas completas
+                prot: infProtNode ? {
+                    nProt,
+                    dhRecbto,
+                    cStat,
+                    xMotivo,
+                } : null,
                 ide: {
                     cUF: this.getTagText(ideNode, 'cUF') || null,
                     cNF: this.getTagText(ideNode, 'cNF') || null,

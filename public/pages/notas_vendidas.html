@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Notas Vendidas</title>
-    <link href="/css/style.css?v=20261008132030" rel="stylesheet">
+    <link href="/css/style.css?v=20261008133616" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261008132030"></script>
+    <script src="/js/pwa.js?v=20261008133616"></script>
 </head>
 
 <body data-required-module="notas_vendidas" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -138,8 +138,12 @@
                                     <input type="checkbox" id="selectAllNotasCheckbox" title="Selecionar todas as notas" aria-label="Selecionar todas as notas"
                                         class="rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800">
                                 </th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tipo</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Número</th>
-                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Data NF</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Série</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Emissão</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Transmissão</th>
+                                <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Protocolo</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Chave NF</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Cliente</th>
                                 <th class="sticky top-0 z-20 bg-gray-50 dark:bg-slate-900/40 px-3 py-2.5 text-right text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Valor Total</th>
@@ -155,7 +159,7 @@
                         </thead>
                         <tbody id="notasVendidasTbody" class="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700/40">
                             <tr>
-                                <td colspan="14" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <td colspan="18" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                                     Nenhuma nota vendida para exibir no momento.
                                 </td>
                             </tr>
@@ -230,6 +234,22 @@
             <!-- Resumo Financeiro / Tributário da Nota -->
             <div id="notaItensModalSummaryStrip" class="px-5 py-2.5 bg-gray-50/50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
                 <div class="flex items-center gap-4 flex-wrap text-gray-600 dark:text-gray-300">
+                    <div>
+                        <span class="text-gray-400 dark:text-gray-500 uppercase text-[10px] font-bold block">Tipo</span>
+                        <span id="notaItensModalTipo" class="font-semibold text-gray-800 dark:text-gray-100">-</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 dark:text-gray-500 uppercase text-[10px] font-bold block">Série</span>
+                        <span id="notaItensModalSerie" class="font-semibold text-gray-800 dark:text-gray-100 font-mono">-</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 dark:text-gray-500 uppercase text-[10px] font-bold block">Protocolo</span>
+                        <span id="notaItensModalProtocolo" class="font-semibold text-gray-800 dark:text-gray-100 font-mono">-</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 dark:text-gray-500 uppercase text-[10px] font-bold block">Transmissão</span>
+                        <span id="notaItensModalTransmissao" class="font-semibold text-gray-800 dark:text-gray-100 font-mono">-</span>
+                    </div>
                     <div>
                         <span class="text-gray-400 dark:text-gray-500 uppercase text-[10px] font-bold block">Cliente</span>
                         <span id="notaItensModalCustomer" class="font-semibold text-gray-800 dark:text-gray-100">-</span>
@@ -429,11 +449,11 @@
     </div>
 
     <script src="/vendor/jszip.min.js"></script>
-    <script src="/js/api.js?v=20261008132030"></script>
-    <script src="/js/notas_vendidas.js?v=20261008132030"></script>
-    <script src="/js/components/navbar.js?v=20261008132030"></script>
+    <script src="/js/api.js?v=20261008133616"></script>
+    <script src="/js/notas_vendidas.js?v=20261008133616"></script>
+    <script src="/js/components/navbar.js?v=20261008133616"></script>
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261008132030"></script>
+    <script src="/js/components/footer.js?v=20261008133616"></script>
 </body>
 
 </html>

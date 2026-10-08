@@ -110,6 +110,105 @@
         sale._taxTotals = totals;
         return totals;
     }
+    function parseSaleNfeMetadata(sale) {
+        if (!sale)
+            return {
+                numero: '-',
+                serie: '-',
+                modelo: '',
+                tipo: 'NF-e',
+                tipoBadgeClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60',
+                protocolo: '-',
+                transmissao: '-',
+                dhEmi: '',
+                natOp: '-',
+            };
+        if (sale._nfeMetadata)
+            return sale._nfeMetadata;
+        const header = parseJsonSafe(sale.nfe_header_json) || {};
+        const ideNode = header.ide || {};
+        const protNode = header.prot || {};
+        let numero = header.numero || ideNode.nNF || (sale.id ? `#${sale.id}` : '-');
+        let serie = header.serie || ideNode.serie || '-';
+        let modelo = header.modelo || ideNode.mod || '';
+        let natOp = header.naturezaOperacao || ideNode.natOp || '-';
+        let protocolo = header.protocolo || protNode.nProt || header.nProt || '';
+        let dhRecbto = header.dhRecbto || protNode.dhRecbto || ideNode.dhEmi || '';
+        let dhEmi = ideNode.dhEmi || ideNode.dEmi || sale.nfe_issue_date || '';
+        // Se temos XML bruto, busca tags no XML
+        if (sale.nfe_xml) {
+            const doc = parseXmlSafe(sale.nfe_xml);
+            if (doc) {
+                const getTag = (tag) => doc.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
+                const nNFXml = getTag('nNF');
+                if (nNFXml)
+                    numero = nNFXml;
+                const serieXml = getTag('serie');
+                if (serieXml)
+                    serie = serieXml;
+                const modXml = getTag('mod');
+                if (modXml)
+                    modelo = modXml;
+                const natOpXml = getTag('natOp');
+                if (natOpXml)
+                    natOp = natOpXml;
+                const nProtXml = getTag('nProt');
+                if (nProtXml)
+                    protocolo = nProtXml;
+                const dhRecbtoXml = getTag('dhRecbto');
+                if (dhRecbtoXml)
+                    dhRecbto = dhRecbtoXml;
+                const dhEmiXml = getTag('dhEmi') || getTag('dEmi');
+                if (dhEmiXml)
+                    dhEmi = dhEmiXml;
+            }
+        }
+        // Se modelo não foi detectado, deduz da chave (posições 21 e 22, base 1: index 20 a 22)
+        const nfeKey = String(sale.nfe_key || '').trim();
+        if (!modelo && nfeKey.length === 44) {
+            const modKey = nfeKey.substring(20, 22);
+            if (modKey === '65' || modKey === '55') {
+                modelo = modKey;
+            }
+        }
+        // Tipo: NFC-e (modelo 65) vs NF-e (modelo 55 ou padrão)
+        let tipo = 'NF-e';
+        let tipoBadgeClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60';
+        if (modelo === '65' || String(modelo).toUpperCase().includes('NFCE') || String(modelo).toUpperCase().includes('NFC-E')) {
+            tipo = 'NFC-e';
+            tipoBadgeClass = 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60';
+        }
+        // Formatação de data e hora da transmissão
+        let transmissaoFormatada = '-';
+        if (dhRecbto) {
+            try {
+                const dt = new Date(dhRecbto);
+                if (!Number.isNaN(dt.getTime())) {
+                    const dia = String(dt.getDate()).padStart(2, '0');
+                    const mes = String(dt.getMonth() + 1).padStart(2, '0');
+                    const ano = dt.getFullYear();
+                    const hora = String(dt.getHours()).padStart(2, '0');
+                    const min = String(dt.getMinutes()).padStart(2, '0');
+                    const seg = String(dt.getSeconds()).padStart(2, '0');
+                    transmissaoFormatada = `${dia}/${mes}/${ano} ${hora}:${min}:${seg}`;
+                }
+            }
+            catch (_) { }
+        }
+        const metadata = {
+            numero,
+            serie: serie || '-',
+            modelo,
+            tipo,
+            tipoBadgeClass,
+            protocolo: protocolo || '-',
+            transmissao: transmissaoFormatada,
+            dhEmi,
+            natOp,
+        };
+        sale._nfeMetadata = metadata;
+        return metadata;
+    }
     function formatTaxCell(val, colorClass = '') {
         const num = Number(val || 0);
         if (!num || num === 0) {
@@ -121,7 +220,7 @@
     function renderEmptyState() {
         tbody.innerHTML = `
             <tr>
-                <td colspan="14" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td colspan="18" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                     Nenhuma nota vendida para exibir no momento.
                 </td>
             </tr>
@@ -334,6 +433,7 @@
                 };
             });
         }
+        const meta = parseSaleNfeMetadata(sale);
         const totalAmount = Number(sale.total_amount || 0);
         const totalAmountText = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount);
         const printWindow = window.open('', '_blank', 'width=1000,height=750');
@@ -378,8 +478,15 @@
                     </style>
                 </head>
                 <body>
-                    <h1>Itens da Nota Fiscal #${nfNum}</h1>
-                    <p><strong>Cliente:</strong> ${sale.customer_name || header.destinatarioNome || 'Consumidor Final'} | <strong>Chave:</strong> ${sale.nfe_key || '-'}</p>
+                    <h1>Itens da Nota Fiscal (${meta.tipo}) #${meta.numero} - Série ${meta.serie}</h1>
+                    <p>
+                        <strong>Tipo:</strong> ${meta.tipo} | 
+                        <strong>Série:</strong> ${meta.serie} | 
+                        <strong>Protocolo:</strong> ${meta.protocolo} | 
+                        <strong>Transmissão:</strong> ${meta.transmissao} | 
+                        <strong>Cliente:</strong> ${sale.customer_name || header.destinatarioNome || 'Consumidor Final'} | 
+                        <strong>Chave:</strong> ${sale.nfe_key || '-'}
+                    </p>
                     <table>
                         <thead>
                             <tr>
@@ -415,9 +522,14 @@
         const saleId = sale?.id || '-';
         const header = parseJsonSafe(sale?.nfe_header_json) || {};
         const nfNum = header.numero || saleId;
+        const meta = parseSaleNfeMetadata(sale);
         const modalTitle = document.getElementById('notaItensModalTitle');
         const countBadge = document.getElementById('notaItensModalCountBadge');
         const subtitle = document.getElementById('notaItensModalSubtitle');
+        const tipoEl = document.getElementById('notaItensModalTipo');
+        const serieEl = document.getElementById('notaItensModalSerie');
+        const protocoloEl = document.getElementById('notaItensModalProtocolo');
+        const transmissaoEl = document.getElementById('notaItensModalTransmissao');
         const customerEl = document.getElementById('notaItensModalCustomer');
         const dateEl = document.getElementById('notaItensModalDate');
         const natOpEl = document.getElementById('notaItensModalNatOp');
@@ -425,16 +537,25 @@
         const totalEl = document.getElementById('notaItensModalTotal');
         const btnDownloadXml = document.getElementById('btnDownloadNotaXml');
         if (modalTitle)
-            modalTitle.textContent = `Itens da Nota Fiscal #${nfNum}`;
+            modalTitle.textContent = `Itens da Nota Fiscal (${meta.tipo}) #${meta.numero}`;
         if (subtitle) {
             subtitle.textContent = sale.nfe_key ? `Chave NFe: ${sale.nfe_key}` : `Pedido / Venda #${saleId}`;
         }
+        if (tipoEl) {
+            tipoEl.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${meta.tipoBadgeClass}">${meta.tipo}</span>`;
+        }
+        if (serieEl)
+            serieEl.textContent = meta.serie;
+        if (protocoloEl)
+            protocoloEl.textContent = meta.protocolo;
+        if (transmissaoEl)
+            transmissaoEl.textContent = meta.transmissao;
         if (customerEl)
             customerEl.textContent = sale.customer_name || header.destinatarioNome || 'Consumidor Final';
         if (dateEl)
             dateEl.textContent = getSaleNfeDateText(sale);
         if (natOpEl)
-            natOpEl.textContent = header.naturezaOperacao || header.ide?.natOp || '-';
+            natOpEl.textContent = meta.natOp || header.naturezaOperacao || header.ide?.natOp || '-';
         const totalAmount = Number(sale.total_amount || 0);
         if (totalEl) {
             totalEl.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount);
@@ -588,13 +709,20 @@
             const statusText = statusLabel[normalizedStatus] || sale.status || 'Pendente';
             const badgeClass = statusClass[normalizedStatus] || statusClass.pending;
             const taxes = getSaleTaxTotals(sale);
+            const meta = parseSaleNfeMetadata(sale);
             return `
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/40">
                     <td class="px-3 py-2.5 text-left">
                         <input type="checkbox" class="nota-checkbox rounded border-gray-300 dark:border-slate-600 text-brand-600 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:bg-slate-800" data-sale-id="${sale.id || ''}" title="Selecionar nota #${sale.id || ''}" aria-label="Selecionar nota #${sale.id || ''}">
                     </td>
-                    <td class="px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100">#${sale.id || '-'}</td>
-                    <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${nfeIssueDateText}</td>
+                    <td class="px-3 py-2.5 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${meta.tipoBadgeClass}">${meta.tipo}</span>
+                    </td>
+                    <td class="px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-100">${meta.numero}</td>
+                    <td class="px-3 py-2.5 text-center text-xs text-gray-700 dark:text-gray-300 font-mono">${meta.serie}</td>
+                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">${nfeIssueDateText}</td>
+                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-300 font-mono whitespace-nowrap">${meta.transmissao}</td>
+                    <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-300 font-mono">${meta.protocolo}</td>
                     <td class="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-200 font-mono">${nfeKeyText}</td>
                     <td class="px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200">${sale.customer_name || 'Consumidor Final'}</td>
                     <td class="px-3 py-2.5 text-sm text-right text-gray-900 dark:text-gray-100 font-bold">${formattedTotal}</td>
@@ -656,7 +784,15 @@
             const saleStatus = String(sale?.status || '').toLowerCase();
             const saleDate = window.DateUtils?.toDateInputValue(sale?.date) || '';
             const saleNfeDate = window.DateUtils?.toDateInputValue(sale?.nfe_issue_date) || '';
-            const matchSearch = !searchTerm || saleId.includes(searchTerm) || customerName.includes(searchTerm) || saleNfeKey.includes(searchTerm);
+            const meta = parseSaleNfeMetadata(sale);
+            const matchSearch = !searchTerm ||
+                saleId.includes(searchTerm) ||
+                customerName.includes(searchTerm) ||
+                saleNfeKey.includes(searchTerm) ||
+                String(meta.numero || '').toLowerCase().includes(searchTerm) ||
+                String(meta.serie || '').toLowerCase().includes(searchTerm) ||
+                String(meta.protocolo || '').toLowerCase().includes(searchTerm) ||
+                String(meta.tipo || '').toLowerCase().includes(searchTerm);
             const matchNfeKey = !nfeKeyTerm || saleNfeKey.includes(nfeKeyTerm);
             const matchStatus = !selectedStatus || saleStatus === selectedStatus;
             const matchNfeStartDate = !nfeStartDate || (saleNfeDate && saleNfeDate >= nfeStartDate);

@@ -19,7 +19,7 @@ import logger from '../config/logger';
 // Raiz dos uploads — sempre relativa à raiz do projeto (onde node roda)
 const UPLOADS_ROOT = path.join(process.cwd(), 'public', 'uploads');
 
-export type StorageBucket = 'products' | 'company-logos' | 'documents';
+export type StorageBucket = 'products' | 'company-logos' | 'documents' | 'Impkey';
 
 export interface SaveResult {
     /** URL pública relativa, ex: /uploads/products/abc.jpg */
@@ -39,7 +39,7 @@ export class StorageService {
      * Chame uma vez no boot do servidor.
      */
     static ensureDirectories(): void {
-        const buckets: StorageBucket[] = ['products', 'company-logos', 'documents'];
+        const buckets: StorageBucket[] = ['products', 'company-logos', 'documents', 'Impkey'];
         for (const bucket of buckets) {
             const dir = path.join(UPLOADS_ROOT, bucket);
             if (!fs.existsSync(dir)) {
@@ -47,6 +47,54 @@ export class StorageService {
                 logger.info({ dir }, '[Storage] Diretório criado');
             }
         }
+        const rootImpkey = path.join(process.cwd(), 'Impkey');
+        if (!fs.existsSync(rootImpkey)) {
+            fs.mkdirSync(rootImpkey, { recursive: true });
+        }
+    }
+
+    /**
+     * Salva ou move arquivos importados de XML/ZIP para a pasta Impkey da empresa.
+     * @param companyId Identificador da empresa
+     * @param originalFilename Nome original do arquivo
+     * @param content Conteúdo em Buffer ou String
+     */
+    static saveToImpkey(
+        companyId: number,
+        originalFilename: string,
+        content: Buffer | string
+    ): SaveResult {
+        const safeOriginal = path.basename(originalFilename).replace(/[^a-zA-Z0-9._-]/g, '_');
+        const companyDir = path.join(UPLOADS_ROOT, 'Impkey', String(companyId));
+        if (!fs.existsSync(companyDir)) {
+            fs.mkdirSync(companyDir, { recursive: true });
+        }
+
+        const rootCompanyDir = path.join(process.cwd(), 'Impkey', String(companyId));
+        if (!fs.existsSync(rootCompanyDir)) {
+            fs.mkdirSync(rootCompanyDir, { recursive: true });
+        }
+
+        const filename = safeOriginal;
+        const absolutePath = path.join(companyDir, filename);
+        const rootAbsolutePath = path.join(rootCompanyDir, filename);
+        const buffer = typeof content === 'string' ? Buffer.from(content, 'utf-8') : content;
+
+        try {
+            fs.writeFileSync(absolutePath, buffer);
+            try {
+                fs.writeFileSync(rootAbsolutePath, buffer);
+            } catch (_) {}
+            logger.info({ companyId, path: absolutePath, bytes: buffer.length }, '[Storage] Arquivo salvo na pasta Impkey');
+        } catch (error) {
+            logger.error({ companyId, path: absolutePath, error }, '[Storage] Erro ao salvar arquivo na pasta Impkey');
+        }
+
+        return {
+            url: `/uploads/Impkey/${companyId}/${filename}`,
+            absolutePath,
+            filename
+        };
     }
 
     // ─── Salvar ─────────────────────────────────────────────────────────────────

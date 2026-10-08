@@ -248,6 +248,9 @@ router.post('/quotes', (req, res, next) => OrderController.createQuote(req, res)
 router.post('/quotes/:id/approve', (req, res, next) => OrderController.approveQuote(req, res).catch(next));
 
 router.post('/sales/import-xml', (req, res, next) => OrderController.importSaleFromXml(req, res).catch(next));
+router.post('/sales/import-xml-batch', (req, res, next) => OrderController.importSaleFromXmlBatch(req, res).catch(next));
+router.post('/import-xml', (req, res, next) => OrderController.importSaleFromXml(req, res).catch(next));
+router.post('/import-xml-batch', (req, res, next) => OrderController.importSaleFromXmlBatch(req, res).catch(next));
 router.get('/sales', (req, res, next) => OrderController.listSales(req, res).catch(next));
 router.get('/quotes/:id', (req, res, next) => OrderController.getQuoteById(req, res).catch(next));
 router.get('/quotes/:id/print', (req, res, next) => OrderController.getQuotePrintHTML(req, res).catch(next));

@@ -2,13 +2,11 @@
 (function () {
     const button = document.getElementById('btnImportNotasXml');
     const input = document.getElementById('inputImportNotasXml');
-    const fileNameLabel = document.getElementById('importNotasXmlFileName');
     const tbody = document.getElementById('notasVendidasTbody');
     const modal = document.getElementById('importNotasXmlModal');
     const modalClose = document.getElementById('btnCloseImportNotasXmlModal');
     const modalCancel = document.getElementById('btnCancelImportNotasXml');
     const modalConfirm = document.getElementById('btnConfirmImportNotasXml');
-    const modalFileName = document.getElementById('importNotasXmlModalFileName');
     const selectAllNotasCheckbox = document.getElementById('selectAllNotasCheckbox');
     const btnDeleteSelectedNotas = document.getElementById('btnDeleteSelectedNotas');
     const toggleFilterBtn = document.getElementById('toggleFilterBtn');
@@ -31,9 +29,8 @@
     const btnCloseNotaItensModal = document.getElementById('btnCloseNotaItensModal');
     const btnPrintNotaItens = document.getElementById('btnPrintNotaItens');
 
-    if (!button || !input || !tbody || !modal || !modalClose || !modalCancel || !modalConfirm || !modalFileName || !selectAllNotasCheckbox || !btnDeleteSelectedNotas || !toggleFilterBtn || !filterChevron || !filterBody || !filterSearch || !filterNfeKey || !filterStatus || !filterNfeStartDate || !filterStartDate || !filterEndDate || !filterNfeEndDate || !footerCount || !footerTotal || !bankSelect || !categorySelect || !notaItensModal || !notaItensModalTitle || !notaItensModalBody || !btnCloseNotaItensModal || !btnPrintNotaItens) return;
+    if (!button || !tbody || !modal || !modalClose || !modalCancel || !modalConfirm || !selectAllNotasCheckbox || !btnDeleteSelectedNotas || !toggleFilterBtn || !filterChevron || !filterBody || !filterSearch || !filterNfeKey || !filterStatus || !filterNfeStartDate || !filterStartDate || !filterEndDate || !filterNfeEndDate || !footerCount || !footerTotal || !bankSelect || !categorySelect || !notaItensModal || !notaItensModalTitle || !notaItensModalBody || !btnCloseNotaItensModal || !btnPrintNotaItens) return;
 
-    let selectedXmlFiles = [];
     let importOptionsLoaded = false;
     let currentSaleForPrint = null;
     let allSales = [];
@@ -396,140 +393,362 @@
         }
     }
 
+    const companySelect = document.getElementById('importNotasXmlCompany');
+    const dropzone = document.getElementById('importDropzone');
+    const summaryContainer = document.getElementById('importXmlFilesSummaryContainer');
+    const countBadge = document.getElementById('importXmlCountBadge');
+    const archiveInfo = document.getElementById('importXmlArchiveInfo');
+    const filesList = document.getElementById('importXmlFilesList');
+    const btnClearFiles = document.getElementById('btnClearSelectedXmlFiles');
+    const progressContainer = document.getElementById('importProgressContainer');
+    const progressBar = document.getElementById('importProgressBar');
+    const progressText = document.getElementById('importProgressText');
+    const progressPercent = document.getElementById('importProgressPercent');
+
+    let selectedXmlItems = [];
+    let accessibleCompanies = [];
+    let activeCompanyPublicId = null;
+
+    async function loadCompaniesForImport() {
+        if (!companySelect) return;
+        try {
+            let companies = [];
+            try {
+                const meRes = await window.api('/users/me');
+                if (meRes?.data?.company?.public_id) {
+                    activeCompanyPublicId = meRes.data.company.public_id;
+                }
+                if (Array.isArray(meRes?.data?.companies) && meRes.data.companies.length > 0) {
+                    companies = meRes.data.companies;
+                }
+            } catch (_) {}
+
+            if (companies.length === 0) {
+                const compRes = await window.api('/companies');
+                if (Array.isArray(compRes?.data)) {
+                    companies = compRes.data;
+                }
+            }
+
+            accessibleCompanies = companies;
+
+            if (companies.length === 0) {
+                companySelect.innerHTML = '<option value="">Nenhuma empresa disponível</option>';
+                return;
+            }
+
+            companySelect.innerHTML = companies.map((c) => {
+                const idVal = c.public_id || c.id;
+                const name = c.trade_name || c.company_name || c.name || `Empresa #${c.id}`;
+                const cnpj = c.cnpj ? ` - CNPJ: ${c.cnpj}` : '';
+                const isSelected = (activeCompanyPublicId && (c.public_id === activeCompanyPublicId || String(c.id) === String(activeCompanyPublicId)));
+                return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>${name}${cnpj}</option>`;
+            }).join('');
+        } catch (error) {
+            console.error('Erro ao carregar lista de empresas', error);
+            companySelect.innerHTML = '<option value="">Erro ao carregar empresas</option>';
+        }
+    }
+
     async function loadImportOptions() {
         if (importOptionsLoaded) return;
 
-        const [banksResponse, categoriesResponse] = await Promise.all([
-            window.api('/bank-accounts'),
-            window.api('/finance/categories?type=income')
-        ]);
+        try {
+            const [banksResponse, categoriesResponse] = await Promise.all([
+                window.api('/bank-accounts').catch(() => ({ data: [] })),
+                window.api('/finance/categories?type=income').catch(() => ({ data: [] }))
+            ]);
 
-        const banks = Array.isArray(banksResponse?.data) ? banksResponse.data : [];
-        const categories = Array.isArray(categoriesResponse?.data) ? categoriesResponse.data : [];
+            const banks = Array.isArray(banksResponse?.data) ? banksResponse.data : [];
+            const categories = Array.isArray(categoriesResponse?.data) ? categoriesResponse.data : [];
 
-        bankSelect.innerHTML = '<option value="">Automatico (primeira conta)</option>' + banks.map((bank) => {
-            const label = bank.name || bank.bank_name || `Conta ${bank.id || ''}`;
-            return `<option value="${bank.public_id}">${label}</option>`;
-        }).join('');
+            bankSelect.innerHTML = '<option value="">Automático (primeira conta)</option>' + banks.map((bank) => {
+                const label = bank.name || bank.bank_name || `Conta ${bank.id || ''}`;
+                return `<option value="${bank.public_id}">${label}</option>`;
+            }).join('');
 
-        categorySelect.innerHTML = '<option value="">Automatico (categoria de venda)</option>' + categories.map((category) => {
-            return `<option value="${category.public_id}">${category.name}</option>`;
-        }).join('');
+            categorySelect.innerHTML = '<option value="">Automático (categoria padrão)</option>' + categories.map((category) => {
+                return `<option value="${category.public_id}">${category.name}</option>`;
+            }).join('');
 
-        importOptionsLoaded = true;
+            importOptionsLoaded = true;
+        } catch (error) {
+            console.warn('Erro ao carregar opções bancárias/categoria', error);
+        }
     }
 
-    function openImportModal() {
+    function renderSelectedXmlFilesPreview() {
+        if (!summaryContainer || !countBadge || !filesList || !modalConfirm) return;
+
+        if (selectedXmlItems.length === 0) {
+            summaryContainer.classList.add('hidden');
+            modalConfirm.disabled = true;
+            modalConfirm.innerHTML = `
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Importar Notas</span>
+            `;
+            return;
+        }
+
+        summaryContainer.classList.remove('hidden');
+        countBadge.textContent = `${selectedXmlItems.length} XML(s) pronto(s)`;
+
+        const zipCount = selectedXmlItems.filter((item) => item.archiveName).length;
+        if (archiveInfo) {
+            if (zipCount > 0) {
+                archiveInfo.textContent = `(${zipCount} extraído(s) de arquivo ZIP)`;
+            } else {
+                archiveInfo.textContent = '';
+            }
+        }
+
+        filesList.innerHTML = selectedXmlItems.map((item, index) => {
+            const kbSize = item.size ? `${(item.size / 1024).toFixed(1)} KB` : '';
+            const zipBadge = item.archiveName
+                ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">ZIP</span>`
+                : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">XML</span>`;
+
+            return `
+                <div class="py-1 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 truncate min-w-0">
+                        ${zipBadge}
+                        <span class="truncate font-mono text-gray-700 dark:text-gray-300" title="${item.name}">${item.name}</span>
+                        <span class="text-gray-400 text-[10px]">${kbSize}</span>
+                    </div>
+                    <button type="button" class="btn-remove-xml text-gray-400 hover:text-red-500 transition-colors p-0.5" data-index="${index}" title="Remover este arquivo">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        filesList.querySelectorAll('.btn-remove-xml').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = Number(btn.getAttribute('data-index'));
+                if (Number.isFinite(idx) && idx >= 0 && idx < selectedXmlItems.length) {
+                    selectedXmlItems.splice(idx, 1);
+                    renderSelectedXmlFilesPreview();
+                }
+            });
+        });
+
+        modalConfirm.disabled = false;
+        modalConfirm.innerHTML = `
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Importar ${selectedXmlItems.length} Nota(s)</span>
+        `;
+    }
+
+    async function processFiles(files) {
+        const fileList = Array.from(files || []);
+        if (fileList.length === 0) return;
+
+        if (progressContainer) {
+            progressContainer.classList.remove('hidden');
+            progressText.textContent = 'Lendo e descompactando arquivos...';
+            progressBar.style.width = '15%';
+            progressPercent.textContent = '15%';
+        }
+
+        let addedCount = 0;
+
+        for (const file of fileList) {
+            const isZip = /\.zip$/i.test(file.name) || ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip'].includes(file.type || '');
+            const isXml = /\.xml$/i.test(file.name) || ['text/xml', 'application/xml'].includes(file.type || '');
+
+            if (isZip) {
+                try {
+                    if (typeof window.JSZip === 'undefined') {
+                        showPageAlert('Biblioteca JSZip não carregada. Atualize a página.', 'error', 4000);
+                        continue;
+                    }
+                    const zip = await window.JSZip.loadAsync(file);
+                    const entries = Object.values(zip.files);
+
+                    for (const entry of entries) {
+                        if (!entry.dir && entry.name.toLowerCase().endsWith('.xml') && !entry.name.includes('__MACOSX')) {
+                            const xmlContent = await entry.async('string');
+                            if (xmlContent && xmlContent.trim().length >= 20) {
+                                const baseName = entry.name.split('/').pop() || entry.name;
+                                selectedXmlItems.push({
+                                    name: baseName,
+                                    content: xmlContent,
+                                    size: xmlContent.length,
+                                    archiveName: file.name
+                                });
+                                addedCount += 1;
+                            }
+                        }
+                    }
+                } catch (zipErr) {
+                    console.error('Erro ao descompactar arquivo ZIP', zipErr);
+                    showPageAlert(`Erro ao descompactar ${file.name}: ${zipErr.message}`, 'warning', 4000);
+                }
+            } else if (isXml) {
+                try {
+                    const xmlContent = await file.text();
+                    if (xmlContent && xmlContent.trim().length >= 20) {
+                        selectedXmlItems.push({
+                            name: file.name,
+                            content: xmlContent,
+                            size: file.size || xmlContent.length
+                        });
+                        addedCount += 1;
+                    }
+                } catch (readErr) {
+                    console.error('Erro ao ler arquivo XML', readErr);
+                }
+            } else {
+                showPageAlert(`Arquivo ignorado (formato inválido): ${file.name}. Envie apenas .xml ou .zip.`, 'warning', 3500);
+            }
+        }
+
+        if (progressContainer) {
+            progressContainer.classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+        }
+
+        renderSelectedXmlFilesPreview();
+
+        if (addedCount > 0) {
+            showPageAlert(`${addedCount} arquivo(s) XML pronto(s) para importação.`, 'success', 3000);
+        }
+    }
+
+    async function openImportModal() {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        await Promise.all([loadCompaniesForImport(), loadImportOptions()]);
+        renderSelectedXmlFilesPreview();
     }
 
     function closeImportModal() {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
-    }
-
-    function formatImportFailureDetails(reasons) {
-        const uniqueReasons = Array.from(new Set(Array.isArray(reasons) ? reasons : []));
-        if (uniqueReasons.length === 0) {
-            return 'Falha ao importar XML.';
+        selectedXmlItems = [];
+        if (input) input.value = '';
+        if (progressContainer) {
+            progressContainer.classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
         }
-
-        const hasCnpjMismatch = uniqueReasons.some((reason) => /cnpj/i.test(String(reason || '')));
-        const highlighted = hasCnpjMismatch
-            ? 'CNPJ da nota diferente do CNPJ da empresa. '
-            : '';
-        const details = uniqueReasons.slice(0, 2).join(' | ');
-        const suffix = uniqueReasons.length > 2 ? ` | +${uniqueReasons.length - 2} erro(s)` : '';
-
-        return `${highlighted}${details}${suffix}`;
-    }
-
-    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    function isTooManyRequestsError(error) {
-        const status = Number(error?.status || error?.statusCode || error?.response?.status || 0);
-        if (status === 429) {
-            return true;
-        }
-
-        const message = String(error?.message || '').toLowerCase();
-        return message.includes('muitas requisi') || message.includes('too many requests');
-    }
-
-    async function importXmlWithRetry(payload, maxAttempts = 4) {
-        let lastError = null;
-
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                return await window.api('/sales/sales/import-xml', {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-            } catch (error) {
-                lastError = error;
-                const shouldRetry = isTooManyRequestsError(error) && attempt < maxAttempts;
-                if (!shouldRetry) {
-                    throw error;
-                }
-
-                const backoffMs = 1200 * attempt;
-                await wait(backoffMs);
-            }
-        }
-
-        throw lastError || new Error('Falha ao importar XML.');
+        renderSelectedXmlFilesPreview();
     }
 
     async function submitXmlImport() {
-        if (!Array.isArray(selectedXmlFiles) || selectedXmlFiles.length === 0) {
-            closeImportModal();
+        if (!Array.isArray(selectedXmlItems) || selectedXmlItems.length === 0) {
+            showPageAlert('Nenhum arquivo XML selecionado para importação.', 'warning', 3500);
+            return;
+        }
+
+        const targetCompany = companySelect ? companySelect.value : null;
+        if (!targetCompany) {
+            showPageAlert('Por favor, selecione a empresa de destino antes de importar.', 'warning', 4000);
+            companySelect?.focus();
             return;
         }
 
         const originalButtonHtml = button.innerHTML;
-        const originalConfirmText = modalConfirm.textContent;
+        const originalConfirmHtml = modalConfirm.innerHTML;
+
         button.disabled = true;
         button.classList.add('opacity-70', 'cursor-not-allowed');
-        button.innerHTML = 'Importando XML...';
         modalConfirm.disabled = true;
-        modalConfirm.textContent = 'Importando...';
+
+        if (progressContainer) {
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '5%';
+            progressPercent.textContent = '5%';
+            progressText.textContent = `Iniciando importação de ${selectedXmlItems.length} nota(s)...`;
+        }
+
+        const batchSize = 10;
+        const total = selectedXmlItems.length;
+        let processed = 0;
+        let successCount = 0;
+        let failedCount = 0;
+        let importedItemsTotal = 0;
+        const failedReasons = [];
 
         try {
-            let successCount = 0;
-            let failedCount = 0;
-            let importedItemsTotal = 0;
-            let unmatchedTotal = 0;
-            const failedReasons = [];
+            for (let i = 0; i < total; i += batchSize) {
+                const chunk = selectedXmlItems.slice(i, i + batchSize);
+                const currentBatchLabel = `Lote ${Math.floor(i / batchSize) + 1} (${i + 1} a ${Math.min(i + chunk.length, total)} de ${total})`;
 
-            for (const file of selectedXmlFiles) {
+                if (progressText) {
+                    progressText.textContent = `Processando e salvando em Impkey: ${currentBatchLabel}...`;
+                }
+
                 try {
-                    const xmlContent = await file.text();
-                    const response = await importXmlWithRetry({
-                        xml_content: xmlContent,
-                        bank_account_public_id: bankSelect.value || null,
-                        category_public_id: categorySelect.value || null,
+                    const response = await window.api('/sales/sales/import-xml-batch', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            company_public_id: targetCompany,
+                            bank_account_public_id: bankSelect?.value || null,
+                            category_public_id: categorySelect?.value || null,
+                            files: chunk.map((item) => ({
+                                file_name: item.name,
+                                xml_content: item.content
+                            }))
+                        })
                     });
 
-                    successCount += 1;
-                    importedItemsTotal += Number(response?.data?.imported_items || 0);
-                    unmatchedTotal += Array.isArray(response?.data?.unmatched_items) ? response.data.unmatched_items.length : 0;
-                } catch (error) {
-                    failedCount += 1;
-                    console.error('Erro ao importar XML da nota', error);
-                    const reason = String(error?.message || 'Falha desconhecida ao importar XML.').trim();
-                    failedReasons.push(`${file.name}: ${reason}`);
+                    const data = response?.data || {};
+                    successCount += Number(data.imported || 0);
+                    failedCount += Number(data.failed || 0);
+                    importedItemsTotal += Number(data.imported_items || 0);
+
+                    if (Array.isArray(data.errors) && data.errors.length > 0) {
+                        for (const err of data.errors) {
+                            failedReasons.push(`${err.file_name}: ${err.error}`);
+                        }
+                    }
+                } catch (batchError) {
+                    console.warn(`Erro no lote ${currentBatchLabel}, tentando envio individual...`, batchError);
+                    // Fallback para envio individual caso o batch falhe
+                    for (const item of chunk) {
+                        try {
+                            const singleRes = await window.api('/sales/sales/import-xml', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    company_public_id: targetCompany,
+                                    xml_content: item.content,
+                                    file_name: item.name,
+                                    bank_account_public_id: bankSelect?.value || null,
+                                    category_public_id: categorySelect?.value || null
+                                })
+                            });
+                            successCount += 1;
+                            importedItemsTotal += Number(singleRes?.data?.imported_items || 0);
+                        } catch (singleErr) {
+                            failedCount += 1;
+                            failedReasons.push(`${item.name}: ${singleErr.message || 'Falha ao importar XML'}`);
+                        }
+                    }
                 }
+
+                processed += chunk.length;
+                const pct = Math.min(100, Math.round((processed / total) * 100));
+                if (progressBar) progressBar.style.width = `${pct}%`;
+                if (progressPercent) progressPercent.textContent = `${pct}%`;
             }
 
             if (failedCount === 0) {
-                showPageAlert(`Importacao concluida. ${successCount} XML(s) importado(s), ${importedItemsTotal} item(ns) processado(s). Itens nao vinculados: ${unmatchedTotal}.`, 'success', 4500);
+                showPageAlert(`Importação concluída com sucesso! ${successCount} XML(s) importado(s), ${importedItemsTotal} item(ns) vinculados. Arquivos arquivados na pasta Impkey.`, 'success', 5500);
             } else if (successCount === 0) {
-                const details = formatImportFailureDetails(failedReasons);
-                showPageAlert(`Importacao nao realizada. ${details}`, 'error', 7000);
+                const details = failedReasons.slice(0, 3).join(' | ');
+                showPageAlert(`Importação não realizada. ${details}`, 'error', 7000);
             } else {
-                const details = formatImportFailureDetails(failedReasons);
-                showPageAlert(`Importacao finalizada com ressalvas. Sucesso: ${successCount}, falhas: ${failedCount}, itens processados: ${importedItemsTotal}, nao vinculados: ${unmatchedTotal}. ${details}`, 'warning', 7000);
+                const details = failedReasons.slice(0, 2).join(' | ');
+                showPageAlert(`Importação parcial: ${successCount} nota(s) importada(s) e salvas em Impkey, ${failedCount} falha(s). ${details}`, 'warning', 7000);
             }
 
             if (successCount > 0) {
@@ -537,21 +756,20 @@
             }
             closeImportModal();
         } catch (error) {
-            console.error('Erro ao importar XML da nota', error);
-            showPageAlert(error?.message || 'Falha ao importar XML da nota.', 'error', 3500);
+            console.error('Erro geral ao importar notas XML', error);
+            showPageAlert(error?.message || 'Falha ao processar importação.', 'error', 4000);
         } finally {
             button.disabled = false;
             button.classList.remove('opacity-70', 'cursor-not-allowed');
             button.innerHTML = originalButtonHtml;
             modalConfirm.disabled = false;
-            modalConfirm.textContent = originalConfirmText;
-            input.value = '';
-            selectedXmlFiles = [];
+            modalConfirm.innerHTML = originalConfirmHtml;
         }
     }
 
+    // Eventos do Botão Principal e Modal
     button.addEventListener('click', () => {
-        input.click();
+        openImportModal();
     });
 
     modalClose.addEventListener('click', () => {
@@ -560,14 +778,55 @@
 
     modalCancel.addEventListener('click', () => {
         closeImportModal();
-        selectedXmlFiles = [];
-        input.value = '';
     });
 
     modal.addEventListener('click', (event) => {
         if (event.target === modal) {
             closeImportModal();
         }
+    });
+
+    if (btnClearFiles) {
+        btnClearFiles.addEventListener('click', () => {
+            selectedXmlItems = [];
+            if (input) input.value = '';
+            renderSelectedXmlFilesPreview();
+        });
+    }
+
+    // Dropzone e Seleção de Arquivos
+    if (dropzone && input) {
+        dropzone.addEventListener('click', () => {
+            input.click();
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-brand-500', 'bg-brand-50/30', 'dark:bg-brand-900/20');
+        });
+
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-brand-500', 'bg-brand-50/30', 'dark:bg-brand-900/20');
+        });
+
+        dropzone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-brand-500', 'bg-brand-50/30', 'dark:bg-brand-900/20');
+            if (e.dataTransfer?.files?.length) {
+                await processFiles(e.dataTransfer.files);
+            }
+        });
+
+        input.addEventListener('change', async () => {
+            if (input.files?.length) {
+                await processFiles(input.files);
+            }
+        });
+    }
+
+    modalConfirm.addEventListener('click', async () => {
+        await submitXmlImport();
     });
 
     btnCloseNotaItensModal.addEventListener('click', () => {
@@ -581,49 +840,6 @@
     notaItensModal.addEventListener('click', (event) => {
         if (event.target === notaItensModal) {
             closeNotaItensModal();
-        }
-    });
-
-    modalConfirm.addEventListener('click', async () => {
-        await submitXmlImport();
-    });
-
-    input.addEventListener('change', async () => {
-        const selectedFiles = Array.from(input.files || []);
-
-        if (selectedFiles.length === 0) {
-            return;
-        }
-
-        const invalidFile = selectedFiles.find((file) => {
-            const isXmlByName = /\.xml$/i.test(file.name);
-            const isXmlByType = ['text/xml', 'application/xml', 'application/octet-stream'].includes(file.type || '');
-            return !isXmlByName && !isXmlByType;
-        });
-
-        if (invalidFile) {
-            input.value = '';
-            showPageAlert(`Arquivo invalido: ${invalidFile.name}. Selecione apenas XML de nota fiscal.`, 'warning', 3500);
-            return;
-        }
-
-        selectedXmlFiles = selectedFiles;
-        if (selectedFiles.length === 1) {
-            modalFileName.textContent = `Arquivo: ${selectedFiles[0].name}`;
-        } else {
-            const previewNames = selectedFiles.slice(0, 3).map((file) => file.name).join(', ');
-            const suffix = selectedFiles.length > 3 ? ', ...' : '';
-            modalFileName.textContent = `Arquivos (${selectedFiles.length}): ${previewNames}${suffix}`;
-        }
-
-        try {
-            await loadImportOptions();
-            openImportModal();
-        } catch (error) {
-            console.error('Erro ao carregar opcoes para importacao', error);
-            selectedXmlFiles = [];
-            input.value = '';
-            showPageAlert('Nao foi possivel carregar conta/categoria para importacao.', 'error', 3500);
         }
     });
 

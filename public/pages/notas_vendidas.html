@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Notas Vendidas</title>
-    <link href="/css/style.css?v=20261008012414" rel="stylesheet">
+    <link href="/css/style.css?v=20261008121230" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261008012414"></script>
+    <script src="/js/pwa.js?v=20261008121230"></script>
 </head>
 
 <body data-required-module="notas_vendidas" class="bg-gray-100 dark:bg-slate-900 text-gray-800 font-sans flex flex-col h-dvh overflow-hidden">
@@ -223,47 +223,149 @@
         </div>
     </div>
 
-    <div id="importNotasXmlModal" class="hidden fixed inset-0 z-10000 items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-        <div class="w-full max-w-md rounded-xl bg-white dark:bg-slate-800 shadow-2xl border border-gray-200 dark:border-slate-700">
-            <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                <h4 class="text-base font-semibold text-gray-900 dark:text-gray-100">Configurar Importação XML</h4>
-                <button type="button" id="btnCloseImportNotasXmlModal" class="rounded-lg p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-slate-700" aria-label="Fechar modal de importação">
-                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <!-- Modal de Importação de XML/ZIP -->
+    <div id="importNotasXmlModal" class="hidden fixed inset-0 z-10000 items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="w-full max-w-xl rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden my-auto">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 rounded-xl bg-brand-500/10 text-brand-500 dark:bg-brand-500/20 dark:text-brand-400">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900 dark:text-gray-100">Importar Notas Fiscais (XML / ZIP)</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Descompactação automática e arquivamento em Impkey</p>
+                    </div>
+                </div>
+                <button type="button" id="btnCloseImportNotasXmlModal" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-slate-700 transition-colors" aria-label="Fechar modal">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
 
-            <div class="px-4 py-4 space-y-3">
-                <p id="importNotasXmlModalFileName" class="text-xs text-gray-500 dark:text-gray-400">Arquivo: -</p>
-
+            <!-- Modal Body -->
+            <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                <!-- Seleção da Empresa de Destino -->
                 <div>
-                    <label for="importNotasXmlBankAccount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Conta Bancaria</label>
-                    <select id="importNotasXmlBankAccount" class="w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                        <option value="">Automatico (primeira conta)</option>
-                    </select>
+                    <label for="importNotasXmlCompany" class="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+                        Empresa de Destino <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <select id="importNotasXmlCompany" class="w-full rounded-xl border border-gray-300 dark:border-slate-600 px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-shadow">
+                            <option value="">Carregando empresas...</option>
+                        </select>
+                    </div>
+                    <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">As vendas e itens das notas serão associados a esta empresa.</p>
                 </div>
 
+                <!-- Dropzone de Arquivos XML / ZIP -->
                 <div>
-                    <label for="importNotasXmlCategory" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoria de Receita</label>
-                    <select id="importNotasXmlCategory" class="w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                        <option value="">Automatico (categoria de venda)</option>
-                    </select>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+                        Arquivos XML ou Compactados (ZIP) <span class="text-red-500">*</span>
+                    </label>
+                    <div id="importDropzone" class="border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-brand-500 dark:hover:border-brand-400 rounded-2xl p-5 text-center cursor-pointer bg-gray-50/50 dark:bg-slate-900/40 hover:bg-brand-50/20 dark:hover:bg-brand-900/10 transition-all flex flex-col items-center justify-center gap-2 group">
+                        <div class="p-3 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-500 dark:text-brand-400 group-hover:scale-110 transition-transform">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        <div class="space-y-0.5">
+                            <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                Clique para selecionar ou arraste aqui
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Suporta arquivos <span class="font-medium text-brand-600 dark:text-brand-400">.XML</span> individuais ou lotes <span class="font-medium text-brand-600 dark:text-brand-400">.ZIP</span>
+                            </p>
+                        </div>
+                        <input type="file" id="inputImportNotasXml" class="hidden" accept=".xml,.zip,application/zip,application/x-zip-compressed,text/xml" multiple title="Selecionar arquivos XML ou ZIP" />
+                    </div>
+                </div>
+
+                <!-- Resumo dos Arquivos Carregados / Descompactados -->
+                <div id="importXmlFilesSummaryContainer" class="hidden rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/60 p-3.5 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" id="importXmlCountBadge">
+                                0 XML(s)
+                            </span>
+                            <span class="text-xs text-gray-600 dark:text-gray-300 font-medium" id="importXmlArchiveInfo"></span>
+                        </div>
+                        <button type="button" id="btnClearSelectedXmlFiles" class="text-xs text-red-600 dark:text-red-400 hover:underline">
+                            Limpar
+                        </button>
+                    </div>
+
+                    <!-- Lista resumida de arquivos -->
+                    <div id="importXmlFilesList" class="max-h-32 overflow-y-auto space-y-1 pr-1 text-xs divide-y divide-gray-200/50 dark:divide-slate-700/50"></div>
+                </div>
+
+                <!-- Configurações Financeiras Opcionais -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                        <label for="importNotasXmlBankAccount" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                            Conta Bancária
+                        </label>
+                        <select id="importNotasXmlBankAccount" class="w-full rounded-xl border border-gray-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Automático (primeira conta)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="importNotasXmlCategory" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                            Categoria Financeira
+                        </label>
+                        <select id="importNotasXmlCategory" class="w-full rounded-xl border border-gray-300 dark:border-slate-600 px-3 py-2 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                            <option value="">Automático (categoria padrão)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Barra de Progresso / Status da Importação -->
+                <div id="importProgressContainer" class="hidden rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-900/20 p-3.5 space-y-2">
+                    <div class="flex items-center justify-between text-xs font-semibold text-brand-700 dark:text-brand-300">
+                        <span id="importProgressText">Processando arquivos...</span>
+                        <span id="importProgressPercent">0%</span>
+                    </div>
+                    <div class="w-full bg-brand-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                        <div id="importProgressBar" class="bg-brand-500 h-2.5 rounded-full transition-all duration-300 w-0"></div>
+                    </div>
+                </div>
+
+                <!-- Aviso do Arquivamento na pasta Impkey -->
+                <div class="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-900/20 p-3 flex items-start gap-2.5">
+                    <svg class="h-4 w-4 text-blue-500 dark:text-blue-400 mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                    <p class="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
+                        <strong class="font-semibold">Pasta Impkey:</strong> Após a importação, todos os XMLs processados e pacotes ZIP serão arquivados na pasta <span class="font-mono bg-blue-100 dark:bg-blue-800/60 px-1 py-0.5 rounded text-blue-900 dark:text-blue-200">Impkey</span> para rastreabilidade e histórico fiscal.
+                    </p>
                 </div>
             </div>
 
-            <div class="px-4 py-3 border-t border-gray-200 dark:border-slate-700 flex items-center justify-end gap-2">
-                <button type="button" id="btnCancelImportNotasXml" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600">Cancelar</button>
-                <button type="button" id="btnConfirmImportNotasXml" class="rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600">Importar Agora</button>
+            <!-- Modal Footer -->
+            <div class="px-5 py-3.5 border-t border-gray-200 dark:border-slate-700 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-slate-800/50">
+                <button type="button" id="btnCancelImportNotasXml" class="rounded-xl px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:text-gray-200 dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="btnConfirmImportNotasXml" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled>
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span>Importar Notas</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="/js/api.js?v=20261008012414"></script>
-    <script src="/js/notas_vendidas.js?v=20261008012414"></script>
-    <script src="/js/components/navbar.js?v=20261008012414"></script>
+    <script src="/vendor/jszip.min.js"></script>
+    <script src="/js/api.js?v=20261008121230"></script>
+    <script src="/js/notas_vendidas.js?v=20261008121230"></script>
+    <script src="/js/components/navbar.js?v=20261008121230"></script>
     <div id="app-footer" class="shrink-0"></div>
-    <script src="/js/components/footer.js?v=20261008012414"></script>
+    <script src="/js/components/footer.js?v=20261008121230"></script>
 </body>
 
 </html>

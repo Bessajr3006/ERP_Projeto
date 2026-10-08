@@ -7589,6 +7589,7 @@ export class ExternalDbService {
                             filial: Number(cp.filial || 1),
                             nomeFilial: String(cp.nomeFilial || `Filial ${cp.filial}`).trim()
                         }));
+                        crediarioReceber.cupons = crediarioReceber.lancamentos;
                     } catch (recErr: any) {
                         console.warn('Falha ao consultar crediário/convênio a receber no Solidcon:', recErr?.message || recErr);
                     }
@@ -8810,10 +8811,13 @@ export class ExternalDbService {
             });
             if (Array.isArray(cr?.cupons)) {
                 crCupons = crCupons.concat(cr.cupons);
+            } else if (Array.isArray(cr?.lancamentos)) {
+                crCupons = crCupons.concat(cr.lancamentos);
             }
         });
 
         const totalCrediarioReceber = (crSumVencido + crSumAVencer > 0) ? (crSumVencido + crSumAVencer) : crSumReceber;
+        const crediarioSortedCupons = crCupons.sort((a: any, b: any) => (a.dtVencimento || '').localeCompare(b.dtVencimento || ''));
         const crediarioReceber = {
             loaded: credLoaded,
             dateFilter: first.crediarioReceber?.dateFilter || 'vencimento',
@@ -8832,7 +8836,8 @@ export class ExternalDbService {
             },
             byCliente: Object.values(crClientesMap).sort((a: any, b: any) => b.total - a.total),
             byFilial: Object.values(crFiliaisMap).sort((a: any, b: any) => b.total - a.total),
-            cupons: crCupons.sort((a: any, b: any) => (a.dtVencimento || '').localeCompare(b.dtVencimento || ''))
+            cupons: crediarioSortedCupons,
+            lancamentos: crediarioSortedCupons
         };
 
         // 13. Cartoes Nao Baixados

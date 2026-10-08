@@ -559,22 +559,30 @@
         if (!data || !data.loaded) {
             if (getEl('cardCrediarioTotalReceber'))
                 getEl('cardCrediarioTotalReceber').textContent = 'R$ 0,00';
+            if (getEl('cardCrediarioSubtitle'))
+                getEl('cardCrediarioSubtitle').textContent = 'Defina o período e clique em Filtrar';
             if (getEl('cardCrediarioTotalVencido'))
                 getEl('cardCrediarioTotalVencido').textContent = 'R$ 0,00';
             if (getEl('cardCrediarioQtdVencidos'))
-                getEl('cardCrediarioQtdVencidos').textContent = 'Defina o período e filtre';
+                getEl('cardCrediarioQtdVencidos').textContent = '0 cupons vencidos';
             if (getEl('cardCrediarioTotalAVencer'))
                 getEl('cardCrediarioTotalAVencer').textContent = 'R$ 0,00';
             if (getEl('cardCrediarioQtdAVencer'))
-                getEl('cardCrediarioQtdAVencer').textContent = 'Defina o período e filtre';
+                getEl('cardCrediarioQtdAVencer').textContent = '0 cupons a vencer';
             if (getEl('badgeCrediarioStatus'))
                 getEl('badgeCrediarioStatus').textContent = 'Aguardando Filtro';
             if (getEl('badgeCardCrediarioCount'))
-                getEl('badgeCardCrediarioCount').textContent = '-';
+                getEl('badgeCardCrediarioCount').textContent = '0';
             if (getEl('cardCrediarioPeriodoBadge'))
                 getEl('cardCrediarioPeriodoBadge').textContent = 'Clique em Filtrar para carregar';
             if (getEl('modalCrediarioBadgePeriodo'))
                 getEl('modalCrediarioBadgePeriodo').textContent = 'Não Consultado';
+            if (getEl('cardCrediarioFiliaisCards')) {
+                getEl('cardCrediarioFiliaisCards').innerHTML = '<span class="text-xs text-gray-400 col-span-full">Clique em Filtrar para carregar as filiais</span>';
+            }
+            if (getEl('cardCrediarioFiliaisCount')) {
+                getEl('cardCrediarioFiliaisCount').textContent = '0 filiais';
+            }
             return;
         }
         const summary = data.summary || {};
@@ -587,21 +595,24 @@
         const qtdAVencer = Number(summary.qtdAVencer || 0);
         const qtdCupons = (qtdVencidos + qtdAVencer > 0)
             ? (qtdVencidos + qtdAVencer)
-            : Number(summary.qtdCupons || 0);
+            : Number(summary.qtdCupons || rawCrediarioCupons.length || 0);
         if (getEl('cardCrediarioTotalReceber')) {
             getEl('cardCrediarioTotalReceber').textContent = formatMoney(totalAReceber);
+        }
+        if (getEl('cardCrediarioSubtitle')) {
+            getEl('cardCrediarioSubtitle').textContent = `${qtdCupons.toLocaleString('pt-BR')} ${qtdCupons === 1 ? 'cupom a receber' : 'cupons a receber'} no total`;
         }
         if (getEl('cardCrediarioTotalVencido')) {
             getEl('cardCrediarioTotalVencido').textContent = formatMoney(totalVencido);
         }
         if (getEl('cardCrediarioQtdVencidos')) {
-            getEl('cardCrediarioQtdVencidos').textContent = `${qtdVencidos.toLocaleString('pt-BR')} cupons vencidos`;
+            getEl('cardCrediarioQtdVencidos').textContent = `${qtdVencidos.toLocaleString('pt-BR')} ${qtdVencidos === 1 ? 'cupom vencido' : 'cupons vencidos'}`;
         }
         if (getEl('cardCrediarioTotalAVencer')) {
             getEl('cardCrediarioTotalAVencer').textContent = formatMoney(totalAVencer);
         }
         if (getEl('cardCrediarioQtdAVencer')) {
-            getEl('cardCrediarioQtdAVencer').textContent = `${qtdAVencer.toLocaleString('pt-BR')} cupons a vencer`;
+            getEl('cardCrediarioQtdAVencer').textContent = `${qtdAVencer.toLocaleString('pt-BR')} ${qtdAVencer === 1 ? 'cupom a vencer' : 'cupons a vencer'}`;
         }
         if (getEl('badgeCrediarioStatus')) {
             getEl('badgeCrediarioStatus').textContent = `${qtdCupons.toLocaleString('pt-BR')} Cupons a Receber`;
@@ -631,15 +642,148 @@
         if (getEl('modalCrediarioBadgePeriodo')) {
             getEl('modalCrediarioBadgePeriodo').textContent = badgePeriodoText;
         }
+        // Filiais no Card Principal
+        const mainFiliaisContainer = getEl('cardCrediarioFiliaisCards');
+        const mainCountBadge = getEl('cardCrediarioFiliaisCount');
+        if (mainFiliaisContainer) {
+            const filiais = data.byFilial || [];
+            if (mainCountBadge) {
+                mainCountBadge.textContent = `${filiais.length} ${filiais.length === 1 ? 'filial' : 'filiais'}`;
+            }
+            if (filiais.length === 0) {
+                mainFiliaisContainer.innerHTML = '<span class="text-xs text-gray-400 col-span-full">Nenhum cupom no período</span>';
+            }
+            else {
+                mainFiliaisContainer.innerHTML = filiais.map((f) => {
+                    const fId = String(f.filial || '');
+                    const fName = String(f.nomeFilial || `Filial ${fId}`).trim();
+                    const fTotal = Number(f.totalAReceber || f.total || 0);
+                    const fQtd = Number(f.qtdCupons || 0);
+                    return `
+                        <button type="button" data-filial="${escapeHtml(fId)}" class="card-filial-crediario-btn text-left p-3.5 rounded-xl border border-indigo-200/80 dark:border-slate-700/80 bg-indigo-50/40 dark:bg-slate-900/50 hover:bg-indigo-100/60 dark:hover:bg-slate-800/80 hover:border-indigo-400 transition-all cursor-pointer flex flex-col justify-between group shadow-2xs">
+                            <div class="flex items-center justify-between gap-1 mb-1.5">
+                                <span class="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 transition-colors" title="${escapeHtml(fName)}">
+                                    ${escapeHtml(fName)}
+                                </span>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60">
+                                    ${fQtd} cup.
+                                </span>
+                            </div>
+                            <div class="space-y-1 mt-1">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-indigo-700 dark:text-indigo-400 font-semibold">A Receber:</span>
+                                    <strong class="text-indigo-700 dark:text-indigo-400 font-mono font-bold">${formatMoney(fTotal)}</strong>
+                                </div>
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+                mainFiliaisContainer.querySelectorAll('.card-filial-crediario-btn').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const targetFilial = btn.getAttribute('data-filial');
+                        openModalCrediario(targetFilial);
+                    });
+                });
+            }
+        }
     };
-    // ─── Modal Crediário/Convênio: Populate & Filter ───────────────────────────
+    // ─── Modal Crediário/Convênio: Filiais Cards & Populate ───────────────────
+    const renderModalCrediarioFiliaisCards = (data) => {
+        const targetData = data || currentCrediarioReceberData;
+        const container = getEl('modalCrediarioFiliaisCards');
+        const countBadge = getEl('modalCrediarioFiliaisCount');
+        if (!container)
+            return;
+        if (!targetData || !targetData.loaded) {
+            container.innerHTML = `
+                <div class="col-span-full py-3 text-center text-xs text-gray-500 dark:text-gray-400">
+                    Aguardando consulta do servidor...
+                </div>
+            `;
+            if (countBadge)
+                countBadge.textContent = '0 filiais';
+            return;
+        }
+        const filiais = targetData.byFilial || [];
+        if (countBadge) {
+            countBadge.textContent = `${filiais.length} ${filiais.length === 1 ? 'filial' : 'filiais'}`;
+        }
+        const currentSelectedFilial = getEl('modalCrediarioFilterFilial')?.value || '';
+        const summary = targetData.summary || {};
+        const totalAReceber = Number(summary.totalAReceber || summary.totalReceber || 0);
+        const qtdCupons = Number(summary.qtdCupons || rawCrediarioCupons.length || 0);
+        const isAllActive = currentSelectedFilial === '';
+        let html = `
+            <!-- Card Todas as Filiais -->
+            <button type="button" data-filial="" class="filial-crediario-card-btn text-left p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${isAllActive
+            ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40 ring-2 ring-indigo-500/40 shadow-xs'
+            : 'border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700/60 hover:bg-indigo-50/30'}">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <span class="text-[11px] font-bold text-gray-900 dark:text-white truncate">Todas as Filiais</span>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isAllActive ? 'bg-indigo-200 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}">
+                        ${qtdCupons} cup.
+                    </span>
+                </div>
+                <div class="text-xs space-y-0.5 mt-0.5">
+                    <div class="flex items-center justify-between text-indigo-600 dark:text-indigo-400 font-bold">
+                        <span>A Receber:</span>
+                        <span class="font-mono">${formatMoney(totalAReceber)}</span>
+                    </div>
+                </div>
+            </button>
+        `;
+        filiais.forEach((f) => {
+            const filialId = String(f.filial || '');
+            const filialName = String(f.nomeFilial || `Filial ${filialId}`).trim();
+            const isActive = currentSelectedFilial === filialId;
+            const fTotal = Number(f.totalAReceber || f.total || 0);
+            const fQtd = Number(f.qtdCupons || 0);
+            html += `
+                <button type="button" data-filial="${escapeHtml(filialId)}" class="filial-crediario-card-btn text-left p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${isActive
+                ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40 ring-2 ring-indigo-500/40 shadow-xs'
+                : 'border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700/60 hover:bg-indigo-50/30'}">
+                    <div class="flex items-center justify-between gap-1 mb-1">
+                        <span class="text-[11px] font-bold text-gray-900 dark:text-white truncate" title="${escapeHtml(filialName)}">
+                            ${escapeHtml(filialName)}
+                        </span>
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isActive ? 'bg-indigo-200 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}">
+                            ${fQtd} cup.
+                        </span>
+                    </div>
+                    <div class="text-xs space-y-0.5 mt-0.5">
+                        <div class="flex items-center justify-between text-indigo-600 dark:text-indigo-400 font-bold">
+                            <span>A Receber:</span>
+                            <span class="font-mono">${formatMoney(fTotal)}</span>
+                        </div>
+                    </div>
+                </button>
+            `;
+        });
+        container.innerHTML = html;
+        container.querySelectorAll('.filial-crediario-card-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetFilial = btn.getAttribute('data-filial') || '';
+                const select = getEl('modalCrediarioFilterFilial');
+                if (select) {
+                    select.value = targetFilial;
+                }
+                renderModalCrediarioFiliaisCards(currentCrediarioReceberData);
+                applyModalCrediarioFilters();
+            });
+        });
+    };
     const populateModalCrediarioFilters = (data) => {
         const filialSelect = getEl('modalCrediarioFilterFilial');
+        const filiais = data.byFilial || [];
         if (filialSelect) {
-            const filiais = data.byFilial || [];
+            const currentVal = filialSelect.value;
             filialSelect.innerHTML = '<option value="">Todas as Filiais</option>' +
                 filiais.map((f) => `<option value="${escapeHtml(f.filial)}">${escapeHtml(f.nomeFilial || `Filial ${f.filial}`)}</option>`).join('');
+            if (currentVal && filiais.some((f) => String(f.filial) === currentVal)) {
+                filialSelect.value = currentVal;
+            }
         }
+        renderModalCrediarioFiliaisCards(data);
     };
     const renderModalCrediarioTable = (list) => {
         const tbody = getEl('modalCrediarioTableBody');
@@ -648,7 +792,7 @@
         if (!currentCrediarioReceberData || !currentCrediarioReceberData.loaded) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="12" class="py-12 text-center text-gray-500 dark:text-gray-400">
                         <div class="flex flex-col items-center justify-center gap-2">
                             <svg class="w-8 h-8 text-indigo-400 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
                             <span class="font-medium text-gray-700 dark:text-gray-200">Crediário e Convênio não consultados</span>
@@ -662,58 +806,177 @@
         if (!list || list.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="12" class="py-12 text-center text-gray-500 dark:text-gray-400">
                         <div class="flex flex-col items-center justify-center gap-2">
                             <svg class="w-8 h-8 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <span class="font-medium">Nenhum cupom a receber encontrado para os filtros selecionados.</span>
+                            <span class="font-medium text-gray-700 dark:text-gray-200">Nenhum cupom a receber encontrado para os filtros selecionados.</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Tente ajustar a busca, a situação, a filial ou o período.</span>
                         </div>
                     </td>
                 </tr>
             `;
             return;
         }
-        tbody.innerHTML = list.map((item) => {
-            const isVencido = item.isVencido;
-            const statusBadgeClass = isVencido
-                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40'
-                : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40';
-            const statusText = isVencido
-                ? `Vencido (${item.diasAtraso}d)`
-                : 'A Vencer';
-            return `
-                <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                    <td class="py-2.5 px-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        ${formatDateBR(item.dtEmissao)}
-                    </td>
-                    <td class="py-2.5 px-4 font-medium ${isVencido ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap">
-                        ${formatDateBR(item.dtVencimento)}
-                    </td>
-                    <td class="py-2.5 px-4 text-center whitespace-nowrap">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${statusBadgeClass}">
-                            ${statusText}
-                        </span>
-                    </td>
-                    <td class="py-2.5 px-4 font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-[11px]">
-                        #${item.nrCupom || item.id}
-                    </td>
-                    <td class="py-2.5 px-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        ${escapeHtml(item.nomeFilial || `Filial ${item.filial}`)}
-                    </td>
-                    <td class="py-2.5 px-4 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate" title="${escapeHtml(item.cliente)} (${escapeHtml(item.cdCrediario)})">
-                        ${escapeHtml(item.cliente)}
-                    </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap">
-                        ${formatMoney(item.vlCrediario)}
-                    </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                        ${formatMoney(item.vlQuitado)}
-                    </td>
-                    <td class="py-2.5 px-4 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                        ${formatMoney(item.saldoPendente)}
+        // Group by Filial
+        const filiaisMap = {};
+        list.forEach(item => {
+            const fKey = String(item.nomeFilial || `Filial ${item.filial}`).trim();
+            if (!filiaisMap[fKey]) {
+                filiaisMap[fKey] = {
+                    filialName: fKey,
+                    items: [],
+                    totalCrediario: 0,
+                    totalQuitado: 0,
+                    totalSaldo: 0,
+                    qtdVencidos: 0,
+                    qtdAVencer: 0
+                };
+            }
+            const g = filiaisMap[fKey];
+            g.items.push(item);
+            g.totalCrediario += Number(item.vlCrediario || 0);
+            g.totalQuitado += Number(item.vlQuitado || 0);
+            g.totalSaldo += Number(item.saldoPendente || 0);
+            if (item.isVencido)
+                g.qtdVencidos++;
+            else
+                g.qtdAVencer++;
+        });
+        const groups = Object.values(filiaisMap).sort((a, b) => b.totalSaldo - a.totalSaldo);
+        let html = '';
+        groups.forEach(g => {
+            html += `
+                <tr class="bg-linear-to-r from-indigo-50/80 via-indigo-50/30 to-transparent dark:from-indigo-950/40 dark:via-slate-900 dark:to-slate-900 border-t-2 border-b border-indigo-200 dark:border-indigo-900/60 sticky top-10 z-5 font-bold text-xs">
+                    <td colspan="12" class="py-2.5 px-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-xs"></span>
+                                <span class="text-sm font-black text-gray-900 dark:text-white tracking-tight">${escapeHtml(g.filialName)}</span>
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800">
+                                    ${g.items.length} ${g.items.length === 1 ? 'cupom' : 'cupons'}
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-4 text-xs">
+                                <span class="text-gray-500 dark:text-gray-400">Total Emitido: <strong class="font-mono text-gray-800 dark:text-gray-200">${formatMoney(g.totalCrediario)}</strong></span>
+                                <span class="text-emerald-700 dark:text-emerald-400 font-semibold">Quitado: <strong class="font-mono">${formatMoney(g.totalQuitado)}</strong></span>
+                                <span class="text-indigo-700 dark:text-indigo-400 font-black">Saldo a Receber (${g.items.length}): <strong class="font-mono">${formatMoney(g.totalSaldo)}</strong></span>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             `;
-        }).join('');
+            g.items.forEach((item, idx) => {
+                const isVencido = item.isVencido;
+                const statusBadgeClass = isVencido
+                    ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40'
+                    : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40';
+                const statusText = isVencido
+                    ? `Vencido (${item.diasAtraso}d)`
+                    : 'A Vencer';
+                const rawIndex = rawCrediarioCupons.indexOf(item);
+                html += `
+                    <tr class="hover:bg-indigo-50/40 dark:hover:bg-slate-800/60 transition-colors ${idx % 2 === 1 ? 'bg-gray-50/50 dark:bg-slate-900/40' : ''}">
+                        <td class="py-2.5 px-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap text-xs">
+                            ${formatDateBR(item.dtEmissao)}
+                        </td>
+                        <td class="py-2.5 px-3 font-medium ${isVencido ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-gray-700 dark:text-gray-300'} whitespace-nowrap text-xs">
+                            ${formatDateBR(item.dtVencimento)}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${statusBadgeClass}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs font-bold" title="Cupom #${item.nrCupom || item.id}">
+                            #${item.nrCupom || item.id}
+                        </td>
+                        <td class="py-2.5 px-2 text-center font-mono text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
+                            ${item.pdv || '-'}
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-700 dark:text-gray-300 whitespace-nowrap text-xs">
+                            ${escapeHtml(item.nomeFilial || `Filial ${item.filial}`)}
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-900 dark:text-gray-100 font-medium max-w-xs truncate text-xs" title="${escapeHtml(item.cliente)} (${escapeHtml(item.cdCrediario)})">
+                            ${escapeHtml(item.cliente)}
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-600 dark:text-gray-400 whitespace-nowrap text-xs">
+                            ${escapeHtml(item.operador || '-')}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap text-xs">
+                            ${formatMoney(item.vlCrediario)}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap text-xs">
+                            ${formatMoney(item.vlQuitado)}
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap text-xs">
+                            ${formatMoney(item.saldoPendente)}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <button type="button" class="btn-view-crediario-detalhes p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50 shadow-2xs hover:scale-110 transition-all cursor-pointer inline-flex items-center justify-center" data-index="${rawIndex >= 0 ? rawIndex : idx}" title="Visualizar Detalhes do Cupom">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+        // Sticky Grand Total Consolidado Row
+        if (groups.length > 0) {
+            let gEmitido = 0;
+            let gQuitado = 0;
+            let gSaldo = 0;
+            let gCupons = 0;
+            let gVencidos = 0;
+            let gAVencer = 0;
+            groups.forEach(g => {
+                gEmitido += g.totalCrediario;
+                gQuitado += g.totalQuitado;
+                gSaldo += g.totalSaldo;
+                gCupons += g.items.length;
+                gVencidos += g.qtdVencidos;
+                gAVencer += g.qtdAVencer;
+            });
+            html += `
+                <tr class="bg-linear-to-r from-gray-100 via-indigo-50 to-gray-100 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 font-bold border-t-2 border-b-2 border-indigo-300 dark:border-indigo-800 text-xs text-gray-900 dark:text-white sticky bottom-0 z-10 shadow-md">
+                    <td colspan="8" class="py-3 px-4 text-right">
+                        <div class="inline-flex items-center gap-1.5 uppercase tracking-wider text-gray-800 dark:text-gray-200 font-extrabold">
+                            <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            <span>Totais Consolidados (${gCupons} cupons | ${gVencidos} vencidos • ${gAVencer} a vencer):</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap" title="Total Emitido dos Cupons">
+                        <div class="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-400 font-sans">Emitido</div>
+                        <div>${formatMoney(gEmitido)}</div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap" title="Total Quitado">
+                        <div class="text-[10px] uppercase font-semibold text-emerald-600/80 font-sans">Quitado</div>
+                        <div>${formatMoney(gQuitado)}</div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono font-black text-indigo-700 dark:text-indigo-300 whitespace-nowrap bg-indigo-100/60 dark:bg-indigo-950/60 rounded-lg" title="Saldo a Receber">
+                        <div class="text-[10px] uppercase font-black text-indigo-700 dark:text-indigo-300 font-sans">Saldo a Receber</div>
+                        <div class="text-sm font-black">${formatMoney(gSaldo)}</div>
+                    </td>
+                    <td class="py-3 px-3"></td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+        tbody.querySelectorAll('.btn-view-crediario-detalhes').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idxStr = btn.getAttribute('data-index');
+                if (idxStr !== null) {
+                    const idx = parseInt(idxStr, 10);
+                    const item = rawCrediarioCupons[idx] || list[idx];
+                    if (item) {
+                        openModalCrediarioDetalhes(item);
+                    }
+                }
+            });
+        });
     };
     const applyModalCrediarioFilters = () => {
         const query = (getEl('modalCrediarioSearch')?.value || '').toLowerCase().trim();
@@ -735,7 +998,7 @@
             if (dtFim && targetDate && targetDate > dtFim)
                 return false;
             if (query) {
-                const combined = `${item.cliente || ''} ${item.cdCrediario || ''} ${item.nrCupom || ''} ${item.nomeFilial || ''} ${item.operador || ''} ${item.obs || ''}`.toLowerCase();
+                const combined = `${item.cliente || ''} ${item.cdCrediario || ''} ${item.nrCupom || ''} ${item.nomeFilial || ''} ${item.operador || ''} ${item.obs || ''} ${item.pdv || ''}`.toLowerCase();
                 if (!combined.includes(query))
                     return false;
             }
@@ -766,7 +1029,7 @@
         }
         renderModalCrediarioTable(filtered);
     };
-    const openModalCrediario = () => {
+    const openModalCrediario = (targetFilial) => {
         const modal = getEl('modalCrediarioReceber');
         if (!modal)
             return;
@@ -777,7 +1040,7 @@
             getEl('modalCrediarioFilterStatus').value = 'all';
         }
         if (getEl('modalCrediarioFilterFilial')) {
-            getEl('modalCrediarioFilterFilial').value = '';
+            getEl('modalCrediarioFilterFilial').value = targetFilial !== undefined ? targetFilial : '';
         }
         // Sync card dates into modal
         const cardDtInicio = getEl('cardCrediarioDtInicio')?.value || '';
@@ -792,9 +1055,14 @@
         if (getEl('modalCrediarioTipoData')) {
             getEl('modalCrediarioTipoData').value = cardTipoData;
         }
+        renderModalCrediarioFiliaisCards(currentCrediarioReceberData);
         applyModalCrediarioFilters();
         modal.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
+        // If not loaded yet, auto-trigger fetch
+        if (!currentCrediarioReceberData || !currentCrediarioReceberData.loaded) {
+            void loadCrediarioReceber();
+        }
     };
     const closeModalCrediario = () => {
         const modal = getEl('modalCrediarioReceber');
@@ -803,18 +1071,86 @@
         modal.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
     };
+    // ─── Modal Detalhes do Cupom Crediário/Convênio ─────────────────────────────
+    const openModalCrediarioDetalhes = (item) => {
+        const modal = getEl('modalCrediarioDetalhes');
+        if (!modal || !item)
+            return;
+        const isVencido = Boolean(item.isVencido);
+        const diasAtraso = Number(item.diasAtraso || 0);
+        // Status badge
+        const badge = getEl('modalCredDetStatusBadge');
+        if (badge) {
+            if (isVencido) {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800';
+                badge.textContent = `Vencido (${diasAtraso}d)`;
+            }
+            else {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+                badge.textContent = 'A Vencer';
+            }
+        }
+        if (getEl('modalCredDetCupomNum'))
+            getEl('modalCredDetCupomNum').textContent = `#${item.nrCupom || item.id || 0}`;
+        if (getEl('modalCredDetId'))
+            getEl('modalCredDetId').textContent = String(item.id || item.cdCrediarioCupom || '-');
+        if (getEl('modalCredDetFilialBadge'))
+            getEl('modalCredDetFilialBadge').textContent = String(item.nomeFilial || `Filial ${item.filial || 1}`);
+        if (getEl('modalCredDetPdvNum'))
+            getEl('modalCredDetPdvNum').textContent = String(item.pdv || '-');
+        if (getEl('modalCredDetOperador'))
+            getEl('modalCredDetOperador').textContent = String(item.operador || 'Não informado');
+        if (getEl('modalCredDetSaldoPendente'))
+            getEl('modalCredDetSaldoPendente').textContent = formatMoney(item.saldoPendente);
+        if (getEl('modalCredDetVlTotal'))
+            getEl('modalCredDetVlTotal').textContent = formatMoney(item.vlCrediario);
+        if (getEl('modalCredDetVlQuitado'))
+            getEl('modalCredDetVlQuitado').textContent = formatMoney(item.vlQuitado);
+        if (getEl('modalCredDetVlSaldo'))
+            getEl('modalCredDetVlSaldo').textContent = formatMoney(item.saldoPendente);
+        if (getEl('modalCredDetCliente'))
+            getEl('modalCredDetCliente').textContent = String(item.cliente || 'Não identificado');
+        if (getEl('modalCredDetCdCrediario'))
+            getEl('modalCredDetCdCrediario').textContent = String(item.cdCrediario || '-');
+        if (getEl('modalCredDetDtEmissao'))
+            getEl('modalCredDetDtEmissao').textContent = formatDateBR(item.dtEmissao);
+        if (getEl('modalCredDetDtVencimento'))
+            getEl('modalCredDetDtVencimento').textContent = formatDateBR(item.dtVencimento);
+        if (getEl('modalCredDetDiasAtraso')) {
+            getEl('modalCredDetDiasAtraso').textContent = isVencido ? `Vencido há ${diasAtraso} dias` : 'A vencer dentro do prazo';
+        }
+        if (getEl('modalCredDetObs')) {
+            getEl('modalCredDetObs').textContent = item.obs ? String(item.obs) : 'Nenhuma observação registrada no cupom.';
+        }
+        if (getEl('modalCredDetCdCredCupom'))
+            getEl('modalCredDetCdCredCupom').textContent = String(item.id || '-');
+        if (getEl('modalCredDetNrCupom'))
+            getEl('modalCredDetNrCupom').textContent = String(item.nrCupom || '-');
+        if (getEl('modalCredDetCdPDV'))
+            getEl('modalCredDetCdPDV').textContent = String(item.pdv || '-');
+        if (getEl('modalCredDetCdFilial'))
+            getEl('modalCredDetCdFilial').textContent = String(item.filial || '-');
+        modal.classList.remove('hidden');
+    };
+    const closeModalCrediarioDetalhes = () => {
+        const modal = getEl('modalCrediarioDetalhes');
+        if (!modal)
+            return;
+        modal.classList.add('hidden');
+    };
     const exportCrediarioCsv = () => {
         if (!rawCrediarioCupons || rawCrediarioCupons.length === 0) {
             showAlert('Não há cupons a receber para exportar.', 'info');
             return;
         }
-        const headers = ['Emissão', 'Vencimento', 'Status', 'Dias de Atraso', 'Cupom nº', 'Filial', 'CPF/CNPJ Cliente', 'Cliente / Convênio', 'Valor Emitido', 'Valor Quitado', 'Saldo a Receber', 'Operador', 'Obs'];
+        const headers = ['Emissão', 'Vencimento', 'Status', 'Dias de Atraso', 'Cupom nº', 'PDV', 'Filial', 'CPF/CNPJ Cliente', 'Cliente / Convênio', 'Valor Emitido', 'Valor Quitado', 'Saldo a Receber', 'Operador', 'Obs'];
         const rows = rawCrediarioCupons.map((item) => [
             formatDateBR(item.dtEmissao),
             formatDateBR(item.dtVencimento),
             item.isVencido ? '"Vencido"' : '"A Vencer"',
             item.diasAtraso || 0,
             item.nrCupom || item.id || '',
+            item.pdv || '',
             `"${(item.nomeFilial || `Filial ${item.filial}`).replace(/"/g, '""')}"`,
             `"${(item.cdCrediario || '').replace(/"/g, '""')}"`,
             `"${(item.cliente || '').replace(/"/g, '""')}"`,
@@ -2031,7 +2367,7 @@
                 lancamentos: []
             };
             currentCrediarioReceberData.loaded = true;
-            rawCrediarioCupons = currentCrediarioReceberData.lancamentos || [];
+            rawCrediarioCupons = currentCrediarioReceberData.lancamentos || currentCrediarioReceberData.cupons || [];
             renderCrediarioReceberCard(currentCrediarioReceberData);
             populateModalCrediarioFilters(currentCrediarioReceberData);
             if (!getEl('modalCrediarioReceber')?.classList.contains('hidden')) {
@@ -2372,6 +2708,7 @@
             applyModalCrediarioFilters();
         });
         getEl('modalCrediarioFilterFilial')?.addEventListener('change', () => {
+            renderModalCrediarioFiliaisCards(currentCrediarioReceberData);
             applyModalCrediarioFilters();
         });
         getEl('modalCrediarioDtInicio')?.addEventListener('change', () => {
@@ -2468,6 +2805,18 @@
         getEl('btnExportContasGeralCsv')?.addEventListener('click', () => {
             exportContasGeralCsv();
         });
+        // ─── Modal Detalhes Crediário / Convênio Listeners ───────────────────
+        getEl('btnCloseModalCrediarioDetalhes')?.addEventListener('click', () => {
+            closeModalCrediarioDetalhes();
+        });
+        getEl('btnCloseModalCrediarioDetalhesFooter')?.addEventListener('click', () => {
+            closeModalCrediarioDetalhes();
+        });
+        getEl('modalCrediarioDetalhes')?.addEventListener('click', (e) => {
+            if (e.target === getEl('modalCrediarioDetalhes')) {
+                closeModalCrediarioDetalhes();
+            }
+        });
         // ─── Modal Detalhes Contas Geral Listeners ───────────────────────────
         getEl('btnCloseModalContasGeralDetalhes')?.addEventListener('click', () => {
             closeModalContasGeralDetalhes();
@@ -2483,6 +2832,10 @@
         // ─── Global Keyboard Listener (ESC to close any modal) ───────────────
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                if (!getEl('modalCrediarioDetalhes')?.classList.contains('hidden')) {
+                    closeModalCrediarioDetalhes();
+                    return;
+                }
                 if (!getEl('modalContasGeralDetalhes')?.classList.contains('hidden')) {
                     closeModalContasGeralDetalhes();
                     return;

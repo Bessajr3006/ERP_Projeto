@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KEYSTONE - Rel.Valor_Empresa</title>
-    <link href="/css/style.css?v=20261007233534" rel="stylesheet">
+    <link href="/css/style.css?v=20261008000435" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/img/icon-192x192-v3.png">
-    <script src="/js/pwa.js?v=20261007233534"></script>
+    <script src="/js/pwa.js?v=20261008000435"></script>
 </head>
 <body data-required-module="rel_valor_empresa" class="bg-gray-100 dark:bg-slate-900 min-h-screen text-gray-800 dark:text-gray-100 font-sans flex flex-col">
     <!-- Navbar Dinâmica -->
@@ -340,6 +340,20 @@
                         <div id="cardCrediarioQtdAVencer" class="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 mt-2 font-medium">
                             0 cupons a vencer
                         </div>
+                    </div>
+                </div>
+
+                <!-- Resumo por Filial no Card Principal -->
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700/60 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <div class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            <span>Crediário e Convênio por Filial:</span>
+                        </div>
+                        <span id="cardCrediarioFiliaisCount" class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">0 filiais</span>
+                    </div>
+                    <div id="cardCrediarioFiliaisCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                        <span class="text-xs text-gray-400 col-span-full">Clique em Filtrar para carregar as filiais</span>
                     </div>
                 </div>
             </div>
@@ -761,9 +775,23 @@
                     </div>
                 </div>
 
+                <!-- Resumo e Seleção por Filial no Modal -->
+                <div id="modalCrediarioFiliaisSection" class="p-3 sm:p-4 bg-gray-50/70 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            <span>Crediário e Convênio por Filial:</span>
+                        </div>
+                        <span id="modalCrediarioFiliaisCount" class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">0 filiais</span>
+                    </div>
+                    <div id="modalCrediarioFiliaisCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 max-h-36 overflow-y-auto pr-1">
+                        <!-- Dynamic Filial Cards -->
+                    </div>
+                </div>
+
                 <!-- Modal Mini Summary Ribbon -->
                 <div class="px-4 py-2.5 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-xs gap-3">
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
                         <span class="text-gray-500 dark:text-gray-400">Total a Receber: <strong id="modalCrediarioSummaryReceber" class="text-indigo-600 dark:text-indigo-400 font-bold">R$ 0,00</strong></span>
                         <span class="text-gray-500 dark:text-gray-400">Vencidos: <strong id="modalCrediarioSummaryVencido" class="text-rose-600 dark:text-rose-400 font-bold">R$ 0,00</strong></span>
                         <span class="text-gray-500 dark:text-gray-400">A Vencer: <strong id="modalCrediarioSummaryAVencer" class="text-emerald-600 dark:text-emerald-400 font-bold">R$ 0,00</strong></span>
@@ -778,20 +806,23 @@
                     <table class="w-full text-left text-xs">
                         <thead class="bg-gray-100 dark:bg-slate-800/90 text-gray-600 dark:text-gray-300 font-bold uppercase tracking-wider sticky top-0 z-10 border-b border-gray-200 dark:border-slate-700">
                             <tr>
-                                <th class="py-3 px-4">Emissão</th>
-                                <th class="py-3 px-4">Vencimento</th>
-                                <th class="py-3 px-4 text-center">Status / Atraso</th>
-                                <th class="py-3 px-4">Cupom nº</th>
-                                <th class="py-3 px-4">Filial</th>
-                                <th class="py-3 px-4">Cliente / Convênio</th>
-                                <th class="py-3 px-4 text-right">Valor Total</th>
-                                <th class="py-3 px-4 text-right">Quitado</th>
-                                <th class="py-3 px-4 text-right">Saldo a Receber</th>
+                                <th class="py-3 px-3">Emissão</th>
+                                <th class="py-3 px-3">Vencimento</th>
+                                <th class="py-3 px-3 text-center">Status / Atraso</th>
+                                <th class="py-3 px-3">Cupom nº</th>
+                                <th class="py-3 px-2 text-center">PDV</th>
+                                <th class="py-3 px-3">Filial</th>
+                                <th class="py-3 px-3">Cliente / Convênio</th>
+                                <th class="py-3 px-3">Operador</th>
+                                <th class="py-3 px-3 text-right">Valor Total</th>
+                                <th class="py-3 px-3 text-right text-emerald-700 dark:text-emerald-300">Quitado</th>
+                                <th class="py-3 px-3 text-right text-indigo-700 dark:text-indigo-300">Saldo a Receber</th>
+                                <th class="py-3 px-3 text-center w-14">Detalhes</th>
                             </tr>
                         </thead>
                         <tbody id="modalCrediarioTableBody" class="divide-y divide-gray-100 dark:divide-slate-800/80">
                             <tr>
-                                <td colspan="9" class="py-8 text-center text-gray-500 dark:text-gray-400">
+                                <td colspan="12" class="py-8 text-center text-gray-500 dark:text-gray-400">
                                     Nenhum cupom pendente carregado.
                                 </td>
                             </tr>
@@ -805,6 +836,157 @@
                         Fonte: Solidcon ERP (Módulo Crediário e Convênio / tbCrediarioCupom)
                     </span>
                     <button type="button" id="btnCloseModalCrediarioFooter" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-semibold rounded-xl text-xs transition-all cursor-pointer">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── MODAL: DETALHES DO CUPOM DE CREDIÁRIO / CONVÊNIO ──────────────────── -->
+        <div id="modalCrediarioDetalhes" class="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs items-center justify-center p-3 sm:p-4 hidden [&:not(.hidden)]:flex">
+            <div class="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-200 dark:border-slate-800 bg-linear-to-r from-indigo-50/80 via-gray-50 to-white dark:from-indigo-950/30 dark:via-slate-900 dark:to-slate-900">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 rounded-xl bg-indigo-600 text-white shadow-sm flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                                    Detalhes do Cupom (Crediário / Convênio)
+                                </h3>
+                                <span id="modalCredDetStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                    Pendente
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Cupom: <strong id="modalCredDetCupomNum" class="text-gray-800 dark:text-gray-200 font-mono text-sm">#0</strong> • ID: <span id="modalCredDetId" class="font-mono text-gray-600 dark:text-gray-300">-</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" id="btnCloseModalCrediarioDetalhes" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" title="Fechar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs">
+                    <!-- Top Ribbon: Filial, PDV, Operador e Saldo Pendente -->
+                    <div class="p-3.5 rounded-xl bg-linear-to-r from-gray-50 via-indigo-50/30 to-gray-50 dark:from-slate-800/80 dark:via-indigo-950/20 dark:to-slate-800/80 border border-gray-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span id="modalCredDetFilialBadge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-slate-700 shadow-2xs">
+                                Filial 1
+                            </span>
+                            <span id="modalCredDetPdvBadge" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700">
+                                PDV: <strong id="modalCredDetPdvNum" class="ml-1 font-mono">1</strong>
+                            </span>
+                            <span id="modalCredDetOperadorBadge" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700">
+                                Operador: <span id="modalCredDetOperador" class="ml-1 font-medium">-</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-2xs">
+                            <span class="text-gray-500 dark:text-gray-400 text-xs font-medium">Saldo a Receber:</span>
+                            <strong id="modalCredDetSaldoPendente" class="text-base sm:text-lg font-black font-mono text-indigo-600 dark:text-indigo-400">
+                                R$ 0,00
+                            </strong>
+                        </div>
+                    </div>
+
+                    <!-- Card: Valores Financeiros -->
+                    <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 space-y-3.5">
+                        <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Valores do Cupom
+                        </h4>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/70 flex flex-col justify-between">
+                                <span class="text-slate-500 dark:text-slate-400 block text-[11px] font-medium">Valor Total Emitido:</span>
+                                <strong id="modalCredDetVlTotal" class="text-slate-900 dark:text-slate-100 font-mono font-bold text-base sm:text-lg mt-1">R$ 0,00</strong>
+                            </div>
+                            <div class="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 flex flex-col justify-between">
+                                <span class="text-emerald-700 dark:text-emerald-300 block text-[11px] font-medium">Valor Já Quitado:</span>
+                                <strong id="modalCredDetVlQuitado" class="text-emerald-700 dark:text-emerald-300 font-mono font-bold text-base sm:text-lg mt-1">R$ 0,00</strong>
+                            </div>
+                            <div class="p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200/90 dark:border-indigo-800/60 flex flex-col justify-between ring-1 ring-indigo-500/20">
+                                <span class="text-indigo-700 dark:text-indigo-300 block text-[11px] font-bold">Saldo Devedor Pendente:</span>
+                                <strong id="modalCredDetVlSaldo" class="text-indigo-700 dark:text-indigo-300 font-mono font-black text-base sm:text-lg mt-1">R$ 0,00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card: Identificação do Cliente / Convênio -->
+                    <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 space-y-3">
+                        <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            Cliente / Convênio
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="p-3 rounded-lg bg-gray-50/80 dark:bg-slate-800/40 border border-gray-200/70 dark:border-slate-700/50">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[11px] font-medium mb-0.5">Nome do Cliente:</span>
+                                <strong id="modalCredDetCliente" class="text-gray-900 dark:text-gray-100 font-bold text-sm block wrap-break-word">-</strong>
+                            </div>
+                            <div class="p-3 rounded-lg bg-gray-50/60 dark:bg-slate-800/30 border border-gray-200/60 dark:border-slate-700/40">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[11px] font-medium mb-0.5">Código do Convênio / Crediário:</span>
+                                <span id="modalCredDetCdCrediario" class="text-gray-800 dark:text-gray-200 font-mono text-xs font-semibold block">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card: Datas e Prazos -->
+                    <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 space-y-3">
+                        <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Datas & Prazos
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="p-3 rounded-lg bg-gray-50/80 dark:bg-slate-800/40 border border-gray-200/70 dark:border-slate-700/50">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Data de Emissão:</span>
+                                <strong id="modalCredDetDtEmissao" class="text-gray-800 dark:text-gray-200 font-semibold text-xs mt-0.5 block">-</strong>
+                            </div>
+                            <div class="p-3 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/40">
+                                <span class="text-indigo-700 dark:text-indigo-400 block text-[11px] font-semibold">Data de Vencimento:</span>
+                                <strong id="modalCredDetDtVencimento" class="text-indigo-800 dark:text-indigo-300 font-bold text-xs mt-0.5 block">-</strong>
+                            </div>
+                            <div class="p-3 rounded-lg bg-gray-50/80 dark:bg-slate-800/40 border border-gray-200/70 dark:border-slate-700/50">
+                                <span class="text-gray-500 dark:text-gray-400 block text-[11px]">Situação / Atraso:</span>
+                                <span id="modalCredDetDiasAtraso" class="text-gray-800 dark:text-gray-200 text-xs font-semibold mt-0.5 block">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card: Observações Registradas -->
+                    <div class="p-4 rounded-xl bg-gray-50/80 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-800 space-y-2.5">
+                        <h4 class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                            Observações do Cupom
+                        </h4>
+                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700/80 text-gray-800 dark:text-gray-200 text-xs font-mono whitespace-pre-wrap wrap-break-word leading-relaxed" id="modalCredDetObs">
+                            Nenhuma observação registrada no cupom.
+                        </div>
+                    </div>
+
+                    <!-- Card: Rastreabilidade Técnica Solidcon -->
+                    <div class="p-3.5 rounded-xl bg-gray-100/80 dark:bg-slate-900/80 border border-gray-200 dark:border-slate-800 space-y-2 text-[11px] text-gray-600 dark:text-gray-400">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[10px]">Rastreabilidade Solidcon ERP</span>
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Tabela tbCrediarioCupom</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                            <div>ID Registro: <strong id="modalCredDetCdCredCupom" class="font-mono text-gray-800 dark:text-gray-200 block">-</strong></div>
+                            <div>Número Cupom: <strong id="modalCredDetNrCupom" class="font-mono text-gray-800 dark:text-gray-200 block">-</strong></div>
+                            <div>Código PDV: <strong id="modalCredDetCdPDV" class="font-mono text-gray-800 dark:text-gray-200 block">-</strong></div>
+                            <div>Filial: <strong id="modalCredDetCdFilial" class="font-mono text-gray-800 dark:text-gray-200 block">-</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="p-4 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 flex items-center justify-end gap-2">
+                    <button type="button" id="btnCloseModalCrediarioDetalhesFooter" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition-all cursor-pointer">
                         Fechar
                     </button>
                 </div>
@@ -1201,11 +1383,11 @@
     </main>
 
     <!-- Scripts -->
-    <script src="/js/api.js?v=20261007233534"></script>
-    <script src="/js/rel_valor_empresa.js?v=20261007233534"></script>
-    <script src="/js/components/navbar.js?v=20261007233534"></script>
+    <script src="/js/api.js?v=20261008000435"></script>
+    <script src="/js/rel_valor_empresa.js?v=20261008000435"></script>
+    <script src="/js/components/navbar.js?v=20261008000435"></script>
     <div id="app-footer" class="shrink-0 mt-auto"></div>
-    <script src="/js/components/footer.js?v=20261007233534"></script>
+    <script src="/js/components/footer.js?v=20261008000435"></script>
 </body>
 </html>
 

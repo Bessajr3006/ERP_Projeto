@@ -106,20 +106,21 @@ const activeStateSchema = z.object({
 
 export class OrderController {
 
-    static async resolveTargetCompanyId(userCompanyId: number, companyId?: number | null, companyPublicId?: string | null): Promise<number> {
+    static async resolveTargetCompanyId(_userCompanyId?: number, companyId?: number | null, companyPublicId?: string | null): Promise<number> {
         if (companyId && Number(companyId) > 0) {
             return Number(companyId);
         }
-        if (companyPublicId) {
+        if (companyPublicId && String(companyPublicId).trim() !== '') {
             const [compRows] = await pool.query<RowDataPacket[]>(
                 'SELECT id FROM companies WHERE public_id = ? LIMIT 1',
                 [companyPublicId]
             );
             if (compRows[0]) {
-                return compRows[0].id;
+                return Number(compRows[0].id);
             }
         }
-        return userCompanyId;
+        // Retorna 0 para auto-identificação pelo CNPJ do XML
+        return 0;
     }
 
     static async createPurchase(req: Request, res: Response): Promise<void> {
@@ -305,9 +306,10 @@ export class OrderController {
 
             const imported = await OrderService.importSaleFromXml(targetCompanyId, String(user.id), validatedData);
 
-            // Mover / Salvar para a pasta Impkey
+            // Mover / Salvar para a pasta Impkey da empresa identificada
+            const effectiveCompanyId = Number(imported.sale.company_id || targetCompanyId || user.company_id);
             const fileName = validatedData.file_name || `nfe_${imported.sale.nfe_key || imported.sale.id}.xml`;
-            StorageService.saveToImpkey(targetCompanyId, fileName, validatedData.xml_content);
+            StorageService.saveToImpkey(effectiveCompanyId, fileName, validatedData.xml_content);
 
             res.status(201).json({ status: 'success', data: imported });
         } catch (error: any) {
@@ -348,8 +350,8 @@ export class OrderController {
                 const zipBuffer = Buffer.from(cleanB64, 'base64');
                 const zipName = validatedData.zip_filename || `import_${Date.now()}.zip`;
                 
-                // Salva o arquivo ZIP original em Impkey
-                StorageService.saveToImpkey(targetCompanyId, zipName, zipBuffer);
+                // Salva o arquivo ZIP original em Impkey (se targetCompanyId for 0, salva na pasta do user)
+                StorageService.saveToImpkey(targetCompanyId || user.company_id, zipName, zipBuffer);
 
                 // Descompacta em memória e extrai os XMLs
                 const directory = await unzipper.Open.buffer(zipBuffer);
@@ -396,12 +398,14 @@ export class OrderController {
                         customer_public_id: validatedData.customer_public_id
                     });
 
-                    // Salva o XML individual processado na pasta Impkey
-                    StorageService.saveToImpkey(targetCompanyId, item.file_name, item.xml_content);
+                    // Salva o XML individual processado na pasta Impkey da respectiva empresa
+                    const effectiveCompanyId = Number(imported.sale.company_id || targetCompanyId || user.company_id);
+                    StorageService.saveToImpkey(effectiveCompanyId, item.file_name, item.xml_content);
 
                     totalImportedItems += Number(imported.imported_items || 0);
                     successList.push({
                         file_name: item.file_name,
+                        company_id: effectiveCompanyId,
                         sale_id: imported.sale.id,
                         nfe_key: imported.sale.nfe_key,
                         imported_items: imported.imported_items

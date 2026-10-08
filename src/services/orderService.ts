@@ -86,6 +86,26 @@ export class OrderService {
         return cnpjDigits || null;
     }
 
+    public static async resolveCompanyIdByEmitterDocument(emitterDocument: string | null): Promise<number | null> {
+        const emitterDigits = this.onlyDigits(emitterDocument);
+        if (!emitterDigits) return null;
+
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT id FROM companies 
+             WHERE REPLACE(REPLACE(REPLACE(REPLACE(cnpj, '.', ''), '-', ''), '/', ''), ' ', '') = ?
+                OR cnpj = ?
+                OR REPLACE(REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), '/', ''), ' ', '') = ?
+                OR cpf = ?
+             LIMIT 1`,
+            [emitterDigits, emitterDigits, emitterDigits, emitterDigits]
+        );
+
+        if (rows[0]) {
+            return Number(rows[0].id);
+        }
+        return null;
+    }
+
     private static async assertNfeEmitterMatchesCompany(companyId: number, emitterDocument: string | null): Promise<void> {
         const companyCnpj = await this.resolveCompanyCnpj(companyId);
         if (!companyCnpj) {
@@ -409,20 +429,32 @@ export class OrderService {
         const parsedItems = this.parseNfeItems(xmlContent);
         const parsedHeader = this.parseNfeHeader(xmlContent);
 
-        await this.assertNfeEmitterMatchesCompany(companyId, parsedHeader.headerData.emitenteDocumento);
-        await this.assertNfeNotDuplicated(companyId, parsedHeader.nfeKey);
+        let effectiveCompanyId = Number(companyId || 0);
+        if (!effectiveCompanyId || effectiveCompanyId <= 0) {
+            const resolved = await this.resolveCompanyIdByEmitterDocument(parsedHeader.headerData.emitenteDocumento);
+            if (!resolved) {
+                const docFormatted = parsedHeader.headerData.emitenteDocumento || 'nao identificado';
+                const docName = parsedHeader.headerData.emitenteNome ? ` (${parsedHeader.headerData.emitenteNome})` : '';
+                throw new Error(`Nenhuma empresa cadastrada no sistema encontrada para o CNPJ/CPF emitente: ${docFormatted}${docName}.`);
+            }
+            effectiveCompanyId = resolved;
+        } else {
+            await this.assertNfeEmitterMatchesCompany(effectiveCompanyId, parsedHeader.headerData.emitenteDocumento);
+        }
+
+        await this.assertNfeNotDuplicated(effectiveCompanyId, parsedHeader.nfeKey);
 
         if (parsedItems.length === 0) {
             throw new Error('Nenhum item valido encontrado no XML da NFe.');
         }
 
-        const allProducts = await ProductRepository.listByCompany(companyId);
+        const allProducts = await ProductRepository.listByCompany(effectiveCompanyId);
 
         const matchedItems: Array<{ product_public_id: string; quantity: number; unit_price: number; xml_item_data?: Record<string, any> }> = [];
         const unmatchedItems: Array<{ sku: string | null; ean: string | null; name: string }> = [];
 
         for (const item of parsedItems) {
-            const product = await this.resolveOrCreateProductForNfeItem(companyId, item, allProducts);
+            const product = await this.resolveOrCreateProductForNfeItem(effectiveCompanyId, item, allProducts);
 
             if (!product) {
                 unmatchedItems.push({ sku: item.sku, ean: item.ean, name: item.name });
@@ -442,21 +474,21 @@ export class OrderService {
         }
 
         const bankAccountPublicId = data.bank_account_public_id
-            || await this.resolveDefaultBankAccountPublicId(companyId);
+            || await this.resolveDefaultBankAccountPublicId(effectiveCompanyId);
         if (!bankAccountPublicId) {
             throw new Error('Nenhuma conta bancaria encontrada para a empresa.');
         }
 
         const categoryPublicId = data.category_public_id
-            || await this.resolveDefaultIncomeCategoryPublicId(companyId);
+            || await this.resolveDefaultIncomeCategoryPublicId(effectiveCompanyId);
         if (!categoryPublicId) {
             throw new Error('Nenhuma categoria de receita encontrada para a empresa.');
         }
 
         const customerPublicId = data.customer_public_id
-            || await this.resolveCustomerPublicIdByDocument(companyId, xmlContent);
+            || await this.resolveCustomerPublicIdByDocument(effectiveCompanyId, xmlContent);
 
-        const sale = await this.createSalesOrder(companyId, userPublicId, {
+        const sale = await this.createSalesOrder(effectiveCompanyId, userPublicId, {
             customer_public_id: customerPublicId,
             delivery_address: data.delivery_address || null,
             bank_account_public_id: bankAccountPublicId,

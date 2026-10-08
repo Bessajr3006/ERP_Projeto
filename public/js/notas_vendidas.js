@@ -384,38 +384,64 @@
         try {
             let companies = [];
             try {
-                const meRes = await window.api('/users/me');
-                if (meRes?.data?.company?.public_id) {
-                    activeCompanyPublicId = meRes.data.company.public_id;
-                }
-                if (Array.isArray(meRes?.data?.companies) && meRes.data.companies.length > 0) {
-                    companies = meRes.data.companies;
-                }
-            }
-            catch (_) { }
-            if (companies.length === 0) {
                 const compRes = await window.api('/companies');
                 if (Array.isArray(compRes?.data)) {
                     companies = compRes.data;
                 }
             }
-            accessibleCompanies = companies;
+            catch (_) { }
             if (companies.length === 0) {
-                companySelect.innerHTML = '<option value="">Nenhuma empresa disponível</option>';
-                return;
+                try {
+                    const meRes = await window.api('/users/me');
+                    if (Array.isArray(meRes?.data?.companies) && meRes.data.companies.length > 0) {
+                        companies = meRes.data.companies;
+                    }
+                }
+                catch (_) { }
             }
-            companySelect.innerHTML = companies.map((c) => {
+            accessibleCompanies = companies;
+            companySelect.innerHTML = '<option value="">Automático pelo CNPJ do emitente do XML</option>' + companies.map((c) => {
                 const idVal = c.public_id || c.id;
                 const name = c.trade_name || c.company_name || c.name || `Empresa #${c.id}`;
                 const cnpj = c.cnpj ? ` - CNPJ: ${c.cnpj}` : '';
-                const isSelected = (activeCompanyPublicId && (c.public_id === activeCompanyPublicId || String(c.id) === String(activeCompanyPublicId)));
-                return `<option value="${idVal}" ${isSelected ? 'selected' : ''}>${name}${cnpj}</option>`;
+                return `<option value="${idVal}">${name}${cnpj}</option>`;
             }).join('');
+            // Não pré-seleciona empresa por padrão (modo automático ativo)
+            companySelect.value = '';
         }
         catch (error) {
             console.error('Erro ao carregar lista de empresas', error);
-            companySelect.innerHTML = '<option value="">Erro ao carregar empresas</option>';
+            companySelect.innerHTML = '<option value="">Automático pelo CNPJ do emitente do XML</option>';
         }
+    }
+    function extractNfeEmitterInfo(xmlContent) {
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xmlContent, 'text/xml');
+            const emitNode = doc.getElementsByTagName('emit')[0];
+            if (!emitNode)
+                return { cnpj: null, name: null, nNF: null };
+            const cnpj = emitNode.getElementsByTagName('CNPJ')[0]?.textContent?.trim()
+                || emitNode.getElementsByTagName('CPF')[0]?.textContent?.trim()
+                || null;
+            const name = emitNode.getElementsByTagName('xNome')[0]?.textContent?.trim() || null;
+            const nNF = doc.getElementsByTagName('nNF')[0]?.textContent?.trim() || null;
+            return { cnpj, name, nNF };
+        }
+        catch (_) {
+            return { cnpj: null, name: null, nNF: null };
+        }
+    }
+    function findCompanyByDocument(doc) {
+        if (!doc || !Array.isArray(accessibleCompanies))
+            return null;
+        const cleanDoc = String(doc).replace(/\D/g, '');
+        if (!cleanDoc)
+            return null;
+        return accessibleCompanies.find((c) => {
+            const cDoc = String(c.cnpj || c.cpf || '').replace(/\D/g, '');
+            return cDoc === cleanDoc;
+        }) || null;
     }
     async function loadImportOptions() {
         if (importOptionsLoaded)
@@ -468,20 +494,32 @@
         filesList.innerHTML = selectedXmlItems.map((item, index) => {
             const kbSize = item.size ? `${(item.size / 1024).toFixed(1)} KB` : '';
             const zipBadge = item.archiveName
-                ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">ZIP</span>`
-                : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">XML</span>`;
+                ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 shrink-0">ZIP</span>`
+                : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 shrink-0">XML</span>`;
+            let companyBadge = '';
+            if (item.matchedCompany) {
+                const cName = item.matchedCompany.trade_name || item.matchedCompany.company_name || item.matchedCompany.name;
+                companyBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 shrink-0" title="Empresa identificada pelo CNPJ do emitente: ${item.emitCnpj}">🏢 ${cName}</span>`;
+            }
+            else if (item.emitCnpj) {
+                companyBadge = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 shrink-0" title="CNPJ do emitente da nota">CNPJ: ${item.emitCnpj}</span>`;
+            }
+            const nfTitle = item.nNF ? `NF #${item.nNF} • ` : '';
             return `
-                <div class="py-1 flex items-center justify-between gap-2">
+                <div class="py-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-gray-100 dark:border-slate-700/60 last:border-0">
                     <div class="flex items-center gap-2 truncate min-w-0">
                         ${zipBadge}
-                        <span class="truncate font-mono text-gray-700 dark:text-gray-300" title="${item.name}">${item.name}</span>
-                        <span class="text-gray-400 text-[10px]">${kbSize}</span>
+                        <span class="truncate font-mono text-xs text-gray-800 dark:text-gray-200" title="${item.name}">${nfTitle}${item.name}</span>
+                        <span class="text-gray-400 text-[10px] shrink-0">${kbSize}</span>
                     </div>
-                    <button type="button" class="btn-remove-xml text-gray-400 hover:text-red-500 transition-colors p-0.5" data-index="${index}" title="Remover este arquivo">
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                        ${companyBadge}
+                        <button type="button" class="btn-remove-xml text-gray-400 hover:text-red-500 transition-colors p-1" data-index="${index}" title="Remover este arquivo">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -509,7 +547,7 @@
             return;
         if (progressContainer) {
             progressContainer.classList.remove('hidden');
-            progressText.textContent = 'Lendo e descompactando arquivos...';
+            progressText.textContent = 'Lendo e identificando empresas pelo CNPJ...';
             progressBar.style.width = '15%';
             progressPercent.textContent = '15%';
         }
@@ -530,11 +568,17 @@
                             const xmlContent = await entry.async('string');
                             if (xmlContent && xmlContent.trim().length >= 20) {
                                 const baseName = entry.name.split('/').pop() || entry.name;
+                                const emitterInfo = extractNfeEmitterInfo(xmlContent);
+                                const matchedCompany = findCompanyByDocument(emitterInfo.cnpj);
                                 selectedXmlItems.push({
                                     name: baseName,
                                     content: xmlContent,
                                     size: xmlContent.length,
-                                    archiveName: file.name
+                                    archiveName: file.name,
+                                    emitCnpj: emitterInfo.cnpj,
+                                    emitName: emitterInfo.name,
+                                    nNF: emitterInfo.nNF,
+                                    matchedCompany
                                 });
                                 addedCount += 1;
                             }
@@ -550,10 +594,16 @@
                 try {
                     const xmlContent = await file.text();
                     if (xmlContent && xmlContent.trim().length >= 20) {
+                        const emitterInfo = extractNfeEmitterInfo(xmlContent);
+                        const matchedCompany = findCompanyByDocument(emitterInfo.cnpj);
                         selectedXmlItems.push({
                             name: file.name,
                             content: xmlContent,
-                            size: file.size || xmlContent.length
+                            size: file.size || xmlContent.length,
+                            emitCnpj: emitterInfo.cnpj,
+                            emitName: emitterInfo.name,
+                            nNF: emitterInfo.nNF,
+                            matchedCompany
                         });
                         addedCount += 1;
                     }
@@ -600,12 +650,8 @@
             showPageAlert('Nenhum arquivo XML selecionado para importação.', 'warning', 3500);
             return;
         }
-        const targetCompany = companySelect ? companySelect.value : null;
-        if (!targetCompany) {
-            showPageAlert('Por favor, selecione a empresa de destino antes de importar.', 'warning', 4000);
-            companySelect?.focus();
-            return;
-        }
+        // Empresa de destino é opcional: se não selecionada, o backend identifica pelo CNPJ do emitente do XML
+        const targetCompany = companySelect && companySelect.value ? companySelect.value : null;
         const originalButtonHtml = button.innerHTML;
         const originalConfirmHtml = modalConfirm.innerHTML;
         button.disabled = true;
@@ -629,7 +675,7 @@
                 const chunk = selectedXmlItems.slice(i, i + batchSize);
                 const currentBatchLabel = `Lote ${Math.floor(i / batchSize) + 1} (${i + 1} a ${Math.min(i + chunk.length, total)} de ${total})`;
                 if (progressText) {
-                    progressText.textContent = `Processando e salvando em Impkey: ${currentBatchLabel}...`;
+                    progressText.textContent = `Processando e identificando empresas: ${currentBatchLabel}...`;
                 }
                 try {
                     const response = await window.api('/sales/sales/import-xml-batch', {
